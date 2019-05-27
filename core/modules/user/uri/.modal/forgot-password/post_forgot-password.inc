@@ -22,7 +22,7 @@ if ($user['email'] !== $email) {
 }
 
 run_single_sc('init-email');
-load_libraries(['url', 'email', 'log', 'uuid']);
+load_libraries(['url', 'email', 'log', 'uuid', 'data', 'set']);
 $reset_token = $user['password_reset_token'] ?? uuid_sc();
 $user['password_reset_token'] = $reset_token;
 $user_uuid = md5($email);
