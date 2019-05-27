@@ -112,6 +112,10 @@ function thumbnail_create($uuid, $size, $ratio=0, $mode='h') {
     imagecopyresampled($thumb_img, $org_img, 0, 0, $org_x, $org_y, $w, $h, $org_w, $org_h);
 
     thumbnail_sharpen($thumb_img);
+    $wm = get_variable('watermark_image', false);
+    if (!empty($wm) && ($w > 640 || $h > 640)) {
+        thumbnail_stamp($thumb_img, $wm, $w, $h, get_variable('watermark_position', 'rightbottom'));
+    }
 
     //4: save image to cache
 
@@ -126,4 +130,37 @@ function thumbnail_create($uuid, $size, $ratio=0, $mode='h') {
     imagedestroy($org_img);
     imagedestroy($thumb_img);
     return $result;
+}
+
+function thumbnail_stamp($img, $wm_path, $w, $h, $position) {
+    if (!@file_exists($wm_path)) {
+        return 0;
+    }
+    $wm_img = imagecreatefrompng($wm_path);
+    $ww = imagesx($wm_img);
+    $wh = imagesy($wm_img);
+    $ratio = $wh / $ww;
+    $max_w = 0.70 * $w;
+    $max_h = $ratio * $max_w;
+    if ($position === "center" && $ww <= $max_w && $wh <= $max_h) {
+        $x = ($w - $ww) / 2;
+        $y = ($h - $wh) / 2;
+    } else if ($position === "center") {
+        $x = ($w - $max_w) / 2;
+        $y = ($h - $max_h) / 2;
+    } else if ($position === "righttop") {
+        $x = $w - $ww - 5;
+        $y = 5;
+    } else if ($position === "rightbottom") {
+        $x = $w - $ww - 5;
+        $y = $h - $wh - 5;
+    }
+
+    if ($ww <= $max_w && $wh <= $max_h) {
+        imagecopy($img, $wm_img, $x, $y, 0, 0, $ww, $wh);
+    } else {
+        imagecopyresampled($img, $wm_img, $x, $y, 0, 0, $max_w, $max_h, $ww, $wh);
+    }
+    
+    return $ww;
 }
