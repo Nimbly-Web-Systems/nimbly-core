@@ -5,6 +5,10 @@
     [get-user-resources]
 	[repeat data.user-resources]
 </ul>
+<ul class="nb-menu">
+	[set edit-menu-extend=""]
+	[edit-menu-extend]
+</ul>
 [feature-cond admin tpl=admin-menu]
 [feature-cond edit tpl=edit-menu]
 <ul class="nb-menu">
