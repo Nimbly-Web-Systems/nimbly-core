@@ -377,6 +377,7 @@ function data_delete($resource, $uuid = null) {
         if (isset($meta['index']) || isset($meta['children'])) {
             $data_ls = data_read($resource, $uuid);
             if (isset($meta['index']) && is_array($meta['index'])) {
+                load_library('md5');
                 foreach($meta['index'] as $index_name) {
                     if (empty($data_ls[$index_name])) {
                         continue;
@@ -667,6 +668,7 @@ function _data_index_auto_suffix($resource, $uuid, &$data_ls, $field) {
     }
     $field_value = $data_ls[$field];
     $x = 0;
+    load_library('md5');
     do {
         $items = data_read_index($resource, $field, md5_uuid($data_ls[$field]));
         if (empty($items)) {
