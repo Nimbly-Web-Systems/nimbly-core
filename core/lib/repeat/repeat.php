@@ -32,7 +32,19 @@ function repeat_sc($params) {
         if (!empty($filter)) {
             $data = data_filter($data, $filter);
         }
-    }
+    } else if (empty($data) && !is_array($data) && get_variable($data_id . '.0', false)) {
+        $max = intval(get_param_value($params, "num", 100));
+        $start = intval(get_param_value($params, "start", 0));
+        $data = [];
+        for ($i = $start; $i <= $max; $i++) {
+            $k = $data_id . '.' . $i;
+            $v = get_variable($k, false);
+            if (empty($v)) {
+                break;
+            }
+            $data[$i] = $v;
+        }
+    } 
 
     if (empty($data) || !is_array($data)) {
         $empty = get_param_value($params, "empty", "empty");
