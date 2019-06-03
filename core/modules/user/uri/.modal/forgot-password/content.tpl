@@ -1,14 +1,14 @@
 <h3 class="modal-caption">Forgot password?</h3>
 <a data-close="#modal" class="icon-close">×</a>
 <div class="signup-wrapper">
-    <form name="forgot-password" action="[url]" method="post" accept-charset="utf-8">
+    <form name="forgot-password" action="[url]" method="post" accept-charset="utf-8" class="nb-form">
         [form-key forgot-password]
         <label>
             Email<br>
             <input type="email" maxlength="64" name="email" id="email" placeholder="your email..." value="[sticky email]" required />
         </label>
         <a href='#' 
-            class="button"
+            class="nb-button"
             data-submit="form[name=forgot-password]"
             data-trigger="modal_password_reset"
         >
