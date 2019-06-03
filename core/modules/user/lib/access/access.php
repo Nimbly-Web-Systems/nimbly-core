@@ -45,23 +45,19 @@ function access_by_role($role) {
 
 function access_by_feature($feature) {
     $has_session = session_resume();
-
     if ($has_session === false || !isset($_SESSION['features'])) {
+        
         return false;
     }
-
     if (isset($_SESSION['features']['(all)']) && $_SESSION['features']['(all)'] === true) {
         return true;
     }
-
     $features = explode(',', $feature);
-
     foreach ($features as $f) {
         if (!empty($_SESSION['features'][$f]) && $_SESSION['features'][$f] === true) {
             return true;
         }
     }
-
     return false;
 }
 
@@ -105,6 +101,7 @@ function load_user_features($name) {
     $result = array();
     foreach ($roles as $role) {
         $features = data_read('roles', $role, 'features');
+
         if (!empty($features)) {
             $fs = array_map('trim', explode(',', $features));
             $result = array_merge($result, $fs);
@@ -195,7 +192,7 @@ function _persist_user_features($name) {
     if (user_has_role($name, 'admin')) {
         $_SESSION['features']['(none)'] = false;
         $_SESSION['features']['(all)'] = true;
-        }
+    }
 }
 
 function user_has_role($username, $role) {
