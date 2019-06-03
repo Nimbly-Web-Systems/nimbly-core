@@ -158,6 +158,11 @@ $('body').on('click', '[data-delete]', function (e) {
 $('body').on('click', '[data-post]', function (e) {
     e.preventDefault();
     var me = $(this);
+    if (me.data('confirm') !== undefined) {
+        if (confirm(me.data('confirm')) !== true) {
+            return;
+        }
+    }
     var url = me.data('post');
     var payload = me.data('payload');
     var frm = me.closest('form');
@@ -182,6 +187,11 @@ $('body').on('click', '[data-post]', function (e) {
 $('body').on('click', '[data-put]', function (e) {
     e.preventDefault();
     var me = $(this);
+    if (me.data('confirm') !== undefined) {
+        if (confirm(me.data('confirm')) !== true) {
+            return;
+        }
+    }
     var url = me.data('put');
     var payload = me.data('payload');
     var frm = me.closest('form');
