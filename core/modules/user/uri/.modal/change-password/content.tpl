@@ -1,7 +1,7 @@
 <h3 class="modal-caption">Create new password</h3>
 <a data-close="#modal" class="icon-close">×</a>
 <div class="form-wrapper">
-    <form name="change-password" action="[url]" method="post" accept-charset="utf-8">
+    <form name="change-password" action="[url]" method="post" accept-charset="utf-8" class="nb-form">
         [form-key change-password]
         <label>
             Your current password<br>
@@ -16,7 +16,7 @@
             <input type="password" maxlength="64" name="newpw2" minlength=5 pattern=".{5,}"  required />
         </label>
         <a href='#' 
-            class="button"
+            class="nb-button"
             data-submit="form[name=change-password]"
             data-trigger="modal_change_password"
         >
