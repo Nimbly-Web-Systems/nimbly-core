@@ -6,7 +6,7 @@
 
 .nb-open { display: inherit; }
 
-.nb-close , div.nb-close, li.nb-close, ul.nb-close { display: none; }
+.nb-close , div.nb-close, li.nb-close, ul.nb-close { display: none!important; }
 
 .medium-screen .only-sm, .large-screen .only-sm { display: none; }
 
