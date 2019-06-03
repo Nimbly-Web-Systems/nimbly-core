@@ -64,6 +64,10 @@ td .nb-button, th .nb-button { margin: 0 5px 0 0; }
 
 .login-container h1 { padding: 0 0 30px; }
 
+.login-container p { font-size: 14px; margin: 15px 0 0; }
+
+.login-container a { color: #0074D9; text-decoration: none; }
+
 .login-container .nimbly-logo { position: absolute; z-index: 2000; bottom: 40px; right: -50px; height: 24px; width: auto; -webkit-transform: rotate(90deg); transform: rotate(90deg); }
 
 * { -webkit-box-sizing: border-box; box-sizing: border-box; text-rendering: optimizeLegibility; }
