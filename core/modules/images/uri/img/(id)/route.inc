@@ -63,9 +63,10 @@ if (is_numeric($size)) {
 }
 
 // limit size (default max is full hd)
+load_library('init-img', 'images');
 run_single_sc('init-img uuid=' . $uuid);
-$max_h = get_variable('max_img_h', 1080);
 $max_w = get_variable('max_img_w', 1920);
+$max_h = get_variable('max_img_h', 1080);
 if ($size > $max_h && ($mode === 'h' || ($ratio > 0 && $ratio < 1))) {
 	$size = $max_h;
 } else if ($size > $max_w) {
