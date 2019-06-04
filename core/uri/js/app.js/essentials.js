@@ -261,13 +261,13 @@ function api(options) {
         dataType : "json"
     }).done(function(json) {
         if (json.success) {
-            api_then(options.done);
+            api_then(options.done, json);
         } else {
             api_then(options.fail);
         }
-    }).fail(function( xhr, status, errorThrown ) {
+    }).fail(function(xhr, status, error) {
         opts = options.fail || {};
-        opts.msg = opts.msg || xhr.responseJSON.message || errorThrown;
+        opts.msg = opts.msg || xhr.responseJSON.message || error;
         opts.msg = api_pretty_message(opts.msg);
         api_then(opts);
     }).always(function( xhr, status ) {
@@ -285,7 +285,7 @@ function api_pretty_message(txt) {
     return txt;
 }
 
-function api_then(options) {
+function api_then(options, json) {
     if (!options) {
         return;
     }
@@ -315,6 +315,9 @@ function api_then(options) {
     }
     if (options.notification) {
         system_notification(options.notification);
+    }
+    if (options.trigger && json) {
+        $(document).trigger(options.trigger, json);    
     }
 }
 
