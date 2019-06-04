@@ -18,6 +18,8 @@ function uuid2name_sc($params) {
 		$result = $data['name'];
 	} else if (!empty($uuid) && !empty($resource)) {
 		$result = $resource . '.' . $uuid;
+	} else {
+		$result = '';
 	}
 	$results[$hkey] = $result;
 	echo $result;

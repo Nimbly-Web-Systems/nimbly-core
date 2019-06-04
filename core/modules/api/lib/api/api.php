@@ -105,7 +105,7 @@ function api_check_csrf(&$data) {
 
 function resource_get($resource, $final=true) { // get all
     $result = data_read($resource);
-    return json_result(array($resource => $result, 'count' => count($result)), $final);
+    return json_result(array($resource => $result, 'count' => count($result)), 200, $final);
 }
 
 function resource_post($resource, $final=true) { // create new
