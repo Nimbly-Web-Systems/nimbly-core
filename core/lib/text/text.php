@@ -7,7 +7,7 @@ function text_sc($params) {
         $languages = array('');
     }
     $paths = array(
-        $GLOBALS['SYSTEM']['file_base'] . 'ext/data/i18n/text.',
+        $GLOBALS['SYSTEM']['file_base'] . 'ext/data/.i18n/text.',
         $GLOBALS['SYSTEM']['uri_path'] . '/text.');
     $key = implode(' ', $params);
     static $results = array();
