@@ -8,14 +8,16 @@ function count_sc($params) {
     $a = current($params);
     $as = get_variable($a, false);
     if ($as === false) {
-        return 0;
+        echo ('0');
     } else if (is_array($as)) {
     	$filter = get_param_value($params, "filter");
         if (!empty($filter)) {
         	load_library("data");
             $as = data_filter($as, $filter);
         }
-        return count($as);
+        
+        echo (count($as));
+    } else {
+        echo '1';
     }
-    return 1;
 }
