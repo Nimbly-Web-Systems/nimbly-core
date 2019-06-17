@@ -193,8 +193,8 @@ function data_read_index($resource, $index_name, $index_uuid) {
         } else { 
             //remove index, it's not valid anymore.
             load_library('log');
-            log_system('removed index ' . $path . '/' . $ix . ': not matching ' . $index_name);
-            unlink($path . '/' . $ix);
+            log_system('removed index ' . $ix_path . '/' . $ix . ': not matching ' . $index_name);
+            unlink($ix_path . '/' . $ix);
         } 
     }
     return $result;
