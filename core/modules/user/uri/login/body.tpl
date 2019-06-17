@@ -14,5 +14,5 @@
         [form-error]
     </form>
     <p><a href="" data-modal='{"url": "forgot-password"}'>Forgot password?</a></p>
-    <img src="[base-url]/img/nimbly-logo.svg" class="nimbly-logo" data-link='[base-url]/' alt="nimbly">
+    <img src="[base-url]/img/nimbly-logo.svg" class="nimbly-logo" data-link='https://nimblycms.com/' alt="nimbly">
 </div>
