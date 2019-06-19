@@ -2,7 +2,11 @@
 
 function post_sc($params) {
     if ($_SERVER['REQUEST_METHOD'] != 'POST' || empty($_POST['form_key'])) {
-        return; //not a valid post, do nothing
+        if (empty($_POST) && empty($_FILES) && $_SERVER['CONTENT_LENGTH'] > 0) {
+            // file exceeds upload limit
+            $GLOBALS['SYSTEM']['validation_errors']['_global'][] = "[text validate_file_exceeds_limit]";
+        }
+        return; 
     }
     load_library("session");
     $csrf_pass = false;
@@ -16,6 +20,9 @@ function post_sc($params) {
         log_system("Post: session key or cookie key does not match form key");
         return; //suspicious, could be a CSRF attack.. do nothing.
     }
+
+
+
     load_library("validate");
     $id_suffix = "";
     if (isset($_POST['form_id'])) {
@@ -29,6 +36,7 @@ function post_sc($params) {
         $GLOBALS['SYSTEM']['validation_errors']['_global'][] = "[text validate_missing]";
         return;
     }
+
     include_once($validate_include_file);
     if (validate_error_count() == 0) {
         //only handle the form post if there are no validation errors
