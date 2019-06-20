@@ -5,7 +5,7 @@
   <thead>
     <tr>
       <th>Resource</th>
-      <th>Instances</th>
+      <th>Items</th>
       <th>&nbsp;</th>
     </tr>
   </thead>
