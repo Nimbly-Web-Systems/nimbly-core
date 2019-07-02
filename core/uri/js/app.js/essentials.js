@@ -78,7 +78,7 @@ $('body').on('click', 'a[data-submit],button[data-submit]', function (e) {
     var trigger_event = me.data("trigger");
     $frm = $(frm);
     $frm.find('div.form-alert').remove();
-    if (trigger_validate($frm)) {
+    if (frm && frm.length && !trigger_validate($frm)) {
         return;
     }
     me.addClass("in-progress");
@@ -98,15 +98,18 @@ $('body').on('click', 'a[data-submit],button[data-submit]', function (e) {
         }
     }).fail(function(xhr, status, errorThrown) {
         console.log('submit fail', xhr, status, errorThrown);
-        if ('message' in xhr.responseJSON) {
+        if (xhr && xhr.responseJSON && 'message' in xhr.responseJSON) {
             //api_then({"msg": xhr.responseJSON.message});
             $frm.append('<div class="form-alert">' + xhr.responseJSON.message + '</div>');
+        } else if (errorThrown) {
+            $frm.append('<div class="form-alert">' + errorThrown + '</div>');
         }
     });
 });
 
 function trigger_validate(frm) {
     if (!frm[0].checkValidity()) {
+        console.log('did not validate?');
         $('<input type="submit">').hide().appendTo(frm).click().remove();
         return false;
     }
