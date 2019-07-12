@@ -11,7 +11,8 @@ function get_gallery_json_sc($params) {
 		'uuid' => $uuid,
 		'max' => $max,
 		'images' => array(),
-		'image_names' => array());
+		'image_names' => array(),
+		'image_types' => array());
 	$j = 0;
 	for ($i = 0; $i < $max; $i++) {
 		$img = get_variable('record' . '.' . $name . $i);
@@ -19,7 +20,9 @@ function get_gallery_json_sc($params) {
 			continue;
 		}
 		$result['images'][$j] = $img;
-		$result['image_names'][$j] = data_read('.files_meta', $img, 'name');
+		$meta = data_read('.files_meta', $img, ['name', 'type']);
+		$result['image_names'][$j] = $meta['name'];
+		$result['image_types'][$j] = $meta['type'];
 		$j++;
 	}
 	echo json_encode($result, JSON_UNESCAPED_UNICODE);

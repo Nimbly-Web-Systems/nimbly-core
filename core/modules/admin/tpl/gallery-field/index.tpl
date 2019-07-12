@@ -14,7 +14,7 @@
 	</tfoot>
 </table>
 
-<template id="tpl_gallery_[get record.uuid default=new]_row">
+<template id="tpl_gallery_[get record.uuid default=new]_row_img">
 	<tr class="gallery-image-row">
 		<td>((img_nr))</td>
 		<td>
@@ -23,6 +23,29 @@
 				data-edit-img='((field_name))' 
 				data-img-uuid=((img_uuid))
 				data-img-mode='fit' style="height:100px; width: 150px; object-fit: scale-down; object-position: left;" />
+		</td>
+		<td>
+			((img_name))
+		</td>
+		<td>
+			<a href='#' class='nb-button icon-button nb-icon-up' data-move-up></a>
+			<a href='#' class='nb-button icon-button nb-icon-down' data-move-down></a>
+		</td>
+	</tr>
+</template>
+
+<template id="tpl_gallery_[get record.uuid default=new]_row_vid">
+	<tr class="gallery-image-row gallery-video-row">
+		<td>((img_nr))</td>
+		<td>
+			<video width=240 
+				data-empty=false 
+				data-edit-img='((field_name))' 
+				data-img-uuid=((img_uuid))
+			>
+				<source src="[base-url]/video/((img_uuid))" type="((img_type))">
+				Video not supported by your browser.			
+			</video>
 		</td>
 		<td>
 			((img_name))
