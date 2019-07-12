@@ -508,13 +508,23 @@ nb_gallery = {};
             return;
         }
 
+        // If Video is already loaded run callback and return
+        if (imageContainer.getElementsByTagName('video')[0]) {
+            if (callback) {
+                callback();
+            }
+            return;
+        }
+
         // Get element reference, optional caption and source path
         var imageElement = galleryItem.imageElement;
         var thumbnailElement = imageElement.getElementsByTagName('img')[0];
         var imageCaption = typeof options.captions === 'function' ?
             options.captions.call(currentGallery, imageElement) :
             imageElement.getAttribute('data-caption') || imageElement.title;
-        var imageSrc = getImageSrc(imageElement);
+        
+        var video_type = imageElement.getAttribute('data-video') || false;
+
 
         // Prepare figure element
         var figure = create('figure');
@@ -533,21 +543,39 @@ nb_gallery = {};
         imageContainer.appendChild(figure);
 
         // Prepare gallery img element
-        var image = create('img');
-        image.onload = function() {
-            // Remove loader element
+        if (!video_type) {
+            var image = create('img');
+            image.onload = function() {
+                // Remove loader element
+                var spinner = document.querySelector('#baguette-img-' + index + ' .baguetteBox-spinner');
+                figure.removeChild(spinner);
+                if (!options.async && callback) {
+                    callback();
+                }
+            };
+            image.setAttribute('src', getImageSrc(imageElement));
+            image.alt = thumbnailElement ? thumbnailElement.alt || '' : '';
+            if (options.titleTag && imageCaption) {
+                image.title = imageCaption;
+            }
+            figure.appendChild(image);
+        } else {
+            var video = create('video');
+            overlay = getByID('baguetteBox-overlay');
+            var w = Math.floor(overlay.offsetWidth * 0.8);
+            var h = Math.floor(overlay.offsetHeight * 0.8);
+            video.setAttribute('controls', '');
+            var video_source = create('source');
             var spinner = document.querySelector('#baguette-img-' + index + ' .baguetteBox-spinner');
             figure.removeChild(spinner);
-            if (!options.async && callback) {
-                callback();
+            video_source.setAttribute('src', getVideoSrc(imageElement));
+            video_source.setAttribute('type', video_type);
+            if (options.titleTag && imageCaption) {
+                video.title = imageCaption;
             }
-        };
-        image.setAttribute('src', imageSrc);
-        image.alt = thumbnailElement ? thumbnailElement.alt || '' : '';
-        if (options.titleTag && imageCaption) {
-            image.title = imageCaption;
+            video.appendChild(video_source);
+            figure.appendChild(video);
         }
-        figure.appendChild(image);
 
         // Run callback
         if (options.async && callback) {
@@ -565,6 +593,12 @@ nb_gallery = {};
             result = full_base_url + '/img/' + uuid + '/' + nb_image_box($('#baguetteBox-overlay'), 0.8);
         }
         return result;
+    }
+
+    // Get image source location, mostly used for responsive images
+    function getVideoSrc(elem) {
+        var uuid = $(elem).data('at-auto');
+        return full_base_url + '/video/' + uuid;
     }
 
     // Return false at the right end of the gallery
