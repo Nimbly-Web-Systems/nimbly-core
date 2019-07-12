@@ -22,14 +22,40 @@ gallery_field.init = function(opts) {
 
 gallery_field.data_context = function(opts, x) {
 	var img_nr = parseInt(x) + 1;
-	return {'img_nr': img_nr, 'img_uuid': opts.images[x], 'field_name': opts.name + img_nr, 'img_name': opts.image_names[x]}
+	return {
+		'img_nr': img_nr, 
+		'img_uuid': opts.images[x], 
+		'field_name': opts.name + img_nr, 
+		'img_name': opts.image_names[x], 
+		'img_type': opts.image_types[x]
+	};
+}
+
+gallery_field.row_type = function(opts) {
+	console.log('row_type', opts.img_type);
+	if (opts && opts.img_type) {
+		if (opts.img_type === 'video/mp4') {
+			return 'vid';
+		}
+	}
+	return 'img';
 }
 
 gallery_field.add_row = function($table, ix) {
+	gallery_field.update_row($table, ix, null);
+}
+
+gallery_field.update_row = function($table, ix, $row) {
 	var opts = $table.data('opts');
 	var row_ctx = gallery_field.data_context(opts, ix);
-	var row_html = nb_populate_template(opts.tpl_id, row_ctx);
-	$table.append(row_html);
+	var type = gallery_field.row_type(row_ctx);
+	var tpl_id = opts.tpl_id + '_' + type;
+	var row_html = nb_populate_template(tpl_id, row_ctx);
+	if ($row === null) {
+		$table.append(row_html);
+	} else {
+		$row.replaceWith(row_html);
+	} 
 	opts.ix[ix] = ix;
 }
 
@@ -70,13 +96,6 @@ gallery_field.swap_data = function($table, x, y) {
 	$table.data('opts', opts);
 }
 
-gallery_field.update_row = function($table, $row, ix) {
-	var opts = $table.data('opts');
-	var row_ctx = gallery_field.data_context(opts, ix)
-	$row.replaceWith(nb_populate_template(opts.tpl_id, row_ctx));
-	opts.ix[ix] = ix;
-}
-
 gallery_field.remove_img = function($table, uuid) {
 	$row = $table.find('tr:has(img[data-img-uuid=' + uuid + '])');
 	if (!$row.length) {
@@ -98,7 +117,7 @@ gallery_field.update_rows = function($table) {
 		var $row = $(this);
 		var num = gallery_field.row_num($row);
 		if (num !== (ix+1) || opts.ix[ix] != ix) {
-			gallery_field.update_row($table, $row, ix);
+			gallery_field.update_row($table, ix, $row);
 		}
 	});
 }
@@ -157,7 +176,7 @@ gallery_field.update_data = function(data) {
   	opts.images[ix] = data.uuid;
   	opts.image_names[ix] = data.name;
   	$table.data('opts', opts);
-  	gallery_field.update_row($table, $row, ix);
+  	gallery_field.update_row($table, ix, $row);
   	gallery_field.refresh($table);
 }
 
