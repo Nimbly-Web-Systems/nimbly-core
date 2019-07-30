@@ -70,6 +70,8 @@ function repeat_sc($params) {
             continue;
         } else if (is_string($item)) {
             set_variable_dot($var_id . '.key', $item);
+        } else if (is_int($item)) {
+            set_variable_dot($var_id . '.key', $item);
         } else {
             set_variable_dot($var_id . '.key', $k);
             foreach ($item as $key => $value) {
