@@ -43,7 +43,7 @@
 				data-edit-img='((field_name))' 
 				data-img-uuid=((img_uuid))
 			>
-				<source src="[base-url]/video/((img_uuid))" type="((img_type))">
+				<source src="[base-url]/video/((img_uuid))#0.5" type="((img_type))">
 				Video not supported by your browser.			
 			</video>
 		</td>
