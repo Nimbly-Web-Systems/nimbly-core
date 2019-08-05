@@ -7,8 +7,8 @@
 		<tr>
 			<td colspan=4 id="[item.key]_upload">
 				[progress-bar]
-				<button class="nb-button" data-upload='{"trigger": "[item.key]_upload"}'>Upload photo</button>
-				<button class="nb-button" id="[item.key]_select" data-modal='{"url": "img-select", "uid": "[item.key]_select"}'>Select photo</button>
+				<button class="nb-button" data-upload='{"trigger": "[item.key]_upload"}'>Upload</button>
+				<button class="nb-button" id="[item.key]_select" data-modal='{"url": "img-select", "uid": "[item.key]_select"}'>Select</button>
 			</td>
 		</tr>
 	</tfoot>
