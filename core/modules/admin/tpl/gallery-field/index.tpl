@@ -38,6 +38,13 @@
 	<tr class="gallery-image-row gallery-video-row">
 		<td>((img_nr))</td>
 		<td>
+			<img src='[empty-img]' 
+				data-empty=false 
+				data-edit-img='((field_name_cover))' 
+				data-img-uuid=((img_uuid_cover))
+				data-img-mode='fit' style="height:100px; width: 150px; object-fit: scale-down; object-position: left;" />
+		</td>
+		<td>
 			<video width=240 
 				data-empty=false 
 				data-edit-img='((field_name))' 
@@ -46,8 +53,6 @@
 				<source src="[base-url]/video/((img_uuid))#t=0.1" type="((img_type))">
 				Video not supported by your browser.			
 			</video>
-		</td>
-		<td>
 			((img_name))
 		</td>
 		<td>

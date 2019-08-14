@@ -25,14 +25,15 @@ gallery_field.data_context = function(opts, x) {
 	return {
 		'img_nr': img_nr, 
 		'img_uuid': opts.images[x], 
-		'field_name': opts.name + img_nr, 
+		'img_uuid_cover': opts.cover_images[x], 
+		'field_name': opts.name + img_nr,
+		'field_name_cover': opts.name + img_nr + '_cover',  
 		'img_name': opts.image_names[x], 
 		'img_type': opts.image_types[x]
 	};
 }
 
 gallery_field.row_type = function(opts) {
-	console.log('row_type', opts.img_type);
 	if (opts && opts.img_type) {
 		if (opts.img_type === 'video/mp4') {
 			return 'vid';
@@ -168,13 +169,18 @@ gallery_field.add_data = function($table, img_uuid, img_name) {
 }
 
 gallery_field.update_data = function(data) {
-	var $img = $('[data-edit-uuid=' + data.resource_uuid + '] img[data-edit-img=' + data.modal_uid + ']');
+	var uid = data.modal_uid;
+	var $img = $('[data-edit-uuid=' + data.resource_uuid + '] [data-edit-img=' + uid + ']');
 	var $row = $img.closest('tr');
-  	$table = $row.closest('table').find('tbody');
+	$table = $row.closest('table').find('tbody');
   	var opts = $table.data('opts');
   	var ix = parseInt($img.closest('tr').find('td:first').text()) - 1;
-  	opts.images[ix] = data.uuid;
-  	opts.image_names[ix] = data.name;
+  	if (uid.includes('_cover')) {
+		opts.cover_images[ix] = data.uuid;
+	} else {
+  		opts.images[ix] = data.uuid;
+  		opts.image_names[ix] = data.name;
+  	}
   	$table.data('opts', opts);
   	gallery_field.update_row($table, ix, $row);
   	gallery_field.refresh($table);
