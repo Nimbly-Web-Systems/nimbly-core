@@ -465,6 +465,7 @@ nb_gallery = {};
     }
 
     function hideOverlay() {
+        stopAllVideos();
         if (options.noScrollbars) {
             document.documentElement.style.overflowY = 'auto';
             document.body.style.overflowY = 'auto';
@@ -618,6 +619,7 @@ nb_gallery = {};
      * @return {boolean} - true on success or false if the index is invalid
      */
     function show(index, gallery) {
+        stopAllVideos();
         if (!isOverlayVisible && index >= 0 && index < gallery.length) {
             prepareOverlay(gallery, options);
             showOverlay(index);
@@ -721,6 +723,12 @@ nb_gallery = {};
         }
         loadImage(index - 1, function() {
             preloadPrev(index - 1);
+        });
+    }
+
+    function stopAllVideos() {
+        $('#' + slider.id + ' video').each(function() {
+            $(this).get(0).pause();
         });
     }
 
