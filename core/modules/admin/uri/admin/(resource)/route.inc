@@ -24,6 +24,7 @@ if (isset($meta['sort'])) {
 
 // store data and fields and render the page
 load_library("set");
+set_variable('_order', $meta['order'] ?? false);	
 set_variable("data.resource", $resource);
 set_variable("data.records", $items);
 $meta['fields'] = data_exclude($meta['fields'], 'admin_col', false);
