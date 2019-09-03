@@ -11,6 +11,7 @@ function get_gallery_json_sc($params) {
 		'uuid' => $uuid,
 		'max' => $max,
 		'images' => array(),
+		'cover_images' => array(),
 		'image_names' => array(),
 		'image_types' => array());
 	$j = 0;
