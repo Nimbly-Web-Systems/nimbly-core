@@ -104,7 +104,11 @@ gallery_field.remove_img = function($table, uuid) {
 	}
 	var num = gallery_field.row_num($row);
 	var opts = $table.data('opts');
+	if (opts.cover_images[num - 1] === uuid & opts.images[num - 1] !== uuid) {
+		return;
+	}
 	opts.images.splice(num - 1, 1);
+	opts.cover_images.splice(num - 1, 1);
 	opts.image_names.splice(num - 1, 1);
 	opts.ix.splice(num - 1, 1);
 	$table.data('opts', opts);
@@ -165,6 +169,7 @@ gallery_field.add_data = function($table, img_uuid, img_name) {
 	console.log('add_data', img_uuid, opts);
 	var ix = $table.find('tr').length;
 	opts.images[ix] = img_uuid;
+	opts.cover_images[ix] = false;
 	opts.image_names[ix] = img_name;
 	opts.ix[ix] = ix;
 	$table.data('opts', opts);
