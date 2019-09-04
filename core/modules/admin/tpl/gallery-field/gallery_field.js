@@ -130,6 +130,9 @@ gallery_field.refresh = function($table) {
 		editor.enable();
 	}
 	nb_load_images();
+	var opts = $table.data('opts');
+	var is_max = opts.max && opts.images.length >= opts.max;
+	$('#' + opts.name + '_upload button').attr('disabled', is_max);
 }
 
 gallery_field.move_up = function(e) {
@@ -159,6 +162,7 @@ gallery_field.move_down = function(e) {
 
 gallery_field.add_data = function($table, img_uuid, img_name) {
 	var opts = $table.data('opts');
+	console.log('add_data', img_uuid, opts);
 	var ix = $table.find('tr').length;
 	opts.images[ix] = img_uuid;
 	opts.image_names[ix] = img_name;
