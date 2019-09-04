@@ -19,13 +19,19 @@
 		<td>((img_nr))</td>
 		<td>
 			<img src='[empty-img]' 
+				data-cover-img=true
+				data-empty=false 
+				data-edit-img='((field_name_cover))' 
+				data-img-uuid=((img_uuid_cover))
+				data-img-mode='fit' style="height:100px; width: 150px; object-fit: scale-down; object-position: left;" />
+		</td>
+		<td>
+			<img src='[empty-img]' 
 				data-empty=false 
 				data-edit-img='((field_name))' 
 				data-img-uuid=((img_uuid))
 				data-img-mode='fit' style="height:100px; width: 150px; object-fit: scale-down; object-position: left;" />
-		</td>
-		<td>
-			((img_name))
+				((img_name))
 		</td>
 		<td>
 			<a href='#' class='nb-button icon-button nb-icon-up' data-move-up></a>
@@ -40,6 +46,7 @@
 		<td>
 			<img src='[empty-img]' 
 				data-empty=false 
+				data-cover-img=true
 				data-edit-img='((field_name_cover))' 
 				data-img-uuid=((img_uuid_cover))
 				data-img-mode='fit' style="height:100px; width: 150px; object-fit: scale-down; object-position: left;" />
