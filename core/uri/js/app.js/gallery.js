@@ -566,6 +566,7 @@ nb_gallery = {};
             var w = Math.floor(overlay.offsetWidth * 0.8);
             var h = Math.floor(overlay.offsetHeight * 0.8);
             video.setAttribute('controls', '');
+            video.setAttribute('autoplay', '');
             var video_source = create('source');
             var spinner = document.querySelector('#baguette-img-' + index + ' .baguetteBox-spinner');
             figure.removeChild(spinner);
