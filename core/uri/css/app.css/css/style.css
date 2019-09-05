@@ -268,8 +268,19 @@ img[data-img-uuid] {
   #nb-single-file-preview img, div.nb-single-file-preview img {
     display: none; }
 
+/* baguettebox gallery overwrites */
 #baguetteBox-overlay .full-image {
   overflow: hidden; }
+  #baguetteBox-overlay .full-image video {
+    display: inline-block;
+    width: auto;
+    height: auto;
+    max-height: 100%;
+    max-width: 100%;
+    vertical-align: middle;
+    -webkit-box-shadow: 0 0 8px rgba(0, 0, 0, 0.6);
+    -moz-box-shadow: 0 0 8px rgba(0, 0, 0, 0.6);
+    box-shadow: 0 0 8px rgba(0, 0, 0, 0.6); }
 
 .nb-icon {
   background-size: 22px 22px;

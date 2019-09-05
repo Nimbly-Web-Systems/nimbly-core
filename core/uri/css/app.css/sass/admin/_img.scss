@@ -35,4 +35,16 @@ img[data-img-uuid] {
 
 #baguetteBox-overlay .full-image {
 	overflow: hidden;
+
+	video {
+	    display: inline-block;
+    	width: auto;
+    	height: auto;
+    	max-height: 100%;
+    	max-width: 100%;
+    	vertical-align: middle;
+    	-webkit-box-shadow: 0 0 8px rgba(0,0,0,.6);
+    	-moz-box-shadow: 0 0 8px rgba(0,0,0,.6);
+    	box-shadow: 0 0 8px rgba(0,0,0,.6);
+	}
 }
