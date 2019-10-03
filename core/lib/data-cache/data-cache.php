@@ -2,7 +2,7 @@
 
 load_library("data");
 
-$GLOBALS['SYSTEM']['data_cache_base'] = $GLOBALS['SYSTEM']['file_base'] . 'data/.tmp/data-cache/';
+$GLOBALS['SYSTEM']['data_cache_base'] = $GLOBALS['SYSTEM']['file_base'] . 'ext/data/.tmp/data-cache/';
 
 /**
  * @doc * Save data to cache file

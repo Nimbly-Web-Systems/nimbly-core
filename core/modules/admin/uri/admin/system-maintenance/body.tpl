@@ -27,17 +27,26 @@ Disk space total: [disk-space-total]Gb</p>
 			<td>
 				<form action="[url]" method="post" accept-charset="utf-8" id="ccache">
 					[form-key ccache]
-					<a href='#' data-submit-std="#ccache" data-confirm="Press OK to continue and clear cached JS, CSS and HTML files.">Clear cache</a>
-				<form>
+					<a href='#' data-submit-std="form#ccache" data-confirm="Press OK to continue and clear cached JS, CSS and HTML files.">Clear cache</a>
+				</form>
 			</td>
 			<td>Clears server-side javascript and css cache.</td>
 		</tr>
 		<tr>
 			<td>
-				<form>
-					<a href='#' data-confirm="Press OK to kill all sessions and log out any users">Kill sessions</a>
-					<input type="hidden" name="form_id2" value="valuefromanotherform" />
-				<form>
+				<form action="[url]" method="post" accept-charset="utf-8" id="ccache_thumbs">
+					[form-key ccache_thumbs]
+					<a href='#' data-submit-std="form#ccache_thumbs" data-confirm="Press OK to continue and clear cached JS, CSS and HTML files.">Clear cache</a>
+				</form>
+			</td>
+			<td>Clears server-side javascript and css cache.</td>
+		</tr>
+		<tr>
+			<td>
+				<form action="[url]" method="post" accept-charset="utf-8" id="ccache_sessions">
+					[form-key ccache_sessions]
+					<a href='#' data-submit-std="form#ccache_sessions" data-confirm="Press OK to kill all sessions and log out any users">Kill sessions</a>
+				</form>
 			</td>
 			<td>Removes all sessions. This will log out all users (including yourself!).</td>
 		</tr>

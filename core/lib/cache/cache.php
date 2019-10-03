@@ -28,8 +28,8 @@ function cache_sc($params) {
 /**
  * @doc * function `cache_clear()` deletes all cached files
  */
-function cache_clear() {
-    cache_rmdirr($GLOBALS['SYSTEM']['cache_base']);
+function cache_clear($dir = 'cache') {
+    cache_rmdirr($GLOBALS['SYSTEM']['file_base'] . 'ext/data/.tmp/' . $dir);
 }
 
 function cache_rmdirr($dir) {
