@@ -36,10 +36,10 @@ Disk space total: [disk-space-total]Gb</p>
 			<td>
 				<form action="[url]" method="post" accept-charset="utf-8" id="ccache_thumbs">
 					[form-key ccache_thumbs]
-					<a href='#' data-submit-std="form#ccache_thumbs" data-confirm="Press OK to continue and clear cached JS, CSS and HTML files.">Clear cache</a>
+					<a href='#' data-submit-std="form#ccache_thumbs" data-confirm="Press OK to continue and clear cached thumbnails.">Clear thumbnail cache</a>
 				</form>
 			</td>
-			<td>Clears server-side javascript and css cache.</td>
+			<td>Clears thumbnail cache.</td>
 		</tr>
 		<tr>
 			<td>
