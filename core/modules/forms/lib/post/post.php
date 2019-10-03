@@ -2,7 +2,7 @@
 
 function post_sc($params) {
     if ($_SERVER['REQUEST_METHOD'] != 'POST' || empty($_POST['form_key'])) {
-        if (empty($_POST) && empty($_FILES) && $_SERVER['CONTENT_LENGTH'] > 0) {
+        if (empty($_POST) && empty($_FILES) && isset($_SERVER['CONTENT_LENGTH']) && $_SERVER['CONTENT_LENGTH'] > 0) {
             // file exceeds upload limit
             $GLOBALS['SYSTEM']['validation_errors']['_global'][] = "[text validate_file_exceeds_limit]";
         }
