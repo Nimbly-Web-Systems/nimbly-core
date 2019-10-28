@@ -1,5 +1,5 @@
 var gallery_field = {
-	debug: false
+	debug: true
 };
 
 gallery_field.init = function(opts) {
@@ -105,7 +105,7 @@ gallery_field.swap_data = function($table, x, y) {
 }
 
 gallery_field.remove_img = function($table, uuid, $img) {
-	gallery_field.debug && console.log('gallery_field.remove_img', $table, uuid);
+	gallery_field.debug && console.log('gallery_field.remove_img', $table, uuid, $img);
 	$row = $table.find('tr:has(img[data-img-uuid=' + uuid + '])');
 	if (!$row.length) {
 		return;
@@ -180,13 +180,14 @@ gallery_field.move_down = function(e) {
 	gallery_field.refresh($table);
 }
 
-gallery_field.add_data = function($table, img_uuid, img_name) {
+gallery_field.add_data = function($table, img_uuid, img_name, img_type) {
+	gallery_field.debug && console.log('gallery_field.add_data', img_uuid, img_name, img_type);
 	var opts = $table.data('opts');
-	console.log('add_data', img_uuid, opts);
 	var ix = $table.find('tr').length;
 	opts.images[ix] = img_uuid;
 	opts.cover_images[ix] = false;
 	opts.image_names[ix] = img_name;
+	opts.image_types[ix] = img_type;
 	opts.ix[ix] = ix;
 	$table.data('opts', opts);
 	gallery_field.add_row($table, ix);
@@ -216,17 +217,18 @@ gallery_field.update_data = function(data) {
 }
 
 gallery_field.handle_upload = function(e, data) {
+	gallery_field.debug && console.log('gallery_field.handle_upload', e, data);
 	$uploader = $('#' + e.type);
 	if (data.event === 'preview') {
-
+		
 	} else if (data.event === 'progress') {
 		$uploader.find('div.progress-wrapper').removeClass('nb-close');
 		$uploader.find('div.progress-bar').css('width', data.data.pct + '%');
 		$uploader.find('div.progress-bar-text').text(data.data.msg);
 	} else if (data.event === 'done') {
-		$uploader.find('button[data-upload]').prop('disabled', false);
 		$table = $uploader.closest('table').find('tbody');
-		gallery_field.add_data($table, data.data.uuid, data.data.name);
+		gallery_field.add_data($table, data.data.uuid, data.data.name, data.data.type);
+		$uploader.find('button[data-upload]').prop('disabled', false);
 	} else if (data.event === 'fail') {
 		$uploader.find('button[data-upload]').prop('disabled', false);
 	} else {
