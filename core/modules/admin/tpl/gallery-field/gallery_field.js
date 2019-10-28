@@ -194,9 +194,13 @@ gallery_field.add_data = function($table, img_uuid, img_name) {
 }
 
 gallery_field.update_data = function(data) {
+	gallery_field.debug && console.log('gallery_field.update_data', data);
 	var uid = data.modal_uid;
 	var $img = $('[data-edit-uuid=' + data.resource_uuid + '] [data-edit-img=' + uid + ']');
 	var $row = $img.closest('tr');
+	if ($row.length === 0) {
+		return;
+	}
 	$table = $row.closest('table').find('tbody');
   	var opts = $table.data('opts');
   	var ix = parseInt($img.closest('tr').find('td:first').text()) - 1;
@@ -231,6 +235,7 @@ gallery_field.handle_upload = function(e, data) {
 }
 
 gallery_field.handle_image_select = function(e, data) {
+	gallery_field.debug && console.log('handle_image_select', e, data);
 	if (!data.uuid || !data.name) {
 		return;
 	}
