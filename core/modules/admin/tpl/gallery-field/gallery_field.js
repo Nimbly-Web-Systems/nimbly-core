@@ -92,19 +92,20 @@ gallery_field.row_num = function($row) {
 }
 
 gallery_field.swap_data = function($table, x, y) {
+	gallery_field.debug && console.log('gallery_field.swap_data', x, y);
 	var opts = $table.data('opts');
-	var t1 = opts.images[x];
-	var t2 = opts.image_names[x];
-	var t3 = opts.ix[x];
-	var t4 = opts.image_types[x];
+	var t_ix = opts.ix[x];
+	var t_img = opts.images[x];
+	var t_img_name = opts.image_names[x];
+	var t_img_type = opts.image_types[x];
+	opts.ix[x] = opts.ix[y];
 	opts.images[x] = opts.images[y];
 	opts.image_names[x] = opts.image_names[y];
-	opts.ix[x] = opts.ix[y];
-	opts.image_types[x] = opts.ix[y];
-	opts.images[y] = t1;
-	opts.image_names[y] = t2;
-	opts.ix[y] = t3;
-	opts.image_types[y] = t4;
+	opts.image_types[x] = opts.image_types[y];
+	opts.ix[y] = t_ix;
+	opts.images[y] = t_img;
+	opts.image_names[y] = t_img_name;
+	opts.image_types[y] = t_img_type;
 	$table.data('opts', opts);
 }
 
