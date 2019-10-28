@@ -368,7 +368,7 @@ editor.enable_img = function(elem, ix) {
     elem
       .parent()
       .append(
-        '<a href="#" class="clear-img-icon nb-button icon-button nb-close" data-clear-img data-confirm="Press OK to delete image."></a>'
+        '<a href="#" class="clear-img-icon nb-button icon-button delete nb-close" data-clear-img data-confirm="Press OK to delete image."></a>'
       );
   } else {
     elem
