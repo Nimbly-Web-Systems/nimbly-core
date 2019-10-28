@@ -256,7 +256,7 @@ editor.init = function() {
       $img.attr('src', base_url + '/img/placeholder.png');
       $img.data('empty', true);
       $(this).addClass('nb-close');
-      $(document).trigger('clear-img', { uuid: uuid });
+      $(document).trigger('clear-img', { uuid: uuid, img: $img });
     });
 
     if ($('form[data-edit-autoenable]').length > 0) {

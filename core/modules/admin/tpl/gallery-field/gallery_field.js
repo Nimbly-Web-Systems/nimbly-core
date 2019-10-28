@@ -1,6 +1,9 @@
-var gallery_field = {};
+var gallery_field = {
+	debug: false
+};
 
 gallery_field.init = function(opts) {
+	gallery_field.debug && console.log('gallery_field.init', opts);
 	opts.tpl_id = 'tpl_gallery_' + opts.uuid + '_row';
 	opts.ix = [];
 	var $table = $('#gallery_' + opts.uuid + ' tbody' + '.nb-sortable');
@@ -11,7 +14,7 @@ gallery_field.init = function(opts) {
 	$table.sortable();
 	$table.on('sortstop', { 'opts' : opts }, gallery_field.on_sortstop);
 	$(document).on('clear-img', function(e, opts) {
-		gallery_field.remove_img($table, opts.uuid);
+		gallery_field.remove_img($table, opts.uuid, opts.img);
 	});
 	$table.on('click', 'a[data-move-up]', gallery_field.move_up);
 	$table.on('click', 'a[data-move-down]', gallery_field.move_down);
@@ -21,6 +24,7 @@ gallery_field.init = function(opts) {
 }
 
 gallery_field.data_context = function(opts, x) {
+	gallery_field.debug && console.log('gallery_field.data_context', opts, x);
 	var img_nr = parseInt(x) + 1;
 	return {
 		'img_nr': img_nr, 
@@ -34,6 +38,7 @@ gallery_field.data_context = function(opts, x) {
 }
 
 gallery_field.row_type = function(opts) {
+	gallery_field.debug && console.log('gallery_field.row_type', opts);
 	if (opts && opts.img_type) {
 		if (opts.img_type === 'video/mp4') {
 			return 'vid';
@@ -43,10 +48,12 @@ gallery_field.row_type = function(opts) {
 }
 
 gallery_field.add_row = function($table, ix) {
+	gallery_field.debug && console.log('gallery_field.add_row', $table, ix);
 	gallery_field.update_row($table, ix, null);
 }
 
 gallery_field.update_row = function($table, ix, $row) {
+	gallery_field.debug && console.log('gallery_field.update_row', $table, ix, $row);
 	var opts = $table.data('opts');
 	var row_ctx = gallery_field.data_context(opts, ix);
 	var type = gallery_field.row_type(row_ctx);
@@ -97,10 +104,19 @@ gallery_field.swap_data = function($table, x, y) {
 	$table.data('opts', opts);
 }
 
-gallery_field.remove_img = function($table, uuid) {
+gallery_field.remove_img = function($table, uuid, $img) {
+	gallery_field.debug && console.log('gallery_field.remove_img', $table, uuid);
 	$row = $table.find('tr:has(img[data-img-uuid=' + uuid + '])');
 	if (!$row.length) {
 		return;
+	}
+	if ($row.length > 1) {
+		var grid_id = $img.data('edit-img');
+		$row = $row.filter('tr:has(img[data-edit-img=' + grid_id + '])')
+		if ($row.length !== 1) {
+			gallery_field.debug && console.log('gallery_field.remove_img ERROR: too many rows matchig criteria', uuid, grid_id);
+			return;
+		}
 	}
 	var num = gallery_field.row_num($row);
 	var opts = $table.data('opts');
