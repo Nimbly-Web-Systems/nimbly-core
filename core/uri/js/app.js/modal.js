@@ -42,9 +42,11 @@ $('body').on('click', '[data-modal]', function(e) {
 // handle modal select (single)
 $('body').on('click', '#modal [data-select] [data-uuid]', function () {
     var opts = modal.options;
-    opts.uuid = $(this).data('uuid');
+    $me = $(this);
+    opts.uuid = $me.data('uuid');
     opts.modal_uid = $('#modal').data('uid');
-    opts.name = $(this).data('name');
+    opts.name = $me.data('name');
+    opts.type = $me.data('type');
     modal.close();
     $(document).trigger('data-select', opts);
 });

@@ -73,6 +73,7 @@ gallery_field.on_sortstop = function(e, ui) {
 }
 
 gallery_field.reorder = function($table) {
+	gallery_field.debug && console.log('gallery_field.reorder', $table);
 	$table.find('tr').each(function(ix) {
 		var $row = $(this);
 		var num = gallery_field.row_num($row);
@@ -95,12 +96,15 @@ gallery_field.swap_data = function($table, x, y) {
 	var t1 = opts.images[x];
 	var t2 = opts.image_names[x];
 	var t3 = opts.ix[x];
+	var t4 = opts.image_types[x];
 	opts.images[x] = opts.images[y];
 	opts.image_names[x] = opts.image_names[y];
 	opts.ix[x] = opts.ix[y];
+	opts.image_types[x] = opts.ix[y];
 	opts.images[y] = t1;
 	opts.image_names[y] = t2;
 	opts.ix[y] = t3;
+	opts.image_types[y] = t4;
 	$table.data('opts', opts);
 }
 
@@ -220,7 +224,7 @@ gallery_field.handle_upload = function(e, data) {
 	gallery_field.debug && console.log('gallery_field.handle_upload', e, data);
 	$uploader = $('#' + e.type);
 	if (data.event === 'preview') {
-		
+
 	} else if (data.event === 'progress') {
 		$uploader.find('div.progress-wrapper').removeClass('nb-close');
 		$uploader.find('div.progress-bar').css('width', data.data.pct + '%');
@@ -244,7 +248,7 @@ gallery_field.handle_image_select = function(e, data) {
 	$selectbtn = $('#' + data.uid);
 	if ($selectbtn.length === 1) {
 		$table = $selectbtn.closest('table').find('tbody');
-		gallery_field.add_data($table, data.uuid, data.name);
+		gallery_field.add_data($table, data.uuid, data.name, data.type);
 	} else {
 		gallery_field.update_data(data);
 	}
