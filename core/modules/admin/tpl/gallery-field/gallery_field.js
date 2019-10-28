@@ -1,5 +1,5 @@
 var gallery_field = {
-	debug: true
+	debug: false
 };
 
 gallery_field.init = function(opts) {
@@ -204,6 +204,7 @@ gallery_field.update_data = function(data) {
 	var $img = $('[data-edit-uuid=' + data.resource_uuid + '] [data-edit-img=' + uid + ']');
 	var $row = $img.closest('tr');
 	if ($row.length === 0) {
+		nb_load_images();
 		return;
 	}
 	$table = $row.closest('table').find('tbody');
