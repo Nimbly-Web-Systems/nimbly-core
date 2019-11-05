@@ -1,5 +1,5 @@
 <label>[field-name name="[item.name]"]</label>
-
+<input type="hidden" name="[item.key][item.max]" value=0 id="[item.key]_closure">
 <table class="nb-table" id="gallery_[get record.uuid default=new]">
 	<thead></thead>
 	<tbody class="nb-sortable"></tbody>
