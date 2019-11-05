@@ -52,6 +52,12 @@ gallery_field.add_row = function($table, ix) {
 	gallery_field.update_row($table, ix, null);
 }
 
+gallery_field.set_closure = function($table) {
+	gallery_field.debug && console.log('gallery_field.set_closure', $table);
+	var opts = $table.data('opts');
+	$('#' + opts.name + '_closure').attr('name', opts.name + (opts.images.length + 1));
+}
+
 gallery_field.update_row = function($table, ix, $row) {
 	gallery_field.debug && console.log('gallery_field.update_row', $table, ix, $row);
 	var opts = $table.data('opts');
@@ -138,6 +144,7 @@ gallery_field.remove_img = function($table, uuid, $img) {
 }
 
 gallery_field.update_rows = function($table) {
+	gallery_field.debug && console.log('gallery_field.update_rows', $table);
 	var opts = $table.data('opts');
 	$table.find('tr').each(function(ix) {
 		var $row = $(this);
@@ -146,9 +153,11 @@ gallery_field.update_rows = function($table) {
 			gallery_field.update_row($table, ix, $row);
 		}
 	});
+	gallery_field.set_closure($table);
 }
 
 gallery_field.refresh = function($table) {
+	gallery_field.debug && console.log('gallery_field.refresh', $table);
 	gallery_field.update_rows($table);
 	if (editor.enabled) {
 		editor.disable();
@@ -161,6 +170,7 @@ gallery_field.refresh = function($table) {
 }
 
 gallery_field.move_up = function(e) {
+	gallery_field.debug && console.log('gallery_field.move_up', e);
 	$row = $(e.target).closest('tr');
 	$table = $row.closest('tbody');
 	var num = gallery_field.row_num($row);
@@ -173,6 +183,7 @@ gallery_field.move_up = function(e) {
 }
 
 gallery_field.move_down = function(e) {
+	gallery_field.debug && console.log('gallery_field.move_down', e);
 	$row = $(e.target).closest('tr');
 	$table = $row.closest('tbody');
 	var opts = $table.data('opts');
