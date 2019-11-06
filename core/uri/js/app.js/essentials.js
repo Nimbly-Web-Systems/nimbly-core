@@ -443,7 +443,7 @@ function nb_load_image(e, bg=false, cb=null) {
         return false;
     }
     var h = $e.css('height');
-    var container = bg || h > 10? $e : $e.closest('div,figure,li,section,p');
+    var container = bg || h > 10? $e : $e.closest('a,div,figure,li,section,p');
     var ratio = $e.data('img-ratio') || 0;
     var mode = $e.data('img-mode') || false;
     var img_src = nb_img_src($e, container, mode, ratio);
@@ -478,7 +478,7 @@ function nb_swap_image($img, uuid, bgimg=false) {
     var h = $img.height();
 
     // 1. get or create container
-    var $parent = $img.parent('div,figure');
+    var $parent = $img.parent('a,div,figure');
     if ($parent.length === 0) {
         $img.wrap('<figure></figure>');
         $parent = $img.parent('figure');
@@ -544,7 +544,7 @@ function nb_preload_image(e) {
         return false;
     }
     var $img = $(s);
-    var $container = $img.closest('div,figure');
+    var $container = $img.closest('a,div,figure');
     var mode = $img.data('img-mode') || false;
     var ratio = $img.data('img-ratio') || 0;
     var img_src = nb_img_src($e, $container, mode, ratio);
