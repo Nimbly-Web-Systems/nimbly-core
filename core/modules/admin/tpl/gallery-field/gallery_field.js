@@ -102,14 +102,17 @@ gallery_field.swap_data = function($table, x, y) {
 	var opts = $table.data('opts');
 	var t_ix = opts.ix[x];
 	var t_img = opts.images[x];
+	var t_cover_img = opts.cover_images[x];
 	var t_img_name = opts.image_names[x];
 	var t_img_type = opts.image_types[x];
 	opts.ix[x] = opts.ix[y];
 	opts.images[x] = opts.images[y];
+	opts.cover_images[x] = opts.cover_images[y];
 	opts.image_names[x] = opts.image_names[y];
 	opts.image_types[x] = opts.image_types[y];
 	opts.ix[y] = t_ix;
 	opts.images[y] = t_img;
+	opts.cover_images[y] = t_cover_img;
 	opts.image_names[y] = t_img_name;
 	opts.image_types[y] = t_img_type;
 	$table.data('opts', opts);
