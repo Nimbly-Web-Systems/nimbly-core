@@ -65,6 +65,15 @@
             }
         }
     }
+
+    tr {
+        &.ui-sortable-handle { 
+            cursor: move; 
+        }
+        &.ui-sortable-helper {
+            background-color: rgba(0,0,0,0.1);
+        }
+    }
 }
 
 .gallery-image-row {
