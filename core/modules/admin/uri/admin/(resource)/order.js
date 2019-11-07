@@ -1,10 +1,9 @@
 var order={};
 
 order.init = function(opts) {
-	console.log('order');
 	opts = opts || {};
 	$('tbody').sortable({
-		cursor: "move"
+		cursor: "ns-resize"
 	});
 	$('tbody').on('sortstop', { 'opts' : opts }, order.on_sortstop);
 	order.resource = $('table[data-resource]').data('resource');

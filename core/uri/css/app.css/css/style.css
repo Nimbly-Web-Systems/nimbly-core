@@ -837,6 +837,10 @@ a.editor.add-img-icon {
       width: auto;
       height: 80px;
       cursor: pointer; }
+  .nb-table tr.ui-sortable-handle {
+    cursor: move; }
+  .nb-table tr.ui-sortable-helper {
+    background-color: rgba(0, 0, 0, 0.1); }
 
 .gallery-image-row .editor.img-wrapper {
   margin: 0; }
