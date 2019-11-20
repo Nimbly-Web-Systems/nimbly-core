@@ -87,7 +87,9 @@ modal.finalize = function() {
     var done = $(modal.options._elem).data('modal-done');
     if (done) {
         var $frm = $('#modal form');
-        nb_do(done, $frm.serializeObject());
+        var json = $frm.serializeObject();
+        json.modal_uid = $('#modal').data('uid');
+        nb_do(done, json);
     }
     modal.close();
 }

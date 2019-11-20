@@ -341,6 +341,10 @@ function system_notification(msg) {
 
 function nb_populate_template(tpl_id, context) {
     var result = $('#' + tpl_id).html();
+    if (!result) {
+        console.log('template not found:', tpl_id);
+        return '';
+    }
     for (v in context) {
         const re = new RegExp('\\(\\(' + v + '\\)\\)', 'g')
         result = result.replace(re, context[v]);
