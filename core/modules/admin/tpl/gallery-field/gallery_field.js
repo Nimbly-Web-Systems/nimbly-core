@@ -70,7 +70,6 @@ gallery_field.update_row = function($table, ix, $row) {
 	gallery_field.debug && console.log('gallery_field.update_row', $table, ix, $row);
 	var opts = $table.data('opts');
 	var row_ctx = gallery_field.data_context(opts, ix);
-	console.log('ctx', row_ctx);
 	var type = gallery_field.row_type(row_ctx);
 	var tpl_id = opts.tpl_id + '_' + type;
 	var row_html = nb_populate_template(tpl_id, row_ctx);
