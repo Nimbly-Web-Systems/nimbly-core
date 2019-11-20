@@ -1,5 +1,5 @@
 var gallery_field = {
-	debug: false
+	debug: true
 };
 
 gallery_field.init = function(opts) {
@@ -8,7 +8,7 @@ gallery_field.init = function(opts) {
 	opts.ix = [];
 	var $table = $('#gallery_' + opts.uuid + ' tbody' + '.nb-sortable');
 	$table.data('opts', opts);
-	for (ix in opts.images) {
+	for (ix in opts.media_uuids) {
 		gallery_field.add_row($table, parseInt(ix))
 	}
 	$table.sortable();
@@ -26,22 +26,22 @@ gallery_field.init = function(opts) {
 
 gallery_field.data_context = function(opts, x) {
 	gallery_field.debug && console.log('gallery_field.data_context', opts, x);
-	var img_nr = parseInt(x) + 1;
+	var media_nr = parseInt(x) + 1;
 	return {
-		'img_nr': img_nr, 
-		'img_uuid': opts.images[x], 
-		'img_uuid_cover': opts.cover_images[x], 
-		'field_name': opts.name + img_nr,
-		'field_name_cover': opts.name + img_nr + '_cover',  
-		'img_name': opts.image_names[x], 
-		'img_type': opts.image_types[x]
+		'media_nr': media_nr, 
+		'media_uuid': opts.media_uuids[x], 
+		'media_uuid_cover': opts.cover_images[x], 
+		'field_name': opts.name + media_nr,
+		'field_name_cover': opts.name + media_nr + '_cover',  
+		'media_name': opts.media_names[x], 
+		'media_type': opts.media_types[x]
 	};
 }
 
 gallery_field.row_type = function(opts) {
 	gallery_field.debug && console.log('gallery_field.row_type', opts);
-	if (opts && opts.img_type) {
-		if (opts.img_type === 'video/mp4') {
+	if (opts && opts.media_type) {
+		if (opts.media_type === 'video/mp4') {
 			return 'vid';
 		}
 	}
@@ -56,7 +56,7 @@ gallery_field.add_row = function($table, ix) {
 gallery_field.set_closure = function($table) {
 	gallery_field.debug && console.log('gallery_field.set_closure', $table);
 	var opts = $table.data('opts');
-	$('#' + opts.name + '_closure').attr('name', opts.name + (opts.images.length + 1));
+	$('#' + opts.name + '_closure').attr('name', opts.name + (opts.media_uuids.length + 1));
 }
 
 gallery_field.update_row = function($table, ix, $row) {
@@ -102,20 +102,20 @@ gallery_field.swap_data = function($table, x, y) {
 	gallery_field.debug && console.log('gallery_field.swap_data', x, y);
 	var opts = $table.data('opts');
 	var t_ix = opts.ix[x];
-	var t_img = opts.images[x];
+	var t_img = opts.media_uuids[x];
 	var t_cover_img = opts.cover_images[x];
-	var t_img_name = opts.image_names[x];
-	var t_img_type = opts.image_types[x];
+	var t_media_name = opts.media_names[x];
+	var t_media_type = opts.media_types[x];
 	opts.ix[x] = opts.ix[y];
-	opts.images[x] = opts.images[y];
+	opts.media_uuids[x] = opts.media_uuids[y];
 	opts.cover_images[x] = opts.cover_images[y];
-	opts.image_names[x] = opts.image_names[y];
-	opts.image_types[x] = opts.image_types[y];
+	opts.media_names[x] = opts.media_names[y];
+	opts.media_types[x] = opts.media_types[y];
 	opts.ix[y] = t_ix;
-	opts.images[y] = t_img;
+	opts.media_uuids[y] = t_img;
 	opts.cover_images[y] = t_cover_img;
-	opts.image_names[y] = t_img_name;
-	opts.image_types[y] = t_img_type;
+	opts.media_names[y] = t_media_name;
+	opts.media_types[y] = t_media_type;
 	$table.data('opts', opts);
 }
 
@@ -135,12 +135,12 @@ gallery_field.remove_img = function($table, uuid, $img) {
 	}
 	var num = gallery_field.row_num($row);
 	var opts = $table.data('opts');
-	if (opts.cover_images[num - 1] === uuid & opts.images[num - 1] !== uuid) {
+	if (opts.cover_images[num - 1] === uuid & opts.media_uuids[num - 1] !== uuid) {
 		return;
 	}
-	opts.images.splice(num - 1, 1);
+	opts.media_uuids.splice(num - 1, 1);
 	opts.cover_images.splice(num - 1, 1);
-	opts.image_names.splice(num - 1, 1);
+	opts.media_names.splice(num - 1, 1);
 	opts.ix.splice(num - 1, 1);
 	$table.data('opts', opts);
 	$row.remove();
@@ -169,7 +169,7 @@ gallery_field.refresh = function($table) {
 	}
 	nb_load_images();
 	var opts = $table.data('opts');
-	var is_max = opts.max && opts.images.length >= opts.max;
+	var is_max = opts.max && opts.media_uuids.length >= opts.max;
 	$('#' + opts.name + '_upload button').attr('disabled', is_max);
 }
 
@@ -200,14 +200,14 @@ gallery_field.move_down = function(e) {
 	gallery_field.refresh($table);
 }
 
-gallery_field.add_data = function($table, img_uuid, img_name, img_type) {
-	gallery_field.debug && console.log('gallery_field.add_data', img_uuid, img_name, img_type);
+gallery_field.add_data = function($table, media_uuid, media_name, media_type) {
+	gallery_field.debug && console.log('gallery_field.add_data', media_uuid, media_name, media_type);
 	var opts = $table.data('opts');
 	var ix = $table.find('tr').length;
-	opts.images[ix] = img_uuid;
+	opts.media_uuids[ix] = media_uuid;
 	opts.cover_images[ix] = false;
-	opts.image_names[ix] = img_name;
-	opts.image_types[ix] = img_type;
+	opts.media_names[ix] = media_name;
+	opts.media_types[ix] = media_type;
 	opts.ix[ix] = ix;
 	$table.data('opts', opts);
 	gallery_field.add_row($table, ix);
@@ -229,8 +229,8 @@ gallery_field.update_data = function(data) {
   	if (uid.includes('_cover')) {
 		opts.cover_images[ix] = data.uuid;
 	} else {
-  		opts.images[ix] = data.uuid;
-  		opts.image_names[ix] = data.name;
+  		opts.media_uuids[ix] = data.uuid;
+  		opts.media_names[ix] = data.name;
   	}
   	$table.data('opts', opts);
   	gallery_field.update_row($table, ix, $row);
@@ -273,11 +273,13 @@ gallery_field.handle_image_select = function(e, data) {
 
 gallery_field.handle_vimeo_id = function(e, data) {
 	if (!data.value) {
-		system_message("Invalid Vimeo ID. Please enter a valid ID.");
-		return;
+		return system_message("Invalid Vimeo ID. Please enter a valid ID or URL.");
 	}
 	console.log('gallery_field.handle_vimeo_id', data);
-	
-
-	
+	var ids = data.value.match(/(\d+)/);
+	if (!ids) {
+		return system_message("Invalid Vimeo ID. Please enter a valid ID or URL.");
+	} 
+	var vimeo_id = ids[0];
+	console.log('id', vimeo_id);
 }

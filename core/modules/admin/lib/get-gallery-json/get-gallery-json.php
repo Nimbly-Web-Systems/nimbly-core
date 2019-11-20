@@ -10,22 +10,22 @@ function get_gallery_json_sc($params) {
 		'name' => $name, 
 		'uuid' => $uuid,
 		'max' => $max,
-		'images' => array(),
 		'cover_images' => array(),
-		'image_names' => array(),
-		'image_types' => array());
+		'media_uuids' => array(),
+		'media_names' => array(),
+		'media_types' => array());
 	$j = 0;
 	for ($i = 0; $i < $max; $i++) {
-		$img = get_variable('record' . '.' . $name . $i);
-		if (empty($img)) {
+		$muuid = get_variable('record' . '.' . $name . $i);
+		if (empty($muuid)) {
 			continue;
 		}
 		$cover_img = get_variable('record' . '.' . $name . $i . '_cover', false);
-		$result['images'][$j] = $img;
+		$result['media_uuids'][$j] = $muuid;
 		$result['cover_images'][$j] = $cover_img;
-		$meta = data_read('.files_meta', $img, ['name', 'type']);
-		$result['image_names'][$j] = $meta['name'];
-		$result['image_types'][$j] = $meta['type'];
+		$meta = data_read('.files_meta', $muuid, ['name', 'type']);
+		$result['media_names'][$j] = $meta['name'];
+		$result['media_types'][$j] = $meta['type'];
 		$j++;
 	}
 	echo json_encode($result, JSON_UNESCAPED_UNICODE);
