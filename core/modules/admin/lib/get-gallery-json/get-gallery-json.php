@@ -20,12 +20,18 @@ function get_gallery_json_sc($params) {
 		if (empty($muuid)) {
 			continue;
 		}
-		$cover_img = get_variable('record' . '.' . $name . $i . '_cover', false);
-		$result['media_uuids'][$j] = $muuid;
-		$result['cover_images'][$j] = $cover_img;
-		$meta = data_read('.files_meta', $muuid, ['name', 'type']);
-		$result['media_names'][$j] = $meta['name'];
-		$result['media_types'][$j] = $meta['type'];
+
+		$result['cover_images'][$j] = get_variable('record' . '.' . $name . $i . '_cover', false);
+		if (strpos($muuid, 'vimeo-') === 0) {
+			$result['media_names'][$j] = $muuid;
+			$result['media_uuids'][$j] = substr($muuid, 6);
+			$result['media_types'][$j] = 'vimeo';
+		} else {
+			$result['media_uuids'][$j] = $muuid;
+			$meta = data_read('.files_meta', $muuid, ['name', 'type']);
+			$result['media_names'][$j] = $meta['name'];
+			$result['media_types'][$j] = $meta['type'];
+		}
 		$j++;
 	}
 	echo json_encode($result, JSON_UNESCAPED_UNICODE);
