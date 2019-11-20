@@ -289,39 +289,7 @@ function api_pretty_message(txt) {
 }
 
 function api_then(options, json) {
-    if (!options) {
-        return;
-    }
-    if (options._redirect) {
-        window.location.href=base_url + '/' + options._redirect;
-        return;
-    }
-    if (options.hide) {
-        $(options.hide).removeClass("nb-open").addClass("nb-close");
-    }
-    if (options.redirect) {
-        // remember any messages for the next page
-        if (options.msg) {
-            api({
-                "url": ".system-messages",
-                "method": "post",
-                "payload": '{ "message": ' + '"' + options.msg + '"}',
-                "done": {"_redirect": options.redirect},
-                "fail": {"_redirect": options.redirect}});
-        } else {
-            window.location.href=base_url + '/' + options.redirect;
-        }
-        return;
-    }
-    if (options.msg) {
-        system_message(options.msg);
-    }
-    if (options.notification) {
-        system_notification(options.notification);
-    }
-    if (options.trigger && json) {
-        $(document).trigger(options.trigger, json);    
-    }
+    nb_do(options, json);
 }
 
 function api_include_fields(frm, data) {
@@ -379,6 +347,45 @@ function nb_populate_template(tpl_id, context) {
     }
     return result;
 }
+
+// run client-side instructions defined in options, optional json data
+function nb_do(options, json) {
+    if (!options) {
+        return;
+    }
+    if (options._redirect) {
+        window.location.href=base_url + '/' + options._redirect;
+        return;
+    }
+    if (options.hide) {
+        $(options.hide).removeClass("nb-open").addClass("nb-close");
+    }
+    if (options.redirect) {
+        // remember any messages for the next page
+        if (options.msg) {
+            api({
+                "url": ".system-messages",
+                "method": "post",
+                "payload": '{ "message": ' + '"' + options.msg + '"}',
+                "done": {"_redirect": options.redirect},
+                "fail": {"_redirect": options.redirect}});
+        } else {
+            window.location.href=base_url + '/' + options.redirect;
+        }
+        return;
+    }
+    if (options.msg) {
+        system_message(options.msg);
+    }
+    if (options.notification) {
+        system_notification(options.notification);
+    }
+    if (options.trigger && json) {
+        $(document).trigger(options.trigger, json);    
+    }
+}
+
+
 
 /*
  * Lazy image loading
