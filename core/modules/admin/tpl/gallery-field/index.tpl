@@ -74,6 +74,28 @@
 	</tr>
 </template>
 
+<template id="tpl_gallery_[get record.uuid default=new]_row_vimeo">
+	<tr class="gallery-image-row gallery-vimeo-row">
+		<td>((media_nr))</td>
+		<td>
+			<img src='[empty-img]' 
+				data-empty=false 
+				data-cover-img=true
+				data-edit-img='((field_name_cover))' 
+				data-img-uuid=((media_uuid_cover))
+				data-img-mode='fit' style="height:100px; width: 150px; object-fit: scale-down; object-position: left;" />
+		</td>
+		<td>
+			<div style="height:135px; width: 240px;background:rgba(0,0,0,0.1);">[gallery-vimeo-embed]</div>
+			((media_name))
+		</td>
+		<td>
+			<a href='#' class='nb-button icon-button nb-icon-up' data-move-up></a>
+			<a href='#' class='nb-button icon-button nb-icon-down' data-move-down></a>
+		</td>
+	</tr>
+</template>
+
 <script>
 
 $script.ready('app', function() {

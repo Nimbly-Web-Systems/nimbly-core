@@ -1,5 +1,5 @@
 var gallery_field = {
-	debug: true
+	debug: false
 };
 
 gallery_field.init = function(opts) {
@@ -40,12 +40,21 @@ gallery_field.data_context = function(opts, x) {
 
 gallery_field.row_type = function(opts) {
 	gallery_field.debug && console.log('gallery_field.row_type', opts);
-	if (opts && opts.media_type) {
-		if (opts.media_type === 'video/mp4') {
-			return 'vid';
-		}
+	if (!opts || !opts.media_type) {
+		return 'unknown'
 	}
-	return 'img';
+	switch (opts.media_type) {
+		case 'image/jpeg':
+		case 'image/png':
+			return 'img';
+		case 'video/mp4':
+			return 'vid';
+		case 'vimeo':
+			return 'vimeo';
+		default:
+			console.log('unhandled media type', opts.media_type);
+			return 'unknown';
+	}
 }
 
 gallery_field.add_row = function($table, ix) {
@@ -272,14 +281,18 @@ gallery_field.handle_image_select = function(e, data) {
 }
 
 gallery_field.handle_vimeo_id = function(e, data) {
-	if (!data.value) {
-		return system_message("Invalid Vimeo ID. Please enter a valid ID or URL.");
-	}
-	console.log('gallery_field.handle_vimeo_id', data);
-	var ids = data.value.match(/(\d+)/);
-	if (!ids) {
+	gallery_field.debug && console.log('handle_vimeo_id', e, data);
+	var ids = data.value? data.value.match(/(\d+)/) : false;
+	if (!ids || !ids[0]) {
 		return system_message("Invalid Vimeo ID. Please enter a valid ID or URL.");
 	} 
+	$selectbtn = $('#' + data.modal_uid);
+	if ($selectbtn.length !== 1) {
+		return system_message("Gallery id not set or not recognized.");
+	}
 	var vimeo_id = ids[0];
-	console.log('id', vimeo_id);
+	$table = $selectbtn.closest('table').find('tbody');
+	gallery_field.add_data($table, vimeo_id, 'vimeo ' + vimeo_id, 'vimeo');
+
+
 }
