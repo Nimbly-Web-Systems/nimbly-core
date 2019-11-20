@@ -142,6 +142,9 @@ input[type="submit"] {
   input[type="submit"].nb-button-disabled {
     background-color: #eee;
     color: #ccc; }
+  .nb-button.nb-button-transparent,
+  input[type="submit"].nb-button-transparent {
+    background-color: transparent; }
   .nb-button.green,
   input[type="submit"].green {
     background-color: #338e2d; }

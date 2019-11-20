@@ -13,11 +13,9 @@ gallery_field.init = function(opts) {
 	}
 	$table.sortable();
 	$table.on('sortstop', { 'opts' : opts }, gallery_field.on_sortstop);
-	$(document).on('clear-img', function(e, opts) {
-		gallery_field.remove_img($table, opts.uuid, opts.img);
-	});
 	$table.on('click', 'a[data-move-up]', gallery_field.move_up);
 	$table.on('click', 'a[data-move-down]', gallery_field.move_down);
+	$table.on('click', 'a[data-delete-row]', gallery_field.delete_row);
 	gallery_field.refresh($table);
 	$(document).on(opts.name + '_upload', gallery_field.handle_upload);
 	$(document).on('data-select', gallery_field.handle_image_select);
@@ -40,8 +38,8 @@ gallery_field.data_context = function(opts, x) {
 
 gallery_field.row_type = function(opts) {
 	gallery_field.debug && console.log('gallery_field.row_type', opts);
-	if (!opts || !opts.media_type) {
-		return 'unknown'
+	if (!opts.media_type) {
+		return console.log('no media type set', opts);
 	}
 	switch (opts.media_type) {
 		case 'image/jpeg':
@@ -72,6 +70,7 @@ gallery_field.update_row = function($table, ix, $row) {
 	gallery_field.debug && console.log('gallery_field.update_row', $table, ix, $row);
 	var opts = $table.data('opts');
 	var row_ctx = gallery_field.data_context(opts, ix);
+	console.log('ctx', row_ctx);
 	var type = gallery_field.row_type(row_ctx);
 	var tpl_id = opts.tpl_id + '_' + type;
 	var row_html = nb_populate_template(tpl_id, row_ctx);
@@ -128,31 +127,23 @@ gallery_field.swap_data = function($table, x, y) {
 	$table.data('opts', opts);
 }
 
-gallery_field.remove_img = function($table, uuid, $img) {
-	gallery_field.debug && console.log('gallery_field.remove_img', $table, uuid, $img);
-	$row = $table.find('tr:has(img[data-img-uuid=' + uuid + '])');
-	if (!$row.length) {
+gallery_field.delete_row = function(e) {
+	gallery_field.debug && console.log('gallery_field.delete_row', e);
+	$row = $(e.target).closest('tr');
+	if ($row.length !== 1) {
 		return;
 	}
-	if ($row.length > 1) {
-		var grid_id = $img.data('edit-img');
-		$row = $row.filter('tr:has(img[data-edit-img=' + grid_id + '])')
-		if ($row.length !== 1) {
-			gallery_field.debug && console.log('gallery_field.remove_img ERROR: too many rows matchig criteria', uuid, grid_id);
-			return;
-		}
-	}
+	$table = $row.closest('tbody');
 	var num = gallery_field.row_num($row);
 	var opts = $table.data('opts');
-	if (opts.cover_images[num - 1] === uuid & opts.media_uuids[num - 1] !== uuid) {
-		return;
-	}
 	opts.media_uuids.splice(num - 1, 1);
 	opts.cover_images.splice(num - 1, 1);
 	opts.media_names.splice(num - 1, 1);
+	opts.media_types.splice(num - 1, 1);
 	opts.ix.splice(num - 1, 1);
 	$table.data('opts', opts);
 	$row.remove();
+	e.preventDefault();
 	gallery_field.refresh($table);
 }
 

@@ -21,78 +21,44 @@
 
 <template id="tpl_gallery_[get record.uuid default=new]_row_img">
 	<tr class="gallery-image-row">
-		<td>((media_nr))</td>
+		[col-prefix]
 		<td>
 			<img src='[empty-img]' 
-				data-cover-img=true
-				data-empty=false 
-				data-edit-img='((field_name_cover))' 
-				data-img-uuid=((media_uuid_cover))
-				data-img-mode='fit' style="height:100px; width: 150px; object-fit: scale-down; object-position: left;" />
-		</td>
-		<td>
-			<img src='[empty-img]' 
-				data-empty=false 
-				data-edit-img='((field_name))' 
 				data-img-uuid=((media_uuid))
 				data-img-mode='fit' style="height:100px; width: 150px; object-fit: scale-down; object-position: left;" />
-				((media_name))
+			((media_name))
+			<input type="hidden" class="nb-close" name=((field_name)) value="((media_uuid))">
 		</td>
-		<td>
-			<a href='#' class='nb-button icon-button nb-icon-up' data-move-up></a>
-			<a href='#' class='nb-button icon-button nb-icon-down' data-move-down></a>
-		</td>
+		[col-suffix]
 	</tr>
 </template>
 
 <template id="tpl_gallery_[get record.uuid default=new]_row_vid">
 	<tr class="gallery-image-row gallery-video-row">
-		<td>((media_nr))</td>
+		[col-prefix]
 		<td>
-			<img src='[empty-img]' 
-				data-empty=false 
-				data-cover-img=true
-				data-edit-img='((field_name_cover))' 
-				data-img-uuid=((media_uuid_cover))
-				data-img-mode='fit' style="height:100px; width: 150px; object-fit: scale-down; object-position: left;" />
-		</td>
-		<td>
-			<video width=240 
-				data-empty=false 
-				data-edit-img='((field_name))' 
-				data-img-uuid=((media_uuid))
-			>
+			<video width=240 data-img-uuid=((media_uuid))>
 				<source src="[base-url]/video/((media_uuid))#t=0.1" type="((media_type))">
 				Video not supported by your browser.			
 			</video>
 			((media_name))
+			<input type="hidden" class="nb-close" name=((field_name)) value="((media_uuid))">
 		</td>
-		<td>
-			<a href='#' class='nb-button icon-button nb-icon-up' data-move-up></a>
-			<a href='#' class='nb-button icon-button nb-icon-down' data-move-down></a>
-		</td>
+		[col-suffix]
 	</tr>
 </template>
 
 <template id="tpl_gallery_[get record.uuid default=new]_row_vimeo">
 	<tr class="gallery-image-row gallery-vimeo-row">
-		<td>((media_nr))</td>
+		[col-prefix]
 		<td>
-			<img src='[empty-img]' 
-				data-empty=false 
-				data-cover-img=true
-				data-edit-img='((field_name_cover))' 
-				data-img-uuid=((media_uuid_cover))
-				data-img-mode='fit' style="height:100px; width: 150px; object-fit: scale-down; object-position: left;" />
-		</td>
-		<td>
-			<div style="height:135px; width: 240px;background:rgba(0,0,0,0.1);">[gallery-vimeo-embed]</div>
+			<div style="height:135px;width: 240px;background:rgba(0,0,0,0.1);">
+				[gallery-vimeo-embed]
+			</div>
 			((media_name))
+			<input type="hidden" class="nb-close" name=((field_name)) value="vimeo-((media_uuid))">
 		</td>
-		<td>
-			<a href='#' class='nb-button icon-button nb-icon-up' data-move-up></a>
-			<a href='#' class='nb-button icon-button nb-icon-down' data-move-down></a>
-		</td>
+		[col-suffix]
 	</tr>
 </template>
 
