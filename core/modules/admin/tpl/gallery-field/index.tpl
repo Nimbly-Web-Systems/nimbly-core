@@ -9,6 +9,11 @@
 				[progress-bar]
 				<button class="nb-button" data-upload='{"trigger": "[item.key]_upload"}'>Upload</button>
 				<button class="nb-button" id="[item.key]_select" data-modal='{"url": "img-select", "uid": "[item.key]_select"}'>Select</button>
+				<button class="nb-button" id="[item.key]_vimeo" 
+					data-modal='{"url": "get-value", "uid": "[item.key]_vimeo", "title": "Enter Vimeo ID"}'
+					data-modal-done='{"trigger": "modal_vimeo_id"}'>
+					Vimeo
+				</button>
 			</td>
 		</tr>
 	</tfoot>

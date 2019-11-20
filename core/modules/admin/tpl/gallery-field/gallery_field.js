@@ -21,6 +21,7 @@ gallery_field.init = function(opts) {
 	gallery_field.refresh($table);
 	$(document).on(opts.name + '_upload', gallery_field.handle_upload);
 	$(document).on('data-select', gallery_field.handle_image_select);
+	$(document).on('modal_vimeo_id', gallery_field.handle_vimeo_id);
 }
 
 gallery_field.data_context = function(opts, x) {
@@ -268,4 +269,15 @@ gallery_field.handle_image_select = function(e, data) {
 	} else {
 		gallery_field.update_data(data);
 	}
+}
+
+gallery_field.handle_vimeo_id = function(e, data) {
+	if (!data.value) {
+		system_message("Invalid Vimeo ID. Please enter a valid ID.");
+		return;
+	}
+	console.log('gallery_field.handle_vimeo_id', data);
+	
+
+	
 }
