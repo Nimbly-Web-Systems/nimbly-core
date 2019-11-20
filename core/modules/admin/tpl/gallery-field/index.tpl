@@ -21,22 +21,22 @@
 
 <template id="tpl_gallery_[get record.uuid default=new]_row_img">
 	<tr class="gallery-image-row">
-		<td>((img_nr))</td>
+		<td>((media_nr))</td>
 		<td>
 			<img src='[empty-img]' 
 				data-cover-img=true
 				data-empty=false 
 				data-edit-img='((field_name_cover))' 
-				data-img-uuid=((img_uuid_cover))
+				data-img-uuid=((media_uuid_cover))
 				data-img-mode='fit' style="height:100px; width: 150px; object-fit: scale-down; object-position: left;" />
 		</td>
 		<td>
 			<img src='[empty-img]' 
 				data-empty=false 
 				data-edit-img='((field_name))' 
-				data-img-uuid=((img_uuid))
+				data-img-uuid=((media_uuid))
 				data-img-mode='fit' style="height:100px; width: 150px; object-fit: scale-down; object-position: left;" />
-				((img_name))
+				((media_name))
 		</td>
 		<td>
 			<a href='#' class='nb-button icon-button nb-icon-up' data-move-up></a>
@@ -47,25 +47,25 @@
 
 <template id="tpl_gallery_[get record.uuid default=new]_row_vid">
 	<tr class="gallery-image-row gallery-video-row">
-		<td>((img_nr))</td>
+		<td>((media_nr))</td>
 		<td>
 			<img src='[empty-img]' 
 				data-empty=false 
 				data-cover-img=true
 				data-edit-img='((field_name_cover))' 
-				data-img-uuid=((img_uuid_cover))
+				data-img-uuid=((media_uuid_cover))
 				data-img-mode='fit' style="height:100px; width: 150px; object-fit: scale-down; object-position: left;" />
 		</td>
 		<td>
 			<video width=240 
 				data-empty=false 
 				data-edit-img='((field_name))' 
-				data-img-uuid=((img_uuid))
+				data-img-uuid=((media_uuid))
 			>
-				<source src="[base-url]/video/((img_uuid))#t=0.1" type="((img_type))">
+				<source src="[base-url]/video/((media_uuid))#t=0.1" type="((media_type))">
 				Video not supported by your browser.			
 			</video>
-			((img_name))
+			((media_name))
 		</td>
 		<td>
 			<a href='#' class='nb-button icon-button nb-icon-up' data-move-up></a>
