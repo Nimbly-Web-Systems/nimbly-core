@@ -590,7 +590,6 @@ nb_gallery = {};
         } else { // render html5 player 
             var video = create('video');
             video.setAttribute('controls', '');
-            video.setAttribute('autoplay', '');
             var video_source = create('source');
             var spinner = document.querySelector('#baguette-img-' + index + ' .baguetteBox-spinner');
             figure.removeChild(spinner);
