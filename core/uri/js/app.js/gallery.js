@@ -517,6 +517,14 @@ nb_gallery = {};
             return;
         }
 
+        // If Vimeo is already loaded run callback and return
+        if (imageContainer.getElementsByTagName('iframe')[0]) {
+            if (callback) {
+                callback();
+            }
+            return;
+        }
+
         // Get element reference, optional caption and source path
         var imageElement = galleryItem.imageElement;
         var thumbnailElement = imageElement.getElementsByTagName('img')[0];
@@ -543,7 +551,7 @@ nb_gallery = {};
         }
         imageContainer.appendChild(figure);
 
-        // Prepare gallery img element
+        // Prepare gallery media element
         if (!video_type) {
             var image = create('img');
             image.onload = function() {
@@ -560,11 +568,27 @@ nb_gallery = {};
                 image.title = imageCaption;
             }
             figure.appendChild(image);
-        } else {
+        } else if (video_type === 'vimeo') {
+            var vimeo_iframe = create('iframe');
+            vimeo_iframe.setAttribute('src', getVimeoSrc(imageElement));
+            vimeo_iframe.setAttribute('allow', 'autoplay; fullscreen');
+            vimeo_iframe.setAttribute('allowfullscreen', '');
+            vimeo_iframe.setAttribute('width', '100%'); //maybe calculate?
+            vimeo_iframe.setAttribute('height', '100%');
+            if (options.titleTag && imageCaption) {
+                vimeo_iframe.title = imageCaption;
+            }
+            vimeo_iframe.onload = function() {
+                // Remove loader element
+                var spinner = document.querySelector('#baguette-img-' + index + ' .baguetteBox-spinner');
+                figure.removeChild(spinner);
+                if (!options.async && callback) {
+                    callback();
+                } 
+            }
+            figure.appendChild(vimeo_iframe);
+        } else { // render html5 player 
             var video = create('video');
-            overlay = getByID('baguetteBox-overlay');
-            var w = Math.floor(overlay.offsetWidth * 0.8);
-            var h = Math.floor(overlay.offsetHeight * 0.8);
             video.setAttribute('controls', '');
             video.setAttribute('autoplay', '');
             var video_source = create('source');
@@ -601,6 +625,11 @@ nb_gallery = {};
     function getVideoSrc(elem) {
         var uuid = $(elem).data('at-auto');
         return full_base_url + '/video/' + uuid;
+    }
+
+    function getVimeoSrc(elem) {
+        var uuid = $(elem).data('at-auto');
+        return "https://player.vimeo.com/video/" + uuid;
     }
 
     // Return false at the right end of the gallery

@@ -42,6 +42,6 @@ $cache_time = 315360000; //10 years
 header("Expires: " . gmdate("D, d M Y H:i:s", $t + $cache_time) . " GMT");
 header('Last-Modified: '. gmdate('D, d M Y H:i:s', $t).' GMT');
 header('Content-Length: '. filesize($file));
-header('Content-Type: image/jpg');
+header('Content-Type: ' . $meta['type']);
 readfile($file);
 exit();
