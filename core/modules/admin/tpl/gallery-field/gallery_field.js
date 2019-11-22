@@ -132,9 +132,13 @@ gallery_field.delete_row = function(e) {
 	if ($row.length !== 1) {
 		return;
 	}
+
 	$table = $row.closest('tbody');
 	var num = gallery_field.row_num($row);
 	var opts = $table.data('opts');
+	if (confirm('Are you sure you want to remove ' + opts.media_names[num-1] + '?') !== true) {
+		return;
+	}
 	opts.media_uuids.splice(num - 1, 1);
 	opts.cover_images.splice(num - 1, 1);
 	opts.media_names.splice(num - 1, 1);
