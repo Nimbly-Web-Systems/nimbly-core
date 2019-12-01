@@ -36,7 +36,9 @@ if (false === file_put_contents($htaccess_file, $htaccess_content)) {
  * Persist site name
  */
 
-$ok = data_create('.config', 'site', ["name" => post_get("sitename")]);
+$sitename = post_get('sitename');
+set_variable("site-name", $sitename);
+$ok = data_create('.config', 'site', ["name" => $sitename]);
 if ($ok) {
   set_variable("sitename_ok", "ok");
 } else {
