@@ -36,14 +36,8 @@ if (false === file_put_contents($htaccess_file, $htaccess_content)) {
  * Persist site name
  */
 
-$sitename = post_get("sitename");
-set_variable('site-name', $sitename);
-$tpl_file = $GLOBALS['SYSTEM']['file_base'] . 'ext/tpl/init';
-@mkdir($tpl_file, 0750, true);
-$tpl_file .= '/index.tpl';
-if (file_exists($tpl_file)) {
-  set_variable("sitename_ok", "ok");
-} else if (file_put_contents($tpl_file, '[set site-name="' . $sitename . '"]')) {
+$ok = data_create('.config', 'site', ["name" => post_get("sitename")]);
+if ($ok) {
   set_variable("sitename_ok", "ok");
 } else {
   set_variable("sitename_ok", "fail");

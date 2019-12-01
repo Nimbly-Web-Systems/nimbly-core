@@ -1,6 +1,7 @@
 <p>
 <ul>
-	<li>Site name: [site-name]</li>
+	[data .config uuid=site]
+	<li>Site name: [get-key data.config.site name]</li>
     <li>[text htaccess_created_[htaccess_ok]]</li>
     <li>[text readme_created_[readme_ok]]</li>
     <li>[text gitignore_created_[gitignore_ok]]</li>

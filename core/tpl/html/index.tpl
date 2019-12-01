@@ -1,6 +1,7 @@
 [module user]
 [set app-name="Nimbly Framework"]
-[set site-name="[app-name]"]
+[data .config uuid=site]
+[set site-name="[get-key data.config.site name]"]
 [set language=en]
 [set body-classes=]
 [set html-classes="[logged-in]"]
