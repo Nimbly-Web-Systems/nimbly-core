@@ -19,6 +19,20 @@ $record = data_read($resource, $uuid);
 load_library("set");
 set_variable("data.uuid", $uuid);
 set_variable("data.resource", $resource);
+
+if (empty($meta['fields'])) { 
+	//build it dynamically from the record
+	$meta['fields'] = [];
+	foreach ($record as $key => $value) {
+		if ($key === 'uuid' || $key[0] === '_') {
+			continue;
+		}
+		$meta['fields'][$key] = [
+			"name" => $key,
+			"type" => "text"
+		];
+	}
+} 
 set_variable("data.fields", $meta['fields']);
 set_variables("data.field.", $meta['fields']);
 set_variable_dot('record', $record);

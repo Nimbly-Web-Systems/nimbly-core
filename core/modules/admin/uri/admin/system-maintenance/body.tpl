@@ -12,6 +12,10 @@ Disk space total: [disk-space-total]Gb</p>
 	</thead>
 	<tbody>
 		<tr>
+			<td><a href='[base-url]/admin/.config/site'>Site config</a></td>
+			<td>Site configuration settings.</td>
+		</tr>
+		<tr>
 			<td><a href='[base-url]/admin/modules'>Modules</a></td>
 			<td>Overiew of modules and module installer.</td>
 		</tr>
