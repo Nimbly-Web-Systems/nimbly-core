@@ -6,9 +6,9 @@
 function get_key_sc($params, $default = null) {
     load_library('get');
     $var = get_variable(current($params));
-    $key = end($params);
+    $key = next($params);
     if (empty($var[$key])) {
-        return get_param_value($params, 'default', '');
+        return get_param_value($params, 'default', $default ?? '');
     }
     return $var[$key];
 }
