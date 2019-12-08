@@ -76,6 +76,19 @@ modal.create = function() {
     $('body').append('<div id="modal" class="nb-close"><div id="modal-content"></div></div>');
 };
 
+modal.show = function(tpl_id, ctx) {
+    modal.init();
+    if ($('#modal').length == 0) {
+        modal.create();
+    }
+    var html = nb_populate_template(tpl_id, ctx);
+    $('#modal-content').html(html);
+    $('#modal').removeClass('nb-close');
+    modal.active = true;
+    modal.options = {};
+}
+
+
 modal.close = function() {
     $('#modal').addClass('nb-close');
     $('#modal-content').html('');

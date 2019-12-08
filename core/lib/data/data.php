@@ -474,7 +474,7 @@ function data_search($data, $term, $level = 0) {
 }
 
 /*
- * Simple field filter e.g. permission:yes
+ * Simple field filter e.g. permission:yes, status:new||todo
  */
 function data_filter($data, $filter_str) {
     $filter_str_parts =  explode(',', $filter_str);
