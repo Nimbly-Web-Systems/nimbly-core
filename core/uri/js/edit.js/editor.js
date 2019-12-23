@@ -147,7 +147,9 @@ editor.save = function() {
             .removeClass('nb-img-loaded');
           if (tpl === 'plain_text') {
             payload[field] = $(this).text();
-            $(this).html(payload[field]);
+            if ($(this).html() !== payload[field]) {
+              $(this).html(payload[field]); //note: cleans up html but also reset cursor position to start
+            }
           } else {
             payload[field] = $(this).html();
           }
