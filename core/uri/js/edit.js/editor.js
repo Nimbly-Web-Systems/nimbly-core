@@ -534,7 +534,7 @@ $(document).mousedown(function(event) {
 
   if (
     $(event.target).closest(
-      '[data-edit-field],[data-edit-img],[data-clear-img],.editor,#edit-menu,#edit-button,#top-bar-fixed,#modal,button.medium-editor-action,.medium-editor-toolbar'
+      '[data-edit-field],[data-edit-img],[data-clear-img],.editor,#edit-menu,#edit-button,#top-bar-fixed,#modal,button.medium-editor-action,.medium-editor-toolbar,.medium-editor-anchor-preview'
     ).length
   ) {
     editor.handle_click($(event.target), event);
