@@ -8,7 +8,7 @@ editor.timer = null;
 editor.active = null;
 editor.autoenabled = false;
 editor.modal_uuid = null;
-editor.autosave = true;
+editor.autosave = false;
 editor.init_done = false;
 
 editor.enable = function(e) {
@@ -27,9 +27,7 @@ editor.enable = function(e) {
     }
   }
   editor.enabled = true;
-  $('#edit-menu [data-edit-on]').addClass('nb-close');
-  $('#edit-menu [data-edit-off]').removeClass('nb-close');
-  $('#edit-menu [data-edit-save]').removeClass('nb-close');
+  $('#edit-button-save').removeClass('nb-close');
   $('#edit-button[data-edit-toggle] a').addClass('active');
   if (editor.editors.length === 0) {
     $('[data-edit-field]').each(function(ix) {
@@ -64,7 +62,7 @@ editor.enable = function(e) {
 };
 
 editor.disable = function() {
-  if (editor.disabled === false) {
+  if (editor.enabled === false) {
     return;
   }
   editor.enabled = false;
@@ -79,14 +77,12 @@ editor.disable = function() {
   editor.active = null;
   $('.editor-active').removeClass('editor-active');
   $('[data-edit-field]').attr('contenteditable', false);
-  $('#edit-menu [data-edit-on]').removeClass('nb-close');
-  $('#edit-menu [data-edit-off]').addClass('nb-close');
-  $('#edit-menu [data-edit-save]').addClass('nb-close');
+  $('#edit-button-save').addClass('nb-close');
   $('#edit-button[data-edit-toggle] a').removeClass('active');
   if (editor.timer) {
     clearInterval(editor.timer);
   }
-  editor.save();
+  editor.ask_save();
   $(document).trigger('editor', { enabled: false });
 };
 
@@ -98,8 +94,20 @@ editor.toggle = function(e) {
   }
 };
 
+editor.ask_save = function() {
+  if (editor.inputs === editor.last_inputs) {
+    return false;
+  }
+  if (confirm('Save changes?') !== true) {
+    return false;
+  }
+  editor.save();
+  return true;
+}
+
 editor.save = function() {
   if (editor.inputs === editor.last_inputs) {
+    system_message('Saved');
     return;
   }
   editor.last_inputs = editor.inputs;
@@ -154,7 +162,7 @@ editor.save = function() {
             payload[field] = $(this).html();
           }
         }
-      });
+    });
     if (changes) {
       api({
         method: 'put',
@@ -163,6 +171,8 @@ editor.save = function() {
         done: { notification: 'Saved' },
       });
       $(document).trigger('editor', { saved: true });
+    } else {
+      system_message('Saved');
     }
   });
 };
@@ -209,41 +219,21 @@ editor.init = function() {
 
   // initialize html editing
   $script.ready('medium', function() {
-    $('body').on('dblclick', '[data-edit-field],[data-edit-img]', function(e) {
-      editor.enable(e);
-    });
-
     $('body').on('click', '#edit-button[data-edit-toggle]', function(e) {
       e.preventDefault();
       editor.toggle(e);
     });
 
-    $('body').on('click', '#edit-menu [data-edit-on]', function(e) {
-      e.preventDefault();
-      editor.enable(e);
-    });
-
-    $('body').on('click', '#edit-menu [data-edit-off]', function(e) {
-      e.preventDefault();
-      editor.disable();
-    });
-
-    $('body').on('click', '#edit-menu [data-edit-save]', function(e) {
+    $('body').on('click', '#edit-button-save', function(e) {
       e.preventDefault();
       editor.save();
     });
 
+    $('body').on('mousemove', '.editor.editor-active.img-insert .medium-editor-element', function(e) {
+      editor.handle_mousemove(e);
+    });
+
     $('body').on('DOMNodeInserted', '[data-edit-field]', editor.clean_node);
-    $('body').on('keyup', '.editor.img-insert [data-edit-field]', function(e) {
-      if (editor.enabled) {
-        editor.move_img_icon(e.target);
-      }
-    });
-    $('body').on('click', '.editor.img-insert [data-edit-field]', function(e) {
-      if (editor.enabled) {
-        editor.move_img_icon($(this));
-      }
-    });
 
     $('body').on('click', 'a[data-clear-img]', function(e) {
       e.preventDefault();
@@ -267,8 +257,7 @@ editor.init = function() {
     } else {
       $('#edit-button').removeClass('nb-close');
       $('#edit-menu').removeClass('nb-close');
-      $('#edit-menu [data-edit-off]').addClass('nb-close');
-      $('#edit-menu [data-edit-save]').addClass('nb-close');
+      $('#edit-button-save').addClass('nb-close');
     }
 
     $('[data-edit-wysiwyg]').each(function() {
@@ -315,36 +304,25 @@ editor.init = function() {
   );
 
   $(window).on('unload', function() {
-    editor.save();
+    editor.ask_save();
   });
 }
 
-editor.move_img_icon = function(ee) {
-  var parent_y = $(ee).position().top;
-  var y = editor.get_caret_y();
-  var img_icon = $(ee)
-    .parent()
-    .find('a.editor.add-img-icon')
-    .first();
-  img_icon.css('top', y - parent_y - 6 + 'px');
+editor.handle_mousemove = function(e) {
+    if (editor.enabled === false) {
+        return;
+    }
+    $btn = $(e.target).closest('.editor.editor-active.img-insert').find('a.editor.add-img-icon:first');
+    if ($btn.length === 0) {
+        return;
+    }
+    editor.move_img_button($btn, e.pageY - e.currentTarget.offsetTop);  
 };
 
-editor.get_caret_y = function() {
-  if (editor.enabled === false) {
-    return 0;
-  }
-  var y = 0;
-  sel = window.getSelection();
-  if (sel.getRangeAt && sel.rangeCount) {
-    range = sel.getRangeAt(0);
-    var e = document.createElement('I');
-    e.appendChild(document.createTextNode('\u200b'));
-    range.insertNode(e);
-    y = $(e).position().top;
-    e.parentNode.removeChild(e);
-  }
-  return y;
-};
+editor.move_img_button = function($btn, relative_y) {
+    var y = relative_y + $btn.parent().offset().top - $btn.height() - 5; 
+    $btn.offset({ top: y });
+}
 
 // workaround chrome span / inline style bug
 editor.clean_node = function(e) {
@@ -467,8 +445,6 @@ $(document).on('data-select', function(e, o) {
 
   // create new image at caret position
   if (o.modal_uid === '(new)') {
-    // var d = editor.active.find('div:first');
-    // console.log(d, d.width());
     var img_html =
       '<img src="' +
       base_url +
