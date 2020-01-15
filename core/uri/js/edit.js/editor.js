@@ -316,11 +316,11 @@ editor.handle_mousemove = function(e) {
     if ($btn.length === 0) {
         return;
     }
-    editor.move_img_button($btn, e.pageY - e.currentTarget.offsetTop);  
+    editor.move_img_button($btn, e.pageY - $(e.currentTarget).offset().top);  
 };
 
 editor.move_img_button = function($btn, relative_y) {
-    var y = relative_y + $btn.parent().offset().top - $btn.height() - 5; 
+    var y = relative_y + $btn.parent().offset().top - $btn.height(); 
     $btn.offset({ top: y });
 }
 
