@@ -29,7 +29,7 @@ editor.enable = function(e) {
   editor.enabled = true;
   $('#edit-button-save').removeClass('nb-close');
   if (editor.inputs === editor.last_inputs) {
-    $('#edit-button-save').addClass('disabled');
+    $('#edit-button-save').addClass('nb-disabled');
   }
   $('#edit-button[data-edit-toggle] a').addClass('active');
   if (editor.editors.length === 0) {
