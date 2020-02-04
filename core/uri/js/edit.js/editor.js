@@ -28,6 +28,9 @@ editor.enable = function(e) {
   }
   editor.enabled = true;
   $('#edit-button-save').removeClass('nb-close');
+  if (editor.inputs === editor.last_inputs) {
+    $('#edit-button-save').addClass('disabled');
+  }
   $('#edit-button[data-edit-toggle] a').addClass('active');
   if (editor.editors.length === 0) {
     $('[data-edit-field]').each(function(ix) {
@@ -77,12 +80,10 @@ editor.disable = function() {
   editor.active = null;
   $('.editor-active').removeClass('editor-active');
   $('[data-edit-field]').attr('contenteditable', false);
-  $('#edit-button-save').addClass('nb-close');
   $('#edit-button[data-edit-toggle] a').removeClass('active');
   if (editor.timer) {
     clearInterval(editor.timer);
   }
-  editor.ask_save();
   $(document).trigger('editor', { enabled: false });
 };
 
@@ -94,18 +95,8 @@ editor.toggle = function(e) {
   }
 };
 
-editor.ask_save = function() {
-  if (editor.inputs === editor.last_inputs) {
-    return false;
-  }
-  if (confirm('Save changes?') !== true) {
-    return false;
-  }
-  editor.save();
-  return true;
-}
-
 editor.save = function() {
+  $('#edit-button-save').addClass('nb-disabled');
   if (editor.inputs === editor.last_inputs) {
     system_message('Saved');
     return;
@@ -226,6 +217,9 @@ editor.init = function() {
 
     $('body').on('click', '#edit-button-save', function(e) {
       e.preventDefault();
+      if ($(this).hasClass('nb-disabled')) {
+        return;
+      }
       editor.save();
     });
 
@@ -279,6 +273,7 @@ editor.init = function() {
   $('body').on('input', '[data-edit-field]', function(e) {
     if (editor.enabled) {
       editor.inputs++;
+      $('#edit-button-save').removeClass('nb-disabled');
       $(this).data('edit-changed', true);
     }
   });
@@ -303,8 +298,13 @@ editor.init = function() {
     }
   );
 
-  $(window).on('unload', function() {
-    editor.ask_save();
+  $(window).bind('beforeunload', function(e) {
+    if (editor.inputs === editor.last_inputs) {
+      return undefined;
+    }
+    var msg = 'You have unsaved changed. Are you sure you want to leave this page and discard your changes?';
+    (e || window.event).returnValue = msg; 
+    return msg;
   });
 }
 
@@ -457,6 +457,7 @@ $(document).on('data-select', function(e, o) {
     editor.modal_uuid = false;
     editor.active.find('[data-edit-field]:first').data('edit-changed', true);
     editor.inputs++;
+    $('#edit-button-save').removeClass('nb-disabled');
     return;
   }
 
@@ -476,6 +477,7 @@ $(document).on('data-select', function(e, o) {
     img.data('empty', false);
     img.siblings('.clear-img-icon').removeClass('nb-close');
     editor.inputs++;
+    $('#edit-button-save').removeClass('nb-disabled');
   }
 });
 
@@ -489,41 +491,6 @@ $(document).on('modal.open', function(e, o) {
   editor.insert_html(
     '<a id="' + editor.modal_uuid + '" data-remove="true"></a>'
   );
-});
-
-// handle click outside or click on editor
-$(document).mousedown(function(event) {
-  if (editor.enabled === false) {
-    return;
-  }
-
-  if (
-    event.target === $('html')[0] &&
-    event.clientX >= document.documentElement.offsetWidth
-  ) {
-    return; // mouse down on a scroll bar
-  }
-
-  if ($('#modal').length > 0 && !$('#modal').hasClass('nb-close')) {
-    return;
-  }
-
-  if (
-    $(event.target).closest(
-      '[data-edit-field],[data-edit-img],[data-clear-img],.editor,#edit-menu,#edit-button,#top-bar-fixed,#modal,button.medium-editor-action,.medium-editor-toolbar,.medium-editor-anchor-preview'
-    ).length
-  ) {
-    editor.handle_click($(event.target), event);
-    return;
-  }
-
-  if (editor.autoenabled) {
-      editor.active = null;
-      $('.editor-active').removeClass('editor-active');
-      return;
-  }
-
-  editor.disable();
 });
 
 editor.init();
