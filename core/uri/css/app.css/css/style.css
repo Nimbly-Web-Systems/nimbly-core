@@ -292,6 +292,8 @@ img[data-img-uuid] {
   width: 30px;
   height: 30px;
   display: inline-block; }
+  .nb-icon.nb-disabled {
+    opacity: .25; }
 
 .nb-icon-close {
   background-image: url("../img/icon-close-dark.svg"); }
@@ -322,6 +324,11 @@ img[data-img-uuid] {
   background-image: url("../img/icon-google.svg");
   background-color: #4285F4 !important;
   min-width: 200px; }
+
+.nb-icon-save {
+  background-image: url("../img/icon-save-white.svg"); }
+  .nb-icon-save.nb-icon {
+    background-size: 20px 20px; }
 
 .nb-icon-btn {
   padding: 0 10px 0 32px !important;
