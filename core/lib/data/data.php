@@ -43,7 +43,7 @@ function data_sc($params) {
     }
 
     
-    $data_var = data_var($resource, $uuid, $op);
+    $data_var = $var_id ?? data_var($resource, $uuid, $op);
     load_library('set');
     set_variable($data_var, $result);
     if (!empty($uuid) && !empty($var_id)) {
