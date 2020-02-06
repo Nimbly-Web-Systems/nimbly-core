@@ -18,8 +18,13 @@ if (empty ($items)) {
 }
 
 $meta = data_meta($resource, $items);
-if (isset($meta['sort'])) {
+if (!empty($items) && isset($meta['sort'])) {
     $items = data_sort_meta($items, $meta['sort']);
+}
+
+if (empty($items) && isset($meta['subkey'])) {
+	$items = data_read_subkeys($resource, $meta['subkey']);
+	set_variable('subkey', $meta['subkey']);
 }
 
 // store data and fields and render the page

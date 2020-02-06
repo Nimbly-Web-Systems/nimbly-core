@@ -8,17 +8,30 @@ if (count($parts) !== 3 || $parts[0] !== 'admin') {
 }
 $resource = $parts[1];
 $uuid = $parts[2];
+
 load_library("data");
 if (!data_exists($resource, $uuid)) {
     return;
 }
-$meta = data_meta($resource);
-$record = data_read($resource, $uuid);
 
-// store data and fields and render the page
+
 load_library("set");
 set_variable("data.uuid", $uuid);
 set_variable("data.resource", $resource);
+$meta = data_meta($resource);
+if (!empty($meta['subkey'])) {
+	$resource .= '/' . $uuid;
+	$uuid = null;
+	set_variable('subkey', $meta['subkey']);
+	router_accept();
+	return;
+}
+
+
+$record = data_read($resource, $uuid);
+
+// store data and fields and render the page
+
 
 if (empty($meta['fields'])) { 
 	//build it dynamically from the record

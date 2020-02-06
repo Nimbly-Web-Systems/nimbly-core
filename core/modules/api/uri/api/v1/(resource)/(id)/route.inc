@@ -20,4 +20,8 @@ if ($method !== 'POST' && !data_exists($resource, $uuid)) {
 
 load_library('api', 'api');
 
+if (data_is_subkey($resource, $uuid)) {
+	return api_method_switch_with_subkey("resource", $resource, $uuid, null);
+}
+
 return api_method_switch("resource_id", $resource, $uuid);
