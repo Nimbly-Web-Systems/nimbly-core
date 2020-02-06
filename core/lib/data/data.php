@@ -65,6 +65,18 @@ function data_exists($resource, $uuid = "") {
     return file_exists($path . $uuid);
 }
 
+function data_is_subkey($resource, $uuid) {
+    $path = $GLOBALS['SYSTEM']['data_base'] . '/' . $resource . '/' . $uuid;
+    if (!file_exists($path)) {
+        return false;
+    }
+    if (!is_dir($path)) {
+        return false;
+    }
+    $meta = data_meta($resource);
+    return !empty($meta['subkey']);
+}
+
 /**
  * Returns a list of id's for a certain resource
  * Example: data_list('users') returns an array of all user id's
@@ -125,6 +137,27 @@ function data_read($resource, $uuid = null, $field = null) {
             return $filtered_result;
         }
         return null;
+    }
+    return $result;
+}
+
+function data_read_subkeys($resource, $parent) {
+    $result = array();
+    $path = $GLOBALS['SYSTEM']['data_base'] . '/' . $resource;
+    if (!file_exists($path)) {
+        return $result;
+    }
+    $all = @scandir($path);
+    if (is_array($all)) {
+        foreach ($all as $uuid) {
+            if ($uuid[0] === '.') {
+                continue;
+            }
+            if (!is_dir($path . '/' . $uuid)) {
+                continue;
+            }
+            $result[$uuid] = data_read($parent, $uuid);
+        }
     }
     return $result;
 }

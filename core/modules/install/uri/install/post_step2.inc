@@ -83,6 +83,7 @@ $routes = [
     ['route' => 'api', 'order' => 900],
     ['route' => 'api/v1/(resource)', 'order' => 500],
     ['route' => 'api/v1/(resource)/(id)', 'order' => 200],
+    ['route' => 'api/v1/(resource)/(id)/(id)', 'order' => 200],
     ['route' => 'api/v1/.pages/(id)', 'order' => 200],
     ['route' => 'api/v1/.files/(id)', 'order' => 200],
     ['route' => 'admin/(resource)', 'order' => 400],
