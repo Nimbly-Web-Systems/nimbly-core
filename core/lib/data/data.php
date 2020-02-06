@@ -391,6 +391,17 @@ function data_delete($resource, $uuid = null) {
                     $result += _data_delete_children($resource, $uuid, $child_name);
                 }        
             }
+            if (isset($data_ls['children']) && is_array($data_ls['children'])) {
+                load_library('util');
+                foreach($data_ls['children'] as $child_name) {
+                    if (strpos($child_name, '/') === false) {
+                        continue;
+                    }
+                    $child_dir = $GLOBALS['SYSTEM']['data_base'] . '/' . $child_name;
+                    $result ++;
+                    @rrmdir($child_dir);
+                }        
+            }
         }
         $result += (int) unlink($file);
         return $result;
