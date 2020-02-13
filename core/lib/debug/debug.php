@@ -8,7 +8,12 @@ function debug_sc($params) {
     if (empty($params) || get_param_value($params, "variables") !== null) {
         echo '<div class="scroll-h">';
         debug_pretty_caption('Nimbly variables');
-        debug_pretty_print($GLOBALS['SYSTEM']['variables']);
+        $var = get_param_value($params, "variables");
+        if ($var === 'variables' || $var === 'all' || empty($var)) {
+            debug_pretty_print($GLOBALS['SYSTEM']['variables']);
+        } else {
+            debug_pretty_print($GLOBALS['SYSTEM']['variables'][$var] ?? $var);
+        }
         echo '</div><hr />';
     }
     if (empty($params) || get_param_value($params, "session") !== null) {
