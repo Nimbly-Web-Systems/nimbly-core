@@ -16,6 +16,9 @@ function url_absolute($relative_url) {
 	if ($relative_url === '(empty)') {
 		$relative_url = '';
 	}
+
+	var_dump($_SERVER['SERVER_PORT']);
+
     return sprintf("%s://%s%s%s%s", 
             empty($_SERVER['HTTPS'])? "http" : "https",
             $_SERVER['SERVER_NAME'],
