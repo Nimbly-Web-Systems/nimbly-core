@@ -19,7 +19,11 @@ function redirect($url, $status=303) {
         load_library("url");
         $url = url_absolute($url);
     }
-    header('Location:' . $url, true, $status);
+
+    //var_dump($url);
+    //exit();
+
+    //header('Location:' . $url, true, $status);
     echo "redirecting to <a href=\"{$url}\">{$url}</a>";        
     exit();
 }
