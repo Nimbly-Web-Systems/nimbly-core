@@ -20,11 +20,7 @@ function redirect($url, $status=303) {
         $url = url_absolute($url);
     }
 
-    //var_dump($url);
-    //exit();
-
     //header('Location:' . $url, true, $status);
     echo "redirecting to <a href=\"{$url}\">{$url}</a>"; 
-    run_library('debug');       
     exit();
 }

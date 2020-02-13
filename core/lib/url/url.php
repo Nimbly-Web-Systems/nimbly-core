@@ -17,12 +17,10 @@ function url_absolute($relative_url) {
 		$relative_url = '';
 	}
 
-	var_dump($_SERVER['SERVER_PORT']);
-
     return sprintf("%s://%s%s%s%s", 
             empty($_SERVER['HTTPS'])? "http" : "https",
             $_SERVER['SERVER_NAME'],
-            $_SERVER['SERVER_PORT'] !== '80' && $_SERVER['SERVER_PORT'] !== 443? ":" . $_SERVER['SERVER_PORT'] : "",
+            $_SERVER['SERVER_PORT'] !== '80' && $_SERVER['SERVER_PORT'] !== '443'? ":" . $_SERVER['SERVER_PORT'] : "",
             $GLOBALS['SYSTEM']['uri_base'],
             $relative_url);
 }
