@@ -24,6 +24,7 @@ function redirect($url, $status=303) {
     //exit();
 
     //header('Location:' . $url, true, $status);
-    echo "redirecting to <a href=\"{$url}\">{$url}</a>";        
+    echo "redirecting to <a href=\"{$url}\">{$url}</a>"; 
+    run_library('debug');       
     exit();
 }
