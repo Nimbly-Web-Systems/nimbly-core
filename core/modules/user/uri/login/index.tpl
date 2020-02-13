@@ -2,6 +2,7 @@
 [access role=anonymous redirect=]
 [set login-url=]
 [set html-classes="login-view"]
+[init]
 [post]
 [set page-title=Login]
 [html]
