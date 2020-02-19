@@ -127,9 +127,9 @@ function api_check_csrf(&$data) {
 
 function resource_get($resource, $final=true) { // get all
     $meta = data_meta($resource);
-    $cache = !empty($meta['cache'])? 'cached' : false;
     $result = data_read($resource);
-    return json_result(array($resource => $result, 'count' => count($result)), 200, $final, $cache);
+    $modified = data_modified($resource);
+    return json_result(array($resource => $result, 'count' => count($result)), 200, $final, $modified);
 }
 
 function resource_post($resource, $final=true) { // create new
@@ -185,7 +185,8 @@ function resource_delete($resource, $final=true) { // delete all
  */
 
 function resource_id_get($resource, $uuid, $final=true) { // read one
-    return json_result(array($resource => array($uuid => data_read($resource, $uuid)), 'count' => 1), 200, $final);
+    $modified = data_modified($resource, $uuid);
+    return json_result(array($resource => array($uuid => data_read($resource, $uuid)), 'count' => 1), 200, $final, $modified);
 }
 
 function resource_id_post($resource, $uuid, $final=true) { // create new with uuid
