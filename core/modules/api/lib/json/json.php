@@ -5,7 +5,7 @@ function json_sc($params) {
     json_result($params, $code);
 }
 
-function json_result($result, $code = 200, $final=true, $cache = false) {
+function json_result($result, $code = 200, $final=true, $modified = 0) {
     $result['code'] = $code;
     $result['success'] = $code < 400;
     $result['status'] = $code < 400? 'ok' : 'error';
@@ -13,7 +13,8 @@ function json_result($result, $code = 200, $final=true, $cache = false) {
     $result['execution_time'] = sprintf("%01.3fs", microtime(true) - $GLOBALS['SYSTEM']['request_time']);
     if ($final) {
         load_library('header');
-        header_sent('json', $cache);
+        json_cache_headers($modified);
+        header_sent('json');
         http_response_code($code);
         exit(json_encode($result, JSON_UNESCAPED_UNICODE));
     }
@@ -34,3 +35,22 @@ function json_input($create_uuid = true, $pk_field = 'pk') {
     }
     return $result;
 }
+
+function json_cache_headers($modified) {
+    if (empty($modified)) {
+        return;
+    }
+    $headers = apache_request_headers();
+    session_cache_limiter(false);
+    header('Cache-Control: private');
+    if (isset($headers['If-Modified-Since']) && strtotime($headers['If-Modified-Since']) <= $modified) {
+        header('Last-Modified: '. gmdate('D, d M Y H:i:s', $modified).' GMT', true, 304);
+        exit();
+    }
+    $t = time();
+    $cache_time = 315360000; //10 years
+    header("Expires: " . gmdate("D, d M Y H:i:s", $t + $cache_time) . " GMT");
+    header('Last-Modified: '. gmdate('D, d M Y H:i:s', $modified).' GMT');
+}
+
+   

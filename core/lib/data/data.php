@@ -635,6 +635,17 @@ function data_meta($resource) {
     return $meta;
 }
 
+function data_modified($resource, $uuid = false) {
+    $dir = $GLOBALS['SYSTEM']['data_base'] . '/' . $resource . '/';
+    if ($uuid !== false) {
+        $dir .= $uuid;
+    }
+    if (!file_exists($dir)) {
+        return 0;
+    }
+    return filemtime($dir);
+}
+
 /*
  * Create a new resource 
  */
