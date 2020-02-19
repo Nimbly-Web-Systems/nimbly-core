@@ -5,7 +5,7 @@ function json_sc($params) {
     json_result($params, $code);
 }
 
-function json_result($result, $code = 200, $final=true) {
+function json_result($result, $code = 200, $final=true, $cache = false) {
     $result['code'] = $code;
     $result['success'] = $code < 400;
     $result['status'] = $code < 400? 'ok' : 'error';
@@ -13,7 +13,7 @@ function json_result($result, $code = 200, $final=true) {
     $result['execution_time'] = sprintf("%01.3fs", microtime(true) - $GLOBALS['SYSTEM']['request_time']);
     if ($final) {
         load_library('header');
-        header_sent('json');
+        header_sent('json', $cache);
         http_response_code($code);
         exit(json_encode($result, JSON_UNESCAPED_UNICODE));
     }
