@@ -126,8 +126,10 @@ function api_check_csrf(&$data) {
  */
 
 function resource_get($resource, $final=true) { // get all
+    $meta = data_meta($resource);
+    $cache = !empty($meta['cache'])? 'cached' : false;
     $result = data_read($resource);
-    return json_result(array($resource => $result, 'count' => count($result)), 200, $final);
+    return json_result(array($resource => $result, 'count' => count($result)), 200, $final, $cache);
 }
 
 function resource_post($resource, $final=true) { // create new
