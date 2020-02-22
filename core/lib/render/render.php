@@ -20,7 +20,6 @@ function render_sc($params) {
     if (session_user()) {
         if ($img_insert) {
             echo sprintf("<span data-edit-resource='%s' data-edit-uuid='%s' class='editor img-insert'>", $resource, $uuid);
-            echo sprintf('<a href="#" class="editor add-img-icon" data-modal=\'{"url":"img-select", "uid":"(new)"}\'>+</a>');
         } else {
             echo sprintf("<span data-edit-resource='%s' data-edit-uuid='%s'>", $resource, $uuid);
         }

@@ -223,10 +223,6 @@ editor.init = function() {
       editor.save();
     });
 
-    $('body').on('mousemove', '.editor.editor-active.img-insert .medium-editor-element', function(e) {
-      editor.handle_mousemove(e);
-    });
-
     $('body').on('DOMNodeInserted', '[data-edit-field]', editor.clean_node);
 
     $('body').on('click', 'a[data-clear-img]', function(e) {
@@ -306,22 +302,6 @@ editor.init = function() {
     (e || window.event).returnValue = msg; 
     return msg;
   });
-}
-
-editor.handle_mousemove = function(e) {
-    if (editor.enabled === false) {
-        return;
-    }
-    $btn = $(e.target).closest('.editor.editor-active.img-insert').find('a.editor.add-img-icon:first');
-    if ($btn.length === 0) {
-        return;
-    }
-    editor.move_img_button($btn, e.pageY - $(e.currentTarget).offset().top);  
-};
-
-editor.move_img_button = function($btn, relative_y) {
-    var y = relative_y + $btn.parent().offset().top - $btn.height(); 
-    $btn.offset({ top: y });
 }
 
 // workaround chrome span / inline style bug
