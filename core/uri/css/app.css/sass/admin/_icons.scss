@@ -55,6 +55,13 @@
     }
 }
 
+.nb-icon-media {
+    background-image: url('../img/icon-picture-white.svg');
+    &.nb-icon {
+        background-size: 20px 20px;
+    }
+}
+
 .nb-icon-btn {
     padding: 0 10px 0 32px !important;
     background-position: left 7px center;
