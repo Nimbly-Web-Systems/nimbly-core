@@ -162,16 +162,6 @@ function data_read_subkeys($resource, $parent) {
     return $result;
 }
 
-function data_cached_read($resource, $uuid = null, $field = null) {
-    load_library('get');
-    $data_var = data_var($resource, $uuid);
-    $result = get_variable($data_var);
-    if (empty($result)) {
-        $result = data_read($resource, $uuid);
-    }
-    return $result;
-}
-
 /**
  * Returns a list of all data object with data
  * Example: _data_read_all('users') returns an array of all users and their data
@@ -182,6 +172,12 @@ function _data_read_all($resource, $setting = null) {
     if (!file_exists($path)) {
         return $result;
     }
+
+    $cache_result = _data_read_cache('_data_read_all', $resource, $setting);
+    if ($cache_result !== false) {
+        return $cache_result;
+    }
+
     $all = @scandir($path);
     if (is_array($all)) {
         foreach ($all as $uuid) {
@@ -194,7 +190,39 @@ function _data_read_all($resource, $setting = null) {
             $result[$uuid] = data_read($resource, $uuid, $setting);
         }
     }
+
+    _data_write_cache('_data_read_all', $resource, $setting, $result);
     return $result;
+}
+
+function _data_cache_file($op, $resource, $options) {
+    $cache_key = md5($op . $resource . serialize($options));
+    $cache_dir = $GLOBALS['SYSTEM']['file_base'] . 'ext/data/.tmp/cache/_data';
+    if (!file_exists($cache_dir)) {
+        @mkdir($cache_dir, 0755, true);
+    }
+    return $cache_dir . '/' . $cache_key;
+}
+
+function _data_read_cache($op, $resource, $setting) {
+    $modified = data_modified($resource);
+    $cache_file = _data_cache_file($op, $resource, $setting);
+    if (!file_exists($cache_file)) {
+        return false;
+    }
+    $t = filemtime($cache_file);
+    if ($t < $modified) {
+        unlink($cache_file);
+        return false;
+    }
+    $contents = file_get_contents($cache_file);
+    return json_decode($contents, true);
+}
+
+function _data_write_cache($op, $resource, $setting, $content) {
+    $cache_file = _data_cache_file($op, $resource, $setting);
+    $json_data = json_encode($content, JSON_UNESCAPED_UNICODE);
+    return file_put_contents($cache_file, $json_data);
 }
 
 function data_indexed($resource, $index_name, $index_uuid) {
@@ -355,6 +383,7 @@ function data_create($resource, $uuid, $data_ls) {
     $data_ls['uuid'] = $uuid;
     $json_data = json_encode($data_ls, JSON_UNESCAPED_UNICODE);
     if (@file_put_contents($file, $json_data) !== false) {
+        touch($dir);
         $meta = data_meta($resource); 
         if (isset($meta['index']) && is_array($meta['index'])) {
             load_library('md5');
