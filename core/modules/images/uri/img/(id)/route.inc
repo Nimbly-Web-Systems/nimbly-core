@@ -17,7 +17,6 @@ if (!data_exists(".files", $uuid)) {
 }
 
 // browser cache return
-session_cache_limiter(false);
 header('Cache-Control: private');
 $t = time();
 $headers = apache_request_headers();

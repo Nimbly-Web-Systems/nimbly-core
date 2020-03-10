@@ -11,7 +11,6 @@ function header_sent($type, $cached=false, $modified=0) {
     if ($cached !== false) {
         $t = $modified === 0? time() : $modified;
         $headers = apache_request_headers();
-        session_cache_limiter(false);
         header('Cache-Control: private');
         if (isset($headers['If-Modified-Since']) && $t <= strtotime($headers['If-Modified-Since'])) {
             header('Last-Modified: '. gmdate('D, d M Y H:i:s', $t).' GMT', true, 304);
