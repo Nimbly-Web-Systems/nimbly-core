@@ -131,7 +131,7 @@ function data_read($resource, $uuid = null, $field = null) {
         } else if (is_array($field)) {
             $filtered_result = array();
             foreach ($field as $f) {
-                $filtered_result[$f] = $result[$f];
+                $filtered_result[$f] = $result[$f] ?? false;
             }
             unset($result);
             return $filtered_result;
