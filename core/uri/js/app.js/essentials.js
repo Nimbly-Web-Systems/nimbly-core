@@ -87,8 +87,9 @@ $('body').on('click', 'a[data-submit],button[data-submit]', function (e) {
         url: $(frm).attr('action'),
         data: $(frm).serialize()
     }).done(function(data) {
-        console.log('xhr success', data);
-        if (typeof (redirect_url) !== "undefined" && redirect_url !== '#' && redirect_url !== '.') {
+        if (me.data('done')) {
+            nb_do(me.data('done'), data);
+        } else if (typeof (redirect_url) !== "undefined" && redirect_url !== '#' && redirect_url !== '.') {
             window.location.href = redirect_url;
         } else {
             me.removeClass("in-progress").addClass("success");

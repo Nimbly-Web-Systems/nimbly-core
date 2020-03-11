@@ -96,7 +96,6 @@ modal.close = function() {
 };
 
 modal.finalize = function() {
-    console.log('modal.finalize');
     var done = $(modal.options._elem).data('modal-done');
     if (done) {
         var $frm = $('#modal form');
