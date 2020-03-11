@@ -483,6 +483,27 @@ function data_delete($resource, $uuid = null) {
     return $delete_count;
 }
 
+/* deletes all items, but leaves data structure and directory intact */
+function data_empty($resource) {
+    $result = 0;
+    $dir = $GLOBALS['SYSTEM']['data_base'] . '/' . $resource . '/';
+    if (!file_exists($dir)) {
+        return $result;
+    }
+    $files = @scandir($dir);
+    foreach($files as $file) {
+        if ($file[0] === '.') {
+            continue;
+        }
+        $f = $dir . $file;
+        if (!is_file($f)) {
+            continue;
+        }
+        $result += (int) unlink($f);
+    }
+    return $result;
+}
+
 function _data_delete_children($resource, $uuid, $child_name) {
     $result = 0;
     $meta = data_meta($child_name);
