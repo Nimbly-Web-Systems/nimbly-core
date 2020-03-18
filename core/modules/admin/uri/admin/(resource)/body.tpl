@@ -1,5 +1,6 @@
 <h1>[field-name [data.resource]]</h1>
 [feature-cond features="manage-[data.resource],add_[data.resource],(any)_[data.resource]" tpl=add_button]
+[feature-cond features="manage-[data.resource],delete_[data.resource],(any)_[data.resource]" tpl=delete_button]
 <table class="nb-table" data-resource="[data.resource]">
       <thead>
         <tr>

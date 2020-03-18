@@ -7,13 +7,12 @@ function header_sc($params) {
     header_sent($type = current($params), $cached = end($params));
 }
 
-function header_sent($type, $cached=false) {
-    if ($cached === 'cached') {
-        $t = time();
+function header_sent($type, $cached=false, $modified=0) {
+    if ($cached !== false) {
+        $t = $modified === 0? time() : $modified;
         $headers = apache_request_headers();
-        session_cache_limiter(false);
         header('Cache-Control: private');
-        if (isset($headers['If-Modified-Since']) && strtotime($headers['If-Modified-Since']) < $t) {
+        if (isset($headers['If-Modified-Since']) && $t <= strtotime($headers['If-Modified-Since'])) {
             header('Last-Modified: '. gmdate('D, d M Y H:i:s', $t).' GMT', true, 304);
             exit();
         }
@@ -34,4 +33,18 @@ function header_sent($type, $cached=false) {
     if (isset($types[$type])) {
         header($types[$type]);
     }
+}
+
+function header_not_modified($modified) {
+    $headers = apache_request_headers();
+    if (!isset($headers['If-Modified-Since'])) {
+        return;
+    }
+    $ims = strtotime($headers['If-Modified-Since']);
+    if ($modified > $ims) {
+        return;
+    }
+    header('Cache-Control: private');
+    header('Last-Modified: '. gmdate('D, d M Y H:i:s', $modified) . ' GMT', true, 304);
+    exit(); 
 }
