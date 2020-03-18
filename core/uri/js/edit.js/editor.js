@@ -8,7 +8,6 @@ editor.timer = null;
 editor.active = null;
 editor.autoenabled = false;
 editor.modal_uuid = null;
-editor.autosave = false;
 editor.init_done = false;
 
 editor.enable = function(e) {
@@ -27,11 +26,11 @@ editor.enable = function(e) {
     }
   }
   editor.enabled = true;
+  $('#edit-button-media').removeClass('nb-close').addClass('nb-disabled');
   $('#edit-button-save').removeClass('nb-close');
   if (editor.inputs === editor.last_inputs) {
     $('#edit-button-save').addClass('nb-disabled');
   }
-  $('#edit-button[data-edit-toggle] a').addClass('active');
   if (editor.editors.length === 0) {
     $('[data-edit-field]').each(function(ix) {
       btns = $(this).data('edit-buttons');
@@ -58,9 +57,6 @@ editor.enable = function(e) {
     }
     editor.enable_img($(this), ix);
   });
-  if (editor.autosave === true) {
-    editor.timer = setInterval(editor.save, 10000);
-  }
   $(document).trigger('editor', { enabled: true, scope: $scope });
 };
 
@@ -80,7 +76,6 @@ editor.disable = function() {
   editor.active = null;
   $('.editor-active').removeClass('editor-active');
   $('[data-edit-field]').attr('contenteditable', false);
-  $('#edit-button[data-edit-toggle] a').removeClass('active');
   if (editor.timer) {
     clearInterval(editor.timer);
   }
@@ -223,6 +218,14 @@ editor.init = function() {
       editor.save();
     });
 
+    $('body').on('click', '#edit-button-media', function(e) {
+      e.preventDefault();
+      if ($(this).hasClass('nb-disabled')) {
+        return;
+      }
+      editor.insert_media();
+    });
+
     $('body').on('DOMNodeInserted', '[data-edit-field]', editor.clean_node);
 
     $('body').on('click', 'a[data-clear-img]', function(e) {
@@ -246,7 +249,6 @@ editor.init = function() {
       editor.enable();
     } else {
       $('#edit-button').removeClass('nb-close');
-      $('#edit-menu').removeClass('nb-close');
       $('#edit-button-save').addClass('nb-close');
     }
 
@@ -317,6 +319,7 @@ editor.clean_node = function(e) {
 };
 
 editor.enable_img = function(elem, ix) {
+  console.log('enable_img');
   if (elem.parent().is('div.editor.img-wrapper')) {
     elem.unwrap();
   }
