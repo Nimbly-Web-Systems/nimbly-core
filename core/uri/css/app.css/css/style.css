@@ -335,6 +335,11 @@ img[data-img-uuid].nb-fade {
   .nb-icon-media.nb-icon {
     background-size: 20px 20px; }
 
+.nb-icon-vimeo {
+  background-image: url("../img/icon-vimeo-white.svg"); }
+  .nb-icon-vimeo.nb-icon {
+    background-size: 20px 20px; }
+
 .nb-icon-btn {
   padding: 0 10px 0 32px !important;
   background-position: left 7px center;

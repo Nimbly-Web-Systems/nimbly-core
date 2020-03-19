@@ -262,7 +262,7 @@ gallery_field.handle_upload = function(e, data) {
 
 gallery_field.handle_image_select = function(e, data) {
 	gallery_field.debug && console.log('handle_image_select', e, data);
-	if (!data.uuid || !data.name) {
+	if (!data.uuid || !data.name || data.uid === '(new)') {
 		return;
 	}
 	$selectbtn = $('#' + data.uid);

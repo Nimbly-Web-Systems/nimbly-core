@@ -96,7 +96,7 @@ modal.close = function() {
 };
 
 modal.finalize = function() {
-    var done = $(modal.options._elem).data('modal-done');
+    var done = $(modal.options._elem).data('modal-done') || modal.options.done;
     if (done) {
         var $frm = $('#modal form');
         var json = $frm.serializeObject();

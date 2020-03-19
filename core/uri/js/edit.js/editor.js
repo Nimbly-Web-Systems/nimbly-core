@@ -20,6 +20,7 @@ editor.init = function() {
     $('body').on('click', '#edit-button', editor.on_edit_button);
     $('body').on('click', '#edit-button-save', editor.on_edit_button_save);
     $('body').on('click', '#edit-button-media', editor.on_edit_button_media);
+    $('body').on('click', '#edit-button-vimeo', editor.on_edit_button_vimeo);
     $('body').on('DOMNodeInserted', '[data-edit-field]', editor.clean_node);
     $('body').on('click', 'a[data-clear-img]', editor.on_clear_img);
     $('body').on('input', '[data-edit-field]', editor.on_input);
@@ -90,6 +91,14 @@ editor.on_edit_button_media = function(e) {
         return false;
     }
     editor.insert_media();
+}
+
+editor.on_edit_button_vimeo = function(e) {
+    editor.debug && console.log('editor.on_edit_button_vimeo');
+    if (!editor.allow_click(e)) {
+        return false;
+    }
+    editor.insert_vimeo();
 }
 
 editor.on_clear_img = function(e) {
@@ -165,7 +174,7 @@ editor.enable = function(e) {
     }
     editor.enabled = true;
     var $scope = editor.scope(e);
-    $('#edit-button-media').removeClass('nb-close').addClass('nb-disabled');
+    $('#edit-button-media, #edit-button-vimeo').removeClass('nb-close').addClass('nb-disabled');
     if (editor.has_custom_save !== true) {
         $('#edit-button-save').removeClass('nb-close');
     }
@@ -222,7 +231,7 @@ editor.disable = function() {
     if (editor.timer) {
         clearInterval(editor.timer);
     }
-    $('#edit-button-media').addClass('nb-disabled').prop('disabled', true);
+    $('#edit-button-media, #edit-button-vimeo').addClass('nb-disabled').prop('disabled', true);
     $(document).trigger('editor', { enabled: false });
 };
 
@@ -235,23 +244,23 @@ editor.toggle = function(e) {
     }
 };
 
-editor.enable_media_button = function(enabled) {
+editor.enable_media_buttons = function(enabled) {
     editor.debug && console.log('editor.enable_media_button', enabled);
-    var $btn = $("#edit-button-media").first();
+    var $btns = $("#edit-button-media, #edit-button-vimeo");
     if (enabled) {
-        $btn.prop('disabled', false); 
-        $btn.removeClass('nb-disabled');
-        $btn.removeClass('nb-close');
+        $btns.prop('disabled', false); 
+        $btns.removeClass('nb-disabled');
+        $btns.removeClass('nb-close');
     } else {
-        $btn.prop('disabled', true); 
-        $btn.addClass('nb-disabled');
+        $btns.prop('disabled', true); 
+        $btns.addClass('nb-disabled');
     }
 }
 
 editor.save = function() {
     editor.debug && console.log('editor.save');
     $('#edit-button-save').addClass('nb-disabled');
-    $('#edit-button-media').addClass('nb-disabled').prop('disabled', true);
+    $('#edit-button-media, #edit-button-vimeo').addClass('nb-disabled').prop('disabled', true);
     if (!editor.has_changes()) {
         system_message('Saved');
         return;
@@ -393,6 +402,16 @@ editor.insert_media = function() {
     modal.open({url: 'img-select', uid: '(new)'});
 }
 
+editor.insert_vimeo = function() {
+    editor.debug && console.log('editor.insert_vimeo');
+    modal.open({
+        url: 'get-value', 
+        uid: 'insert_vimeo', 
+        title:  'Enter Vimeo ID', 
+        done: { trigger: 'vimeo-insert'} 
+    });
+}
+
 editor.insert_html = function(html) {
   editor.debug && console.log('editor.insert_html', html);
   if (window.getSelection) {
@@ -432,6 +451,18 @@ editor.replace_html = function(elem_id, html) {
     $('#' + elem_id).replaceWith(html);
 };
 
+editor.insert_modal_html = function(html) {
+    if (!editor.modal_uuid || !html) {
+        return;
+    }
+    editor.replace_html(editor.modal_uuid, html);
+    editor.modal_uuid = false;
+    editor.active.find('[data-edit-field]:first').data('edit-changed', true);
+    editor.inputs++;
+    nb_load_images();
+    $('#edit-button-save').removeClass('nb-disabled');
+}
+
 editor.set_active = function(e) {
     editor.debug && console.log('editor.set_active');
     $me = $(e.target);
@@ -443,7 +474,7 @@ editor.set_active = function(e) {
     editor.active = wrapper;
     wrapper.addClass('editor-active');
     img_insert = wrapper.hasClass('img-insert');
-    editor.enable_media_button(img_insert);
+    editor.enable_media_buttons(img_insert);
 }
 
 // handle result from image select modal dialog
@@ -457,12 +488,7 @@ $(document).on('data-select', function(e, o) {
     // create new image at caret position
     if (o.modal_uid === '(new)' && editor.active) {
         var img_html = '<img src="' + editor.empty_img + '" data-img-uuid=' + o.uuid + '>';
-        editor.replace_html(editor.modal_uuid, img_html);
-        editor.modal_uuid = false;
-        editor.active.find('[data-edit-field]:first').data('edit-changed', true);
-        editor.inputs++;
-        nb_load_images();
-        $('#edit-button-save').removeClass('nb-disabled');
+        editor.insert_modal_html(img_html);
         return;
     }
 
@@ -480,10 +506,33 @@ $(document).on('data-select', function(e, o) {
     }
 });
 
-// handle opening modal dialog
+// handle result from vimeo modal dialog
+$(document).on('vimeo-insert', function(e, o) {
+    editor.debug && console.log('editor.vimeo-insert', e, o);
+    if (editor.enabled === false) {
+        return;
+    }
+    var ids = o.value? o.value.match(/(\d+)/) : false;
+    if (!ids || !ids[0]) {
+        return system_message("Invalid Vimeo ID. Please enter a valid ID or URL.");
+    }
+    var vimeo_html = '<iframe src="https://player.vimeo.com/video/' + ids[0] + '" width="100%" height="360px" frameborder="0" allow="autoplay; fullscreen" allowfullscreen></iframe>';
+    editor.insert_modal_html(vimeo_html);
+});
+
+// handle opening modal image select dialog
 $(document).on('modal.open', function(e, o) {
     editor.debug && console.log('editor.modal.open', e, o);
-    if (editor.enabled === false || o.url !== 'img-select' || o.uid !== '(new)') {
+    if (editor.enabled === false) {
+        return;
+    }
+    if (o.url !== 'img-select' && o.url !== 'get-value') {
+        return;
+    }
+    if (o.url === 'img-select' && o.uid !== '(new)') {
+        return;
+    }
+    if (o.url ===  'get-value' && o.uid !== 'insert_vimeo') {
         return;
     }
     editor.modal_uuid = editor.uuid();
@@ -491,5 +540,7 @@ $(document).on('modal.open', function(e, o) {
         '<a id="' + editor.modal_uuid + '" data-remove="true"></a>'
     );
 });
+
+
 
 editor.init();
