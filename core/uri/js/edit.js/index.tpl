@@ -1,5 +1,5 @@
-[header js cached]
+[header js notcached]
 [include [uri-path]/editor.js]
 [include [uri-path]/uploader.js]
-[cache type=js]
+[nop cache type=js]
 
