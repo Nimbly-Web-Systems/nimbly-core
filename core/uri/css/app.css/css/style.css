@@ -251,10 +251,10 @@ body {
   background-color: #333333; }
 
 /* lazy image loading fx */
-img[data-img-uuid] {
+img[data-img-uuid].nb-fade {
   opacity: 0;
   transition: opacity .1s ease-out; }
-  img[data-img-uuid].nb-img-loaded {
+  img[data-img-uuid].nb-fade.nb-img-loaded {
     opacity: 1; }
 
 #nb-single-file-preview, div.nb-single-file-preview {

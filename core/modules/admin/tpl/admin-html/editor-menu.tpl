@@ -10,7 +10,6 @@
 	[edit-menu-extend]
 </ul>
 [feature-cond admin tpl=admin-menu]
-[feature-cond edit tpl=edit-menu]
 <ul class="nb-menu">
     <li><a href="[base-url]/logout">Logout</a></li>
 </ul>

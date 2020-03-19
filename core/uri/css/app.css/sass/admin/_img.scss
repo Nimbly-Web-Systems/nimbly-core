@@ -1,11 +1,13 @@
 /* lazy image loading fx */
 
 img[data-img-uuid] {
-    opacity: 0;
-    transition: opacity .1s ease-out;
-
-    &.nb-img-loaded {
-    	opacity: 1;
+    
+	&.nb-fade {
+		opacity: 0;
+	    transition: opacity .1s ease-out;
+	   	&.nb-img-loaded {
+	   		opacity: 1;
+	   	}
 	}
 }
 
