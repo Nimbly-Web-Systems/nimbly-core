@@ -6,5 +6,5 @@
 		"resource-id": "[data.resource]",
 		"redirect-url": "admin/[data.resource]"
 	}'>
-	Delete all [resource-name [data.resource]] items
+	[text t="Delete all items"]
 </a>

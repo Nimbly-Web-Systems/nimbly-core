@@ -162,6 +162,7 @@ function resource_put($resource) { // update multiple
         return json_result(array('message' => 'INVALID_DATA'), 400);   
     }
     $result = data_update($resource, null, $data);
+
     if (is_array($result)) {
         return json_result(array(
             $resource => $result,
