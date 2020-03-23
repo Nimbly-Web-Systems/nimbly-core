@@ -8,7 +8,7 @@ var editor = {
     modal_uuid: null,
     has_custom_save: false,
     empty_img: 'data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==',
-    debug: true
+    debug: false
 };
 
 editor.init = function() {
@@ -507,18 +507,37 @@ $(document).on('data-select', function(e, o) {
 });
 
 // handle result from vimeo modal dialog
+// todo: make this external media insert
 $(document).on('vimeo-insert', function(e, o) {
     editor.debug && console.log('editor.vimeo-insert', e, o);
     if (editor.enabled === false) {
         return;
     }
-    var ids = o.value? o.value.match(/(\d+)/) : false;
-    if (!ids || !ids[0]) {
+    if (o.value.indexOf('//youtu.be/') > 0 || o.value.indexOf('youtube.com/') > 0) {
+        editor.insert_youtube_html(o.value);  
+        return;
+    }
+    
+    editor.insert_vimeo_html(o.value);
+});
+
+editor.insert_vimeo_html = function(url) {
+    var ids = url? url.match(/(\d+)/) : false;
+    if (!ids) {
         return system_message("Invalid Vimeo ID. Please enter a valid ID or URL.");
     }
-    var vimeo_html = '<iframe src="https://player.vimeo.com/video/' + ids[0] + '" width="100%" height="360px" frameborder="0" allow="autoplay; fullscreen" allowfullscreen></iframe>';
+    var vimeo_html = '<iframe src="https://player.vimeo.com/video/' + ids.pop() + '" width="100%" height="360px" frameborder="0" allow="autoplay; fullscreen" allowfullscreen></iframe>';
     editor.insert_modal_html(vimeo_html);
-});
+}
+
+editor.insert_youtube_html = function(url) {
+    var ids = url.match(/(\?|&)v=([^&#]+)/) || url.match(/(\.be\/)+([^\/]+)/) || url.match(/(\embed\/)+([^\/]+)/);
+    if (!ids) {
+        return system_message("Invalid Youtube ID. Please enter a valid ID or URL.");
+    }
+    var youtube_html = '<iframe width="100%" height="360px" src="https://www.youtube.com/embed/' + ids.pop() + '" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>';
+    editor.insert_modal_html(youtube_html);
+}
 
 // handle opening modal image select dialog
 $(document).on('modal.open', function(e, o) {
