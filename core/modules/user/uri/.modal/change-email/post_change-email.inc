@@ -17,7 +17,7 @@ data_update('users', $user['uuid'], [
 set_variable('name', $user['name']);
 set_variable('email', $email);
 set_variable('change-email-url', url_absolute('change-email/' . $user['uuid'] . '/' . md5($email) . '/' . $token));
-$cfg = data_read('.settings', 'email-change-email');
+$cfg = data_read('.config', 'email-change-email');
 
 if (empty($cfg)) {
 	log_system('Error: could not send email. setting `email-change-email` is empty');
