@@ -1,7 +1,7 @@
 <?php
 
 load_library("json", "api");
-load_library("text");
+load_libraries(['url', 'email', 'log', 'uuid', 'data', 'set', 'text']);
 
 $email = filter_input(INPUT_POST, 'email');
 
@@ -13,7 +13,6 @@ $msg = t('Instructions to reset your password have been sent to your email addre
 $sleep_time = rand(100000, 1000000);
 usleep($sleep_time);
 
-load_library('data');
 $user = data_read('users', md5($email));
 if (empty($user)) {
 	log_system('Error: user does not exist ' . $email);
@@ -25,8 +24,9 @@ if ($user['email'] !== $email) {
 	return json_result(['message' => $msg] , 200);
 }
 
+log_system('password reset for ' . $email);
+
 run_single_sc('init-email');
-load_libraries(['url', 'email', 'log', 'uuid', 'data', 'set']);
 $reset_token = $user['password_reset_token'] ?? uuid_sc();
 $user['password_reset_token'] = $reset_token;
 $user_uuid = md5($email);
