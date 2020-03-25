@@ -52,3 +52,7 @@ function text_sc($params) {
     $results[$key] = $key;
     return $key;
 }
+
+function t($str) {
+    return text_sc(['str' => $str]);
+}
