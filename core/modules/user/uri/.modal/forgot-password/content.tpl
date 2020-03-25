@@ -7,13 +7,12 @@
             [text Email]<br>
             <input type="email" maxlength="64" name="email" id="email" placeholder="[text your email]" value="[sticky email]" required />
         </label>
-        <a href='#' 
-            class="nb-button"
+        <button class="nb-button"
             data-submit="form[name=forgot-password]"
             data-trigger="modal_password_reset"
         >
              [text Request new password]
-        </a> 
+        </button> 
         [form-error]
     </form>
     <div id="password-reset-success-message" class="nb-close">

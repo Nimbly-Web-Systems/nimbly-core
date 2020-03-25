@@ -82,6 +82,7 @@ $('body').on('click', 'a[data-submit],button[data-submit]', function (e) {
         return;
     }
     me.addClass("in-progress");
+    me.prop('disabled', true);
     $.ajax({
         type: 'post',
         url: $(frm).attr('action'),
@@ -97,6 +98,7 @@ $('body').on('click', 'a[data-submit],button[data-submit]', function (e) {
                 $(document).trigger(trigger_event, data);
             }
         }
+        me.prop('disabled', false);
     }).fail(function(xhr, status, errorThrown) {
         console.log('submit fail', xhr, status, errorThrown);
         if (xhr && xhr.responseJSON && 'message' in xhr.responseJSON) {
@@ -105,6 +107,7 @@ $('body').on('click', 'a[data-submit],button[data-submit]', function (e) {
         } else if (errorThrown) {
             $frm.append('<div class="form-alert">' + errorThrown + '</div>');
         }
+        me.prop('disabled', false);
     });
 });
 
