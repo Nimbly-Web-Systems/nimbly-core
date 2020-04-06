@@ -18,7 +18,8 @@
         [scripts]
         [favicon]
     </head>
-    <body class="[body-classes]">
+    <body class="[body-classes] [feature-cond manage-content echo=nimbly-bar]">
+        [feature-cond manage-content echo=nimbly-bar]
         [feature-cond manage-content tpl=nimbly-bar]
         [callouts]
         [mobile-menu]
