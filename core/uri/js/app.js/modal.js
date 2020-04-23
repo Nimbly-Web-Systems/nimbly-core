@@ -3,6 +3,7 @@ var modal = {};
 modal.active = false;
 modal.options = {};
 modal.init_done = false;
+modal.close_on_click_outside = false;
 
 modal.init = function() {
     if (modal.init_done === true) {
@@ -23,7 +24,7 @@ modal.init = function() {
     });
 
     $('body').on('click', '#modal', function(e) {
-        if (modal.active && $(e.target).attr('id') === 'modal') {
+        if (modal.active && $(e.target).attr('id') === 'modal' && modal.close_on_click_outside) {
             modal.close();
         }
     });
