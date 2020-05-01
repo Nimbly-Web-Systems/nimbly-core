@@ -349,7 +349,7 @@ function run_sc($params) {
         $uri_path_original = $SYSTEM['uri_path'];
 
         //set new uri context
-        $SYSTEM['uri'] = $uri;
+        $SYSTEM['uri'] = $uri ?? $uri_original;
         $SYSTEM['uri_path'] = dirname($file);
 
         //prevent infinite loop and run the template
