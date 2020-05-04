@@ -1,0 +1,9 @@
+version: "3.7"
+services:
+ nimbly:
+    build: ./docker-nimbly
+    container_name: nimbly
+    volumes:
+      - ..:/var/www/nimbly
+    ports:
+      - 80:80
