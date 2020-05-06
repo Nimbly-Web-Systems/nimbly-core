@@ -9,7 +9,7 @@ define('QUOTID', '%quot_');
 define('ASSIGNMENT_CHAR', '=');
 
 global $SYSTEM;
-$SYSTEM['sc_stack'] = array();
+$SYSTEM['sc_stack'] = [];
 
 /**
  * Executes a template from file, parsing it line by line replacing
@@ -40,11 +40,15 @@ function run_output($buffer) {
 
 /**
  * Run a uri and exit.
- * @param string $uri the path of the uri, e.g. css-demo/type
+ * @param string $uri the path of the uri, e.g. css/app.css
  */
 function run_uri($uri) {
-    $routed = find_uri($uri, 'route.inc');
-    if ($routed === false) {
+    if (find_uri($uri, 'route.inc')) { //routed
+        load_library("router");
+        if (router_run($uri)) {
+            exit();
+        }
+    } else { // not routed
         $file = find_uri($uri);
         if ($file !== false) {
             $GLOBALS['SYSTEM']['uri'] = $uri;
@@ -53,18 +57,6 @@ function run_uri($uri) {
             exit();
         }
     }
-
-    /*
-     * Not found.. fallback to router
-     */
-    load_library("router");
-    if (router_run($uri)) {
-        exit();
-    }
-
-    /*
-     * Not routed either.. fallback to page not found error
-     */
     run_uri("errors/404");
 }
 

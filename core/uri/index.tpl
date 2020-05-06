@@ -1,1 +1,1 @@
-[html]
+Nimbly [nimbly-core-version] - Last modified: [date [app-modified] fmt=Y-m-d]

@@ -7,7 +7,7 @@ load_library('encrypt');
 load_library('salt');
 
 if (post_get('submit', false) === 'Next') {
-    run_library('set', array('step' => '3', 'overwrite' => true));
+    run_library('set', ['step' => '3', 'overwrite' => true]);
 } 
 
 run_library('sticky-post');
