@@ -43,12 +43,9 @@ function run_output($buffer) {
  * @param string $uri the path of the uri, e.g. css/app.css
  */
 function run_uri($uri) {
-    if (find_uri($uri, 'route.inc')) { //routed
-        load_library("router");
-        if (router_run($uri)) {
-            exit();
-        }
-    } else { // not routed
+
+    // 1. try unrouted
+    if (empty(find_uri($uri, 'route.inc'))) {
         $file = find_uri($uri);
         if ($file !== false) {
             $GLOBALS['SYSTEM']['uri'] = $uri;
@@ -56,7 +53,16 @@ function run_uri($uri) {
             run($file);
             exit();
         }
+        
     }
+
+    // 2. try routed
+    load_library("router");
+    if (router_run($uri)) {
+        exit();
+    }
+
+    // otherwise: 404
     run_uri("errors/404");
 }
 
