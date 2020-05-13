@@ -1,4 +1,4 @@
-[module user forms]
+[module user forms html-jquery data]
 [access role=anonymous redirect=]
 [set html-classes="login-view"]
 [post]

@@ -1,7 +1,7 @@
 <?php
 
-load_library("data");
-load_library("data-sort");
+load_library("data", "data");
+load_library("data-sort", "data");
 
 function router_run($uri) {
     $GLOBALS['SYSTEM']['route_found'] = false;

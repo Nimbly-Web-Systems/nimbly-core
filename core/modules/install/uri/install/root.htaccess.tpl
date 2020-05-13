@@ -32,7 +32,7 @@ AddDefaultCharset utf-8
 DefaultLanguage en-US
 
 # set the security pepper hash code (unique per installation)
-SetEnv PEPPER [get sticky.pepper]
+SetEnv PEPPER [get pepper]
 
 # compress text, html, javascript, css, xml:
 AddOutputFilterByType DEFLATE text/plain

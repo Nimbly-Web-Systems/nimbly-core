@@ -1,4 +1,4 @@
-[module user]
+[module user data]
 [access feature=manage-content,admin]
 [set app-name="Nimbly Framework"]
 [set site-name=[app-name]]

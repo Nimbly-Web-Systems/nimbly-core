@@ -1,0 +1,6 @@
+[module html-jquery]
+[header js cached]
+[include [uri-path]/debounce.js]
+[include [uri-path]/serializer.js]
+[include [uri-path]/essentials.js]
+[cache type=js]

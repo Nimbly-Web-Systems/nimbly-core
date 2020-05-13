@@ -1,2 +1,2 @@
-[set page-title="Internal server error"]
-[html]
+[header 500]
+500 Internal Server Error

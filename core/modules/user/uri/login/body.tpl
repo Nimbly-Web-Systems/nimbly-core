@@ -1,5 +1,5 @@
 <div class="login-container">
-    <h1>[text Log in]</h1>
+    <h1>[module i18n][text Log in]</h1>
     <form name="login" action="[url]" method="post" accept-charset="utf-8" class="nb-form">
         [form-key login]
         <label>[text Email]

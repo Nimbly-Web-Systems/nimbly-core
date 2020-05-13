@@ -4,7 +4,7 @@
 register_shutdown_function('session_test_hard_fail');
 
 function session_test_sc() {
-    load_library("session");
+    load_library("session", "user");
     load_library("set");
     $sess_path = "ext/data/.tmp/sessions";
     $test = file_exists($sess_path) || @mkdir($sess_path, 0750, true);
@@ -21,6 +21,7 @@ function session_test_sc() {
 function session_test_hard_fail() {
     $error = error_get_last();
     if ($error['type'] === 1) {
-    	echo "<strong>Uh oh! Test failed</strong><br />";
+        echo "<strong>Uh oh! Session test failed</strong><br />";
+        var_dump($error);
     }
 }

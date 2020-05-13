@@ -7,6 +7,9 @@ if ($SYSTEM['uri_base'] === '//') {
     $SYSTEM['uri_base'] = '/';
 }
 $SYSTEM['file_base'] = dirname(__FILE__) . '/';
+if (empty($_SERVER['PEPPER'])) {
+    $_SERVER['REQUEST_URI'] = dirname($_SERVER['SCRIPT_NAME']) . '/install';
+}
 $SYSTEM['request_uri'] = trim(substr($_SERVER['REQUEST_URI'], strlen($SYSTEM['uri_base'])), '/\ ');
 if (!empty($_SERVER['QUERY_STRING'])) {
     $SYSTEM['request_uri'] = substr($SYSTEM['request_uri'], 0, strlen($SYSTEM['request_uri']) - 1 - strlen($_SERVER['QUERY_STRING']));

@@ -1,21 +1,3 @@
-msgid "step1_long"
-msgstr "Verify System Requirements"
-
-msgid "step1_short"
-msgstr "1. Verify"
-
-msgid "step2_long"
-msgstr "Enter Site Configuration"
-
-msgid "step2_short"
-msgstr "2. Configure"
-
-msgid "step3_long"
-msgstr "Finished"
-
-msgid "step3_short"
-msgstr "3. Done"
-
 msgid "require_session"
 msgstr "A session is required to continue, but could not be created"
 
@@ -41,7 +23,7 @@ msgid = "requirements_fail"
 msgstr = "Sorry, your system does not yet meet all the requirements to install [app-name]:"
 
 msgid = "requirements_pass"
-msgstr = "Your system meets all requirements for installing [app-name]. Click next to continue."
+msgstr = "Your system meets all requirements for installing [app-name]."
 
 msgid = "form_error"
 msgstr = "Please fill in "
@@ -87,6 +69,3 @@ msgstr = "Created admin account with email <strong>[get sticky.email]</strong>."
 
 msgid = "user_created_fail"
 msgstr = "Could not create admin account. Please review file writing permissions to data directory."
-
-msgid = "step3_proceed"
-msgstr = "Click Next to continue."

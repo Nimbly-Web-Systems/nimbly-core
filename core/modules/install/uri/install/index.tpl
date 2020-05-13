@@ -1,11 +1,10 @@
-[module install forms admin]
+[module install forms admin user i18n data]
 [check-fresh-install]
 [if not fresh_install="yes" redirect=errors/404]
-[set step=1]
-[set page-title="Installation Step [step]/3"]
+[set page-title="Installation"]
 [session-test]
 [if session_ok=pass tpl=post]
-[set app-name="Nimbly CMS"]
+[set app-name="Nimbly"]
 <!doctype html>
 <html lang="en">
     <head>
@@ -14,19 +13,7 @@
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>[page-title] | [app-name]</title>
         <style>
-		    [include file=[base-path]core/uri/css/app.css/css/style.css]
-		    
-		    .progress-bar {
-		        position: relative;
-		        height: 1rem;
-		        background-color: #eee;
-		        margin-bottom: 1rem;
-		    }
-		    .progress-meter {
-		        position: absolute;
-		        height: 1rem;
-		        background-color: #338e2d;
-		    }
+		    [include file=[base-path]core/modules/html-jquery/uri/css/app.css/css/style.css]
 
 		    .callout {
 		    	border-radius: 5px;
@@ -47,7 +34,12 @@
         <div class="admin-wrapper">
             <div class="admin-body">
                 <div class="admin-content">
-                    [body-step]
+                    <div class="nb-container">
+						<h1>[app-name] [text Installation]</h1>
+						[check-requirements]
+						[if require_all=fail tpl=requirements-failed]
+						[if require_all=pass tpl=form]
+					</div>
                 </div>
             </div>
         </div>
