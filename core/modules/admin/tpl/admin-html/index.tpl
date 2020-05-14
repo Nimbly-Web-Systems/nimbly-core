@@ -25,7 +25,7 @@
             <div class="admin-body">
                 [callouts]
                 <div class="admin-content">
-                    <a class="only-sm mobile-menu-link" data-push="#off-left-panel">&#9776; menu</a>
+                    <a class="no-desktop mobile-menu-link" data-push="#off-left-panel">&#9776; menu</a>
                     [body]
                 </div>
             </div>
