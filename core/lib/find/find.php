@@ -9,7 +9,7 @@ $SYSTEM['modules']['root'] = '/';
 
 function find_uri($name, $tpl_name = "index.tpl") {
     $result = find_path($name, 'uri', $tpl_name);
-    if ($result == false && count($GLOBALS['SYSTEM']['modules']) == 1) {
+    if ($result == false && count($GLOBALS['SYSTEM']['modules']) <= 2) {
         global $SYSTEM;
         $modules_temp = $SYSTEM['modules'];
         find_all_modules('uri');

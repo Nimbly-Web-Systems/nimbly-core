@@ -1,4 +1,4 @@
-[module user admin]
+[module user admin i18n]
 [access feature=manage-[data.resource],get_[data.resource],(any)_[data.resource]]
 [set page-title="[field-name [data.resource]]"]
 [set html-classes="admin-page" append]
