@@ -5,7 +5,7 @@ if ($parts === false || count($parts) !== 2) {
     return;
 }
 
-load_library('data');
+load_library('data', 'data');
 $uuid = $parts[0];
 if (!(data_exists("users", $uuid))) {
     return;

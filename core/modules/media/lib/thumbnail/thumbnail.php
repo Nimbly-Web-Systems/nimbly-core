@@ -28,7 +28,7 @@ function thumbnail_create($uuid, $size, $ratio=0, $mode='h') {
 
     // 1. Check cache
 
-    load_library("data");
+    load_library('data', 'data');
     $file_name = sprintf("%s_%s%s_%s.jpg", $uuid, $size, $mode, str_replace('.', '_', $ratio));
     $path = sprintf(".tmp/thumb/%s", $file_name);
     $cache_path = $GLOBALS['SYSTEM']['data_base'] . '/' . $path;

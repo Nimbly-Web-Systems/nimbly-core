@@ -79,14 +79,14 @@ function pages_find_by_key($key) {
 
 function pages_delete($uuid) {
     global $SYSTEM;
-    load_library("md5");
+    load_library("md5"), 'data';
     $page = pages_find_by_key(md5_uuid($uuid));
     if (!is_array($page) || count($page) !== 1) {
         return false;
     }
     $page = current($page);
     $path = sprintf("%s%s%s", $SYSTEM['file_base'] , 'ext/uri/', $page['url']);
-    load_library("util");
+    load_library("rrmdir", 'data');
     $result = rmfiles($path);
     while ($result !== false && @rmdir($path) === true) {
         $path = dirname($path); // removes last part of $path

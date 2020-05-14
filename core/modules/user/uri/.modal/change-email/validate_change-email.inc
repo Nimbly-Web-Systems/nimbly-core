@@ -14,6 +14,6 @@ $validate_ok |= hash_equals($user['password'], encrypt($current_pw, $user['salt'
 $validate_ok &= validate_field('email', 'newemail') === true;
 $validate_ok &= data_exists('users', md5($new_email)) === false;
 if (!$validate_ok) {
-	load_library("text");
+	load_library('text', 'i18n');
 	return json_result(['message' => text_sc(['validate_invalid_email_or_password'])], 400);
 }

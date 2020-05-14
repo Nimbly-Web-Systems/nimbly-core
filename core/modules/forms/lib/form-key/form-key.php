@@ -18,7 +18,7 @@ function form_key_sc($params) {
 }
 
 function form_key_get() {
-    load_library('session');
+    load_library('session', 'user');
      if (session_resume() && isset($_SESSION['key'])) {
         $key = $_SESSION['key'];
     } else if (isset($_COOKIE['key'])) {

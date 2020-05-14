@@ -6,5 +6,5 @@ unlink($file);
 load_library('log');
 log_system('Cleared log file');
 
-load_library('system-messages');
+load_library('system-messages', 'user');
 system_message('Log cleared');

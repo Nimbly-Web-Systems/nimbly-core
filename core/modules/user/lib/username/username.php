@@ -1,6 +1,6 @@
 <?php
 
-load_library("session");
+load_library('session', 'user');
 
 function username_sc() {
     return username_get();

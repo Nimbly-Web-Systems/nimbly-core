@@ -106,6 +106,7 @@ function find_all_modules($sub = '') {
 
 function load_library($name, $mod = null) {
     static $loaded = [];
+
     if (!empty($loaded[$name])) {
         return;
     }
@@ -113,6 +114,7 @@ function load_library($name, $mod = null) {
         load_module($mod);
     }
     $path = find_library($name);
+    
     if ($path !== false) {
         require_once($path);
     }

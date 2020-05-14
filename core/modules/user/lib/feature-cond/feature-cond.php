@@ -1,6 +1,6 @@
 <?php
 
-load_library("session");
+load_library("session", 'user');
 
 /*
  * Implements feature based template loading

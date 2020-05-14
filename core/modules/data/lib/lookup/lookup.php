@@ -20,7 +20,7 @@ function lookup_sc($params) {
 function lookup_data($resource, $uuid, $key, $default = '') {
     $var = "data." . trim($resource, '.');
     if (!isset($GLOBALS['SYSTEM']['variables'][$var])) {
-        load_library("data");
+        load_library('data', 'data');
         data_sc(array("resource" => $resource));
     }
     $data = $GLOBALS['SYSTEM']['variables'][$var];

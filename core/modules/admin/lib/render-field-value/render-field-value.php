@@ -1,7 +1,7 @@
 <?php
 
 load_library('get');
-load_library('lookup');
+load_library('lookup', 'data');
 load_library('base_url');
 
 function render_field_value_sc($params) {

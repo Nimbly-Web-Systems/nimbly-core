@@ -15,11 +15,11 @@ function redirect_sc($params) {
 }
 
 function redirect($url, $status=303) {
-    if (strpos($url, "http") !== 0) {
-        load_library("url");
+    if (strpos($url, 'http') !== 0) {
+        load_library('url');
         $url = url_absolute($url);
     }
     header('Location:' . $url, true, $status);
-    echo "redirecting to <a href=\"{$url}\">{$url}</a>"; 
+    echo 'redirecting to <a href=\'{$url}\'>{$url}</a>'; 
     exit();
 }

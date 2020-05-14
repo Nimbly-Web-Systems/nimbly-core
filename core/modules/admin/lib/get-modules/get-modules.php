@@ -1,8 +1,8 @@
 <?php
 
 function get_modules_sc() {
-	load_library("set");
-    load_library("data");
+	load_library('set');
+    load_library('data', 'data');
     $result = array();
 
     global $SYSTEM;

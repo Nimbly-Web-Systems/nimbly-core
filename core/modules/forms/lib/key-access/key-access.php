@@ -1,7 +1,7 @@
 <?php
 
 function key_access_sc($params) {
-    load_library("session");
+    load_library('session', 'user');
     session_resume();
     $redirect_url = get_param_value($params, "redirect", "errors/403");
 

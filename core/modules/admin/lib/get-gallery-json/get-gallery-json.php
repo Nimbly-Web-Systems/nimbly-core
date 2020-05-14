@@ -5,7 +5,7 @@ function get_gallery_json_sc($params) {
 	$name = get_param_value($params, 'name');
 	$max = get_param_value($params, 'max');
 	load_library('get');
-	load_library('data');
+	load_library('data', 'data');
 	$result = array(
 		'name' => $name, 
 		'uuid' => $uuid,

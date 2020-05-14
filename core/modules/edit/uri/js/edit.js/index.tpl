@@ -1,4 +1,4 @@
-[module html-jquery]
+[module edit]
 [header js cached]
 [include [uri-path]/editor.js]
 [include [uri-path]/uploader.js]

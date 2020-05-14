@@ -15,7 +15,7 @@ function load_user_groups($user=null) {
         load_library("get-user", "user");
         $user = get_user();
     }
-    load_library('data');
+    load_library('data', 'data');
     if (empty($user['groups'])) {
         return [];
     }

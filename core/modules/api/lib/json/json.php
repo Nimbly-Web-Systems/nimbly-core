@@ -29,7 +29,7 @@ function json_input($create_uuid = true, $pk_field = 'pk') {
         if (!empty($result[$pk_field])) {
             $result['uuid'] = md5($result[$pk_field]);
         } else {
-            load_library('uuid');
+            load_library('uuid', 'data');
             $result['uuid'] = uuid_sc();
         }
     }

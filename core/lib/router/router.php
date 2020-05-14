@@ -1,12 +1,12 @@
 <?php
 
-load_library("data", "data");
-load_library("data-sort", "data");
+load_library('data', 'data');
+load_library('data-sort', 'data');
 
 function router_run($uri) {
     $GLOBALS['SYSTEM']['route_found'] = false;
-    $GLOBALS['SYSTEM']['uri_parts'] = explode("/", $GLOBALS['SYSTEM']['request_uri']);
-    $routes = data_read(".routes");
+    $GLOBALS['SYSTEM']['uri_parts'] = explode('/', $GLOBALS['SYSTEM']['request_uri']);
+    $routes = data_read('.routes');
     $routes = data_sort($routes, 'order', SORT_NUMERIC);
     if (empty($routes)) {
         return false;
@@ -21,7 +21,7 @@ function router_run($uri) {
 
 function router_match($path) {
     $parts = $GLOBALS['SYSTEM']['uri_parts'];
-    $path_parts = explode(DIRECTORY_SEPARATOR . "uri" . DIRECTORY_SEPARATOR, dirname($path));
+    $path_parts = explode(DIRECTORY_SEPARATOR . 'uri' . DIRECTORY_SEPARATOR, dirname($path));
     $file_parts = explode(DIRECTORY_SEPARATOR, $path_parts[1]);
     if (count($file_parts) < count($parts)) {
         router_deny();
@@ -50,7 +50,7 @@ function router_deny($accept = false) {
 }
 
 function router_handle($ep) {
-    $path = find_uri($ep, "route.inc");
+    $path = find_uri($ep, 'route.inc');
     if ($path === false) {
         return false;
     }

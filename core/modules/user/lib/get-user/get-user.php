@@ -13,14 +13,14 @@ function get_user($uuid=false) {
 	if (!empty($users[$uuid])) {
 		return $users[$uuid];
 	}
-	load_library('session');
+	load_library('session', 'user');
 	if (empty($uuid) && session_resume() && !empty($_SESSION['username'])) {
 		$uuid = md5($_SESSION['username']);
 	}
 	if (empty($uuid)) {
 		return false;
 	}
-	load_library('data');
+	load_library('data', 'data');
 	$users[$uuid] = data_read("users", $uuid);
 	return $users[$uuid];
 }

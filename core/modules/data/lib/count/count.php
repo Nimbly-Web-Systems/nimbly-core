@@ -12,7 +12,7 @@ function count_sc($params) {
     } else if (is_array($as)) {
     	$filter = get_param_value($params, "filter");
         if (!empty($filter)) {
-        	load_library("data");
+        	load_library('data', 'data');
             $as = data_filter($as, $filter);
         }
         

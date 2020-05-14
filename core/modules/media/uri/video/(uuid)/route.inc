@@ -11,7 +11,7 @@ if ($parts === false || count($parts) !== 1) {
 }
 
 $uuid = $parts[0];
-load_library("data");
+load_library('data', 'data');
 if (!data_exists(".files", $uuid) || !data_exists(".files_meta", $uuid)) {
 	http_response_code(404);
     exit();

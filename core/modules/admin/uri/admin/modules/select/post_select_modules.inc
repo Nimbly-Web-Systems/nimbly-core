@@ -1,6 +1,6 @@
 <?php
 
-load_library('system-messages');
+load_library('system-messages', 'user');
 
 $file = $GLOBALS['SYSTEM']['file_base'] . 'contrib/modules/.git/info/sparse-checkout';
 if (!file_exists($file)) {

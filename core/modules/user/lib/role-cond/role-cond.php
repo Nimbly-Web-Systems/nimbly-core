@@ -7,7 +7,7 @@
  */
 
 function role_cond_sc($params) {
-    load_library("session");
+    load_library('session', 'user');
     $roles = get_param_value($params, "roles", current($params));
     $tpl = get_param_value($params, "tpl", null);
     $tpl_else = get_param_value($params, "tpl_else", null);

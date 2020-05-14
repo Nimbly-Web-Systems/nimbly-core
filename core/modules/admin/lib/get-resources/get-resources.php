@@ -2,7 +2,7 @@
 
 function get_resources_sc($params) {
     load_library("set");
-    load_library("data");
+    load_library('data', 'data');
     $rs = data_resources_list();
     set_variable("data.resources", $rs);
 }

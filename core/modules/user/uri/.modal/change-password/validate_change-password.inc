@@ -6,7 +6,7 @@ $user = get_user();
 if (empty($user)) {
 	return json_result(['message' => 'You are not logged in'], 400);
 }
-load_library('encrypt');
+load_library('encrypt', 'data');
 $current_pw = filter_input(INPUT_POST, 'password');
 $validate_ok = empty($current_pw) && empty($user['password']);
 $validate_ok |= hash_equals($user['password'], encrypt($current_pw, $user['salt']));
@@ -15,6 +15,6 @@ $validate_ok &= validate_field('password', 'newpw1') === true;
 $validate_ok &= validate_field('password', 'newpw2') === true;
 $validate_ok &= filter_input(INPUT_POST, 'newpw1') === filter_input(INPUT_POST, 'newpw2');
 if (!$validate_ok) {
-	load_library("text");
+	load_library("text", 'i18n');
 	return json_result(['message' => text_sc(['validate_invalid_password'])], 400);
 }

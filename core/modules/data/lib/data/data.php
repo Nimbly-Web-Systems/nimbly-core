@@ -28,7 +28,7 @@ function data_sc($params) {
 
     $sort = get_param_value($params, "sort", false);
     if ($sort) {
-        load_library('data-sort');
+        load_library('data-sort', 'data');
         $result = data_sort_param($result, $sort);
     }
 
@@ -240,7 +240,7 @@ function data_read_index($resource, $index_name, $index_uuid) {
     if (!is_array($ixs)) {
         return $result;
     }
-    load_library('md5');
+    load_library('md5', 'data');
     foreach ($ixs as $ix) {
         if ($ix[0] === '.') {
             continue;
@@ -304,7 +304,7 @@ function data_update($resource, $uuid, $data_update_ls) {
     }
 
     // add _modified_by info
-    load_library('md5');
+    load_library('md5', 'data');
     load_library('username', 'user');
     $data_merged_ls['_modified_by'] = md5_uuid(username_get());
     $data_merged_ls['_modified'] = time();
@@ -319,7 +319,7 @@ function data_update_pk($resource, $uuid, $pk_value) {
     if (empty($pk_value)) {
         return $uuid;
     }
-    load_library('md5');
+    load_library('md5', 'data');
     $new_uuid = md5_uuid($pk_value);
     if ($new_uuid === $uuid) {
         return $uuid;
@@ -372,7 +372,7 @@ function data_create($resource, $uuid, $data_ls) {
         unset($data_ls['form-key']);
     }
     if (!isset($data_ls['_created_by'])) {
-        load_library('md5');
+        load_library('md5', 'data');
         load_library('username', 'user');
         $data_ls['_created_by'] = md5_uuid(username_get());
     }
@@ -386,7 +386,7 @@ function data_create($resource, $uuid, $data_ls) {
         touch($dir);
         $meta = data_meta($resource); 
         if (isset($meta['index']) && is_array($meta['index'])) {
-            load_library('md5');
+            load_library('md5', 'data');
             foreach($meta['index'] as $index_name) {
                 if (empty($data_ls[$index_name])) {
                     continue;
@@ -398,7 +398,7 @@ function data_create($resource, $uuid, $data_ls) {
                 _data_create_index($file, $index_name, $index_uuid);
             }
         }
-        load_library('trigger');
+        load_library('trigger', 'data');
         trigger('data-create', ['resource' => $resource, 'uuid' => $uuid, 'data' => $data_ls]);
         return true;
     }
@@ -439,7 +439,7 @@ function data_delete($resource, $uuid = null) {
         if (isset($meta['index']) || isset($meta['children'])) {
             $data_ls = data_read($resource, $uuid);
             if (isset($meta['index']) && is_array($meta['index'])) {
-                load_library('md5');
+                load_library('md5', 'data');
                 foreach($meta['index'] as $index_name) {
                     if (empty($data_ls[$index_name])) {
                         continue;
@@ -454,7 +454,7 @@ function data_delete($resource, $uuid = null) {
                 }        
             }
             if (isset($data_ls['children']) && is_array($data_ls['children'])) {
-                load_library('util');
+                load_library('rrmdir', 'data');
                 foreach($data_ls['children'] as $child_name) {
                     if (strpos($child_name, '/') === false) {
                         continue;
@@ -560,7 +560,7 @@ function data_search($data, $term, $level = 0) {
         }
     }
     if ($level === 0) {
-        load_library('data-sort');
+        load_library('data-sort', 'data');
         $result = data_sort_numeric($result, 'search_score', SORT_DESC);
         return $result;
     }
@@ -620,7 +620,7 @@ function data_filter($data, $filter_str) {
 }
 
 function data_get($resource, $uuid, $index=false, $filter=false) {
-    load_library('md5');
+    load_library('md5', 'data');
     $uuid = md5_uuid($uuid);
     if (data_exists($resource, $uuid)) {
         return data_read($resource, $uuid);
@@ -773,7 +773,7 @@ function _data_index_auto_suffix($resource, $uuid, &$data_ls, $field) {
     }
     $field_value = $data_ls[$field];
     $x = 0;
-    load_library('md5');
+    load_library('md5', 'data');
     do {
         $items = data_read_index($resource, $field, md5_uuid($data_ls[$field]));
         if (empty($items)) {

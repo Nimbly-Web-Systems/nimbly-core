@@ -2,7 +2,7 @@
 
 /**
  * @doc * `[if condition(s) action]` performs action if condition(s) are true
- * @doc * action can be "tpl=nameoftemplate" to load a template, "echo=text to show" to display text or "redirect=somepage" to redirect to another page
+ * @doc * action can be 'tpl=nameoftemplate' to load a template, 'echo=text to show' to display text or 'redirect=somepage' to redirect to another page
  * @doc * condition compares a variable with a value, x=3, x=(empty), x=(not-empty)
  * @doc * `[if user=(empty) redirect=login]` redirects to login if variable user is empty
  */
@@ -12,11 +12,11 @@ function if_sc($params) {
     $or = false;
     $action = array();
     foreach ($params as $key => $value) {
-        if ($key === "tpl" || $key === "echo" || $key === "redirect") {
+        if ($key === 'tpl' || $key === 'echo' || $key === 'redirect') {
             $action[$key] = $value;
-        } else if ($key === "not") {
+        } else if ($key === 'not') {
             $negate = true;
-        } else if ($key === "or") {
+        } else if ($key === 'or') {
             $or = true;
         } else {
             $condition[$key] = $value;
@@ -26,7 +26,7 @@ function if_sc($params) {
         return;
     }
     $pass = !$or;
-    load_library("get");
+    load_library('get');
     foreach ($condition as $key => $value) {
         //loop through and test all conditions
         $b = if_condition($key, $value, $negate);
@@ -54,7 +54,7 @@ function if_action($action) {
                 echo $value;
                 break;
             case 'redirect': //redirect to url
-                load_library("redirect");
+                load_library('redirect');
                 redirect($value);
                 break;
         }
@@ -63,10 +63,10 @@ function if_action($action) {
 
 function if_condition($key, $value, $negate = false) {
     $result = null;
-    if ($value === "(not-empty)") {
+    if ($value === '(not-empty)') {
         $eval = get_sc($key);
         $result = !empty($eval);
-    } else if ($value === "(empty)") {
+    } else if ($value === '(empty)') {
         $eval = get_sc($key);
         $result = empty($eval);
     } else {

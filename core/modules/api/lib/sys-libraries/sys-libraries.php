@@ -42,7 +42,7 @@ function sys_libraries_read() {
 }
 
 function sys_libraries_doc($lib_file) {
-    load_library('markdown');
+    load_library('markdown', 'format');
     $result = '';
     $file = file_get_contents($lib_file);  
     $n = explode("\n", $file);  

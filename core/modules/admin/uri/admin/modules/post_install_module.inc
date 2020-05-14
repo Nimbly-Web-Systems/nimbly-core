@@ -4,7 +4,7 @@ $module = post_get('module_name');
 $path = post_get('module_path');
 $file = $path . '/.install.inc';
 $ok = require_once($file);
-load_library('system-messages');
+load_library('system-messages', 'user');
 
 if ($ok) {
 	system_message('Module `' . $module . '` installed succesfully');

@@ -1,7 +1,7 @@
 <?php
 
 load_library("json", "api");
-load_library("data");
+load_library('data', 'data');
 load_library("access", "user");
 load_library("get");
 
@@ -81,8 +81,8 @@ function api_json_input($resource) {
         $data = json_input();
     }
     if (isset($meta['encrypt'])) {
-        load_library('salt');
-        load_library('encrypt');
+        load_library('salt', 'data');
+        load_library('encrypt', 'data');
         $data['salt'] = salt_sc();
         $fs = explode(',', $meta['encrypt']);
         foreach ($fs as $f) {
@@ -102,7 +102,7 @@ function api_check_csrf(&$data) {
         return null;
     }
     $key = $data['form_key'];
-    load_library("session");
+    load_library('session', 'user');
     $csrf_pass = false;
     if (session_resume()) {
         $csrf_pass = isset($_SESSION['key']) && $_SESSION['key'] === $key;

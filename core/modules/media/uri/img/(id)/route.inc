@@ -10,7 +10,7 @@ if (count($parts) < 2 || $parts[0] !== 'img') {
     return;
 }
 $uuid = $parts[1];
-load_library("data");
+load_library('data', 'data');
 if (!data_exists(".files", $uuid)) {
 	http_response_code(404);
     exit();

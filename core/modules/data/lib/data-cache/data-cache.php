@@ -1,6 +1,6 @@
 <?php
 
-load_library("data");
+load_library('data', 'data');
 
 $GLOBALS['SYSTEM']['data_cache_base'] = $GLOBALS['SYSTEM']['file_base'] . 'ext/data/.tmp/data-cache/';
 

@@ -37,7 +37,7 @@ function set_variable($rkey, $value, $if_exists = true) {
 
 // store variable in session or cookie
 function persist_variable($key, $value, $if_exists=true) {
-    load_library('session');
+    load_library('session', 'user');
     if (session_resume() && isset($_SESSION['variables'])) {
         set_session_variable($key, $value, $if_exists);
     } else if (empty($_COOKIE[$key]) || $if_exists === true) {

@@ -4,7 +4,7 @@ $parts = router_match(__FILE__);
 if ($parts === false || count($parts) !== 3) {
     return;
 }
-load_library('data');
+load_library('data', 'data');
 $uuid = $parts[0];
 if (!(data_exists("users", $uuid))) {
     return;
@@ -26,6 +26,7 @@ if ($user['change_email_token'] !== $key) {
 }
 
 // logout
+load_module('user');
 run_library('session');
 $_SESSION = array();
 session_initialize();
@@ -35,7 +36,7 @@ set_variable('old_email', $user['email']);
 set_variable('new_email', $user['new_email']);
 set_variable('name', $user['name']);
 
-load_library('uuid');
+load_library('uuid', 'data');
 $user['change_email_token'] = uuid_sc();
 $user['old_email'] = $user['email'];
 $user['email'] = $user['new_email'];

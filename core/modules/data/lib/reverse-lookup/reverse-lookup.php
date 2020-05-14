@@ -16,7 +16,7 @@ function reverse_lookup_sc($params) {
 function reverse_lookup_data($resource, $value, $key) {
     $var = "data." . $resource;
     if (!isset($GLOBALS['SYSTEM']['variables'][$var])) {
-        load_library("data");
+        load_library('data', 'data');
         data_sc(array("resource" => $resource));
     }
     $data = $GLOBALS['SYSTEM']['variables'][$var];

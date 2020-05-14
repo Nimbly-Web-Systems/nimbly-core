@@ -7,7 +7,7 @@ if (count($parts) !== 3 || $parts[0] !== 'admin' || $parts[2] !== 'add') {
     return;
 }
 $resource = $parts[1];
-load_library("data");
+load_library('data', 'data');
 if (!data_exists($resource)) {
     return;
 }

@@ -8,7 +8,7 @@ function post_sc($params) {
         }
         return; 
     }
-    load_library("session");
+    load_library("session", "user");
     $csrf_pass = false;
     if (session_resume()) {
         $csrf_pass = isset($_SESSION['key']) && $_SESSION['key'] === post_get('form_key');

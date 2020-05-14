@@ -11,7 +11,7 @@ function sys_messages_post() {
     if (empty($data['message'])) {
         return json_result(array('message' => 'INVALID_DATA'), 400);
     }
-    load_library("system-messages");
+    load_library('system-messages', 'user');
     system_message($data['message']);
     return json_result(array("system-messages" => $data['message'], 'count' => 1));
 }

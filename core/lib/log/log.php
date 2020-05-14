@@ -11,7 +11,7 @@ function log_system($str) {
     if (is_array($str)) {
         $str = print_r($str, true);
     }
-    load_library('data');
+    load_library('data', 'data');
     $uuid = md5($str);
     if (data_exists('.log-entries', $uuid)) {
         $data = data_read('.log-entries', $uuid);

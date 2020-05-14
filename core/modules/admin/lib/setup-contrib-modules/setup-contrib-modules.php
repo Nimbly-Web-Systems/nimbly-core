@@ -50,7 +50,7 @@ function setup_contrib_modules_sc() {
             unset($clear_modules[$k]);
         }
     }
-    load_library('util');
+    load_library('rrmdir', 'data');
     foreach ($clear_modules as $m) {
         $d = $dir . '/' . $m;
         _scmout('removing directory ' . $d);

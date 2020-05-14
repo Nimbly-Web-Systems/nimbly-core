@@ -2,7 +2,7 @@
 
 load_library("redirect");
 load_library("get");
-load_library("data");
+load_library("data", "data");
 $config = data_read('.config', 'site');
 $url = $config['login_url'] ?? '';
 redirect($url);
