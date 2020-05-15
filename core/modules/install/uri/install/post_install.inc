@@ -18,6 +18,7 @@ data_create('.config', 'site', [
  * Create readme file
  */
 
+set_variable('site-name', $sitename);
 $readme_content = run_buffered(realpath(dirname(__FILE__)) . '/readme.md.tpl');
 $readme_file = $GLOBALS['SYSTEM']['file_base'] . 'ext/readme.md';
 if (file_put_contents($readme_file, $readme_content)) {
