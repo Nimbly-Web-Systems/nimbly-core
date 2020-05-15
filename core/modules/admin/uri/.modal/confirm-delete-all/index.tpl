@@ -1,4 +1,4 @@
-[module user admin forms]
+[module user admin forms modal]
 [set resource-id="[get resource default=undefined overwrite]"]
 [access feature=manage-[resource-id],get_[resource-id],(any)_[resource-id]]
 [post]
