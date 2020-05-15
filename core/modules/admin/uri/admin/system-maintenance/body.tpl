@@ -63,10 +63,6 @@ Disk space total: [disk-space-total]Gb</p>
 			<td>Show php error log file.</td>
 		</tr>
 		<tr>
-			<td><a href='[base-url]/admin/.log-entries'>System log entries</a></td>
-			<td>Show system log entries.</td>
-		</tr>
-		<tr>
 			<td><a href='[base-url]/admin/shortcodes'>Shortcodes</a></td>
 			<td>Overview of shortcodes with description of what they do.</td>
 		</tr>
