@@ -79,7 +79,7 @@ function pages_find_by_key($key) {
 
 function pages_delete($uuid) {
     global $SYSTEM;
-    load_library("md5"), 'data';
+    load_library("md5", 'data');
     $page = pages_find_by_key(md5_uuid($uuid));
     if (!is_array($page) || count($page) !== 1) {
         return false;
