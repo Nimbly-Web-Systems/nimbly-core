@@ -31,7 +31,7 @@ function files_post() { // create a new file and it's meta data
         "type" => $_FILES['file']['type'],
     );
     if (exif_imagetype($from) === IMAGETYPE_JPEG) {
-        load_library("exif", "images");
+        load_library("exif", "media");
         $exif_data = exif_get($from);
         $meta = array_merge($meta, $exif_data);
     }
