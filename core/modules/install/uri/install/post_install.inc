@@ -7,51 +7,61 @@ load_libraries(['get', 'set', 'data', 'encrypt', 'salt']);
  */
 
 $sitename = post_get('sitename');
-data_create('.config', 'site', [
-  'name' => $sitename,
-  'description' => $sitename . ': a nimbly site',
-  'keywords' => $sitename . ', nimbly',
-  'login_url' => 'admin'
-]);
+if (!data_exists('.config', 'site')) {
+    data_create('.config', 'site', [
+        'name' => $sitename,
+        'description' => $sitename . ': a nimbly site',
+        'keywords' => $sitename . ', nimbly',
+        'login_url' => 'admin'
+  ]);
+} else {
+    data_update('.config', 'site', ['name' => $sitename]);
+}
 
 /*
  * Create readme file
  */
 
-set_variable('site-name', $sitename);
-$readme_content = run_buffered(realpath(dirname(__FILE__)) . '/readme.md.tpl');
 $readme_file = $GLOBALS['SYSTEM']['file_base'] . 'ext/readme.md';
-if (file_put_contents($readme_file, $readme_content)) {
+if (!file_exists($readme_file)) {
+  set_variable('site-name', $sitename);
+  $readme_content = run_buffered(realpath(dirname(__FILE__)) . '/readme.md.tpl');
+  if (file_put_contents($readme_file, $readme_content)) {
     chmod($readme_file, 0640);
-} 
+  } 
+}
 
 /*
  * Create .gitignore file
  */
 
-$gitignore_content = run_buffered(realpath(dirname(__FILE__)) . '/.gitignore.tpl');
 $gitignore_file = $GLOBALS['SYSTEM']['file_base'] . 'ext/.gitignore';
-if (file_put_contents($gitignore_file, $gitignore_content)) {
-    chmod($gitignore_file, 0640);
+if (!file_exists($gitignore_file)) {
+    $gitignore_content = run_buffered(realpath(dirname(__FILE__)) . '/.gitignore.tpl');
+    if (file_put_contents($gitignore_file, $gitignore_content)) {
+        chmod($gitignore_file, 0640);
+    }
 }
 
 /*
  * Create core routes
  */
 
-data_create('.routes', '.meta', [
-    'fields' => [
-       'route' => [
-         'type' => 'text',
-         'name' => 'Route'
-       ],
-       'order' => [
-         'type' => 'text',
-         'name' => 'Order'
-       ]
-    ],
-    'pk' => 'route'
-]);
+if (!data_exists('.routes', '.meta')) {
+    data_create('.routes', '.meta', [
+        'fields' => [
+          'route' => [
+            'type' => 'text',
+            'name' => 'Route'
+          ],
+          'order' => [
+            'type' => 'text',
+            'name' => 'Order'
+          ]
+        ],
+        'pk' => 'route'
+    ]);
+}
 
 $routes = [
     ['route' => 'api', 'order' => 900],
@@ -71,45 +81,52 @@ $routes = [
 ];
 
 foreach ($routes as $route) {
-    data_create('.routes', md5($route['route']), $route);
+    $key = md5($route['route']);
+    if (!data_exists('.routes', $key)) {
+      data_create('.routes', $key, $route);
+    }
 }
 
 /*
  * Create admin role
  */
 
-data_create('roles', 'admin', array(
-    'name' => 'Admin',
-    'description' => 'For technical administration of [site-name]',
-    'features' => '(all)'
-));
+if (!data_exists('roles', 'admin')) {
+  data_create('roles', 'admin', [
+      'name' => 'Admin',
+      'description' => 'For technical administration of [site-name]',
+      'features' => '(all)'
+  ]);
+}
 
 /*
  * Create users resource
  */
 
-data_create('users', '.meta', [
-   'fields' => [
-        'email' => [
-          'type' => 'text',
-          'name' => 'email'
-        ],
-        'password' => [
-          'type' => 'password',
-          'name' => 'password'
-        ],
-        'roles' => [
-          'type' => 'text',
-          'name' => 'roles'
-        ],
-        'name' => [
-          'type' => 'text',
-          'name' => 'name'
-        ]
-  ],
-  'pk' => 'email',
-  'encrypt' => 'password'
-]);
+ if (!data_exists('users', '.meta')) {
+    data_create('users', '.meta', [
+      'fields' => [
+            'email' => [
+              'type' => 'text',
+              'name' => 'email'
+            ],
+            'password' => [
+              'type' => 'password',
+              'name' => 'password'
+            ],
+            'roles' => [
+              'type' => 'text',
+              'name' => 'roles'
+            ],
+            'name' => [
+              'type' => 'text',
+              'name' => 'name'
+            ]
+      ],
+      'pk' => 'email',
+      'encrypt' => 'password'
+    ]);
+}
 
 /*
  * Create admin user
