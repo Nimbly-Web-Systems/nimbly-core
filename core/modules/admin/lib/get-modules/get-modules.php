@@ -7,6 +7,9 @@ function get_modules_sc() {
 
     global $SYSTEM;
 	foreach ($SYSTEM['env_paths'] as $env_path) {
+        if ($env_path === 'core') {
+            continue;
+        }
         $path = $SYSTEM['file_base'] . $env_path . '/modules';
         if (!file_exists($path)) {
         	continue;

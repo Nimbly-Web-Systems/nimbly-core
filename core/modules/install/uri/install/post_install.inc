@@ -39,6 +39,20 @@ if (file_put_contents($gitignore_file, $gitignore_content)) {
  * Create core routes
  */
 
+data_create('.routes', '.meta', [
+    'fields' => [
+       'route' => [
+         'type' => 'text',
+         'name' => 'Route'
+       ],
+       'order' => [
+         'type' => 'text',
+         'name' => 'Order'
+       ]
+    ],
+    'pk' => 'route'
+]);
+
 $routes = [
     ['route' => 'api', 'order' => 900],
     ['route' => 'api/v1/(resource)', 'order' => 500],
