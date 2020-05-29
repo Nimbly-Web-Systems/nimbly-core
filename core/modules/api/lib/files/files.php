@@ -2,7 +2,7 @@
 
 function files_sc($params) {
     load_library("api", "api");
-    api_method_switch("files");
+    api_method_switch("files", '.files');
 }
 
 function files_get($resource=".files") { // get all files (list)
@@ -20,6 +20,7 @@ function files_post($resource=".files") { // create a new file and it's meta dat
         if (empty($from) || !empty($file_info['error'])) {
             return json_result(array('message' => 'BAD_REQUEST'), 400);
         }
+        
         $uuid = hash_file('md5', $from); // use checksum as uuid
         if (data_exists($resource, $uuid)) {
             $meta = data_read($resource . '_meta', $uuid);
