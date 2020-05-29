@@ -5,73 +5,82 @@ function files_sc($params) {
     api_method_switch("files");
 }
 
-function files_get() { // get all files (list)
-    $files = data_read(".files_meta");
+function files_get($resource=".files") { // get all files (list)
+    $files = data_read($resource . '_meta');
     return json_result(array('files' => $files, 'count' => count($files)), 200);
 }
 
-function files_post() { // create a new file and it's meta data
-    if (empty($_FILES) || empty($_FILES['file']['tmp_name'])) {
+function files_post($resource=".files") { // create a new file and it's meta data
+    if (empty($_FILES)) {
         return json_result(array('message' => 'BAD_REQUEST'), 400);
     }
-    $from = $_FILES['file']['tmp_name'];
-    $uuid = hash_file('md5', $from); // use checksum as uuid
-    if (data_exists('.files', $uuid)) {
-        $meta = data_read('.files_meta', $uuid);
-        return json_result(array("files" => $meta, 'count' => 1, 'message' => 'RESOURCE_CREATED'), 201);
-        //return json_result(array("files" => data_read(".files_meta", $uuid), 'count' => 1, 'message' => 'RESOURCE_EXISTS'), 409);
+    $result = [];
+    foreach ($_FILES as $key => $file_info) {
+        $from = $file_info['tmp_name'];
+        if (empty($from) || !empty($file_info['error'])) {
+            return json_result(array('message' => 'BAD_REQUEST'), 400);
+        }
+        $uuid = hash_file('md5', $from); // use checksum as uuid
+        if (data_exists($resource, $uuid)) {
+            $meta = data_read($resource . '_meta', $uuid);
+            $result[$key] = $meta;
+            continue;
+        }
+        $dir = $GLOBALS['SYSTEM']['data_base'] . '/' . $resource . '/';
+        if (!file_exists($dir)) {
+            @mkdir($dir, 0750, true);
+        }
+        $meta = array(
+            "name" => $file_info['name'],
+            "uuid" => $uuid,
+            "type" => $file_info['type'],
+        );
+        if (exif_imagetype($from) === IMAGETYPE_JPEG) {
+            load_library("exif", "media");
+            $exif_data = exif_get($from);
+            $meta = array_merge($meta, $exif_data);
+        }
+        if (exif_imagetype($from) !== false) {
+            list($width, $height) = getimagesize($from);
+            $meta['width'] = $width;
+            $meta['height'] = $height;
+            $meta['orientation'] = $width >= $height ? 'landscape' : 'portrait';
+            $meta['aspect_ratio'] = $width / $height;
+        }
+        if (data_create($resource . '_meta', $uuid, $meta) && move_uploaded_file($from, $dir . $uuid) === true) {
+            $result[$key] = $meta;
+        }
     }
-    $dir = $GLOBALS['SYSTEM']['data_base'] . '/.files/';
-    if (!file_exists($dir)) {
-        @mkdir($dir, 0750, true);
+    if (empty($result)) {
+        return json_result(['message' => 'RESOURCE_CREATE_FAILED'], 500);
     }
-    $meta = array(
-        "name" => $_FILES['file']['name'],
-        "uuid" => $uuid,
-        "type" => $_FILES['file']['type'],
-    );
-    if (exif_imagetype($from) === IMAGETYPE_JPEG) {
-        load_library("exif", "media");
-        $exif_data = exif_get($from);
-        $meta = array_merge($meta, $exif_data);
-    }
-    if (exif_imagetype($from) !== false) {
-        list($width, $height) = getimagesize($from);
-        $meta['width'] = $width;
-        $meta['height'] = $height;
-        $meta['orientation'] = $width >= $height ? 'landscape' : 'portrait';
-        $meta['aspect_ratio'] = $width / $height;
-    }
-    if (data_create('.files_meta', $uuid, $meta) && move_uploaded_file($from, $dir . $uuid) === true) {
-        return json_result(array("files" => $meta, 'count' => 1, 'message' => 'RESOURCE_CREATED'), 201);
-    }
-    return json_result(array('message' => 'RESOURCE_CREATE_FAILED'), 500);
+    return json_result(["files" => $result, 'count' => count($result), 'message' => 'RESOURCE_CREATED'], 201);
 }
 
-function files_delete() {  // delete all files
-    $delete_count = data_delete('.files_meta');
+function files_delete($resource = '.files') {  // delete all files
+    $delete_count = data_delete($resource . '_meta');
     if ($delete_count !== false) {
-        data_delete('.files');
-        return json_result(array('message' => 'RESOURCE_DELETED', 'count' => (int)$delete_count));
+        data_delete($resource);
+        return json_result(['message' => 'RESOURCE_DELETED', 'count' => (int)$delete_count]);
     }
-    return json_result(array('message' => 'RESOURCE_DELETE_FAILED'), 500);
+    return json_result(['message' => 'RESOURCE_DELETE_FAILED'], 500);
 }
 
 /*
  *  Implementation on files item:
  */
 
-function files_id_get($resource=".files_meta", $uuid) { // read one
-    return resource_id_get($resource, $uuid);
+function files_id_get($resource=".files", $uuid) { // read one
+    return resource_id_get($resource . '_meta', $uuid);
 }
 
-function files_id_put($resource=".files_meta", $uuid) { // update one
-    return resource_id_put($resource, $uuid);
+function files_id_put($resource=".files", $uuid) { // update one
+    return resource_id_put($resource . '_meta', $uuid);
 }
 
-function files_id_delete($resource=".files_meta", $uuid) { // delete one
-    if (data_delete($resource, $uuid)) {
-        data_delete(".files", $uuid);
+function files_id_delete($resource=".files", $uuid) { // delete one
+    if (data_delete($resource . '_meta', $uuid)) {
+        data_delete($resource, $uuid);
         return json_result(array('message' => 'FILE RESOURCE_DELETED', 'count' => 1));
     }
     return json_result(array('message' => 'FILE RESOURCE_DELETE_FAILED'), 500);
