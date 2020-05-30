@@ -5,7 +5,8 @@ function thumbnail_sc($params) {
     $mode = get_param_value($params, "mode", "h");
     $size = get_param_value($params, "size", 240) + 0;
     $ratio = get_param_value($params, "ratio", 0) + 0;
-    return thumbnail_create($uuid, $size, $ratio, $mode);
+    $resource = get_param_value($params, "resource", ".files");
+    return thumbnail_create($resource, $uuid, $size, $ratio, $mode);
 }
 
 function thumbnail_sharpen($img) {
@@ -22,7 +23,7 @@ function thumbnail_sharpen($img) {
     imageconvolution($img, $sharpen, $divisor, 0);
 }
 
-function thumbnail_create($uuid, $size, $ratio=0, $mode='h') {
+function thumbnail_create($resource, $uuid, $size, $ratio=0, $mode='h') {
 
     $MAX_UPSCALE = 1.0; // @todo: make this dynamic
 
@@ -30,7 +31,7 @@ function thumbnail_create($uuid, $size, $ratio=0, $mode='h') {
 
     load_library('data', 'data');
     $file_name = sprintf("%s_%s%s_%s.jpg", $uuid, $size, $mode, str_replace('.', '_', $ratio));
-    $path = sprintf(".tmp/thumb/%s", $file_name);
+    $path = sprintf(".tmp/thumb-%s/%s", $resource, $file_name);
     $cache_path = $GLOBALS['SYSTEM']['data_base'] . '/' . $path;
 
     if (@file_exists($cache_path)) {
@@ -39,7 +40,7 @@ function thumbnail_create($uuid, $size, $ratio=0, $mode='h') {
 
     // 2. Create thumbnail from original
 
-    $org_path = sprintf("%s/.files/%s", $GLOBALS['SYSTEM']['data_base'], $uuid);
+    $org_path = sprintf("%s/%s/%s", $GLOBALS['SYSTEM']['data_base'], $resource, $uuid);
     list($org_w, $org_h, $org_type) = @getimagesize($org_path);
     switch ($org_type) {
         case IMAGETYPE_GIF:
