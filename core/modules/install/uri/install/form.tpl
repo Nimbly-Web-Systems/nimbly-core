@@ -3,23 +3,23 @@
     [form-key install]
 
     <label>[text Enter your email]
-        <input type="email" name="email" value="[sticky email]" required />
+        <input type="email" name="email" value="" required />
     </label>
     <label>[text Create a password]
         <input type="password" id="password" name="password" required >
     </label>
     
     <label>[text Enter site name]
-        <input type="text" name="sitename" value="[sticky sitename]" required />
+        <input type="text" name="sitename" value="" required />
     </label>
     
     <label>[text Enter Apache alias for base rewrite]
-        <input type="text" maxlength="64" name="rewritebase" value="[sticky rewritebase default=[guess-alias]]"  />
+        <input type="text" maxlength="64" name="rewritebase" value="[guess-alias]"  />
     </label>
     <p class="help-text">[text help_rewritebase]</p>
     
     <label>[text Pepper code]
-        <input type="text" maxlength="64" name="pepper" value="[sticky pepper default=[salt]]" required  />
+        <input type="text" maxlength="64" name="pepper" value="[salt]" required  />
         <span class="form-error nb-close">
             [text pepper_required]
         </span>

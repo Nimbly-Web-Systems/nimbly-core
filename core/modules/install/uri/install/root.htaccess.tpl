@@ -56,7 +56,7 @@ AddOutputFilterByType DEFLATE application/x-javascript
 # rewrite: initialize
 RewriteEngine on
 
-RewriteBase /[get sticky.rewritebase]
+RewriteBase /[get rewritebase]
 
 # rewrite: use cache if available for the requested file
 RewriteCond %{REQUEST_URI} !\.(ico|pdf|webm|mp4|jpg|jpeg|png|gif)$

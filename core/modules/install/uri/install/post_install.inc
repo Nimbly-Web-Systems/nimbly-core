@@ -149,6 +149,12 @@ data_create('users', md5($email), [
  
 $pepper = post_get('pepper');
 set_variable('pepper', $pepper);
+$rewritebase = post_get('rewritebase');
+set_variable('rewritebase', $rewritebase);
+if (!empty($rewritebase)) {
+	set_variable('rewritebase-slash', $rewritebase . '/');
+}
+
 $htaccess_content = run_buffered(realpath(dirname(__FILE__)) . '/root.htaccess.tpl');
 $htaccess_file = $GLOBALS['SYSTEM']['file_base'] . '.htaccess';
 if (file_put_contents($htaccess_file, $htaccess_content)) {
