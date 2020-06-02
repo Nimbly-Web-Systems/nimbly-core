@@ -73,7 +73,7 @@ function api_user_access($feature, $resource = false) {
  * + Resolves primary key field
  * + Encrypts fields
  */
-function api_json_input($resource) {
+function api_json_input($resource, $uuid = false) {
     $meta = data_meta($resource);
     if (isset($meta['pk'])) {
         $data = json_input(true, $meta['pk']);
@@ -83,8 +83,21 @@ function api_json_input($resource) {
     if (isset($meta['encrypt'])) {
         load_library('salt', 'data');
         load_library('encrypt', 'data');
-        $data['salt'] = salt_sc();
         $fs = explode(',', $meta['encrypt']);
+        $new_salt = true;
+        foreach ($fs as $f) {
+            if (isset($data[$f])) {
+                continue;
+            }
+            $new_salt = false;
+            break;
+        }
+        if ($new_salt || $uuid === false) {
+            $data['salt'] = salt_sc();
+        } else if ($uuid !== false) {
+            $old_salt = data_read($resource, $uuid, 'salt');
+            $data['salt'] = $old_salt ?? salt_sc();
+        }
         foreach ($fs as $f) {
             if (!isset($data[$f])) {
                 continue;
@@ -213,21 +226,21 @@ function resource_id_post($resource, $uuid) { // create new with uuid
 }
 
 function resource_id_put($resource, $uuid) { // update one
-    $data = api_json_input($resource);
+    $data = api_json_input($resource, $uuid);
     $csrf_check = api_check_csrf($data);
     if ($csrf_check === false) { //can also be null, if no key is set
-        return json_result(array('message' => 'INVALID_DATA'), 400);   
+        return json_result(['message' => 'INVALID_DATA'], 400);   
     }
     $data['uuid'] = $uuid;
     $result = data_update($resource, $uuid, $data);
     if (is_array($result)) {
-        return json_result(array(
+        return json_result([
             $resource => array($uuid => $result),
             'count' => 1,
             'message' => 'RESOURCE_UPDATED'
-        ), 201);
+        ], 201);
     }
-    return json_result(array('message' => 'RESOURCE_UPDATE_FAILED'), 500);
+    return json_result(['message' => 'RESOURCE_UPDATE_FAILED'], 500);
 }
 
 function resource_id_delete($resource, $uuid) { // delete one
