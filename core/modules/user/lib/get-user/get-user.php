@@ -14,8 +14,8 @@ function get_user($uuid=false) {
 		return $users[$uuid];
 	}
 	load_library('session', 'user');
-	if (empty($uuid) && session_resume() && !empty($_SESSION['username'])) {
-		$uuid = md5($_SESSION['username']);
+	if (empty($uuid) && session_resume() && !empty($_SESSION['userid'])) {
+		$uuid = $_SESSION['userid'];
 	}
 	if (empty($uuid)) {
 		return false;

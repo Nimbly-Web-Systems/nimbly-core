@@ -292,64 +292,15 @@ function data_update($resource, $uuid, $data_update_ls) {
         $data_merged_ls = array_merge($data_ls, $data_update_ls);
     }
 
-    // additional handling if PK field changed
-    $pk_field =  $data_update_ls['pk-field-name'] ?? false;
-    if ($pk_field) {
-        $pk_value = $data_update_ls[$pk_field] ?? false;
-        $uuid = data_update_pk($resource, $uuid, $pk_value);
-        if (empty($uuid)) {
-            return false;
-        }
-        $data_merged_ls['uuid'] = $uuid;
-    }
-
     // add _modified_by info
-    load_library('md5', 'data');
-    load_library('username', 'user');
-    $data_merged_ls['_modified_by'] = md5_uuid(username_get());
+    load_library('userid', 'user');
+    $data_merged_ls['_modified_by'] = userid_get();
     $data_merged_ls['_modified'] = time();
     _data_validate($resource, $uuid, $data_merged_ls);
     if (data_create($resource, $uuid, $data_merged_ls)) {
         return $data_merged_ls;
     }
     return false;
-}
-
-function data_update_pk($resource, $uuid, $pk_value) {
-    if (empty($pk_value)) {
-        return $uuid;
-    }
-    load_library('md5', 'data');
-    $new_uuid = md5_uuid($pk_value);
-    if ($new_uuid === $uuid) {
-        return $uuid;
-    }
-    if (data_exists($resource, $new_uuid)) {
-        return false;
-    }
-    $path = $GLOBALS['SYSTEM']['data_base'] . '/' . $resource . '/';
-    if (rename($path . $uuid, $path . $new_uuid) === true) {
-        $meta = data_meta($resource);
-        if (isset($meta['children']) && is_array($meta['children'])) {
-            foreach ($meta['children'] as $child_name) {
-                data_update_fk($resource, $child_name, $uuid, $new_uuid);
-            }
-        }
-        return $new_uuid;
-    }
-    return false;
-}
-
-function data_update_fk($parent, $child_name, $old_uuid, $new_uuid) {
-    $meta = data_meta($child_name);
-    if (!isset($meta['parent']['resource']) || $meta['parent']['resource'] !== $parent) {
-        return;
-    } 
-    $field = $meta['parent']['field'];
-    $children = data_filter(data_read($child_name), $field . ':' . $old_uuid);
-    foreach (array_keys($children) as $child_id) {
-        data_update($child_name, $child_id, array($field => $new_uuid));
-    }
 }
 
 /**
@@ -372,9 +323,8 @@ function data_create($resource, $uuid, $data_ls) {
         unset($data_ls['form-key']);
     }
     if (!isset($data_ls['_created_by'])) {
-        load_library('md5', 'data');
-        load_library('username', 'user');
-        $data_ls['_created_by'] = md5_uuid(username_get());
+        load_library('userid', 'user');
+        $data_ls['_created_by'] = userid_get();
     }
     if (!isset($data_ls['_created'])) {
         $data_ls['_created'] = time();
@@ -392,9 +342,6 @@ function data_create($resource, $uuid, $data_ls) {
                     continue;
                 }
                 $index_uuid = md5_uuid($data_ls[$index_name]);
-                if ($index_uuid === $uuid) {
-                    continue; // no need to index
-                }
                 _data_create_index($file, $index_name, $index_uuid);
             }
         }

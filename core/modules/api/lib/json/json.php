@@ -21,17 +21,9 @@ function json_result($result, $code = 200, $modified = 0) {
     exit(json_encode($result, JSON_UNESCAPED_UNICODE));
 }
 
-function json_input($create_uuid = true, $pk_field = 'pk') {
+function json_input() {
     $data = file_get_contents("php://input");
     $clean_data = strip_tags($data, "<h1><h2><h3><h4><h5><h6><b><strong><a><i><p><blockquote><ol><ul><li><br><img><iframe>");
     $result = json_decode($clean_data, true);
-    if ($create_uuid && empty($result['uuid'])) {
-        if (!empty($result[$pk_field])) {
-            $result['uuid'] = md5($result[$pk_field]);
-        } else {
-            load_library('uuid', 'data');
-            $result['uuid'] = uuid_sc();
-        }
-    }
     return $result;
 }   

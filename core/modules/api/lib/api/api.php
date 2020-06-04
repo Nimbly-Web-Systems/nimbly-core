@@ -75,11 +75,26 @@ function api_user_access($feature, $resource = false) {
  */
 function api_json_input($resource, $uuid = false) {
     $meta = data_meta($resource);
+    $data = json_input();
     if (isset($meta['pk'])) {
-        $data = json_input(true, $meta['pk']);
-    } else {
-        $data = json_input();
+        $pk_field = $meta['pk'];
+        if (!empty($data[$pk_field])) {
+            $data['uuid'] = md5($data[$pk_field]);
+        }
     }
+
+    /*
+    if ($create_uuid && empty($result['uuid'])) {
+        if (!empty($result[$pk_field])) {
+            $result['uuid'] = md5($result[$pk_field]);
+        } else {
+            load_library('uuid', 'data');
+            $result['uuid'] = uuid_sc();
+        }
+    }
+    */
+
+
     if (isset($meta['encrypt'])) {
         load_library('salt', 'data');
         load_library('encrypt', 'data');
@@ -105,7 +120,36 @@ function api_json_input($resource, $uuid = false) {
             $data[$f] = encrypt($data[$f], $data['salt']);
         }
     }
+    if (isset($meta['slug'])) {
+        load_library('slug', 'format');
+        load_library('uuid', 'data');
+        foreach ($meta['slug'] as $mslug) {
+            $f_from = key($mslug);
+            $f_to = current($mslug);
+            $slug = $data[$f_to] ?? $data[$f_from] ?? false;
+            if ($slug === false) {
+                continue;
+            }
+            $data[$f_to] = api_unique_slug($resource, $f_to, $slug, $uuid);
+        }
+    }
     return $data;
+}
+
+function api_unique_slug($resource, $field, $slug, $uuid) {
+    if (empty($slug)) {
+        return uuid_sc();
+    }
+    $result = slug_sc([$slug]);
+    $slugs = data_read($resource, null, $field);
+    for ($i = 1; $i < 100; $i++) {
+        $key = array_search($result, $slugs);
+        if ($key === false || $key === $uuid) {
+            return $result;
+        }
+        $result = $slug . '-' . $i;
+    }
+    return uuid_sc();
 }
 
 function api_check_csrf(&$data) {
@@ -151,7 +195,8 @@ function resource_post($resource) { // create new
     if ($csrf_check === false) { //can also be null, if no key is set
         return json_result(array('message' => 'INVALID_DATA'), 400);   
     }
-    $uuid = $data['uuid'];
+    load_library('uuid', 'data');
+    $uuid = $data['uuid'] ?? uuid_sc();
     if (data_exists($resource, $uuid)) {
         return json_result(array('message' => 'RESOURCE_EXISTS'), 409);
     }
@@ -213,7 +258,8 @@ function resource_id_post($resource, $uuid) { // create new with uuid
     if ($csrf_check === false) { //can also be null, if no key is set
         return json_result(array('message' => 'INVALID_DATA'), 400);   
     }
-    $data['uuid'] = $uuid;
+    load_library('uuid', 'data');
+    $data['uuid'] = $uuid ?? uuid_sc();
     $result = data_create($resource, $uuid, $data);
     if ($result) {
         return json_result(array(
