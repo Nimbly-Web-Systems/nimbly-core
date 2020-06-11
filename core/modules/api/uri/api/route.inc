@@ -1,6 +1,5 @@
 <?php
 
-router_deny();
 $parts = explode('/', $GLOBALS["SYSTEM"]["request_uri"]);
 if ($parts < 1 || $parts[0] !==  "api") {
     return;

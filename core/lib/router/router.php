@@ -24,7 +24,6 @@ function router_match($path) {
     $path_parts = explode(DIRECTORY_SEPARATOR . 'uri' . DIRECTORY_SEPARATOR, dirname($path));
     $file_parts = explode(DIRECTORY_SEPARATOR, $path_parts[1]);
     if (count($file_parts) < count($parts)) {
-        router_deny();
         return false;
     }
     $result = array();
@@ -32,7 +31,6 @@ function router_match($path) {
         if ($file_parts[$i][0] === '(' || $parts[$i][0] === '(') {
             $result[] = $parts[$i];
         } else if ($parts[$i] !== $file_parts[$i]) {
-            router_deny();
             return false;
         }
     }
@@ -40,11 +38,6 @@ function router_match($path) {
 }
 
 function router_accept($accept = true) {
-    $GLOBALS['SYSTEM']['route_found'] = $accept;
-    return $accept;
-}
-
-function router_deny($accept = false) {
     $GLOBALS['SYSTEM']['route_found'] = $accept;
     return $accept;
 }
@@ -65,6 +58,6 @@ function router_handle($ep) {
         run($file);
         return true;
     }
-
+    $GLOBALS['SYSTEM']['route_found'] = false;
     return false;
 }

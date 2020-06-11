@@ -1,8 +1,5 @@
 <?php
 
-router_deny();
-
-
 $parts = $GLOBALS['SYSTEM']['uri_parts'];
 if (count($parts) !== 5 || $parts[0] !== 'api' || $parts[1] !== 'v1') {
     return;

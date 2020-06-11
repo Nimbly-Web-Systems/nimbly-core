@@ -1,7 +1,5 @@
 <?php
 
-router_deny();
-
 $parts = $GLOBALS['SYSTEM']['uri_parts'];
 if (count($parts) !== 3 || $parts[0] !== 'admin') {
     return;
