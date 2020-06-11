@@ -211,7 +211,7 @@ function _data_read_cache($op, $resource, $setting) {
         return false;
     }
     $t = filemtime($cache_file);
-    if ($t < $modified) {
+    if ($t <= $modified) {
         unlink($cache_file);
         return false;
     }
@@ -333,7 +333,6 @@ function data_create($resource, $uuid, $data_ls) {
     $data_ls['uuid'] = $uuid;
     $json_data = json_encode($data_ls, JSON_UNESCAPED_UNICODE);
     if (@file_put_contents($file, $json_data) !== false) {
-        touch($dir);
         $meta = data_meta($resource); 
         if (isset($meta['index']) && is_array($meta['index'])) {
             load_library('md5', 'data');
@@ -345,6 +344,7 @@ function data_create($resource, $uuid, $data_ls) {
                 _data_create_index($file, $index_name, $index_uuid);
             }
         }
+        touch($dir);
         load_library('trigger', 'data');
         trigger('data-create', ['resource' => $resource, 'uuid' => $uuid, 'data' => $data_ls]);
         return true;
@@ -357,7 +357,7 @@ function _data_create_index($file, $index_name, $index_uuid) {
     if (!file_exists($path)) {
         @mkdir($path, 0750, true);
     }
-    touch($path . basename($file)); //better than symlink (?) because original file should be opened with data_read 
+    touch($path . basename($file)); 
 }
 
 function _data_delete_index($file, $index_name, $index_uuid) {
@@ -622,13 +622,28 @@ function data_meta($resource) {
     if (!empty($meta_result[$resource])) {
         return $meta_result[$resource];
     }
-    if (data_exists($resource, ".meta")) {
-        $meta = data_read($resource, ".meta");
+
+    if (strpos($resource, '/') !== false) {
+        $parts = explode('/', $resource);
+        $r = $parts[0];
     } else {
-        $meta = _data_meta_build($resource);
-        data_create($resource, ".meta", $meta);
+        $r = $resource;
+    }
+
+    if (!empty($meta_result[$r])) {
+        return $meta_result[$r];
+    }
+
+    if (data_exists($r, ".meta")) {
+        $meta = data_read($r, ".meta");
+    } else {
+        $meta = _data_meta_build($r);
+        data_create($r, ".meta", $meta);
     }
     $meta_result[$resource] = $meta;
+    if ($resource !== $r) {
+        $meta_result[$r] = $meta;
+    }
     return $meta;
 }
 

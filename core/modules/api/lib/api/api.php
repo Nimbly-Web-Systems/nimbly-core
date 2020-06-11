@@ -6,6 +6,10 @@ load_library("access", "user");
 load_library("get");
 
 function api_method_switch($func_prefix, $resource = null, $uuid = null) {
+    $meta = data_meta($resource);
+    if (!empty($meta['subkey'])) {
+        return api_method_switch_with_subkey($func_prefix, $resource, $uuid, null);
+    }
     $method = strtolower($_SERVER['REQUEST_METHOD']);
     $perm = $resource ?? $func_prefix;
     $access_feature = _api_access_str($method, $perm, $uuid);
@@ -76,24 +80,6 @@ function api_user_access($feature, $resource = false) {
 function api_json_input($resource, $uuid = false) {
     $meta = data_meta($resource);
     $data = json_input();
-    if (isset($meta['pk'])) {
-        $pk_field = $meta['pk'];
-        if (!empty($data[$pk_field])) {
-            $data['uuid'] = md5($data[$pk_field]);
-        }
-    }
-
-    /*
-    if ($create_uuid && empty($result['uuid'])) {
-        if (!empty($result[$pk_field])) {
-            $result['uuid'] = md5($result[$pk_field]);
-        } else {
-            load_library('uuid', 'data');
-            $result['uuid'] = uuid_sc();
-        }
-    }
-    */
-
 
     if (isset($meta['encrypt'])) {
         load_library('salt', 'data');
@@ -249,7 +235,10 @@ function resource_id_get($resource, $uuid) { // read one
     return json_result(array($resource => array($uuid => data_read($resource, $uuid)), 'count' => 1), 200, $modified);
 }
 
-function resource_id_post($resource, $uuid) { // create new with uuid
+function resource_id_post($resource, $uuid = null) { 
+    if ($uuid === null) {
+        return resource_post($resource);
+    }
     if (data_exists($resource, $uuid)) {
         return json_result(array('message' => 'RESOURCE_EXISTS'), 409);
     }
@@ -258,8 +247,7 @@ function resource_id_post($resource, $uuid) { // create new with uuid
     if ($csrf_check === false) { //can also be null, if no key is set
         return json_result(array('message' => 'INVALID_DATA'), 400);   
     }
-    load_library('uuid', 'data');
-    $data['uuid'] = $uuid ?? uuid_sc();
+    $data['uuid'] = $uuid;
     $result = data_create($resource, $uuid, $data);
     if ($result) {
         return json_result(array(
