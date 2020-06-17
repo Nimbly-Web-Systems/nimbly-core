@@ -5,9 +5,13 @@ function files_sc($params) {
     api_method_switch("files", '.files');
 }
 
+function files_key($resource) {
+    return $resource[0] === '.'? substr($resource, 1) : $resource;
+}
+
 function files_get($resource=".files") { // get all files (list)
     $files = data_read($resource . '_meta');
-    return json_result(array('files' => $files, 'count' => count($files)), 200);
+    return json_result([files_key($resource) => $files, 'count' => count($files)], 200);
 }
 
 function files_post($resource=".files") { // create a new file and it's meta data
@@ -55,7 +59,7 @@ function files_post($resource=".files") { // create a new file and it's meta dat
     if (empty($result)) {
         return json_result(['message' => 'RESOURCE_CREATE_FAILED'], 500);
     }
-    return json_result(["files" => $result, 'count' => count($result), 'message' => 'RESOURCE_CREATED'], 201);
+    return json_result([files_key($resource) => $result, 'count' => count($result), 'message' => 'RESOURCE_CREATED'], 201);
 }
 
 function files_delete($resource = '.files') {  // delete all files
