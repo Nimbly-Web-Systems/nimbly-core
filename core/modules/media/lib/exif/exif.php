@@ -47,15 +47,20 @@ function exif_get($file) {
             $result['date'] = $exif_date;
         }
     }
+    $result['exif_data'] = exif_struct($result['exif_all']);
     return $result;
 }
 
-function exif_pretty($exif_data) {
-
+function exif_struct($exif_data) {
+    $result = [
+        'camera' => null,
+        'iso' => null,
+        'focal_length' => null,
+        'fstop' => null,
+        'exposure' => null,
+    ];
     //1. get camera make and model
-    if (empty($exif_data["IFD0"]['Make'])) {
-        return "n/a";
-    } else {
+    if (!empty($exif_data["IFD0"]['Make'])) {
         $make = $exif_data["IFD0"]['Make'];
         if ($make === "NIKON CORPORATION" || $make === "Canon") {
             //for nikon and canon, the brand name is already included in the model name
@@ -63,43 +68,52 @@ function exif_pretty($exif_data) {
         } else {
             $camera = $make . ' ' . $exif_data["IFD0"]['Model'];
         }
+        $result['camera'] = $camera;
     }
 
     //2. get iso 
-    if (empty($exif_data["EXIF"]['ISOSpeedRatings'])) {
-        $iso = "ISO-UNKNOWN";
-    } else {
-        $iso = "ISO-" . $exif_data["EXIF"]['ISOSpeedRatings'];
+    if (!empty($exif_data["EXIF"]['ISOSpeedRatings'])) {
+        $result['iso'] = 'ISO-' . $exif_data["EXIF"]['ISOSpeedRatings'];
     }
+   
 
     //3. get focal length
-    $focal_length = "Unknown focal length";
     if (!empty($exif_data["EXIF"]['FocalLength'])) {
         $fl =  exif_eval_div($exif_data["EXIF"]["FocalLength"]);
         if (!empty($fl)) {
             $focal_length = sprintf("%dmm", $fl);
         }
+        $result['focal_length'] = $focal_length;
     }
 
     //4: get fstop
-    $fstop = "Unknown F-Stop";
     if (!empty($exif_data["EXIF"]['FNumber'])) {
         $fs =  exif_eval_div($exif_data["EXIF"]["FNumber"]);
         if (!empty($fs)) {
             $fstop = sprintf("f/%.1f", $fs);
         }
+        $result['fstop'] = $fstop;
     }
     
     //5: exposure time
-    $exposure = "Unknown Exposure";
     if (!empty($exif_data["EXIF"]['ExposureTime'])) {
         $es =  exif_eval_div($exif_data["EXIF"]["ExposureTime"]);
         if (!empty($es)) {
             $exposure = sprintf("1/%d", 1/$es);
         }
+        $result['exposure'] = $exposure;
     }
+    return $result;
+}
 
-    $result = sprintf("%s, %s, %s, %s, %s", $camera, $iso, $focal_length, $fstop, $exposure);
+function exif_pretty($exif_data) {
+    $e = exif_struct($exif_data);
+    $result = sprintf("%s, %s, %s, %s, %s", 
+        $e['camera'] ?? 'Unknown camera', 
+        $e['iso'] ?? 'Unknown iso', 
+        $e['focal_length'] ?? 'Unknown focal length',
+        $e['fstop'] ?? 'Unknown f-stop',
+        $e['exposure'] ?? 'Unknown exposure');
     return $result;
 }
 
