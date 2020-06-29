@@ -39,6 +39,7 @@ function files_post($resource=".files") { // create a new file and it's meta dat
             "name" => $file_info['name'],
             "uuid" => $uuid,
             "type" => $file_info['type'],
+            "size" => $file_info['size']
         );
         if (exif_imagetype($from) === IMAGETYPE_JPEG) {
             load_library("exif", "media");
