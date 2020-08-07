@@ -172,6 +172,16 @@ function resource_get($resource) { // get all
     $modified = data_modified($resource);
     header_not_modified($modified);
     $result = data_read($resource);
+    $meta = data_meta($resource);
+    if (!empty($meta['exclude'])) {
+        foreach ($result as $k => $v) {
+            foreach ($meta['exclude'] as $x) {
+                if (isset($v[$x])) {
+                    unset($result[$k][$x]);
+                }
+            }
+        }
+    }
     return json_result([$resource => $result, 'count' => count($result)], 200, $modified);
 }
 
