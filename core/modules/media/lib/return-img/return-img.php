@@ -52,8 +52,11 @@ function return_img($resource, $uuid, $size) {
     }
 
     // limit size (default max is full hd)
+
     load_library('init-img', 'media');
     run_single_sc('init-img resource="' . $resource . '" uuid=' . $uuid);
+
+
     $max_w = get_variable('max_img_w', 1920);
     $max_h = get_variable('max_img_h', 1080);
     if ($size > $max_h && ($mode === 'h' || ($ratio > 0 && $ratio < 1))) {

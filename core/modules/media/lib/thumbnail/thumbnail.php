@@ -24,7 +24,6 @@ function thumbnail_sharpen($img) {
 }
 
 function thumbnail_create($resource, $uuid, $size, $ratio=0, $mode='h') {
-
     $MAX_UPSCALE = 1.0; // @todo: make this dynamic
 
     // 1. Check cache
@@ -114,6 +113,7 @@ function thumbnail_create($resource, $uuid, $size, $ratio=0, $mode='h') {
 
     thumbnail_sharpen($thumb_img);
     $wm = get_variable('watermark_image', false);
+
     if (!empty($wm) && ($w > 640 || $h > 640)) {
         thumbnail_stamp($thumb_img, $wm, $w, $h, get_variable('watermark_position', 'rightbottom'));
     }
@@ -134,6 +134,7 @@ function thumbnail_create($resource, $uuid, $size, $ratio=0, $mode='h') {
 }
 
 function thumbnail_stamp($img, $wm_path, $w, $h, $position) {
+
     if (!@file_exists($wm_path)) {
         return 0;
     }
@@ -155,6 +156,12 @@ function thumbnail_stamp($img, $wm_path, $w, $h, $position) {
     } else if ($position === "rightbottom") {
         $x = $w - $ww - 5;
         $y = $h - $wh - 5;
+    } else if ($position === 'leftbottom') {
+        $x = 5;
+        $y - $h - $wh - 5;
+    } else {
+        $x = 5;
+        $y = 5;
     }
 
     if ($ww <= $max_w && $wh <= $max_h) {
