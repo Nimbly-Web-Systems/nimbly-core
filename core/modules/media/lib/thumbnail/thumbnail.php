@@ -115,7 +115,7 @@ function thumbnail_create($resource, $uuid, $size, $ratio=0, $mode='h') {
     $wm = get_variable('watermark_image', false);
 
     if (!empty($wm) && ($w > 640 || $h > 640)) {
-        thumbnail_stamp($thumb_img, $wm, $w, $h, get_variable('watermark_position', 'rightbottom'));
+        thumbnail_stamp($thumb_img, $wm, $w*0.1, $h*0.1, get_variable('watermark_position', 'rightbottom'));
     }
 
     //4: save image to cache
