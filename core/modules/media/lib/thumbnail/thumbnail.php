@@ -29,8 +29,10 @@ function thumbnail_create($resource, $uuid, $size, $ratio=0, $mode='h') {
     // 1. Check cache
 
     load_library('data', 'data');
-    $file_name = sprintf("%s_%s%s_%s.jpg", $uuid, $size, $mode, str_replace('.', '_', $ratio));
-    $path = sprintf(".tmp/thumb-%s/%s", $resource, $file_name);
+    $wm = get_variable('watermark_image', false);
+    $wm_id = empty($wm) ? '' : '_' . base_convert(md5(serialize($wm)), 16, 36);
+    $file_name = sprintf("%s_%s%s_%s%s.jpg", $uuid, $size, $mode, str_replace('.', '_', round($ratio, 5)), $wm_id);
+    $path = sprintf(".tmp/thumb/%s/%s", $resource, $file_name);
     $cache_path = $GLOBALS['SYSTEM']['data_base'] . '/' . $path;
 
     if (@file_exists($cache_path)) {
@@ -112,7 +114,6 @@ function thumbnail_create($resource, $uuid, $size, $ratio=0, $mode='h') {
     imagecopyresampled($thumb_img, $org_img, 0, 0, $org_x, $org_y, $w, $h, $org_w, $org_h);
 
     thumbnail_sharpen($thumb_img);
-    $wm = get_variable('watermark_image', false);
 
     if (!empty($wm) && ($w > 640 || $h > 640)) {
         thumbnail_stamp($thumb_img, $wm, $w*0.1, $h*0.1, get_variable('watermark_position', 'rightbottom'));
