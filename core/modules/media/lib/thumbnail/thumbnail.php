@@ -117,7 +117,7 @@ function thumbnail_create($resource, $uuid, $size, $ratio=0, $mode='h') {
 
     if (!empty($watermark) && ($w > 640 || $h > 640) && is_array($watermark)) {
         foreach ($watermark as $wm) {
-            thumbnail_stamp($thumb_img, $wm['image'], $w * ($wm['size'] ?? 0.1), $h * ($wm['size'] ?? 0.1), $wm['position'] ?? 'rightbottom');
+           thumbnail_stamp($thumb_img, $wm['image'], $w, $h, $wm['size'] ?? 0.7, $wm['position'] ?? 'rightbottom');
         }
     }
 
@@ -136,17 +136,23 @@ function thumbnail_create($resource, $uuid, $size, $ratio=0, $mode='h') {
     return $result;
 }
 
-function thumbnail_stamp($img, $wm_path, $w, $h, $position) {
-
+function thumbnail_stamp($img, $wm_path, $w, $h, $size, $position) {
     if (!@file_exists($wm_path)) {
         return 0;
     }
+
     $wm_img = imagecreatefrompng($wm_path);
     $ww = imagesx($wm_img);
     $wh = imagesy($wm_img);
-    $ratio = $wh / $ww;
-    $max_w = 0.70 * $w;
-    $max_h = $ratio * $max_w;
+    $ratio = $ww / $wh;
+    if ($ratio > 1) {
+        $max_h = $size * $h;
+        $max_w = $ratio * $max_h;    
+    } else {
+        $max_w = $size * $w;
+        $max_h = $max_w / $ratio;
+    }
+
     if ($position === "center" && $ww <= $max_w && $wh <= $max_h) {
         $x = ($w - $ww) / 2;
         $y = ($h - $wh) / 2;
