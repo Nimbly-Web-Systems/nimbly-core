@@ -146,10 +146,10 @@ function thumbnail_stamp($img, $wm_path, $w, $h, $size, $position) {
     $wh = imagesy($wm_img);
     $ratio = $ww / $wh;
     if ($ratio > 1) {
-        $max_h = $size * $h;
+        $max_h = min($wh, $size * $h);
         $max_w = $ratio * $max_h;    
     } else {
-        $max_w = $size * $w;
+        $max_w = min($ww, $size * $w);
         $max_h = $max_w / $ratio;
     }
 
