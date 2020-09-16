@@ -116,8 +116,13 @@ function thumbnail_create($resource, $uuid, $size, $ratio=0, $mode='h') {
     thumbnail_sharpen($thumb_img);
 
     if (!empty($watermark) && ($w > 640 || $h > 640) && is_array($watermark)) {
+        $pos = ['lefttop' => [5, 5], 'righttop' => [$w - 5, 5], 'leftbottom' => [5, $h - 5], 'rightbottom' => [$w - 5, $h - 5]];
         foreach ($watermark as $wm) {
-           thumbnail_stamp($thumb_img, $wm['image'], $w, $h, $wm['size'] ?? 0.7, $wm['position'] ?? 'rightbottom');
+            if (!empty($wm['image'])) {
+                thumbnail_stamp_image($thumb_img, $wm, $w, $h, $pos);
+            } else if (!empty($wm['text'])) {
+                thumbnail_stamp_text($thumb_img, $wm, $w, $h, $pos);
+            }
         }
     }
 
@@ -136,48 +141,67 @@ function thumbnail_create($resource, $uuid, $size, $ratio=0, $mode='h') {
     return $result;
 }
 
-function thumbnail_stamp($img, $wm_path, $w, $h, $size, $position) {
-    if (!@file_exists($wm_path)) {
-        return 0;
-    }
-
-    $wm_img = imagecreatefrompng($wm_path);
-    $ww = imagesx($wm_img);
-    $wh = imagesy($wm_img);
-    $ratio = $ww / $wh;
+function thumbnail_stamp_pos_and_size($wm, $img_w, $img_h, $stamp_w, $stamp_h, &$pos) {
+    $size = $wm['size'] ?? 0.7;
+    $position = $wm['position'];
+    $ratio = $stamp_w / $stamp_h;
     if ($ratio > 1) {
-        $max_h = min($wh, $size * $h);
+        $max_h = min($stamp_h, $size * $img_h);
         $max_w = $ratio * $max_h;    
     } else {
-        $max_w = min($ww, $size * $w);
+        $max_w = min($stamp_w, $size * $img_w);
         $max_h = $max_w / $ratio;
     }
 
-    if ($position === "center" && $ww <= $max_w && $wh <= $max_h) {
-        $x = ($w - $ww) / 2;
-        $y = ($h - $wh) / 2;
-    } else if ($position === "center") {
-        $x = ($w - $max_w) / 2;
-        $y = ($h - $max_h) / 2;
+    if ($position === "center") {
+        $x = ($img_w - $max_w) / 2;
+        $y = ($img_h - $max_h) / 2;
     } else if ($position === "righttop") {
-        $x = $w - $ww - 5;
-        $y = 5;
+        $x = $pos['righttop'][0] - $max_w;
+        $y = $pos['righttop'][1];
+        $pos['righttop'] = [$x, $y];
     } else if ($position === "rightbottom") {
-        $x = $w - $ww - 5;
-        $y = $h - $wh - 5;
+        $x = $pos['rightbottom'][0] - $max_w;
+        $y = $pos['rightbottom'][1] - $max_h;
+        $pos['rightbottom'] = [$x, $y];
     } else if ($position === 'leftbottom') {
-        $x = 5;
-        $y - $h - $wh - 5;
+        $x = $pos['leftbottom'][0];
+        $y - $pos['leftbottom'][1] - $max_h;
+        $pos['leftbottom'] = [$x, $y];
     } else {
-        $x = 5;
-        $y = 5;
+        $x = $pos['lefttop'][0];
+        $y = $pos['lefttop'][1];
+        $pos['lefttop'] = [$x + $max_w, $y];
     }
 
-    if ($ww <= $max_w && $wh <= $max_h) {
-        imagecopy($img, $wm_img, $x, $y, 0, 0, $ww, $wh);
-    } else {
-        imagecopyresampled($img, $wm_img, $x, $y, 0, 0, $max_w, $max_h, $ww, $wh);
+    return compact('x', 'y', 'size', 'ratio', 'max_h', 'max_w', 'img_w', 'img_h', 'stamp_w', 'stamp_h');
+}
+
+function thumbnail_stamp_image($img, $wm, $w, $h, &$pos) {
+    if (!@file_exists($wm['image'])) {
+        return 0;
     }
+    $wm_img = imagecreatefrompng($wm['image']);
+    extract(thumbnail_stamp_pos_and_size($wm, $w, $h, imagesx($wm_img), imagesy($wm_img), $pos));
+    imagecopyresampled($img, $wm_img, $x, $y, 0, 0, $max_w, $max_h, $stamp_w, $stamp_h);
+    return $stamp_w;
+}
+
+function thumbnail_stamp_text($img, $wm, $w, $h, &$pos) {
+    $white40 = imagecolorallocatealpha($img, 255, 255, 255, 76); //alpha: 127 - 40% = 76
+    $font = realpath(dirname(__FILE__)) . DIRECTORY_SEPARATOR . 'OpenSans-Light.ttf';
+    $font_size = $wm['font_size'] ?? 14;
+    $text_y = 32;
     
-    return $ww;
+    //photo by text (if there is space available)
+    
+    $photo_by_text = "Photo copyright " . $meta['author'];
+    $available_space = $w - $logo_width - $make_width; 
+    $text_space = imagettfbbox($font_size, 0, $font, $photo_by_text);
+    $text_width = abs($text_space[4] - $text_space[0]) + 10;
+    
+    if ($text_width <= $available_space) {
+        $xpos = $w - $text_width - $make_width - 10;
+        imagettftext($img, $font_size, 0, $xpos, $text_y, $white40, $font, $photo_by_text);
+    }
 }
