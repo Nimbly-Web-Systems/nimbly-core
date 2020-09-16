@@ -144,21 +144,34 @@ function thumbnail_create($resource, $uuid, $size, $ratio=0, $mode='h')
     return $result;
 }
 
+function _px_size($size, $len = 0) {
+    if (empty($size)) {
+        return 0;
+    }
+    if (strpos($size, 'px') > 0) {
+        return (int) trim($size, 'px ');
+    }
+    if ($size > 1 || $size < -1) {
+        return $size;
+    }
+    return $size * $len;
+}
+
 function thumbnail_stamp_pos_and_size($wm, $img_w, $img_h, $stamp_w, $stamp_h, &$pos)
 {
     $size = $wm['size'] ?? 0.7;
     $position = $wm['position'];
     $ratio = $stamp_w / $stamp_h;
     if ($ratio > 1) {
-        $max_h = min($stamp_h, $size * $img_h);
+        $max_h = min($stamp_h, _px_size($size, $img_h), $img_h - 10);
         $max_w = $ratio * $max_h;
     } else {
-        $max_w = min($stamp_w, $size * $img_w);
+        $max_w = min($stamp_w, _px_size($size, $img_w), $img_w - 10);
         $max_h = $max_w / $ratio;
     }
 
-    $offset_y = $wm['offset_y'] ? $wm['offset_y'] * $img_h : 0;
-    $offset_x = $wm['offset_x'] ? $wm['offset_x'] * $img_w : 0;
+    $offset_y = _px_size($wm['offset_y']  ?? 0, $img_h);
+    $offset_x = _px_size($wm['offset_x'] ?? 0, $img_w);
 
     if ($position === "center") {
         $x = ($img_w - $max_w) / 2;
