@@ -1,6 +1,7 @@
 <?php
 
-function thumbnail_sc($params) {
+function thumbnail_sc($params)
+{
     $uuid = get_param_value($params, "uuid", current($params));
     $mode = get_param_value($params, "mode", "h");
     $size = get_param_value($params, "size", 240) + 0;
@@ -9,7 +10,8 @@ function thumbnail_sc($params) {
     return thumbnail_create($resource, $uuid, $size, $ratio, $mode);
 }
 
-function thumbnail_sharpen($img) {
+function thumbnail_sharpen($img)
+{
     static $sharpen = false;
     static $divisor = false;
     if (!$sharpen || !$divisor) {
@@ -23,7 +25,8 @@ function thumbnail_sharpen($img) {
     imageconvolution($img, $sharpen, $divisor, 0);
 }
 
-function thumbnail_create($resource, $uuid, $size, $ratio=0, $mode='h') {
+function thumbnail_create($resource, $uuid, $size, $ratio=0, $mode='h')
+{
     $MAX_UPSCALE = 1.0; // @todo: make this dynamic
 
     // 1. Check cache
@@ -79,13 +82,13 @@ function thumbnail_create($resource, $uuid, $size, $ratio=0, $mode='h') {
         }
         $w = $size;
         $h = $size / $asp;
-    } else if ($mode === 'w')  {
+    } elseif ($mode === 'w') {
         $w = $size;
         $h = $size / $a;
     } else { // defaults to mode 'h'
         $h = $size;
-        $w = $a * $size; 
-    } 
+        $w = $a * $size;
+    }
 
     if ($no_ratio === false) {
         if ($ratio > $asp) {
@@ -101,7 +104,7 @@ function thumbnail_create($resource, $uuid, $size, $ratio=0, $mode='h') {
 
     if ($w > $max_w) {
         $w = $max_w;
-        $h = $w / $a;  
+        $h = $w / $a;
     }
 
     if ($h > $max_h) {
@@ -120,7 +123,7 @@ function thumbnail_create($resource, $uuid, $size, $ratio=0, $mode='h') {
         foreach ($watermark as $wm) {
             if (!empty($wm['image'])) {
                 thumbnail_stamp_image($thumb_img, $wm, $w, $h, $pos);
-            } else if (!empty($wm['text'])) {
+            } elseif (!empty($wm['text'])) {
                 thumbnail_stamp_text($thumb_img, $wm, $w, $h, $pos);
             }
         }
@@ -141,67 +144,73 @@ function thumbnail_create($resource, $uuid, $size, $ratio=0, $mode='h') {
     return $result;
 }
 
-function thumbnail_stamp_pos_and_size($wm, $img_w, $img_h, $stamp_w, $stamp_h, &$pos) {
+function thumbnail_stamp_pos_and_size($wm, $img_w, $img_h, $stamp_w, $stamp_h, &$pos)
+{
     $size = $wm['size'] ?? 0.7;
     $position = $wm['position'];
     $ratio = $stamp_w / $stamp_h;
     if ($ratio > 1) {
         $max_h = min($stamp_h, $size * $img_h);
-        $max_w = $ratio * $max_h;    
+        $max_w = $ratio * $max_h;
     } else {
         $max_w = min($stamp_w, $size * $img_w);
         $max_h = $max_w / $ratio;
     }
 
+    $offset_y = $wm['offset_y'] ? $wm['offset_y'] * $img_h : 0;
+    $offset_x = $wm['offset_x'] ? $wm['offset_x'] * $img_w : 0;
+
     if ($position === "center") {
         $x = ($img_w - $max_w) / 2;
         $y = ($img_h - $max_h) / 2;
-    } else if ($position === "righttop") {
-        $x = $pos['righttop'][0] - $max_w;
-        $y = $pos['righttop'][1];
+    } elseif ($position === "righttop") {
+        $x = $pos['righttop'][0] - $max_w + $offset_x;
+        $y = $pos['righttop'][1] + $offset_y;
         $pos['righttop'] = [$x, $y];
-    } else if ($position === "rightbottom") {
-        $x = $pos['rightbottom'][0] - $max_w;
-        $y = $pos['rightbottom'][1] - $max_h;
+    } elseif ($position === "rightbottom") {
+        $x = $pos['rightbottom'][0] - $max_w + $offset_x;
+        ;
+        $y = $pos['rightbottom'][1] - $max_h + $offset_y;
         $pos['rightbottom'] = [$x, $y];
-    } else if ($position === 'leftbottom') {
-        $x = $pos['leftbottom'][0];
-        $y - $pos['leftbottom'][1] - $max_h;
+    } elseif ($position === 'leftbottom') {
+        $x = $pos['leftbottom'][0] + $offset_x;
+        $y - $pos['leftbottom'][1] - $max_h + $offset_y;
         $pos['leftbottom'] = [$x, $y];
     } else {
-        $x = $pos['lefttop'][0];
-        $y = $pos['lefttop'][1];
+        $x = $pos['lefttop'][0] + $offset_x;
+        $y = $pos['lefttop'][1] + $offset_y;
         $pos['lefttop'] = [$x + $max_w, $y];
     }
 
-    return compact('x', 'y', 'size', 'ratio', 'max_h', 'max_w', 'img_w', 'img_h', 'stamp_w', 'stamp_h');
+    $fits = $x >= 5 && $y >= 5 && ($x + $max_w + 5) <= $img_w && ($y + $max_h + 5) <= $img_h;
+    return compact('x', 'y', 'size', 'ratio', 'max_h', 'max_w', 'img_w', 'img_h', 'stamp_w', 'stamp_h', 'fits');
 }
 
-function thumbnail_stamp_image($img, $wm, $w, $h, &$pos) {
+function thumbnail_stamp_image($img, $wm, $w, $h, &$pos)
+{
     if (!@file_exists($wm['image'])) {
         return 0;
     }
     $wm_img = imagecreatefrompng($wm['image']);
     extract(thumbnail_stamp_pos_and_size($wm, $w, $h, imagesx($wm_img), imagesy($wm_img), $pos));
+    if (!$fits) {
+        return 0;
+    }
     imagecopyresampled($img, $wm_img, $x, $y, 0, 0, $max_w, $max_h, $stamp_w, $stamp_h);
     return $stamp_w;
 }
 
-function thumbnail_stamp_text($img, $wm, $w, $h, &$pos) {
+function thumbnail_stamp_text($img, $wm, $w, $h, &$pos)
+{
     $white40 = imagecolorallocatealpha($img, 255, 255, 255, 76); //alpha: 127 - 40% = 76
     $font = realpath(dirname(__FILE__)) . DIRECTORY_SEPARATOR . 'OpenSans-Light.ttf';
-    $font_size = $wm['font_size'] ?? 14;
-    $text_y = 32;
-    
-    //photo by text (if there is space available)
-    
-    $photo_by_text = "Photo copyright " . $meta['author'];
-    $available_space = $w - $logo_width - $make_width; 
-    $text_space = imagettfbbox($font_size, 0, $font, $photo_by_text);
-    $text_width = abs($text_space[4] - $text_space[0]) + 10;
-    
-    if ($text_width <= $available_space) {
-        $xpos = $w - $text_width - $make_width - 10;
-        imagettftext($img, $font_size, 0, $xpos, $text_y, $white40, $font, $photo_by_text);
+    $box = imagettfbbox(100, 0, $font, $wm['text']);
+    $stamp_w = abs($box[4] - $box[0]);
+    $stamp_h = abs($box[5] - $box[1]);
+    extract(thumbnail_stamp_pos_and_size($wm, $w, $h, $stamp_w, $stamp_h, $pos));
+    if (!$fits) {
+        return 0;
     }
+    imagettftext($img, $max_h, 0, $x, $y + $max_h, $white40, $font, $wm['text']);
+    return $stamp_w;
 }
