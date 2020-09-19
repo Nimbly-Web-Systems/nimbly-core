@@ -39,7 +39,7 @@ function thumbnail_create($resource, $uuid, $size, $ratio=0, $mode='h')
     $cache_path = $GLOBALS['SYSTEM']['data_base'] . '/' . $path;
 
     if (@file_exists($cache_path)) {
-        return $cache_path;
+        //return $cache_path;
     }
 
     // 2. Create thumbnail from original
@@ -215,15 +215,19 @@ function thumbnail_stamp_image($img, $wm, $w, $h, &$pos)
 
 function thumbnail_stamp_text($img, $wm, $w, $h, &$pos)
 {
+    
     $white40 = imagecolorallocatealpha($img, 255, 255, 255, 76); //alpha: 127 - 40% = 76
     $font = realpath(dirname(__FILE__)) . DIRECTORY_SEPARATOR . 'OpenSans-Light.ttf';
-    $box = imagettfbbox(100, 0, $font, $wm['text']);
+    $font_size = _px_size($wm['size'] ?? 0.7, $h);
+    $box = imagettfbbox($font_size, 0, $font, $wm['text']);
     $stamp_w = abs($box[4] - $box[0]);
     $stamp_h = abs($box[5] - $box[1]);
+    $wm['size'] = $stamp_h;
     extract(thumbnail_stamp_pos_and_size($wm, $w, $h, $stamp_w, $stamp_h, $pos));
     if (!$fits) {
         return 0;
     }
-    imagettftext($img, $max_h, 0, $x, $y + $max_h, $white40, $font, $wm['text']);
+
+    imagettftext($img, $font_size, 0, $x, $y + $max_h, $white40, $font, $wm['text']);
     return $stamp_w;
 }
