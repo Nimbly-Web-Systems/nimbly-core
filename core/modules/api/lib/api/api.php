@@ -14,7 +14,7 @@ function api_method_switch($func_prefix, $resource = null, $uuid = null) {
     $perm = $resource ?? $func_prefix;
     $access_feature = _api_access_str($method, $perm, $uuid);
     if (!api_access($access_feature, $perm)) {
-        return json_result(array('message' => 'ACCESS_DENIED', 'needs' => $access_feature), 403);
+        return json_result(array('message' => 'ACCESS_DENIED'), 403);
     }
     $func_name = "{$func_prefix}_{$method}";
     if (function_exists($func_name)) {
@@ -32,7 +32,7 @@ function api_method_switch_with_subkey($func_prefix, $resource, $subkey, $uuid) 
     $perm = $resource ?? $func_prefix;
     $access_feature = _api_access_str($method, $perm, $uuid);
     if (!api_access($access_feature, $perm)) {
-        return json_result(array('message' => 'ACCESS_DENIED', 'needs' => $access_feature), 403);
+        return json_result(array('message' => 'ACCESS_DENIED'), 403);
     }
     $func_name = "{$func_prefix}_{$method}";
     if (function_exists($func_name)) {
