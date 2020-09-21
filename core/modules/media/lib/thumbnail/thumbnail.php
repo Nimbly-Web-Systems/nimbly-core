@@ -39,7 +39,7 @@ function thumbnail_create($resource, $uuid, $size, $ratio=0, $mode='h')
     $cache_path = $GLOBALS['SYSTEM']['data_base'] . '/' . $path;
 
     if (@file_exists($cache_path)) {
-        //return $cache_path;
+        return $cache_path;
     }
 
     // 2. Create thumbnail from original
@@ -179,20 +179,20 @@ function thumbnail_stamp_pos_and_size($wm, $img_w, $img_h, $stamp_w, $stamp_h, &
     } elseif ($position === "righttop") {
         $x = $pos['righttop'][0] - $max_w + $offset_x;
         $y = $pos['righttop'][1] + $offset_y;
-        $pos['righttop'] = [$x, $y];
+        $pos['righttop'] = [$x, $pos['righttop'][1]];
     } elseif ($position === "rightbottom") {
         $x = $pos['rightbottom'][0] - $max_w + $offset_x;
         ;
         $y = $pos['rightbottom'][1] - $max_h + $offset_y;
-        $pos['rightbottom'] = [$x, $y];
+        $pos['rightbottom'] = [$x, $pos['rightbottom'][1]];
     } elseif ($position === 'leftbottom') {
         $x = $pos['leftbottom'][0] + $offset_x;
         $y - $pos['leftbottom'][1] - $max_h + $offset_y;
-        $pos['leftbottom'] = [$x, $y];
+        $pos['leftbottom'] = [$x, $pos['leftbottom'][1]];
     } else {
         $x = $pos['lefttop'][0] + $offset_x;
         $y = $pos['lefttop'][1] + $offset_y;
-        $pos['lefttop'] = [$x + $max_w, $y];
+        $pos['lefttop'] = [$x + $max_w, $pos['lefttop'][1]];
     }
 
     $fits = $x >= 5 && $y >= 5 && ($x + $max_w + 5) <= $img_w && ($y + $max_h + 5) <= $img_h;
@@ -228,6 +228,6 @@ function thumbnail_stamp_text($img, $wm, $w, $h, &$pos)
         return 0;
     }
 
-    imagettftext($img, $font_size, 0, $x, $y + $max_h, $white40, $font, $wm['text']);
+    imagettftext($img, $font_size, 0, $x, $y + $font_size, $white40, $font, $wm['text']);
     return $stamp_w;
 }
