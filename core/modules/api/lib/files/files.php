@@ -10,8 +10,9 @@ function files_key($resource) {
 }
 
 function files_get($resource=".files") { // get all files (list)
-    $files = data_read($resource . '_meta');
-    return json_result([files_key($resource) => $files, 'count' => count($files)], 200);
+    $modified = data_modified($resoure . '_meta');
+    $files = resource_data_read($resource . '_meta', $modified);
+    return json_result([files_key($resource) => $files, 'count' => count($files)], 200, $modified);
 }
 
 function files_post($resource=".files") { // create a new file and it's meta data

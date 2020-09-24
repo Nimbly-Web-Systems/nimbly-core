@@ -168,8 +168,7 @@ function api_check_csrf(&$data) {
  * Basic implementation on resource:
  */
 
-function resource_get($resource) { // get all
-    $modified = data_modified($resource);
+ function resource_data_read($resource, $modified) {
     header_not_modified($modified);
     $result = data_read($resource);
     $meta = data_meta($resource);
@@ -186,6 +185,12 @@ function resource_get($resource) { // get all
         load_library('data-sort', 'data');
         $result = data_sort_param($result, $meta['sort']);
     }
+    return $result;
+ }
+
+function resource_get($resource) { // get all
+    $modified = data_modified($resource);
+    $result = resource_data_read($resource, $modified);
     return json_result([$resource => $result, 'count' => count($result)], 200, $modified);
 }
 
