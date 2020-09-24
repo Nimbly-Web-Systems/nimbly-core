@@ -182,6 +182,10 @@ function resource_get($resource) { // get all
             }
         }
     }
+    if (!empty($meta['sort'])) {
+        load_library('data-sort', 'data');
+        $result = data_sort_param($result, $meta['sort']);
+    }
     return json_result([$resource => $result, 'count' => count($result)], 200, $modified);
 }
 
