@@ -10,16 +10,15 @@ function data_join_sc($params) {
     if (count($params) < 2) {
         return;
     }
-    $id1 = current($params);
-    $id2 = end($params);
-    $data1 = get_variable("data.{$id1}");
-    $data2 = get_variable("data.{$id2}");
-    if (!is_array($data1) || !is_array($data2)) {
-        return;
+    $join = [];
+    foreach ($params as $p) {
+        $d = get_variable("data.{$p}");
+        if (!is_array($d)) {
+            return;
+        }
+        array_walk($d, 'data_join_set_resource_type', $p);
+        $join = array_merge($join, $d);
     }
-    array_walk($data1, 'data_join_set_resource_type', $id1);
-    array_walk($data2, 'data_join_set_resource_type', $id2);
-    $join = array_merge($data1, $data2);
     set_variable('data.join', $join);
 }
 
