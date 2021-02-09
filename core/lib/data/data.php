@@ -167,34 +167,29 @@ function data_read_subkeys($resource, $parent) {
  * Example: _data_read_all('users') returns an array of all users and their data
  */
 function _data_read_all($resource, $setting = null) {
-    $result = array();
+    $result = [];
     $path = $GLOBALS['SYSTEM']['data_base'] . '/' . $resource;
     if (!file_exists($path)) {
         return $result;
     }
-
-    $cache_result = _data_read_cache('_data_read_all', $resource, $setting);
-    if ($cache_result !== false) {
-        return $cache_result;
-    }
-
-    $mem = ini_get('memory_limit');
-    ini_set('memory_limit','512M');
-    $all = @scandir($path);
-    if (is_array($all)) {
-        foreach ($all as $uuid) {
-            if ($uuid[0] === '.') {
-                continue;
-            }
-            if (is_dir($path . '/' . $uuid)) {
-                continue;
-            }
-            $result[$uuid] = data_read($resource, $uuid, $setting);
-        }
-    }
     
-    _data_write_cache('_data_read_all', $resource, $setting, $result);
-    ini_set('memory_limit', $mem);
+    $result = _data_read_cache('_data_read_all', $resource, $setting);
+    if ($result === false) {
+       $all = scandir($path);
+        if (is_array($all)) {
+            foreach ($all as $uuid) {
+                if ($uuid[0] === '.') {
+                    continue;
+                }
+                if (is_dir($path . '/' . $uuid)) {
+                    continue;
+                }
+                $result[$uuid] = data_read($resource, $uuid, $setting);
+            }
+        }
+        _data_write_cache('_data_read_all', $resource, $setting, $result);
+    }
+
     return $result;
 }
 
