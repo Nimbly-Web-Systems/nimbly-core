@@ -178,6 +178,8 @@ function _data_read_all($resource, $setting = null) {
         return $cache_result;
     }
 
+    $mem = ini_get('memory_limit');
+    ini_set('memory_limit','512M');
     $all = @scandir($path);
     if (is_array($all)) {
         foreach ($all as $uuid) {
@@ -190,8 +192,9 @@ function _data_read_all($resource, $setting = null) {
             $result[$uuid] = data_read($resource, $uuid, $setting);
         }
     }
-
+    
     _data_write_cache('_data_read_all', $resource, $setting, $result);
+    ini_set('memory_limit', $mem);
     return $result;
 }
 
@@ -222,7 +225,8 @@ function _data_read_cache($op, $resource, $setting) {
 function _data_write_cache($op, $resource, $setting, $content) {
     $cache_file = _data_cache_file($op, $resource, $setting);
     $json_data = json_encode($content, JSON_UNESCAPED_UNICODE);
-    return file_put_contents($cache_file, $json_data);
+    $result = file_put_contents($cache_file, $json_data);
+    return $result;
 }
 
 function data_indexed($resource, $index_name, $index_uuid) {
