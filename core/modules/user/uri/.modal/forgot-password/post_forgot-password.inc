@@ -1,5 +1,7 @@
 <?php
 
+run_single_sc('init-email');
+
 load_library("json", "api");
 load_libraries(['url', 'email', 'log', 'uuid', 'data', 'set', 'text']);
 
@@ -26,7 +28,6 @@ if ($user['email'] !== $email) {
 
 log_system('password reset for ' . $email);
 
-run_single_sc('init-email');
 $reset_token = $user['password_reset_token'] ?? uuid_sc();
 $user['password_reset_token'] = $reset_token;
 $user_uuid = md5($email);
@@ -35,12 +36,14 @@ set_variable('name', $user['name']);
 set_variable('email', $email);
 set_variable('reset-url', url_absolute('password-reset/' . $user_uuid . '/' . $reset_token));
 $cfg = data_read('.config', 'email-password-reset');
+
 if (empty($cfg)) {
 	log_system('Error: could not send email. setting `email-password-reset` is empty');
 	return json_result(['message' => $msg] , 200);
 }
 
 $cfg['recipient'] = $email;
+
 if (!email($cfg)) {
 	log_system('Error: could not send email. Email function failed.');
 }  
