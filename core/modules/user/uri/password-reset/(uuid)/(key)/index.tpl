@@ -1,5 +1,5 @@
 [module user forms]
-[set page-title="Reset your password"]
+[set page-title="Reset password"]
 [set login-url="(empty)"]
 [init]
 [post]
