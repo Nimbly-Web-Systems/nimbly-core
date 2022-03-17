@@ -437,136 +437,155 @@ function nb_load_images() {
     })
 }
 
-function nb_image_width(e, mf=1.0) {
-    var prf = (window.devicePixelRatio || 1) / 10;
-    return Math.ceil(e.outerWidth() * prf * mf) * 10;
+function nb_image_size_step(w) {
+  if (w <= 150) {
+    return 25;
+  } else if (w <= 300) {
+    return 50;
+  }
+  return 200;
 }
 
-function nb_image_box(e, mf=1.0, suffix='f') {
-    var prf = (window.devicePixelRatio || 1) / 10;
-    var max_w = Math.ceil(e.outerWidth() * prf * mf) * 10;
-    var max_h = Math.ceil(e.outerHeight() * prf * mf) * 10;
-    return max_w + 'x' + max_h + suffix;
+function nb_image_width(e, mf = 1.0) {
+  var w = e.outerWidth() || 0;
+  var step = nb_image_size_step(w);
+  var prf = Math.min(2, window.devicePixelRatio || 1) / step;
+  return Math.ceil(w * prf * mf) * step;
 }
 
-function nb_load_image(e, bg=false, cb=null) {
-    $e = $(e);
-    if (!$(e).is(':visible')) {
-        return false;
+function nb_image_box(e, mf = 1.0, suffix = "f") {
+  var w = e.outerWidth() || 0;
+  var h = e.outerHeight() || 0;
+  var step_w = nb_image_size_step(w);
+  var step_h = nb_image_size_step(h);
+  var prf_w = Math.min(2, window.devicePixelRatio || 1) / step_w;
+  var prf_h = Math.min(2, window.devicePixelRatio || 1) / step_h;
+  var max_w = Math.ceil(w * prf_w * mf) * step_w;
+  var max_h = Math.ceil(h * prf_h * mf) * step_h;
+  return max_w + "x" + max_h + suffix;
+}
+
+function nb_load_image(e, bg = false, cb = null) {
+  $e = $(e);
+  if (!$(e).is(":visible")) {
+    return false;
+  }
+  if (!nb_in_viewport(e, 200)) {
+    return false;
+  }
+  var h = $e.css("height");
+  var container = bg || h > 10 ? $e : $e.closest("a,div,figure,li,section,p");
+  var ratio = $e.data("img-ratio") || 0;
+  var mode = $e.data("img-mode") || false;
+  var img_src = nb_img_src($e, container, mode, ratio);
+  if (!img_src) {
+    return false;
+  }
+  if (!bg && e.src != img_src) {
+    e.onload = cb || nb_image_loaded;
+    e.src = img_src;
+  } else if (bg) {
+    var bg_url = 'url("' + img_src + '")';
+    if ($e.css("background-image") !== bg_url) {
+      e.onload = cb || nb_image_loaded;
+      $e.css("background-image", bg_url);
     }
-    if (!nb_in_viewport(e, 200)) {
-        return false;
-    }
-    var h = $e.css('height');
-    var container = bg || h > 10? $e : $e.closest('a,div,figure,li,section,p');
-    var ratio = $e.data('img-ratio') || 0;
-    var mode = $e.data('img-mode') || false;
-    var img_src = nb_img_src($e, container, mode, ratio);
-    if (!img_src) {
-        return false;
-    }
-    if (!bg && e.src != img_src) {
-        e.onload = cb || nb_image_loaded;
-        e.src = img_src;
-    } else if (bg) {
-        var bg_url = 'url("' + img_src + '")';
-        if ($e.css('background-image') !== bg_url) {
-            e.onload = cb || nb_image_loaded;
-            $e.css('background-image', bg_url);
-        }
-    }
+  }
 }
 
 function nb_image_loaded() {
-    $(this).addClass('nb-img-loaded');
+  $(this).addClass("nb-img-loaded");
 }
 
 /*
  * Replace image with another
  */
-function nb_swap_image($img, uuid, bgimg=false) {
-    var old_uuid = $img.data('img-uuid');
-    if (old_uuid === uuid) {
-        return;
-    }
-    var w = $img.width();
-    var h = $img.height();
+function nb_swap_image($img, uuid, bgimg = false) {
+  var old_uuid = $img.data("img-uuid");
+  if (old_uuid === uuid) {
+    return;
+  }
+  var w = $img.width();
+  var h = $img.height();
 
-    // 1. get or create container
-    var $parent = $img.parent('a,div,figure');
-    if ($parent.length === 0) {
-        $img.wrap('<figure></figure>');
-        $parent = $img.parent('figure');
-    }
+  // 1. get or create container
+  var $parent = $img.parent("a,div,figure");
+  if ($parent.length === 0) {
+    $img.wrap("<figure></figure>");
+    $parent = $img.parent("figure");
+  }
 
-    // 2. add background and throbber to container
-    $parent.css("position", "relative");
-    $img.after('<div class="nb-throbber nb-close"></div>');
-    $img.after('<div class="nb-bg"></div>');
-    var $throbber = $parent.find("div.nb-throbber");
-    var $bg = $parent.find("div.nb-bg");
-    var y = h / 2 - 32 + $img.position().top;
-    var x = w / 2 - 16 + $img.position().left;
-    $bg.css({"position": "absolute", 
-        "width": w, "height": h, "background-color": "black", 
-        "top": $img.position().top, "left": $img.position().left,
-        "opacity": 0 });
-    $throbber.css({"position": "absolute", "top": y, "left": x});
-    setTimeout(function(){
-        $throbber.removeClass('nb-close');
-    }, 1000);
+  // 2. add background and throbber to container
+  $parent.css("position", "relative");
+  $img.after('<div class="nb-throbber nb-close"></div>');
+  $img.after('<div class="nb-bg"></div>');
+  var $throbber = $parent.find("div.nb-throbber");
+  var $bg = $parent.find("div.nb-bg");
+  var y = h / 2 - 32 + $img.position().top;
+  var x = w / 2 - 16 + $img.position().left;
+  $bg.css({
+    position: "absolute",
+    width: w,
+    height: h,
+    "background-color": "black",
+    top: $img.position().top,
+    left: $img.position().left,
+    opacity: 0,
+  });
+  $throbber.css({ position: "absolute", top: y, left: x });
+  setTimeout(function () {
+    $throbber.removeClass("nb-close");
+  }, 1000);
 
-
-    // 3. smoothly load new image
-    $img.data('img-uuid', uuid); 
-    $bg.fadeTo(100, '0.2', function() {
-        nb_load_image($img[0], bgimg, function() {
-            $bg.fadeTo(100, '0.0', function() {
-                $parent.find('.nb-bg, .nb-throbber').remove();
-            });
-            $(this).addClass('nb-img-loaded');
-        });
+  // 3. smoothly load new image
+  $img.data("img-uuid", uuid);
+  $bg.fadeTo(100, "0.2", function () {
+    nb_load_image($img[0], bgimg, function () {
+      $bg.fadeTo(100, "0.0", function () {
+        $parent.find(".nb-bg, .nb-throbber").remove();
+      });
+      $(this).addClass("nb-img-loaded");
     });
-    
+  });
 }
 
-function nb_img_src($e, container, mode, ratio=0) {
-    var uuid = $e.data('img-uuid') || $e.data('bgimg-uuid');
-    if (!uuid) { //emtpy image
-        return "data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==";
-    }
-    var img_src = full_base_url + '/img/' + uuid + '/';
-    if (mode === false) {
-        img_src +=  nb_image_width(container) + 'w';
-    } else if (mode === 'crop') {
-        img_src += nb_image_box(container, 1.0, 'c');
-    } else if (mode === 'fit') {
-        img_src += nb_image_box(container);
-    } else if (mode === 'third') {
-        img_src +=  nb_image_width(container, 0.33) + 'w';
-    }
-    if (ratio) {
-        img_src += '?ratio=' + ratio;
-    } 
-    return img_src;
+function nb_img_src($e, container, mode, ratio = 0) {
+  var uuid = $e.data("img-uuid") || $e.data("bgimg-uuid");
+  if (!uuid) {
+    //emtpy image
+    return "data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==";
+  }
+  var img_src = full_base_url + "/img/" + uuid + "/";
+  if (mode === false) {
+    img_src += nb_image_width(container) + "w";
+  } else if (mode === "crop") {
+    img_src += nb_image_box(container, 1.0, "c");
+  } else if (mode === "fit") {
+    img_src += nb_image_box(container);
+  } else if (mode === "third") {
+    img_src += nb_image_width(container, 0.33) + "w";
+  }
+  if (ratio) {
+    img_src += "?ratio=" + ratio;
+  }
+  return img_src;
 }
 
 /* like swap, but does not actually swap */
 function nb_preload_image(e) {
-    var $e = $(e);
-    var s = $e.data('img-preload');
-    if (!s) {
-        return false;
-    }
-    var $img = $(s);
-    var $container = $img.closest('a,div,figure');
-    var mode = $img.data('img-mode') || false;
-    var ratio = $img.data('img-ratio') || 0;
-    var img_src = nb_img_src($e, $container, mode, ratio);
-    if (img_src) {
-        console.log('preloading', img_src);
-        $('<img/>')[0].src = img_src;
-    }
+  var $e = $(e);
+  var s = $e.data("img-preload");
+  if (!s) {
+    return false;
+  }
+  var $img = $(s);
+  var $container = $img.parent("a,div,figure");
+  var mode = $img.data("img-mode") || false;
+  var ratio = $img.data("img-ratio") || 0;
+  var img_src = nb_img_src($e, $container, mode, ratio);
+  if (img_src) {
+    $("<img/>")[0].src = img_src;
+  }
 }
 
 
