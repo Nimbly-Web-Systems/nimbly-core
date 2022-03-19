@@ -34,7 +34,7 @@ function thumbnail_create($uuid, $size, $ratio=0, $mode='h') {
     $cache_path = $GLOBALS['SYSTEM']['data_base'] . '/' . $path;
 
     if (@file_exists($cache_path)) {
-        return $cache_path;
+        //return $cache_path;
     }
 
     // 2. Create thumbnail from original
@@ -125,7 +125,12 @@ function thumbnail_create($uuid, $size, $ratio=0, $mode='h') {
         $result = $cache_path;
     }
 
-    //5: clean up and return result
+    //5: save image to static hosting (should be configurable)
+    $static_path = $GLOBALS['SYSTEM']['file_base'] . 'ext/static/' . $GLOBALS['SYSTEM']['request_uri'];
+    @mkdir(dirname($static_path), 0750, true);
+    copy($cache_path, $static_path);
+
+    //6: clean up and return result
 
     imagedestroy($org_img);
     imagedestroy($thumb_img);
