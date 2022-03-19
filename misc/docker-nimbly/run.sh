@@ -3,7 +3,7 @@
 echo Starting Nimbly Development Server v0.01
 a2dissite 000-default > dev/null
 a2ensite nimbly > dev/null
-a2enmod rewrite > dev/null
+a2enmod rewrite expires > dev/null
 apache2ctl -k start 
 
 echo All done!
