@@ -126,7 +126,7 @@ function thumbnail_create($uuid, $size, $ratio=0, $mode='h') {
     }
 
     //5: save image to static hosting (should be configurable)
-    $static_path = $GLOBALS['SYSTEM']['file_base'] . 'ext/static/' . $GLOBALS['SYSTEM']['request_uri'];
+    $static_path = $GLOBALS['SYSTEM']['file_base'] . 'ext/static/_thumb_/' . $GLOBALS['SYSTEM']['request_uri'];
     @mkdir(dirname($static_path), 0750, true);
     copy($cache_path, $static_path);
 
