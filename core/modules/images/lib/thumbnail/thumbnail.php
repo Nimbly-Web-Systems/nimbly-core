@@ -121,7 +121,7 @@ function thumbnail_create($uuid, $size, $ratio=0, $mode='h') {
 
     @mkdir(dirname($cache_path), 0750, true);
 
-    if (imagejpeg($thumb_img, $cache_path, 90)) {
+    if (imagejpeg($thumb_img, $cache_path, 75)) {
         $result = $cache_path;
     }
 

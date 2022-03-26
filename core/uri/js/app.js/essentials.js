@@ -421,20 +421,12 @@ var nb_in_viewport = function (e, offset=0) {
 
 
 function nb_load_images() {
-    $("img[data-img-uuid]").each(function() {
-        nb_load_image(this);
-    });
-    $('[data-bgimg-uuid]').each(function() {
-        nb_load_image(this, true);
-    });
-    var interval = 1000;
-    $('[data-img-preload]').each(function() {
-        var t = this;
-        setTimeout(function(){
-            nb_preload_image(t);
-        }, interval);
-        interval += 500;
-    })
+  $("img[data-img-uuid]").each(function () {
+    nb_load_image(this);
+  });
+  $("[data-bgimg-uuid]").each(function () {
+    nb_load_image(this, true);
+  });
 }
 
 function nb_image_size_step(w) {
@@ -475,9 +467,7 @@ function nb_load_image(e, bg = false, cb = null) {
   }
   var h = $e.css("height");
   var container = bg || h > 10 ? $e : $e.closest("a,div,figure,li,section,p");
-  var ratio = $e.data("img-ratio") || 0;
-  var mode = $e.data("img-mode") || false;
-  var img_src = nb_img_src($e, container, mode, ratio);
+  var img_src = nb_img_src($e, container);
   if (!img_src) {
     return false;
   }
@@ -556,39 +546,25 @@ function nb_img_src($e, container, mode, ratio = 0) {
     return "data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==";
   }
   var img_src = full_base_url + "/img/" + uuid + "/";
+  var mode = $e.data("img-mode") || false;
+  var max = $e.data("img-max") || 9999;
   if (mode === false) {
-    img_src += nb_image_width(container) + "w";
+    var w = nb_image_width(container);
+    img_src += (w < max ? w : max) + "w";
   } else if (mode === "crop") {
     img_src += nb_image_box(container, 1.0, "c");
   } else if (mode === "fit") {
     img_src += nb_image_box(container);
   } else if (mode === "third") {
-    img_src += nb_image_width(container, 0.33) + "w";
+    w = nb_image_width(container, 0.33);
+    img_src += (w < max ? w : max) + "w";
   }
+  var ratio = $e.data("img-ratio") || 0;
   if (ratio) {
     img_src += "?ratio=" + ratio;
   }
   return img_src;
 }
-
-/* like swap, but does not actually swap */
-function nb_preload_image(e) {
-  var $e = $(e);
-  var s = $e.data("img-preload");
-  if (!s) {
-    return false;
-  }
-  var $img = $(s);
-  var $container = $img.parent("a,div,figure");
-  var mode = $img.data("img-mode") || false;
-  var ratio = $img.data("img-ratio") || 0;
-  var img_src = nb_img_src($e, $container, mode, ratio);
-  if (img_src) {
-    $("<img/>")[0].src = img_src;
-  }
-}
-
-
 
 function nb_debounced_viewport_changed() {
     nb_load_images();
