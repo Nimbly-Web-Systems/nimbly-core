@@ -83,13 +83,14 @@ function api_json_input($resource) {
     if (isset($meta['encrypt'])) {
         load_library('salt');
         load_library('encrypt');
-        $data['salt'] = salt_sc();
+        $salt = salt_sc();
         $fs = explode(',', $meta['encrypt']);
         foreach ($fs as $f) {
             if (!isset($data[$f])) {
                 continue;
             }
-            $data[$f] = encrypt($data[$f], $data['salt']);
+            $data['salt'] = $salt;
+            $data[$f] = encrypt($data[$f], $salt);
         }
     }
     return $data;
