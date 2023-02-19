@@ -17,3 +17,76 @@
     }
 }
 
+#modal-content {
+    max-width: 680px;
+    min-width: 480px;
+    max-height: 100%;
+    background: white;
+    padding: 50px 20px 20px;
+    position: relative;
+    border-radius: 4px;
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
+
+    @include breakpoint(tablet) {
+        padding: 50px 40px 40px;
+    }
+
+    .icon-close {
+        position: absolute;
+        top: 0;
+        right: 0;
+        padding: 10px;
+        font-size: 20px;
+        line-height: 20px;
+        cursor: pointer;
+        z-index: 9999;
+    }
+
+    .modal-caption {
+        position: absolute;
+        top: 0;
+        right: 0;
+        left: 0;
+        font-size: 15px;
+        line-height: 40px;
+        text-align: center;
+        text-transform: uppercase;
+    }
+
+    .social-account {
+        margin-bottom: 20px;
+        display: flex;
+        flex-direction: column;
+
+        a {
+            min-width: auto;
+            flex: 1;
+            margin: 0 0 5px;
+        }
+    }
+
+    input[type="button"] {
+        width: 100%;
+    }
+
+    form,
+    .nb-form {
+        padding: 0 0 10px;
+    }
+
+    .signup-wrapper,
+    #signup_wrapper {
+        max-width: 320px;
+        margin: 0 auto;
+
+        a,
+        .button {
+            width: 100%;
+        }
+    }
+}
+
+.small-screen #modal-content {
+    min-width: 100%;
+}
