@@ -6,6 +6,4 @@ $script.ready('jquery', function() {
 
 [feature-cond edit tpl=edit-script]
 
-$script.ready('app', function() {
-	[include [uri-path]/local.js]
-});
+[include [uri-path]/local.js]
