@@ -101,8 +101,8 @@ function run_template($str) {
          */
 
 
-        if ($str{$sc_start - 1} == sc_ESCAPE_CHAR) {
-            $head{$sc_start - 1} = sc_TAG_OPEN;
+        if ($str[$sc_start - 1] == sc_ESCAPE_CHAR) {
+            $head[$sc_start - 1] = sc_TAG_OPEN;
             echo $head;
             $sc_start = strpos($tail, sc_TAG_OPEN);
             if ($sc_start !== false) { //there are more scs...
