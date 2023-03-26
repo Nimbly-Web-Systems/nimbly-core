@@ -2,10 +2,14 @@ FROM ubuntu:latest
 
 # Install required software and modules
 ENV DEBIAN_FRONTEND noninteractive
-RUN apt-get update \
-	&& apt-get -y install apache2 \
-	&& apt-get -y install php php-mbstring php-mysqlnd php-gd php-gmp php-curl \
-	&& apt-get -y install libapache2-mod-php
+RUN apt-get -y update 
+RUN apt-get -y upgrade
+RUN apt-get -y install software-properties-common ca-certificates lsb-release apt-transport-https 
+RUN LC_ALL=C.UTF-8 add-apt-repository ppa:ondrej/php
+RUN apt-get -y install apache2
+RUN apt-get -y install php 
+RUN apt-get -y install php-mbstring php-gd php-gmp php-curl 
+RUN apt-get -y install libapache2-mod-php
 
 # Add scripts and configuration files
 ADD apache2.conf /etc/apache2/apache2.conf
