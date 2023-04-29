@@ -361,7 +361,7 @@ class LoremIpsumGenerator {
 
     private function punctuate(& $sentence) {
         //start each sentence with a captial
-        $sentence{0}{0} = strtoupper($sentence{0}{0});
+        $sentence[0][0] = strtoupper($sentence[0][0]);
         $count = count($sentence);
         $sentence[$count - 1] = $sentence[$count - 1] . '.';
 
