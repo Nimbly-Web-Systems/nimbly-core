@@ -713,9 +713,11 @@ function _data_meta_build($resource) {
  * Exclude records based on field value
  */
 function data_exclude($records, $key, $value) {
-    foreach ($records as $i => $r) {
-        if (isset($r[$key]) && $r[$key] === $value) {
-            unset($records[$i]);
+    if (!empty($records)) {
+        foreach ($records as $i => $r) {
+            if (isset($r[$key]) && $r[$key] === $value) {
+                unset($records[$i]);
+            }
         }
     }
     return $records;
