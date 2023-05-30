@@ -85,7 +85,7 @@ function render_create_template($tpl_name) {
     if (empty($btns)) {
         $tpl = sprintf("<span class='%1\$s' data-edit='[block-name]' data-tpl='%1\$s'>[block-content]</span>", $tpl_name);
     } else {
-        $tpl = sprintf("<div class='%1\$s' data-edit='[block-name]' data-tpl='%1\$s' data-edit-buttons='%2$'>[block-content]</div>", $tpl_name, $btns);
+        $tpl = sprintf("<div class='%1\$s' data-edit='[block-name]' data-tpl='%1\$s' data-edit-buttons='%2\$s'>[block-content]</div>", $tpl_name, $btns);
     }
 
     data_create(".block-templates", $uuid, array(
