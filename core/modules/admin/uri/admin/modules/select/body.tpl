@@ -11,7 +11,7 @@
   [form-key select_modules]
   <label class="label-inline">
     Select modules:<br />
-    [repeat data.modules tpl=module-check]
+    [repeat data_modules tpl=module-check]
   </label>
   <button type="submit" class="nb-button">Save</button>
 </form>

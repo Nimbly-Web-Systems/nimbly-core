@@ -10,7 +10,7 @@
   </thead>
   <tbody>
   [get-modules]
-  [repeat data.modules]
+  [repeat data_modules]
   </tbody>
 </table>
 
