@@ -13,7 +13,7 @@ function repeat_sc($params) {
     }
     
     $data = get_variable($data_id);
-    
+
     if (get_param_value($params, "num", false) !== false) {
         $max = intval(get_param_value($params, "num", 0));
         $start = intval(get_param_value($params, "start", 1));
@@ -66,7 +66,7 @@ function repeat_sc($params) {
     $iterations = 0;
     $nodot = get_param_value($params, "nodot", false);
     foreach ($data as $k => $item) {
-        $excluded = @in_array($item, $exclude_ls) || @in_array(key($item), $exclude_ls);
+        $excluded = @in_array($item, $exclude_ls) || (is_array($item) && @in_array(key($item), $exclude_ls));
         if ($excluded) {
             continue;
         } else if (is_string($item)) {

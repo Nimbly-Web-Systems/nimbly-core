@@ -4,7 +4,7 @@ function setup_contrib_modules_sc() {
 
     load_library('set');
     $all_modules = ['pull', 'mailgun', 'registration', 'communities']; //todo: automize, configure?
-    set_variable('data.modules', $all_modules);
+    set_variable('data_modules', $all_modules);
 
 	_scmout('Setup contrib modules', 'lightgray');
 

@@ -31,5 +31,5 @@ function get_modules_sc() {
         	);
         }
 	}
-	set_variable("data.modules", $result);
+	set_variable("data_modules", $result);
 }
