@@ -3,12 +3,33 @@
 load_libraries(["data", "set", "get", "md5", "session", "base-url"]);
 
 function render_sc($params) {
-    $resource = get_param_value($params, "resource", ".blocks");
-    $uuid = get_param_value($params, "uuid", md5_uuid(current($params)));
-    $img_insert = get_param_value($params, "insert", false) !== false;
-    $field = get_param_value($params, "field", count($params) > 1? next($params) : md5($uuid . 'block1'));
-    $tpl = get_param_value($params, "tpl", count($params) > 2? next($params) : "plain_text");
 
+    $first = current($params);
+    if (substr_count($first, '.') === 2) {
+        // dot syntax like [render content.apidoc.intro content]
+        $parts = explode('.', $first);
+        $resource = trim($parts[0]);
+        $uuid = trim($parts[1]);
+        $field = trim($parts[2]);
+    } else {
+        // todo: deprecate this
+        $resource = get_param_value($params, "resource", ".blocks");
+        $uuid = get_param_value($params, "uuid", md5_uuid(current($params)));
+        $field = get_param_value($params, "field", count($params) > 1? next($params) : md5($uuid . 'block1'));
+    }
+
+    while ($next = next($params)) {
+        if ($next === 'insert') {
+            $img_insert = true;
+        } else if (in_array($next, ['plain_text', 'content', 'img'])) {
+            $tpl = $next;
+        }
+    }
+
+    $tpl = $tpl ?? 'plain_text';
+    $img_insert = $img_insert ?? false;
+
+    
     if (!data_exists($resource, $uuid)) {
         render_create_resource($resource, $uuid);
     }
