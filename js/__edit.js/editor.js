@@ -70,7 +70,7 @@ editor.allow_click = function(e) {
 }
 
 editor.on_edit_button = function(e) {
-    editor.debug && console.log('editor.on_edit_button');
+    editor.debug && console.log('editor.on_edit_button', e);
     if (!editor.allow_click(e)) {
         return false;
     }
@@ -164,6 +164,9 @@ editor.scope = function(e) {
             return $parent;
         }
     }
+    if (e && typeof e === 'string') {
+        return e;
+    } 
     return false;
 }
 
@@ -184,6 +187,7 @@ editor.enable = function(e) {
     if (editor.editors.length === 0) {
         $('[data-edit-field]').each(function(ix) {
           btns = $(this).data('edit-buttons');
+
           if (!editor._in_scope($scope, this)) {
             return;
           }
@@ -236,7 +240,7 @@ editor.disable = function() {
 };
 
 editor.toggle = function(e) {
-    editor.debug && console.log('editor.toggle');
+    editor.debug && console.log('editor.toggle', e);
     if (editor.enabled) {
         editor.disable();
     } else {
@@ -333,13 +337,16 @@ editor.save_resource = function($r) {
 }
 
 editor._in_scope = function($scope, elem) {
-  editor.debug && console.log('editor._in_scope');
+  editor.debug && console.log('editor._in_scope', $scope, elem);
   if (!$scope) {
     return true;
   }
   var $elem_scope = $(elem).closest('[data-edit-uuid]');
   if (!$elem_scope) {
     return false;
+  }
+  if (typeof $scope === 'string') {
+    return $elem_scope.closest($scope).length === 1;
   }
   return $scope[0] === $elem_scope[0];
 };
