@@ -44,6 +44,7 @@ gallery_field.row_type = function(opts) {
 	switch (opts.media_type) {
 		case 'image/jpeg':
 		case 'image/png':
+		case 'image/gif':
 			return 'img';
 		case 'video/mp4':
 			return 'vid';
