@@ -1,5 +1,6 @@
 /ext/
 /contrib/
+/node_modules/
 .sass-cache/
 .htaccess
 .DS_Store

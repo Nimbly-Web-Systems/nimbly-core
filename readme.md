@@ -106,7 +106,7 @@ Installation
 ============
 
 ## Requirements
-* PHP 7+
+* PHP 8+
 * Apache 2+
 * PHP extensions mbstring, gd and gmp.
 * Apache extensions: rewrite

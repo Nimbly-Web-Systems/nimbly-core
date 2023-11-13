@@ -48,6 +48,7 @@ function run_uri($uri) {
         $file = find_uri($uri);
         if ($file !== false) {
             $GLOBALS['SYSTEM']['uri'] = $uri;
+            $GLOBALS['SYSTEM']['uri_key'] = preg_replace("/[^ \w]+/", "_", $uri);
             $GLOBALS['SYSTEM']['uri_path'] = dirname($file);
             run($file);
             exit();

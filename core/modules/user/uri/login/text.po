@@ -3,3 +3,18 @@ msgstr "Invalid email or password. Please try again."
 
 msgid "validate_login_failed"
 msgstr "Oops. Could not login."
+
+msgid "Email"
+msgstr "Email"
+
+msgid "Password"
+msgstr "Password"
+
+msgid "Login"
+msgstr "Log in"
+
+msgid "Forgot password?"
+msgstr "Forgot password?"
+
+msgid "Request new password"
+msgstr "Request new password"

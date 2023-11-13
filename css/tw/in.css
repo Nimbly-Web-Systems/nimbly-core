@@ -1,0 +1,39 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+    .prose *:first-child {
+        margin-top: 0 !important;
+    }
+
+    .prose a {
+        @apply text-clink no-underline;
+    }
+
+    .prose a:hover {
+        @apply underline;
+    }
+
+    
+    body.nimblybar {
+        padding-right: 30px !important;
+    }
+}
+
+@layer components {
+    .modal .nav-tabs .nav-link.active {
+        @apply text-cdark border-cdark;
+    }
+
+    #modal-content {
+        @apply px-4 py-0;
+        max-width: none;
+        min-width: none;
+        max-height: none;
+    }
+}
+
+.nb-form-errors {
+    @apply bg-red-50 border border-red-400 rounded text-red-600 p-4 my-4;
+}
