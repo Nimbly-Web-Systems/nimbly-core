@@ -1,32 +1,45 @@
+[module downloads]
 [module user]
-[set app-name="Nimbly Framework"]
 [data .config uuid=site]
 [set site-name="[get-key data.config.site name]"]
+[set app-name="Nimbly Framework"]
 [set language=en]
 [set body-classes=]
 [set html-classes="[logged-in]"]
-[set page-title=Home]
+[set page-title=]
 [set head=]
+[set footer=]
+[set header=]
+[set main=]
+[set head-scripts=]
 [init]
 <!doctype html>
-<html class="[html-classes]" lang="[language]">
+<html class="[html-classes] scroll-smooth" lang="[language]">
     <head>
-        [meta]
         <title>[page-title] | [site-name]</title>
+        [meta]
+        [fonts]
         [stylesheets]
         [head]
-        [scripts]
+        [head-scripts]
         [favicon]
     </head>
-    <body class="[body-classes] [feature-cond manage-content echo=nimbly-bar]">
-        [feature-cond manage-content tpl=nimbly-bar]
+    <body class="[body-classes] [feature-cond manage-content echo=nimblybar]">
+        [feature-cond manage-content tpl=nimblybar]
         [callouts]
-        [mobile-menu]
-        [header]
-        [body]
-        [footer]
-        <script>
-            [load-scripts]
+        <div id="page">
+            <header id="header">
+                [header]
+            </header> 
+            <main id="main">
+                [main]
+               </main> 
+            <footer id="footer">
+                [footer]
+            </footer>
+        </div>
+        <script> 
+            [scripts]
         </script>
     </body>
 </html>

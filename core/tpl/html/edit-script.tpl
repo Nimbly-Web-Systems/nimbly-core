@@ -1,3 +1,3 @@
-$script.ready('jquery', function() {
-    $script('[base-url]/js/edit.js?v=[app-modified]', 'edit');
-});
+
+/* medium editor */
+[include [base-path]js/bundle/medium-editor.min.js]

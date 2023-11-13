@@ -1,12 +1,24 @@
 <?php
 
-load_libraries(["data", "set", "get", "md5", "session", "base-url"]);
+load_libraries(["data", "set", "get", "md5", "session", "base-url", "rkey"]);
+
+define("DEFAULT_CONTENT_RESOURCE", 'content');
 
 function render_sc($params) {
-    $resource = get_param_value($params, "resource", ".blocks");
-    $uuid = get_param_value($params, "uuid", md5_uuid(current($params)));
-    $img_insert = get_param_value($params, "insert", false) !== false;
-    $field = get_param_value($params, "field", count($params) > 1? next($params) : md5($uuid . 'block1'));
+    
+    $parts = explode('.', current($params));
+    if (count($parts) > 1) {
+        $has_resource = count($parts) > 2;
+        $resource = $has_resource? rkey($parts[0]) : DEFAULT_CONTENT_RESOURCE;
+        $uuid = rkey($parts[(int)$has_resource]);
+        $field = rkey($parts[1 + (int)$has_resource]);
+    } else {
+        $resource = get_param_value($params, "resource", "content");
+        $uuid = get_param_value($params, "uuid", md5_uuid(current($params)));
+        $field = get_param_value($params, "field", count($params) > 1? next($params) : md5($uuid . 'block1'));
+    }
+
+    $img_insert = get_param_value($params, "insert", false) !== false || get_param_value($params, "media", false) !== false;
     $tpl = get_param_value($params, "tpl", count($params) > 2? next($params) : "plain_text");
 
     if (!data_exists($resource, $uuid)) {

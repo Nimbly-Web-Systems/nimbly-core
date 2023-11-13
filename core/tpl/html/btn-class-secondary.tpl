@@ -1,0 +1,1 @@
+inline-block cursor-pointer rounded border border-neutral-400 hover:border-cnormal px-6 pb-2 pt-2.5 text-xs font-medium uppercase text-neutral-700 transition duration-150 ease-in-out hover:bg-neutral-50 focus:bg-neutral-100 focus:outline-none focus:ring-0 active:bg-clight
