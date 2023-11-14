@@ -24,7 +24,7 @@
         [head-scripts]
         [favicon]
     </head>
-    <body class="[body-classes] [feature-cond manage-content echo=nimblybar]">
+    <body class="[body-classes]">
         [feature-cond manage-content tpl=nimblybar]
         [callouts]
         <div id="page">

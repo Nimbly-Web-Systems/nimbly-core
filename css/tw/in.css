@@ -15,10 +15,6 @@
         @apply underline;
     }
 
-    
-    body.nimblybar {
-        padding-right: 30px !important;
-    }
 }
 
 @layer components {
