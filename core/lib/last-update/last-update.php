@@ -4,13 +4,17 @@
 function last_update_sc($params) {
 
     load_library('base-path');
-    $bdir = base_path_sc() . 'ext';
+    $bdir = base_path_sc();
     
     return max(
-        find_latest_time($bdir . '/lib'), 
-        find_latest_time($bdir . '/modules'), 
-        find_latest_time($bdir . '/tpl'), 
-        find_latest_time($bdir . '/uri')
+        find_latest_time($bdir . 'ext/lib'), 
+        find_latest_time($bdir . 'ext/modules'), 
+        find_latest_time($bdir . 'ext/tpl'), 
+        find_latest_time($bdir . 'ext/uri'),
+        find_latest_time($bdir . 'core/lib'), 
+        find_latest_time($bdir . 'core/modules'), 
+        find_latest_time($bdir . 'core/tpl'), 
+        find_latest_time($bdir . 'core/uri')
     );
 }
 
