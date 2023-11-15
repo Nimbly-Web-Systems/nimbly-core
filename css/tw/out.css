@@ -2548,8 +2548,16 @@ textarea.form-control.is-invalid {
   margin-bottom: 5px;
 }
 
+.-ml-4 {
+  margin-left: -1rem;
+}
+
 .-ml-\[1\.5rem\] {
   margin-left: -1.5rem;
+}
+
+.-mt-1 {
+  margin-top: -0.25rem;
 }
 
 .-mt-3 {
@@ -3836,6 +3844,11 @@ textarea.form-control.is-invalid {
   background-color: rgb(64 64 64 / var(--tw-bg-opacity));
 }
 
+.bg-orange-500 {
+  --tw-bg-opacity: 1;
+  background-color: rgb(249 115 22 / var(--tw-bg-opacity));
+}
+
 .bg-transparent {
   background-color: transparent;
 }
@@ -4190,6 +4203,11 @@ textarea.form-control.is-invalid {
 .text-2xl {
   font-size: 1.5rem;
   line-height: 2rem;
+}
+
+.text-3xl {
+  font-size: 1.875rem;
+  line-height: 2.25rem;
 }
 
 .text-7xl {
@@ -5090,6 +5108,11 @@ textarea.form-control.is-invalid {
 .hover\:bg-neutral-50:hover {
   --tw-bg-opacity: 1;
   background-color: rgb(250 250 250 / var(--tw-bg-opacity));
+}
+
+.hover\:bg-orange-400:hover {
+  --tw-bg-opacity: 1;
+  background-color: rgb(251 146 60 / var(--tw-bg-opacity));
 }
 
 .hover\:fill-\[\#8b8b8b\]:hover {
