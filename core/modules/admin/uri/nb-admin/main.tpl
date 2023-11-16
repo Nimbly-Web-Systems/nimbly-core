@@ -8,7 +8,7 @@
                 <div class="text-lg font-lato font-medium truncate text-neutral-900">
                     [text Users]
                 </div>
-                <div class="relative" data-te-dropdown-ref>
+                <div class="relative [feature-cond manage-users echo_else=hidden]" data-te-dropdown-ref>
                     <button class="rounded-full hover:bg-neutral-100 p-2 -mt-1" data-te-dropdown-toggle-ref>
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5">
                             <path
@@ -19,10 +19,10 @@
                     <ul class="absolute z-[1000] float-left m-0 hidden min-w-max list-none overflow-hidden rounded-lg border-none bg-cdark bg-clip-padding text-left text-base shadow-lg [&[data-te-dropdown-show]]:block"
                         aria-labelledby="dropdownMenuSmallButton" data-te-dropdown-menu-ref>
                         <li>
-                            <a class="block w-full whitespace-nowrap bg-transparent px-4 py-2 text-sm font-normal text-neutral-50 hover:bg-cnormal active:text-white active:no-underline disabled:pointer-events-none disabled:bg-transparent disabled:text-neutral-400"
-                                href="#" data-te-dropdown-item-ref>[text Manage users]</a>
+                            <a class="block w-full whitespace-nowrap bg-transparent px-4 py-2 text-sm font-normal
+                                 text-neutral-50 hover:bg-cnormal active:text-white active:no-underline disabled:pointer-events-none disabled:bg-transparent disabled:text-neutral-400"
+                                href="[base-url]/nb-admin/users" data-te-dropdown-item-ref>[text Manage users]</a>
                         </li>
-
                     </ul>
                 </div>
             </div>
@@ -51,7 +51,7 @@
                         <path d="M2 12C2 6.47715 6.47715 2 12 2V5C8.13401 5 5 8.13401 5 12H2Z" fill="#000000" />
                     </svg>
                 </div>
-                <div class="relative" data-te-dropdown-ref>
+                <div class="relative [feature-cond manage-system echo_else=hidden]" data-te-dropdown-ref>
                     <button class="rounded-full hover:bg-neutral-100 p-2 -mt-1" data-te-dropdown-toggle-ref>
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5">
                             <path

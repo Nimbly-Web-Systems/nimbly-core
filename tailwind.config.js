@@ -32,6 +32,7 @@ try {
 }
 
 module.exports = {
+  darkMode: 'class',
   content: [
     "./core/uri/**/*.tpl",
     "./core/uri/.modal/**/*.tpl",
