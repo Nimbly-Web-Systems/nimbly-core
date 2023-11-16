@@ -24,6 +24,7 @@
   },
   "homepage": "git@github.com:Nimbly-Web-Systems/nimbly-core.git#readme",
   "dependencies": {
+    "alpinejs": "^3.13.2",
     "medium-editor": "^5.23.3",
     "tw-elements": "^1.0.0"
   },

@@ -1,14 +1,5 @@
-import { nb_api_init } from './nb_api.jsx';
+import nb_api from './nb_api.jsx';
+import Alpine from 'alpinejs';
 
-/* global helper functions */
-
-window.nb_populate = function (html, context) {
-    let result = html;
-    for (v in context) {
-        const re = new RegExp('\\(\\(' + v + '\\)\\)', 'g')
-        result = result.replace(re, context[v]);
-    }
-    return result;
-}
-
-nb_api_init();
+window.nb_api = nb_api;
+window.Alpine = Alpine;
