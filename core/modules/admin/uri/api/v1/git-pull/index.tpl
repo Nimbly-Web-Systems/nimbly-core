@@ -1,5 +1,5 @@
 [header json]
-[module pull user forms data api]
+[module admin user forms data api]
 [access feature=pull_repos]
 [json2post]
-[pull]
+[git-pull]

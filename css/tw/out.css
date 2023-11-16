@@ -3307,6 +3307,16 @@ textarea.form-control.is-invalid {
   animation: spinner-grow 0.75s linear infinite;
 }
 
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
 .cursor-default {
   cursor: default;
 }
@@ -4857,6 +4867,10 @@ textarea.form-control.is-invalid {
   color: rgb(220 38 38 / var(--tw-text-opacity));
 }
 
+[x-cloak] {
+  display: none !important;
+}
+
 .selection\:bg-transparent *::-moz-selection {
   background-color: transparent;
 }
@@ -5512,6 +5526,10 @@ textarea.form-control.is-invalid {
   pointer-events: none;
 }
 
+.disabled\:cursor-auto:disabled {
+  cursor: auto;
+}
+
 .disabled\:select-none:disabled {
   -webkit-user-select: none;
      -moz-user-select: none;
@@ -5520,6 +5538,11 @@ textarea.form-control.is-invalid {
 
 .disabled\:bg-transparent:disabled {
   background-color: transparent;
+}
+
+.disabled\:text-neutral-200:disabled {
+  --tw-text-opacity: 1;
+  color: rgb(229 229 229 / var(--tw-text-opacity));
 }
 
 .disabled\:text-neutral-400:disabled {

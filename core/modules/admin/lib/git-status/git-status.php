@@ -19,7 +19,8 @@ function git_status_sc() {
         return json_encode($response);
     }
 
-    /* pull latest version */
+    /* get status */
+    $sh_result = shell_exec("git fetch 2>&1");
     $sh_result = shell_exec("git status 2>&1");
     $response['cmd'] = $sh_result;
 

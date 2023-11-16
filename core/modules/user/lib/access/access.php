@@ -2,6 +2,7 @@
 
 load_library("session");
 load_library('data');
+load_library("redirect");
 
 function access_sc($params) {
 
@@ -25,7 +26,6 @@ function access_sc($params) {
 }
 
 function access_denied($redirect_url = 'errors/403') {
-    load_library("redirect");
     redirect($redirect_url);
 }
 
@@ -46,7 +46,6 @@ function access_by_role($role) {
 function access_by_feature($feature) {
     $has_session = session_resume();
     if ($has_session === false || !isset($_SESSION['features'])) {
-        
         return false;
     }
     if (isset($_SESSION['features']['(all)']) && $_SESSION['features']['(all)'] === true) {

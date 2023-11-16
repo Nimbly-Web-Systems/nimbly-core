@@ -20,7 +20,7 @@ let coreTheme = {
       clink: "#0074D9",
       clight: "#80baec",
     },
-  },
+  }
 };
 
 let extTheme = null;
