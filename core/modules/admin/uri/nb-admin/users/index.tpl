@@ -1,5 +1,0 @@
-[module admin user]
-[set page-title="[text Dashboard]"]
-[set admin=1]
-[access feature=manage-users redirect=login]
-[html]

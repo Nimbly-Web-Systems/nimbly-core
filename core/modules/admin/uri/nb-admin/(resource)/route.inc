@@ -1,12 +1,12 @@
 <?php
 
 router_deny();
-
-$parts = $GLOBALS['SYSTEM']['uri_parts'];
-if (count($parts) !== 2 || $parts[0] !== 'admin') {
+$parts = router_match(__FILE__);
+if ($parts === false || count($parts) !== 1) {
     return;
 }
-$resource = $parts[1];
+
+$resource = $parts[0];
 load_library("data");
 if (!data_exists($resource)) {
     return;

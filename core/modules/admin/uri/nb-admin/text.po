@@ -1,0 +1,2 @@
+msgid "dashboard-subtitle"
+msgstr "This is your Nimbly admin dashboard for site configuration and data management."

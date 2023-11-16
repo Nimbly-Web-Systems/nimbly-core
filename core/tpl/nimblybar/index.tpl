@@ -8,39 +8,69 @@
         data-[te-sidenav-hidden='false']:translate-x-0 
         [&[data-te-sidenav-slim-collapsed='true'][data-te-sidenav-slim='false']]:hidden 
         [&[data-te-sidenav-slim-collapsed='true'][data-te-sidenav-slim='true']]:[display:unset]" data-te-sidenav-init
-    data-te-sidenav-hidden="false" data-te-sidenav-mode="side" data-te-sidenav-slim="true" data-te-sidenav-right="true"
-    data-te-sidenav-slim-width="30" data-te-sidenav-content="#main" data-te-sidenav-slim-collapsed="true">
-    
+    data-te-sidenav-hidden="false" data-te-sidenav-mode="over" 
+    data-te-sidenav-slim="[if api_nb_bar_slim=(empty) echo=false][if api_nb_bar_slim=(not-empty) echo=true]" 
+    data-te-sidenav-right="true"
+    data-te-sidenav-slim-width="30" data-te-sidenav-content="#main" 
+    data-te-sidenav-slim-collapsed="[if api_nb_bar_slim=(empty) echo=false][if api_nb_bar_slim=(not-empty) echo=true]"
+    data-te-sidenav-mode-breakpoint-side="md">
+
     <ul class="pt-3 relative" data-te-sidenav-menu-ref>
 
         <li class="h-[30px] block">
-            <button class="inline-block text-white w-full h-[30px]
+            <div class="flex items-center truncate w-full gap-2">
+                <button class="inline-block rounded text-white w-[30px] h-[30px]
                 hover:bg-clight" data-te-sidenav-link-ref aria-haspopup="true" id="nb_nav_toggler">
-                <svg aria-hidden="true" focusable="false" data-prefix="fas" data-icon="bars"
-                    class="w-[20px] h-[20px] ml-[5px] stroke-white fill-white" role="img"
-                    xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512">
-                    <title>[text Toggle menu]</title>
-                    <path fill="#fff"
-                        d="M16 132h416c8.837 0 16-7.163 16-16V76c0-8.837-7.163-16-16-16H16C7.163 60 0 67.163 0 76v40c0 8.837 7.163 16 16 16zm0 160h416c8.837 0 16-7.163 16-16v-40c0-8.837-7.163-16-16-16H16c-8.837 0-16 7.163-16 16v40c0 8.837 7.163 16 16 16zm0 160h416c8.837 0 16-7.163 16-16v-40c0-8.837-7.163-16-16-16H16c-8.837 0-16 7.163-16 16v40c0 8.837 7.163 16 16 16z">
-                    </path>
-                </svg>
-            </button>
-        </li>
+                    <svg aria-hidden="true" focusable="false" data-prefix="fas" data-icon="bars"
+                        class="w-[20px] h-[20px] ml-[5px] stroke-white fill-white" role="img"
+                        xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512">
+                        <title>[text Toggle menu]</title>
+                        <path fill="#fff"
+                            d="M16 132h416c8.837 0 16-7.163 16-16V76c0-8.837-7.163-16-16-16H16C7.163 60 0 67.163 0 76v40c0 8.837 7.163 16 16 16zm0 160h416c8.837 0 16-7.163 16-16v-40c0-8.837-7.163-16-16-16H16c-8.837 0-16 7.163-16 16v40c0 8.837 7.163 16 16 16zm0 160h416c8.837 0 16-7.163 16-16v-40c0-8.837-7.163-16-16-16H16c-8.837 0-16 7.163-16 16v40c0 8.837 7.163 16 16 16z">
+                        </path>
+                    </svg>
+                </button>
+                <div class="[if api_nb_bar_slim=(not-empty) echo=hidden] h-[30px] w-[30px] rounded truncate" data-te-sidenav-slim="false">
+                    <a class="flex items-center align-middle justify-center h-[30px] w-[30px] text-white cursor-pointer
+                    hover:bg-clight" href="[base-url]/">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.0"
+                            stroke="currentColor" class="w-[22px] h-[22px] stroke-white">
+                            <title>[text Site home]</title>
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
+                        </svg>
+                    </a>
+                </div>
 
-        <li class="mt-4 h-[30px] block relative">
-            <button id="nb_page_settings_btn" class="flex items-center truncate text-white h-[30px] py-[1px] pl-[4px] w-full
-                    hover:bg-clight" 
-                    data-te-sidenav-link-ref 
-                    aria-haspopup="true">
-                <svg class="w-[23px] h-[23px]  fill-white flex-shrink-0" fill="#ffffff" height="48" viewBox="0 0 24 24" width="48"
-                    xmlns="http://www.w3.org/2000/svg">
-                    <title>[text Page settings]</title>
-                    <path d="M0 0h24v24H0z" fill="none" />
-                    <path
-                        d="M19.43 12.98c.04-.32.07-.64.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65C14.46 2.18 14.25 2 14 2h-4c-.25 0-.46.18-.49.42l-.38 2.65c-.61.25-1.17.59-1.69.98l-2.49-1c-.23-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.23.09.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65zM12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5z" />
-                </svg>
-                <div class="hidden pt-0.5 pl-4" data-te-sidenav-slim="false">[text Page settings]</div>
-            </button>
+                <div class="[if api_nb_bar_slim=(not-empty) echo=hidden] h-[30px] w-[30px] rounded truncate" data-te-sidenav-slim="false">
+                    <a class="flex items-center  justify-center h-[30px] w-[30px] text-white cursor-pointer hover:bg-clight"
+                        href="[base-url]/nb-admin">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.0"
+                            stroke="currentColor" class="w-[23px] h-[23px] stroke-white">
+                            <title>[text Admin dashboard]</title>
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                d="M3 8.25V18a2.25 2.25 0 002.25 2.25h13.5A2.25 2.25 0 0021 18V8.25m-18 0V6a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 6v2.25m-18 0h18M5.25 6h.008v.008H5.25V6zM7.5 6h.008v.008H7.5V6zm2.25 0h.008v.008H9.75V6z" />
+                        </svg>
+                    </a>
+                </div>
+
+                <button id="nb_page_settings_btn" 
+                    class="[if api_nb_bar_slim=(not-empty) echo=hidden] truncate text-white rounded w-[30px] h-[30px]
+                hover:bg-clight" data-te-sidenav-slim="false" aria-haspopup="true">
+                    <svg class="w-[23px] h-[23px]  fill-white flex-shrink-0 ml-[3px]" fill="#ffffff" height="48"
+                        viewBox="0 0 24 24" width="48" xmlns="http://www.w3.org/2000/svg">
+                        <title>[text Page settings]</title>
+                        <path d="M0 0h24v24H0z" fill="none" />
+                        <path
+                            d="M19.43 12.98c.04-.32.07-.64.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65C14.46 2.18 14.25 2 14 2h-4c-.25 0-.46.18-.49.42l-.38 2.65c-.61.25-1.17.59-1.69.98l-2.49-1c-.23-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.23.09.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65zM12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5z" />
+                    </svg>
+                </button>
+
+
+
+
+
+            </div>
         </li>
     </ul>
 
@@ -67,4 +97,14 @@
             );
             instance.toggleSlim();
         });
+
+    const nb_bar = document.getElementById("nb-bar");
+    nb_bar.addEventListener("expanded.te.sidenav", (event) => {
+        console.log(event);
+        nb_api.post('[base-url]/api/v1/session', { "nb_bar_slim": false});
+    });
+    nb_bar.addEventListener("collapsed.te.sidenav", (event) => {
+        console.log(event);
+        nb_api.post('[base-url]/api/v1/session', { "nb_bar_slim": true});
+    });
 </script>

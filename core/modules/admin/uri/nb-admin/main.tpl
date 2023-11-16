@@ -1,7 +1,8 @@
-<section class="bg-neutral-50 p-4 sm:p-6 md:p-8 lg:p-10 font-lato">
+<section class="bg-neutral-100 p-2 sm:p-4 md:p-6 lg:p-8 font-lato">
     <h1 class="text-2xl md:text-3xl font-semibold ">[text Dashboard]</h1>
+    <h3 class="text-sm md:text-base pt-1 pb-2 text-neutral-700">[text dashboard-subtitle]</h3>
 </section>
-<section class="bg-neutral-100 px-4 sm:px-6 md:px-8 lg:px-10 py-4">
+<section class="bg-neutral-100 px-2 sm:px-4 md:px-6 lg:px-8">
     <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 w-full">
         <div class="flex flex-col flex-auto p-6 bg-neutral-50 shadow rounded-2xl overflow-hidden">
             <div class="flex items-start justify-between">
