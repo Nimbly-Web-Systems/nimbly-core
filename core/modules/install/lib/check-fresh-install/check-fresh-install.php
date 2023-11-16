@@ -1,7 +1,6 @@
 <?php
 
 load_library('set');
-load_library('get');
 
 /*
  * Sets variable fresh_install to yes or no (or deny access)

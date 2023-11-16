@@ -14,7 +14,7 @@ function trigger($event, $data) {
         	}
         	$base_path = $SYSTEM['file_base'] . $env_path . '/modules/';
         	if (!file_exists($base_path)) {
-        		continuie;
+        		continue;
         	}
 
         	$modules = scandir($base_path);

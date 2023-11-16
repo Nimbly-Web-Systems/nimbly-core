@@ -15,6 +15,7 @@ function redirect_sc($params) {
 }
 
 function redirect($url, $status=303) {
+
     if (strpos($url, "http") !== 0) {
         load_library("url");
         $url = url_absolute($url);

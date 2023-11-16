@@ -6,7 +6,7 @@ function app_modified_sc() {
 		return $result;
 	}
 	$base = $GLOBALS['SYSTEM']['file_base'];
-	$paths = ['core/.git/index', 'contrib/modules/.git/index', 'ext/.git/index'];
+	$paths = ['core/.git/index', 'ext/.git/index'];
 	$result = 1500000001;
 	foreach ($paths as $p) {
 		$f = $base . $p;
