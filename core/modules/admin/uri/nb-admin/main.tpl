@@ -1,9 +1,9 @@
 <section class="bg-neutral-100 p-2 sm:p-4 md:p-6 lg:p-8 font-lato">
-    <h1 class="text-2xl md:text-3xl font-semibold ">[text Dashboard]</h1>
+    <h1 class="text-2xl md:text-3xl font-semibold text-neutral-800">[text Dashboard]</h1>
     <h3 class="text-sm md:text-base pt-1 pb-2 text-neutral-700">[text dashboard-subtitle]</h3>
 </section>
-<section class="bg-neutral-100 px-2 sm:px-4 md:px-6 lg:px-8">
-    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 w-full">
+<section class="bg-neutral-100 px-2 sm:px-4 md:px-6 lg:px-8 pb-10">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 w-full">
         <div class="flex flex-col flex-auto p-6 bg-neutral-50 shadow rounded-2xl overflow-hidden">
             <div class="flex items-start justify-between">
                 <div class="text-lg font-lato font-medium truncate text-neutral-900">
@@ -42,7 +42,7 @@
             <div class="flex items-start justify-between">
                 <div class="flex flex-row items-center">
                     <div class="text-lg font-lato font-medium truncate text-neutral-900 min-w-[100px]">
-                        [text Last update]
+                        [text Last system update]
                     </div>
                     <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"
                         class="animate-spin w-6 h-6" x-cloak x-show="busy">

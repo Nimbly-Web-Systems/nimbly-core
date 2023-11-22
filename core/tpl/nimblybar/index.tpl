@@ -1,5 +1,5 @@
 <!-- Sidenav -->
-<nav id="nb-bar" class="group fixed right-0 top-0 z-[1035] 
+<nav id="nb-bar" class="group fixed right-0 top-0 z-[1035]  font-lato
         h-screen w-60 -translate-x-full overflow-hidden bg-cnormal 
         shadow-[0_4px_12px_0_rgba(0,0,0,0.07),_0_2px_4px_rgba(0,0,0,0.05)] 
         data-[te-sidenav-slim='true']:hidden 
@@ -8,15 +8,13 @@
         data-[te-sidenav-hidden='false']:translate-x-0 
         [&[data-te-sidenav-slim-collapsed='true'][data-te-sidenav-slim='false']]:hidden 
         [&[data-te-sidenav-slim-collapsed='true'][data-te-sidenav-slim='true']]:[display:unset]" data-te-sidenav-init
-    data-te-sidenav-hidden="false" data-te-sidenav-mode="over" 
-    data-te-sidenav-slim="[if api_nb_bar_slim=(empty) echo=false][if api_nb_bar_slim=(not-empty) echo=true]" 
-    data-te-sidenav-right="true"
-    data-te-sidenav-slim-width="30" data-te-sidenav-content="#main" 
+    data-te-sidenav-hidden="false" data-te-sidenav-mode="over"
+    data-te-sidenav-slim="[if api_nb_bar_slim=(empty) echo=false][if api_nb_bar_slim=(not-empty) echo=true]"
+    data-te-sidenav-right="true" data-te-sidenav-slim-width="30" data-te-sidenav-content="#main"
     data-te-sidenav-slim-collapsed="[if api_nb_bar_slim=(empty) echo=false][if api_nb_bar_slim=(not-empty) echo=true]"
     data-te-sidenav-mode-breakpoint-side="md">
 
     <ul class="pt-3 relative" data-te-sidenav-menu-ref>
-
         <li class="h-[30px] block">
             <div class="flex items-center truncate w-full gap-2">
                 <button class="inline-block rounded text-white w-[30px] h-[30px]
@@ -30,7 +28,8 @@
                         </path>
                     </svg>
                 </button>
-                <div class="[if api_nb_bar_slim=(not-empty) echo=hidden] h-[30px] w-[30px] rounded truncate" data-te-sidenav-slim="false">
+                <div class="[if api_nb_bar_slim=(not-empty) echo=hidden] h-[30px] w-[30px] rounded truncate"
+                    data-te-sidenav-slim="false">
                     <a class="flex items-center align-middle justify-center h-[30px] w-[30px] text-white cursor-pointer
                     hover:bg-clight" href="[base-url]/">
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.0"
@@ -42,7 +41,8 @@
                     </a>
                 </div>
 
-                <div class="[if api_nb_bar_slim=(not-empty) echo=hidden] h-[30px] w-[30px] rounded truncate" data-te-sidenav-slim="false">
+                <div class="[if api_nb_bar_slim=(not-empty) echo=hidden] h-[30px] w-[30px] rounded truncate"
+                    data-te-sidenav-slim="false">
                     <a class="flex items-center  justify-center h-[30px] w-[30px] text-white cursor-pointer hover:bg-clight"
                         href="[base-url]/nb-admin">
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.0"
@@ -54,8 +54,7 @@
                     </a>
                 </div>
 
-                <button id="nb_page_settings_btn" 
-                    class="[if api_nb_bar_slim=(not-empty) echo=hidden] truncate text-white rounded w-[30px] h-[30px]
+                <button id="nb_page_settings_btn" class="[if api_nb_bar_slim=(not-empty) echo=hidden] truncate text-white rounded w-[30px] h-[30px]
                 hover:bg-clight" data-te-sidenav-slim="false" aria-haspopup="true">
                     <svg class="w-[23px] h-[23px]  fill-white flex-shrink-0 ml-[3px]" fill="#ffffff" height="48"
                         viewBox="0 0 24 24" width="48" xmlns="http://www.w3.org/2000/svg">
@@ -66,11 +65,69 @@
                     </svg>
                 </button>
 
+                <div class="[if api_nb_bar_slim=(not-empty) echo=hidden] h-[30px] w-[30px] rounded truncate ml-auto mr-[1px]"
+                    data-te-sidenav-slim="false">
+                    <a class="flex items-center  justify-center h-[30px] w-[30px] text-white cursor-pointer hover:bg-clight"
+                        href="[base-url]/logout">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.0" stroke="currentColor" class="w-6 h-6">
+                            <title>[text Logout]</title>
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9" />
+                          </svg>
+                    </a>
+                </div>
+
+
+                
+                  
+
 
 
 
 
             </div>
+        </li>
+
+        <li class="relative mt-8">
+            <a class="flex h-[30px] rounded truncate 
+                cursor-pointer items-center
+                text-[0.875rem] text-neutral-100 outline-none transition duration-300 ease-linear
+                 hover:bg-clight hover:text-neutral-50 hover:outline-none focus:bg-clight
+                 focus:text-neutral-50 focus:outline-none active:bg-clight active:text-neutral-50
+                 active:outline-none data-[te-sidenav-state-active]:text-neutral-50
+                  data-[te-sidenav-state-focus]:outline-none motion-reduce:transition-none" data-te-sidenav-link-ref>
+
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.0"
+                    stroke="currentColor" class="w-[22px] h-[22px] mx-[4px] stroke-white">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                        d="M20.25 6.375c0 2.278-3.694 4.125-8.25 4.125S3.75 8.653 3.75 6.375m16.5 0c0-2.278-3.694-4.125-8.25-4.125S3.75 4.097 3.75 6.375m16.5 0v11.25c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125V6.375m16.5 0v3.75m-16.5-3.75v3.75m16.5 0v3.75C20.25 16.153 16.556 18 12 18s-8.25-1.847-8.25-4.125v-3.75m16.5 0c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125" />
+                </svg>
+
+                <span class="group-[&[data-te-sidenav-slim-collapsed='true']]:data-[te-sidenav-slim='false']:hidden ml-[12px]"
+                    data-te-sidenav-slim="false">[text Resources]</span>
+                <span
+                    class="absolute right-0 ml-auto mr-[0.5rem] transition-transform duration-300 ease-linear motion-reduce:transition-none [&>svg]:text-neutral-100 "
+                    data-te-sidenav-rotate-icon-ref data-te-sidenav-slim="false">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="h-5 w-5">
+                        <path fill-rule="evenodd"
+                            d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z"
+                            clip-rule="evenodd" />
+                    </svg>
+                </span>
+            </a>
+            <ul class="!visible relative m-0 hidden list-none p-0 data-[te-collapse-show]:block "
+                data-te-sidenav-collapse-ref>
+                [active-if nb-admin/users]
+                <li class='relative [if active-if=(not-empty) echo="bg-clight/20 font-bold"]'>
+                    <a class="flex h-6 cursor-pointer items-center truncate rounded-[5px] py-4 pl-[42px] pr-2 text-[0.8rem] text-neutral-100 
+                        outline-none transition 
+                        duration-300 ease-linear hover:bg-clight/40 hover:text-neutral-50 hover:outline-none focus:bg-slate-50 
+                        focus:text-neutral-50 focus:outline-none active:bg-clight active:text-neutral-50 active:outline-none 
+                        data-[te-sidenav-state-active]:text-neutral-50 data-[te-sidenav-state-focus]:outline-none motion-reduce:transition-none"
+                        data-te-sidenav-link-ref="[base-url]/nb-admin/users" 
+                        href="[base-url]/nb-admin/users"
+                        >[text Users]</a>
+                </li>
+            </ul>
         </li>
     </ul>
 
@@ -100,11 +157,9 @@
 
     const nb_bar = document.getElementById("nb-bar");
     nb_bar.addEventListener("expanded.te.sidenav", (event) => {
-        console.log(event);
-        nb_api.post('[base-url]/api/v1/session', { "nb_bar_slim": false});
+        nb.api.post('[base-url]/api/v1/session', { "nb_bar_slim": false });
     });
     nb_bar.addEventListener("collapsed.te.sidenav", (event) => {
-        console.log(event);
-        nb_api.post('[base-url]/api/v1/session', { "nb_bar_slim": true});
+        nb.api.post('[base-url]/api/v1/session', { "nb_bar_slim": true });
     });
 </script>

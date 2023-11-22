@@ -19,6 +19,8 @@ let coreTheme = {
       cdarkest: "#005198",
       clink: "#0074D9",
       clight: "#80baec",
+      primary: "#0074D9",
+      secondary: '#80baec'
     },
   }
 };

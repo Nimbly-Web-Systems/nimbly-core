@@ -479,7 +479,7 @@ function data_delete($resource, $uuid = null) {
         $result += (int) unlink($f);
     }
     @rmdir($dir);
-    return $delete_count;
+    return $result;
 }
 
 /* deletes all items, but leaves data structure and directory intact */
@@ -510,7 +510,7 @@ function _data_delete_children($resource, $uuid, $child_name) {
         return $result;
     }
     if ($meta['parent']['resource'] !== $resource) {
-        return result;
+        return $result;
     }
     $field = $meta['parent']['field'];
     // todo: has index? should maybe always have an index for this relation

@@ -1,0 +1,2 @@
+msgid "help_create_resource"
+msgstr "Create a new record by filling in the form below"
