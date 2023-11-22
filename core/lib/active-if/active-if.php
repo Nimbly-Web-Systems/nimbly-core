@@ -1,9 +1,11 @@
 <?php
 
 /** 
- *  @doc * `[active-if news]` outputs 'active' if the current url starts with _news_
- *  @doc * `[active-if news =]` outputs 'active' if the current url is exactly _news_
+ *  @doc * `[active-if news]` stores 'active_if=true' if the current url starts with _news_
+ *  @doc * `[active-if news =]` outputs 'active_if=true' if the current url is exactly _news_
  */
+
+load_library('set');
 
 function active_if_sc($params) {
     global $SYSTEM;
@@ -14,9 +16,5 @@ function active_if_sc($params) {
     } else {
         $active = !empty($url_prefix) && substr($url_current, 0, strlen($url_prefix)) === $url_prefix;
     }
-    if ($active) {
-        return " active ";
-    } else {
-        return "";
-    }
+    set_variable('active-if', $active, true);
 }

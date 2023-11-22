@@ -1,3 +1,3 @@
 <td>
-    [render-field-value]
+    [fmt var="record.[field.key]" type=[field.type]]
 </td>

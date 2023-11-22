@@ -64,7 +64,6 @@ function repeat_sc($params) {
     $var_id = get_param_value($params, "var", "item");
     $limit = get_param_value($params, "limit", 0);
     $iterations = 0;
-    $nodot = get_param_value($params, "nodot", false);
     foreach ($data as $k => $item) {
         $excluded = @in_array($item, $exclude_ls) || (is_array($item) && @in_array(key($item), $exclude_ls));
         if ($excluded) {
@@ -73,17 +72,12 @@ function repeat_sc($params) {
             set_variable($var_id . '.key', $item);
         } else if (is_int($item)) {
             set_variable($var_id . '.key', $item);
-        } else if ($nodot) {
+        } else  {
             set_variable($var_id . '.key', $k);
             foreach ($item as $key => $value) {
                 set_variable($var_id . '.' . $key, $value);
             }
-        } else {
-            set_variable($var_id . '.key', $k);
-            foreach ($item as $key => $value) {
-                set_variable_dot($var_id . '.' . $key, $value);
-            }
-        }
+        } 
 
         run($tpl);
         clear_variable_dot($var_id);

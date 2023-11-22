@@ -1,3 +1,3 @@
-<a href="[base-url]/admin/[data.resource]/add" class="nb-button green">
+<a href="[base-url]/nb-admin/[data.resource]/add" class="[btn-class-secondary]">
 	[text t="Add"]
 </a>
