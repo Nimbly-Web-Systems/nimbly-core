@@ -1,6 +1,6 @@
 <?php
 
-function form_errors_sc($params) {
+function get_form_errors_sc($params) {
     
     if (empty($params)) {
         //return global errors

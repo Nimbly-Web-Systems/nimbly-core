@@ -2460,6 +2460,10 @@ textarea.form-control.is-invalid {
   z-index: 1100;
 }
 
+.z-\[1102\] {
+  z-index: 1102;
+}
+
 .z-\[2\] {
   z-index: 2;
 }
@@ -2572,6 +2576,10 @@ textarea.form-control.is-invalid {
 
 .-mt-3 {
   margin-top: -0.75rem;
+}
+
+.-mt-4 {
+  margin-top: -1rem;
 }
 
 .mb-0 {
@@ -4245,6 +4253,10 @@ textarea.form-control.is-invalid {
   padding-left: 0.5rem;
 }
 
+.pl-\[0\.15rem\] {
+  padding-left: 0.15rem;
+}
+
 .pl-\[1\.5rem\] {
   padding-left: 1.5rem;
 }
@@ -5266,6 +5278,10 @@ textarea.form-control.is-invalid {
 .hover\:bg-clight:hover {
   --tw-bg-opacity: 1;
   background-color: rgb(128 186 236 / var(--tw-bg-opacity));
+}
+
+.hover\:bg-clight\/20:hover {
+  background-color: rgb(128 186 236 / 0.2);
 }
 
 .hover\:bg-clight\/40:hover {
@@ -6463,6 +6479,16 @@ textarea.form-control.is-invalid {
 :is(.dark .dark\:placeholder\:text-gray-200)::placeholder {
   --tw-text-opacity: 1;
   color: rgb(229 231 235 / var(--tw-text-opacity));
+}
+
+:is(.dark .dark\:placeholder\:text-neutral-200)::-moz-placeholder {
+  --tw-text-opacity: 1;
+  color: rgb(229 229 229 / var(--tw-text-opacity));
+}
+
+:is(.dark .dark\:placeholder\:text-neutral-200)::placeholder {
+  --tw-text-opacity: 1;
+  color: rgb(229 229 229 / var(--tw-text-opacity));
 }
 
 :is(.dark .dark\:checked\:border-primary:checked) {

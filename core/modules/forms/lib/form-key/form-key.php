@@ -5,14 +5,17 @@ function form_key_sc($params) {
     if (get_single_param_value($params, "plain", true, false)) {
         return $key;
     }
-    $result = '<input type="hidden" name="form_key" value="' . $key . '" x-init="form_data.form_key=\'' . $key . '\'" />';
+    $do_x_init = get_single_param_value($params, "x-init", true, false);
+    $x_init_key = $do_x_init? 'x-init="form_data.form_key=\'' . $key . '\'"' : '';
+    $result = '<input type="hidden" name="form_key" value="' . $key . '"' . $x_init_key . ' />';
     if (!empty($params)) {
         if (isset($params['name'])) {
             $name = $params['name'];
         } else {
             $name = current($params);
         }
-        $result .= '<input type="hidden" name="form_id" value="' . $name . '" x-init="form_data.form_id=\'' . $name .'\'" />';
+        $x_init_name = $do_x_init? 'x-init="form_data.form_id=\'' . $name . '\'"' : '';
+        $result .= '<input type="hidden" name="form_id" value="' . $name  . '"' . $x_init_name . ' />';
     }
     return $result;
 }

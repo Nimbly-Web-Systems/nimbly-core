@@ -61,6 +61,7 @@ function router_handle($ep) {
     $file = find_uri($ep);
     if ($file !== false) {
         $GLOBALS['SYSTEM']['uri'] = $ep;
+        $GLOBALS['SYSTEM']['uri_key'] = preg_replace("/[^ \w]+/", "_", $ep);
         $GLOBALS['SYSTEM']['uri_path'] = dirname($path);
         run($file);
         return true;

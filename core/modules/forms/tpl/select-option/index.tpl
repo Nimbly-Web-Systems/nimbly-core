@@ -1,1 +1,0 @@
-<option value="[item.key]">[item.key]</option>
