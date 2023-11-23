@@ -8,7 +8,8 @@
     <form autocomplete="false" x-data="form_add('[data.resource]')" 
         @submit.prevent="submit"
         class="bg-neutral-50 rounded p-10 max-w-2xl shadow-md mx-auto">
-        [form-key add_resource_[data.resource]]
+        [set nb_form_edit=false overwrite]
+        [form-key add_resource_[data.resource] x-init]
         [repeat data.fields]
         <div class="mt-8"></div>
         <input type="submit" value="Save" class="[btn-class-primary]" />

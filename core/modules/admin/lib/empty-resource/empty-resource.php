@@ -2,7 +2,7 @@
 
 load_libraries(['get', 'data', 'api']);
 
-// @doc pulls version from git repository
+// @doc delete all records of a resource
 function empty_resource_sc()
 {
 

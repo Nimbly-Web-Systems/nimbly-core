@@ -1,5 +1,7 @@
 <div class="relative border" data-te-input-wrapper-init>
-    <input type="[item.type]" value="[get record.[item.key]]" name="[item.key]" placeholder="" x-model="form_data.[item.key]"
+    <input type="[item.type]" value="[get record.[item.key]]" name="[item.key]" placeholder="" 
+        x-init="form_data.[item.key]='[get record.[item.key]]'"
+        x-model="form_data.[item.key]"
         [if item.required=(not-empty) echo=required]
         class="
             peer block min-h-[auto] w-full rounded border-0 bg-transparent px-2 py-[0.2rem] 

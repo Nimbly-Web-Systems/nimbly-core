@@ -83,6 +83,9 @@ function access_by_key($key) {
 function load_user_roles($name) {
     $roles = data_read('users', md5($name), 'roles');
     if (!empty($roles)) {
+        if (is_array($roles)) {
+            return $roles;
+        }
         $result = array_map('trim', explode(',', $roles));
     } else {
         $result = array();

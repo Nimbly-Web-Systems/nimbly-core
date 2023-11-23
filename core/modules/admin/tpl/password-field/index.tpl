@@ -1,1 +1,1 @@
-[default-field]
+[if nb_form_edit=true tpl=pw-reset tpl_else=default-field]

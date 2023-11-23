@@ -21,8 +21,6 @@ function post_sc($params) {
         return; //suspicious, could be a CSRF attack.. do nothing.
     }
 
-
-
     load_library("validate");
     $id_suffix = "";
     if (isset($_POST['form_id'])) {
