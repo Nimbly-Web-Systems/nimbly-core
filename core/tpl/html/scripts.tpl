@@ -5,6 +5,7 @@ window.nb = {
         record_deleted: "[text Record deleted]",
         record_added: "[text Added record]",
         record_updated: "[text Updated record]",
+        medium_editor_placeholder: "[text Type here]"
     }
 };
 [include [base-path]js/bundle/tw-elements.umd.min.js]

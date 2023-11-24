@@ -3,35 +3,107 @@
 @tailwind utilities;
 
 @layer base {
-    .prose *:first-child {
-        margin-top: 0 !important;
-    }
+  .prose *:first-child {
+    margin-top: 0 !important;
+  }
 
-    .prose a {
-        @apply text-clink no-underline;
-    }
+  .prose a {
+    @apply text-clink no-underline;
+  }
 
-    .prose a:hover {
-        @apply underline;
-    }
-
+  .prose a:hover {
+    @apply underline;
+  }
 }
 
 @layer components {
-    .modal .nav-tabs .nav-link.active {
-        @apply text-cdark border-cdark;
-    }
+  .modal .nav-tabs .nav-link.active {
+    @apply text-cdark border-cdark;
+  }
 
-    #modal-content {
-        @apply px-4 py-0;
-        max-width: none;
-        min-width: none;
-        max-height: none;
-    }
+  #modal-content {
+    @apply px-4 py-0;
+    max-width: none;
+    min-width: none;
+    max-height: none;
+  }
 }
 
 .nb-form-errors {
-    @apply bg-red-50 border border-red-400 rounded text-red-600 p-4 my-4;
+  @apply bg-red-50 border border-red-400 rounded text-red-600 p-4 my-4;
 }
 
-[x-cloak] { display: none !important; }
+[x-cloak] {
+  display: none !important;
+}
+
+/* medium editor */
+
+[contenteditable="true"] {
+  @apply bg-clight/20;
+}
+
+.medium-toolbar-arrow-under:after {
+  @apply border-transparent border-t-cdarkest top-[40px];
+}
+
+.medium-toolbar-arrow-over:before {
+  @apply border-transparent border-b-cdarkest -top-[8px];
+}
+
+.medium-editor-toolbar li button {
+  @apply bg-cdarkest bg-gradient-to-b from-cdarkest to-cdark/75 border p-[10px];
+  @apply border-cdarkest border-r-black/30 border-l-white/10 shadow-sm;
+  @apply text-neutral-50 h-[40px] min-w-[40px];
+  @apply transition-all ease-in;
+}
+
+.medium-editor-toolbar li button:hover {
+  @apply bg-cnormal text-clight;
+}
+
+.medium-editor-toolbar li .medium-editor-button-first {
+  @apply rounded-l-md;
+}
+
+.medium-editor-toolbar li .medium-editor-button-last {
+  @apply rounded-r-md;
+}
+
+.medium-editor-toolbar li .medium-editor-button-active {
+  @apply bg-clight bg-gradient-to-t from-clight to-clight/50 text-cdark;
+  @apply border-clight border-r-black/30 border-l-white/10 shadow-sm;
+}
+
+.medium-editor-toolbar-form {
+  @apply bg-cdarkest rounded text-neutral-50 pr-1;
+}
+
+.medium-editor-toolbar-form .medium-editor-toolbar-input {
+  @apply bg-cdarkest rounded text-neutral-50 h-[40px];
+}
+
+.medium-editor-toolbar-form a {
+  @apply text-neutral-50 text-lg px-2 rounded mx-0.5;
+}
+
+.medium-editor-toolbar-form a:hover {
+    @apply bg-clight/50;
+  }
+
+.medium-editor-toolbar-anchor-preview {
+  @apply bg-cdarkest rounded text-neutral-50;
+}
+
+.medium-editor-placeholder:after {
+  @apply text-neutral-50;
+}
+
+form .medium-editor-element, form [data-nb-edit] {
+  @apply rounded border border-neutral-300 bg-transparent px-2 py-3;
+  @apply outline-none min-h-[41px] transition-all duration-200 ease-linear;
+}
+
+form .medium-editor-element[data-medium-focused] {
+  @apply border-primary border-2;
+}
