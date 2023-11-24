@@ -7,12 +7,15 @@
 <section class="bg-neutral-100 px-2 sm:px-4 md:px-6 lg:px-8 pb-10">
     <form autocomplete="false" x-data="form_add('[data.resource]')" 
         @submit.prevent="submit"
-        class="bg-neutral-50 rounded p-10 max-w-2xl shadow-md mx-auto">
+        class="bg-neutral-50 rounded-2xl p-10 shadow-md mx-auto">
         [set nb_form_edit=false overwrite]
         [form-key add_resource_[data.resource] x-init]
-        [repeat data.fields]
+        <div class="max-w-lg mx-auto">
+            [repeat data.fields]
+        
         <div class="mt-8"></div>
         <input type="submit" value="Save" class="[btn-class-primary]" />
+        </div>
         </div>
     </form>
 </section>

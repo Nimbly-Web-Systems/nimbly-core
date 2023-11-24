@@ -10,9 +10,11 @@
 </section>
 <section class="bg-neutral-100 px-2 sm:px-4 md:px-6 lg:px-8 pb-10" x-data="resource_table('[data.resource]')">
 
-  <div data-te-datatable-init
-    data-te-no-found-message="[text No [field-name [data.resource]]]">
-    <table>
+  <div data-te-datatable-init class="rounded-2xl shadow-md bg-neutral-50 p-4"
+    data-te-no-found-message="[text No [field-name [data.resource]]]"
+    data-te-class-color="bg-neutral-50"
+     >
+    <table >
       <thead>
         <tr>
           [repeat data.fields var=field]

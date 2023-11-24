@@ -1,8 +1,12 @@
 import nb_api from './nb_api.jsx';
+import nb_edit from './nb_edit.jsx';
 import Alpine from 'alpinejs';
 
 window.nb.api = nb_api;
+window.nb.edit = nb_edit;
 window.Alpine = Alpine;
+
+window.nb.edit.init();
 
 window.nb.notify = function(msg) {
     const el = document.getElementById('nb-system-messages');

@@ -1,4 +1,4 @@
-<div class="relative border" data-te-input-wrapper-init>
+<div class="relative my-6" data-te-input-wrapper-init>
     <input type="[item.type]" value="[get record.[item.key]]" name="[item.key]" placeholder="" 
         x-init="form_data.[item.key]='[get record.[item.key]]'"
         x-model="form_data.[item.key]"

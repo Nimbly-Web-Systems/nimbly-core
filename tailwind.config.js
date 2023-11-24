@@ -14,12 +14,12 @@ let coreTheme = {
       },
     },
     colors: {
+      primary: "#0074D9",
       cnormal: "#0074D9",
+      clink: "#0074D9",
       cdark: "#0068c3",
       cdarkest: "#005198",
-      clink: "#0074D9",
       clight: "#80baec",
-      primary: "#0074D9",
       secondary: '#80baec'
     },
   }
