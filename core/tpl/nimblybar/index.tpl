@@ -1,10 +1,10 @@
 <!-- Sidenav -->
-<nav id="nb-bar" class="group fixed right-0 top-0 z-[1035]  font-lato
+<nav id="nb-bar" class="group fixed right-0 top-0 z-[1035]  font-primary
         h-screen w-60 -translate-x-full overflow-hidden bg-cnormal 
         shadow-[0_4px_12px_0_rgba(0,0,0,0.07),_0_2px_4px_rgba(0,0,0,0.05)] 
-        data-[te-sidenav-slim='true']:hidden 
         data-[te-sidenav-slim-collapsed='true']:w-[30px] 
         data-[te-sidenav-slim='true']:w-[30px] 
+        data-[te-sidenav-slim='false']:px-2 
         data-[te-sidenav-hidden='false']:translate-x-0 
         [&[data-te-sidenav-slim-collapsed='true'][data-te-sidenav-slim='false']]:hidden 
         [&[data-te-sidenav-slim-collapsed='true'][data-te-sidenav-slim='true']]:[display:unset]" data-te-sidenav-init
@@ -20,8 +20,8 @@
                 <button class="inline-block rounded text-white w-[30px] h-[30px]
                 hover:bg-clight" data-te-sidenav-link-ref aria-haspopup="true" id="nb_nav_toggler">
                     <svg aria-hidden="true" focusable="false" data-prefix="fas" data-icon="bars"
-                        class="w-[20px] h-[20px] ml-[5px] stroke-white fill-white" role="img"
-                        xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512">
+                        class="w-[20px] h-[20px] ml-[5px] fill-white" role="img" xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 448 512">
                         <title>[text Toggle menu]</title>
                         <path fill="#fff"
                             d="M16 132h416c8.837 0 16-7.163 16-16V76c0-8.837-7.163-16-16-16H16C7.163 60 0 67.163 0 76v40c0 8.837 7.163 16 16 16zm0 160h416c8.837 0 16-7.163 16-16v-40c0-8.837-7.163-16-16-16H16c-8.837 0-16 7.163-16 16v40c0 8.837 7.163 16 16 16zm0 160h416c8.837 0 16-7.163 16-16v-40c0-8.837-7.163-16-16-16H16c-8.837 0-16 7.163-16 16v40c0 8.837 7.163 16 16 16z">
@@ -33,7 +33,7 @@
                     <a class="flex items-center align-middle justify-center h-[30px] w-[30px] text-white cursor-pointer
                     hover:bg-clight" href="[base-url]/">
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.0"
-                            stroke="currentColor" class="w-[22px] h-[22px] stroke-white">
+                            stroke="currentColor" class="w-[22px] h-[22px]">
                             <title>[text Site home]</title>
                             <path stroke-linecap="round" stroke-linejoin="round"
                                 d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
@@ -46,10 +46,10 @@
                     <a class="flex items-center  justify-center h-[30px] w-[30px] text-white cursor-pointer hover:bg-clight"
                         href="[base-url]/nb-admin">
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.0"
-                            stroke="currentColor" class="w-[23px] h-[23px] stroke-white">
+                            stroke="currentColor" class="w-[23px] h-[23px]">
                             <title>[text Admin dashboard]</title>
                             <path stroke-linecap="round" stroke-linejoin="round"
-                                d="M3 8.25V18a2.25 2.25 0 002.25 2.25h13.5A2.25 2.25 0 0021 18V8.25m-18 0V6a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 6v2.25m-18 0h18M5.25 6h.008v.008H5.25V6zM7.5 6h.008v.008H7.5V6zm2.25 0h.008v.008H9.75V6z" />
+                                d="M7.5 14.25v2.25m3-4.5v4.5m3-6.75v6.75m3-9v9M6 20.25h12A2.25 2.25 0 0020.25 18V6A2.25 2.25 0 0018 3.75H6A2.25 2.25 0 003.75 6v12A2.25 2.25 0 006 20.25z" />
                         </svg>
                     </a>
                 </div>
@@ -69,21 +69,14 @@
                     data-te-sidenav-slim="false">
                     <a class="flex items-center  justify-center h-[30px] w-[30px] text-white cursor-pointer hover:bg-clight"
                         href="[base-url]/logout">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.0" stroke="currentColor" class="w-6 h-6">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.0"
+                            stroke="currentColor" class="w-6 h-6">
                             <title>[text Logout]</title>
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9" />
-                          </svg>
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9" />
+                        </svg>
                     </a>
                 </div>
-
-
-                
-                  
-
-
-
-
-
             </div>
         </li>
 
@@ -97,12 +90,13 @@
                   data-[te-sidenav-state-focus]:outline-none motion-reduce:transition-none" data-te-sidenav-link-ref>
 
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.0"
-                    stroke="currentColor" class="w-[22px] h-[22px] mx-[4px] stroke-white">
+                    stroke="currentColor" class="w-[22px] h-[22px] mx-[4px]">
                     <path stroke-linecap="round" stroke-linejoin="round"
                         d="M20.25 6.375c0 2.278-3.694 4.125-8.25 4.125S3.75 8.653 3.75 6.375m16.5 0c0-2.278-3.694-4.125-8.25-4.125S3.75 4.097 3.75 6.375m16.5 0v11.25c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125V6.375m16.5 0v3.75m-16.5-3.75v3.75m16.5 0v3.75C20.25 16.153 16.556 18 12 18s-8.25-1.847-8.25-4.125v-3.75m16.5 0c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125" />
                 </svg>
 
-                <span class="group-[&[data-te-sidenav-slim-collapsed='true']]:data-[te-sidenav-slim='false']:hidden ml-[12px]"
+                <span
+                    class="group-[&[data-te-sidenav-slim-collapsed='true']]:data-[te-sidenav-slim='false']:hidden ml-[12px]"
                     data-te-sidenav-slim="false">[text Resources]</span>
                 <span
                     class="absolute right-0 ml-auto mr-[0.5rem] transition-transform duration-300 ease-linear motion-reduce:transition-none [&>svg]:text-neutral-100 "
@@ -123,11 +117,39 @@
                         duration-300 ease-linear hover:bg-clight/40 hover:text-neutral-50 hover:outline-none focus:bg-slate-50 
                         focus:text-neutral-50 focus:outline-none active:bg-clight active:text-neutral-50 active:outline-none 
                         data-[te-sidenav-state-active]:text-neutral-50 data-[te-sidenav-state-focus]:outline-none motion-reduce:transition-none"
-                        data-te-sidenav-link-ref="[base-url]/nb-admin/users" 
-                        href="[base-url]/nb-admin/users"
-                        >[text Users]</a>
+                        data-te-sidenav-link-ref="[base-url]/nb-admin/users" href="[base-url]/nb-admin/users">
+                        [text Users]
+                    </a>
                 </li>
             </ul>
+        </li>
+
+        <li class="h-[30px] block mt-8">
+            <div class="flex items-center truncate w-full gap-2">
+                <button class="inline-block rounded text-white w-[30px] h-[30px] flex-none
+                    transition duration-300 ease-in
+                hover:bg-clight active:bg-clight" data-te-sidenav-link-ref aria-haspopup="true" id="nb_edit_toggler">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.0"
+                        stroke="currentColor" class="w-[20px] h-[20px] ml-[5px]">
+                        <title>[text Edit]</title>
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                            d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487zm0 0L19.5 7.125" />
+                    </svg>
+                </button>
+                <button class="inline-block rounded text-white w-[30px] h-[30px]  transition duration-300 ease-in
+                    hover:disabled:bg-transparent flex-none
+                hover:bg-clight active:bg-clight disabled:text-white/50" data-te-sidenav-link-ref aria-haspopup="true"
+                    id="nb_edit_save" disabled>
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.0"
+                        stroke="currentColor" class="w-[23px] h-[23px] ml-[4px]">
+                        <title>[text Save]</title>
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                            d="M9 12.75l3 3m0 0l3-3m-3 3v-7.5M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+
+                </button>
+            </div>
+            </div>
         </li>
     </ul>
 
@@ -146,20 +168,46 @@
 </nav>
 
 <script>
+    const nb_bar = document.getElementById("nb-bar");
+
     document
         .getElementById("nb_nav_toggler")
         .addEventListener("click", () => {
-            const instance = te.Sidenav.getInstance(
-                document.getElementById("nb-bar")
-            );
-            instance.toggleSlim();
+            te.Sidenav.getInstance(nb_bar).toggleSlim();
         });
 
-    const nb_bar = document.getElementById("nb-bar");
+    document
+        .getElementById("nb_edit_toggler")
+        .addEventListener("click", (e) => {
+            e.currentTarget.classList.toggle('bg-clight/50');
+            nb.edit.toggle();
+            const snav = te.Sidenav.getInstance(nb_bar);
+            if (nb.edit.enabled && snav._slimCollapsed) {
+                snav.toggleSlim();
+            }
+        });
+
+    document
+        .getElementById("nb_edit_save")
+        .addEventListener("click", (e) => {
+            e.currentTarget.setAttribute('disabled', true);
+            nb.edit.save();
+        });
+
+
     nb_bar.addEventListener("expanded.te.sidenav", (event) => {
         nb.api.post('[base-url]/api/v1/session', { "nb_bar_slim": false });
     });
+
     nb_bar.addEventListener("collapsed.te.sidenav", (event) => {
         nb.api.post('[base-url]/api/v1/session', { "nb_bar_slim": true });
+    });
+
+    nb_bar.addEventListener("expand.te.sidenav", (event) => {
+        nb_bar.classList.add('px-2');
+    });
+
+    nb_bar.addEventListener("collapse.te.sidenav", (event) => {
+        nb_bar.classList.remove('px-2', "data-[te-sidenav-slim='false']:px-2");
     });
 </script>
