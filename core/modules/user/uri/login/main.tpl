@@ -3,7 +3,7 @@
 
         <section class="container mx-auto lg:w-[420px]">
             <div
-                class="shadow-lg p-4 md:p-6 rounded-lg border-r-cnormal border-r-[30px] bg-neutral-50 font-lato m-4 relative">
+                class="shadow-lg p-4 md:p-6 rounded-lg border-r-cnormal border-r-[30px] bg-neutral-50 font-primary m-4 relative">
                 <h1 class="font-bold my-4">[text Log in]</h1>
                 <svg width="137px" height="47px" viewBox="0 0 137 47" version="1.1" xmlns="http://www.w3.org/2000/svg"
                     xmlns:xlink="http://www.w3.org/1999/xlink"

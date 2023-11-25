@@ -1,9 +1,12 @@
 /** @type {import('tailwindcss').Config} */
 
+const defaultTheme = require('tailwindcss/defaultTheme');
+
 let coreTheme = {
   extend: {
     fontFamily: {
-      "nb-font": ['"Lato"', "sans-serif"],
+      "primary": ['Inter var', ...defaultTheme.fontFamily.sans],
+      "sans": ['Inter var', ...defaultTheme.fontFamily.sans],
     },
     typography: {
       DEFAULT: {

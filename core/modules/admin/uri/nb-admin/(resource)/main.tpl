@@ -1,4 +1,4 @@
-<section class="bg-neutral-100 p-2 sm:p-4 md:p-6 lg:p-8 font-lato flex justify-between">
+<section class="bg-neutral-100 p-2 sm:p-4 md:p-6 lg:p-8 font-primary flex justify-between">
   <div>
     <h1 class="text-2xl md:text-3xl font-semibold text-neutral-800 ">[field-name [data.resource]]</h1>
     <h3 class="text-sm md:text-base pt-1 pb-2 text-neutral-700 font-medium">[count data.records] [text records]</h3>

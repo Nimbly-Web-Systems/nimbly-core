@@ -40,7 +40,7 @@
 /* medium editor */
 
 [contenteditable="true"] {
-  @apply bg-clight/20;
+  @apply bg-clight/20 focus:outline-none;
 }
 
 .medium-toolbar-arrow-under:after {
@@ -95,15 +95,24 @@
   @apply bg-cdarkest rounded text-neutral-50;
 }
 
-.medium-editor-placeholder:after {
-  @apply text-neutral-50;
+.medium-editor-placeholder[contenteditable=true]:after {
+  @apply text-neutral-300;
+}
+
+.medium-editor-placeholder[contenteditable=false]:after {
+  @apply hidden;
+}
+
+.medium-editor-element {
+  @apply min-h-0;
 }
 
 form .medium-editor-element, form [data-nb-edit] {
   @apply rounded border border-neutral-300 bg-transparent px-2 py-3;
-  @apply outline-none min-h-[41px] transition-all duration-200 ease-linear;
+  @apply outline-none outline-offset-0 min-h-[41px] transition-all duration-200 ease-linear;
 }
 
 form .medium-editor-element[data-medium-focused] {
-  @apply border-primary border-2;
+  @apply outline-2 outline-primary outline-offset-0 border-transparent;
 }
+

@@ -1,4 +1,4 @@
-<section class="bg-neutral-100 p-2 sm:p-4 md:p-6 lg:p-8 font-lato">
+<section class="bg-neutral-100 p-2 sm:p-4 md:p-6 lg:p-8 font-primary">
     <h1 class="text-2xl md:text-3xl font-semibold text-neutral-800">[text Dashboard]</h1>
     <h3 class="text-sm md:text-base pt-1 pb-2 text-neutral-700">[text dashboard-subtitle]</h3>
 </section>
@@ -6,7 +6,7 @@
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 w-full">
         <div class="flex flex-col flex-auto p-6 bg-neutral-50 shadow rounded-2xl overflow-hidden">
             <div class="flex items-start justify-between">
-                <div class="text-lg font-lato font-medium truncate text-neutral-900">
+                <div class="text-lg font-primary font-medium truncate text-neutral-900">
                     [text Users]
                 </div>
                 <div class="relative [feature-cond manage-users echo_else=hidden]" data-te-dropdown-ref>
@@ -46,7 +46,7 @@
         <div class="flex flex-col flex-auto p-6 bg-neutral-50 shadow rounded-2xl overflow-hidden" x-data="updates">
             <div class="flex items-start justify-between">
                 <div class="flex flex-row items-center">
-                    <div class="text-lg font-lato font-medium truncate text-neutral-900 min-w-[100px]">
+                    <div class="text-lg font-primary font-medium truncate text-neutral-900 min-w-[100px]">
                         [text Last system update]
                     </div>
                     <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"
@@ -101,6 +101,18 @@
             </div>
         </div>
 
+        <div class="flex flex-col flex-auto p-6 bg-neutral-50 shadow rounded-2xl overflow-hidden"> 
+            <div class="text-lg font-primary font-medium truncate text-neutral-900">
+                [text Notes]
+            </div>
+            <div class="prose" data-nb-edit=".content.[url-key].notes" 
+                data-nb-edit-buttons="bold,italic,orderedlist,unorderedlist,quote">
+                [render .content.[url-key].notes default="[text Type here]"]
+            </div>
+            <div class="prose" data-nb-edit=".content.[url-key].notes2" 
+                data-nb-edit-buttons="bold,italic,orderedlist,unorderedlist,quote">
+                [render .content.[url-key].notes2 default="[text Type here]"]
+            </div>
+        </div>
     </div>
-
 </section>

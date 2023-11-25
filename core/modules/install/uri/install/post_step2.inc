@@ -50,6 +50,12 @@ if ($ok) {
 }
 
 /*
+ * Create .content resource
+ */
+ 
+ data_create_resource(".content", ["fields" => false]);
+
+/*
  * Create readme file
  */
 
