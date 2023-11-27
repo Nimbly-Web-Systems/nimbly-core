@@ -2,19 +2,23 @@
 
 load_library('lookup');
 
-function render_sc($params) {
+function render_sc($params)
+{
     $resource_set = explode('.', current($params));
-    $offset = 0;
-    if (count($resource_set) === 4 && empty($resource_set[0])) {
-        $offset = 1;
-    }
-
-    $resource = $resource_set[$offset + 0];
-    $uuid = $resource_set[$offset + 1];
-    $field = $resource_set[$offset + 2];
-
-    if ($offset === 1) {
-        $resource = '.' . $resource;
+    if (count($resource_set) === 1) {
+        $resource = '.content';
+        $uuid = $GLOBALS['SYSTEM']['uri_key'];
+        $field = $resource_set[0];
+    } else if (count($resource_set) === 4 && empty($resource_set[0])) {
+        $resource = '.' . $resource_set[1];
+        $uuid = $resource_set[2];
+        $field = $resource_set[3];
+    } else if (count($resource_set) !== 3) {
+        return;
+    } else {
+        $resource = $resource_set[0];
+        $uuid = $resource_set[1];
+        $field = $resource_set[2];
     }
 
     if (!data_exists($resource)) {
