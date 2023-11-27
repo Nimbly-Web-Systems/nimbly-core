@@ -2989,6 +2989,11 @@ textarea.form-control.is-invalid {
   margin-bottom: 0px !important;
 }
 
+.mx-0 {
+  margin-left: 0px;
+  margin-right: 0px;
+}
+
 .mx-\[10px\] {
   margin-left: 10px;
   margin-right: 10px;
@@ -3110,16 +3115,16 @@ textarea.form-control.is-invalid {
   margin-left: 12px;
 }
 
+.ml-\[2px\] {
+  margin-left: 2px;
+}
+
 .ml-\[30px\] {
   margin-left: 30px;
 }
 
 .ml-\[3px\] {
   margin-left: 3px;
-}
-
-.ml-\[4px\] {
-  margin-left: 4px;
 }
 
 .ml-\[5px\] {
@@ -3148,6 +3153,10 @@ textarea.form-control.is-invalid {
 
 .mr-\[0\.5rem\] {
   margin-right: 0.5rem;
+}
+
+.mr-\[12px\] {
+  margin-right: 12px;
 }
 
 .mr-\[1px\] {
@@ -3184,6 +3193,10 @@ textarea.form-control.is-invalid {
 
 .mt-\[0\.15rem\] {
   margin-top: 0.15rem;
+}
+
+.mt-\[1px\] {
+  margin-top: 1px;
 }
 
 .box-border {
@@ -3649,10 +3662,6 @@ textarea.form-control.is-invalid {
 
 .flex-auto {
   flex: 1 1 auto;
-}
-
-.flex-none {
-  flex: none;
 }
 
 .flex-shrink-0 {
@@ -5440,10 +5449,6 @@ textarea.form-control.is-invalid {
 
 .ease-\[ease\] {
   transition-timing-function: ease;
-}
-
-.ease-in {
-  transition-timing-function: cubic-bezier(0.4, 0, 1, 1);
 }
 
 .ease-in-out {

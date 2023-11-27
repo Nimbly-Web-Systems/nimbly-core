@@ -9,6 +9,13 @@ nb_edit.init = function () {
     if (typeof MediumEditor === "undefined") {
         return;
     }
+    const all_editors = document.querySelectorAll("[data-nb-edit]");
+    if (all_editors.length > 0) {
+        const edit_menu = document.getElementById('nb_edit_menu');
+        if (edit_menu) {
+            edit_menu.classList.remove('hidden');
+        }
+    }
     const form_editors = document.querySelectorAll("form [data-nb-edit]");
     form_editors.forEach(ed => {
         nb_edit.init_editor(ed, true);

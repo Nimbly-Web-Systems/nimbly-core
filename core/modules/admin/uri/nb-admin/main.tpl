@@ -105,13 +105,13 @@
             <div class="text-lg font-primary font-medium truncate text-neutral-900">
                 [text Notes]
             </div>
-            <div class="prose" data-nb-edit=".content.[url-key].notes" 
+            <div class="prose" data-nb-edit="[cfield notes]" 
                 data-nb-edit-buttons="bold,italic,orderedlist,unorderedlist,quote">
-                [render .content.[url-key].notes default="[text Type here]"]
+                [render notes default="[text Type here]"]
             </div>
-            <div class="prose" data-nb-edit=".content.[url-key].notes2" 
+            <div class="prose" data-nb-edit="[cfield notes2]" 
                 data-nb-edit-buttons="bold,italic,orderedlist,unorderedlist,quote">
-                [render .content.[url-key].notes2 default="[text Type here]"]
+                [render notes2 default="[text Type here]"]
             </div>
         </div>
     </div>
