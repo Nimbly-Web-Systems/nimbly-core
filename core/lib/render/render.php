@@ -33,6 +33,6 @@ function render_sc($params)
     }
 
     $html = lookup_data($resource, $uuid, $field, get_param_value('default', ''));
-    $result = strip_tags($html, "<h1><h2><h3><h4><h5><h6><b><strong><a><i><p><blockquote><ol><ul><li><br><img><iframe>");
+    $result = strip_tags($html, "<h1><h2><h3><h4><h5><h6><b><strong><a><i><p><blockquote><ol><ul><li><br><img><iframe><figure>");
     echo $result;
 }

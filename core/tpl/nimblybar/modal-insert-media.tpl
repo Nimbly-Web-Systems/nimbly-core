@@ -29,8 +29,13 @@
       <div class="relative min-[0px]:overflow-y-auto">
         <div class="flex flex-wrap flex-col-reverse sm:flex-row sm:flex-nowrap">
 
-          <div class="grow p-2 sm:p-4">
-            image grid goes here [ipsum words=1000]
+          <div class="grow p-4 md:p-6 lg:p-8 bg-neutral-100">
+
+            <div
+              class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-6 lg:gap-8">
+              [data .files_meta filter=type:image/jpeg||image/png||image/gif sort=_modified|num|desc]
+              [repeat data.files_meta tpl=grid-img var=img]
+            </div>
 
           </div>
           <div class="flex-none w-[300px] p-2 mx-auto sm:p-4 bg-neutral-200">
@@ -52,7 +57,7 @@
               </div>
             </div>
 
-            <div class="border border-neutral-200 rounded my-4 p-4 bg-neutral-100"
+            <div class="border border-neutral-200 rounded my-4 p-4 bg-neutral-100" id="nb_file_info"
               @nb_upload_ready.document="handle_upload_ready" x-cloak x-show="file_info">
               <template x-if="file_info">
                 <div>
@@ -66,13 +71,54 @@
                     <span x-text="`${file_info.width}x${file_info.height}`">---</span>
                     <span x-text="file_info.size.fileSize(1) || ''">---</span>
                   </p>
-                  <button @click="delete_file(file_info.uuid)" class="inline-block cursor-pointer rounded border border-neutral-400
+                  <button @click="confirm('[text Delete permanently? Are you sure?]') && delete_file(file_info.uuid)"
+                    class="inline-block cursor-pointer rounded border border-neutral-400
                      hover:border-cnormal px-1 pb-0.5 pt-1
                      text-xs font-medium uppercase text-neutral-700 transition duration-150 ease-in-out
                       hover:bg-neutral-50 focus:bg-neutral-100 focus:outline-none focus:ring-0 active:bg-clight">
                     [text Delete]
                   </button>
+
+                  <!-- title input -->
+                  <div class="relative mt-6 mb-4" data-te-input-wrapper-init>
+                    <input type="text" x-model="file_info.title"
+                      class="peer block min-h-[auto] w-full rounded border-0 bg-neutral-50 
+                        px-3 py-[0.33rem] text-xs leading-[1.5] outline-none transition-all"
+                      id="nb_media_title" placeholder="" />
+                    <label for="nb_media_title"
+                      class="pointer-events-none absolute left-3 top-0 mb-0 max-w-[90%] origin-[0_0] 
+                      truncate pt-[0.37rem] text-xs leading-[1.5] text-neutral-500 
+                       -translate-y-[0.75rem] scale-[0.8] ">
+                      [text Title]
+                    </label>
+                  </div>
+
+                  <!-- description input -->
+                  <div class="relative" data-te-input-wrapper-init>
+                    <textarea x-model="file_info.description" 
+                      class="peer block min-h-[auto] w-full rounded border-0 bg-neutral-50 
+                        text-xs
+                        px-3 py-[0.32rem] leading-[1.6] 
+                        outline-none transition-all duration-200 ease-linear 
+                        "
+                      id="nb_media_description"
+                      rows="3"
+                      placeholder=""></textarea>
+                    <label
+                      for="nb_media_description"
+                      class="text-xs pointer-events-none absolute left-3 top-0 
+                      mb-0 max-w-[90%] origin-[0_0] truncate pt-[0.37rem] leading-[1.6]
+                       text-neutral-500 
+                       -translate-y-[0.75rem] scale-[0.8]"
+                      >
+                      [text Description]
+                      </label
+                    >
+                  </div>
                 </div>
+
+
+
               </template>
             </div>
           </div>
@@ -97,22 +143,7 @@
 
 <template id="nb_media_insert_img_tpl">
   <figure>
-    <img src="[base_url]/img/{{uuid}}/{{img_size7}}" srcset="
-        [base_url]/img/{{uuid}}/{{img_size0}} 120w,
-        [base_url]/img/{{uuid}}/{{img_size1}} 180w,
-        [base_url]/img/{{uuid}}/{{img_size2}} 240w,
-        [base_url]/img/{{uuid}}/{{img_size3}} 320w,
-        [base_url]/img/{{uuid}}/{{img_size4}} 480w,
-        [base_url]/img/{{uuid}}/{{img_size5}} 640w,
-        [base_url]/img/{{uuid}}/{{img_size6}} 800w,
-        [base_url]/img/{{uuid}}/{{img_size7}} 960w,
-        [base_url]/img/{{uuid}}/{{img_size8}} 1120w,
-        [base_url]/img/{{uuid}}/{{img_size9}} 1280w,
-        [base_url]/img/{{uuid}}/{{img_size10}} 1440w,
-        [base_url]/img/{{uuid}}/{{img_size11}} 1600w,
-        [base_url]/img/{{uuid}}/{{img_size12}} 1760w,
-        [base_url]/img/{{uuid}}/{{img_size13}} 1920w">
+    <img class="w-full object-scale-down" loading="lazy" src="{{src}}" srcset="{{srcset}}" sizes="{{sizes}}"
+      height="{{height}}" width="{{width}}">
   </figure>
 </template>
-
-

@@ -1,3 +1,4 @@
+
 const nb_bar = document.getElementById("nb-bar");
 const nb_modal_insert_media = document.getElementById("nb-modal-insert-media");
 
@@ -15,17 +16,19 @@ document.getElementById("nb_edit_save").addEventListener("click", (e) => {
   nb.edit.save();
 });
 
-document.getElementById("nb_edit_insert_media").addEventListener("click", (e) => {
-  /* popup img selector */
-});
+document
+  .getElementById("nb_edit_insert_media")
+  .addEventListener("click", (e) => {
+    nb.edit.store_caret_pos();
+  });
 
 nb_bar.addEventListener("expanded.te.sidenav", (event) => {
-  nb.api.post("[base-url]/api/v1/session", { nb_bar_slim: false });
+  nb.api.post(nb.base_url + "/api/v1/session", { nb_bar_slim: false });
   nb_bar.show_edit_menu(nb.edit.enabled);
 });
 
 nb_bar.addEventListener("collapsed.te.sidenav", (event) => {
-  nb.api.post("[base-url]/api/v1/session", { nb_bar_slim: true });
+  nb.api.post(nb.base_url + "/api/v1/session", { nb_bar_slim: true });
 });
 
 nb_bar.addEventListener("expand.te.sidenav", (event) => {
@@ -43,9 +46,13 @@ nb_bar.show_edit_menu = function (show = true) {
   show ? emenu.show() : emenu.hide();
 };
 
+let nb_media = {};
+
 const alpine_media_insert = function () {
   Alpine.data("media_insert", () => ({
     file_info: null,
+    caret: null,
+    caret_pos: 0,
     handle_upload_ready(e) {
       if (typeof e.detail !== "undefined" && e.detail.success) {
         e.detail.files.size = e.detail.files.size || 0;
@@ -57,25 +64,78 @@ const alpine_media_insert = function () {
         if (data.success) {
           nb.notify(nb.text.file_deleted);
           this.file_info = null;
+          const el = document.getElementById('nb_media_item_' + uuid);
+          if (el) {
+            el.remove();
+          }
         } else {
           nb.notify(data.message);
         }
       });
     },
+    select_media(uuid) {
+      nb.api.get(nb.base_url + "/api/v1/.files_meta/" + uuid).then((data) => {
+        if (data.success) {
+          this.file_info = data['.files_meta'][uuid];
+          document.getElementById('nb_file_info').scrollIntoView();
+        } 
+      });
+
+    },
     insert_media() {
+      const m = te.Modal.getInstance(nb_modal_insert_media);
+      if (!nb.edit.active_editor) {
+        m.hide();
+        return;
+      }
+      nb.api.put(nb.base_url + "/api/v1/.files_meta/" + this.file_info.uuid, {
+        title: this.file_info.title, description: this.file_info.description
+      });
       const img_aspect = this.file_info.aspect;
       const img_mode = "w";
       const img_sizes = [
         120, 180, 240, 320, 480, 640, 800, 960, 1120, 1280, 1440, 1600, 1760,
         1920,
       ];
-      var data = { uuid: this.file_info.uuid };
-      for (i = 0; i < img_sizes.length; i++) {
-        data["img_size" + i] = img_sizes[i] + img_mode;
+
+      const editor_options = nb.edit.active_editor._nb_editor_options;
+
+      let media_sizes = ["100vw"];
+      if ("media_sizes" in editor_options) {
+        const sl = editor_options.media_sizes.split(",");
+        for (let s of sl) {
+          const rule = s.split("-");
+          media_sizes.unshift(
+            "(min-width: " +
+              nb.tw_breakpoints[rule[0]] +
+              "px) " +
+              rule[1] +
+              "vw"
+          );
+        }
       }
-      var html = nb.populate_template("nb_media_insert_img_tpl", data);
-      nb.edit.insert_html(html);
-      const m = te.Modal.getInstance(nb_modal_insert_media);
+
+      let src = nb.base_url + "/img/" + this.file_info.uuid + "/480" + img_mode;
+      let srcset = [];
+      for (let w of img_sizes) {
+        srcset.push(
+          nb.base_url + "/img/" + this.file_info.uuid + "/" + w + img_mode + ' ' + w + 'w'
+        );
+        if (this.file_info.width < w) {
+          break;
+        }
+      }
+      nb.edit.restore_caret_pos();
+      nb.edit.insert_html(
+        nb.populate_template("nb_media_insert_img_tpl", {
+          uuid: this.file_info.uuid,
+          width: this.file_info.width,
+          height: this.file_info.height,
+          sizes: media_sizes.join(', '),
+          src: src,
+          srcset: srcset.join(', '),
+        })
+      );
       m.hide();
     },
   }));
@@ -86,3 +146,4 @@ typeof Alpine === "undefined"
       alpine_media_insert();
     })
   : alpine_media_insert();
+

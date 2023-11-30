@@ -1,3 +1,5 @@
+import { __isOptionsFunction } from "@tailwindcss/typography";
+
 var nb_edit = {
     default_buttons: ['bold', 'italic'],
     enabled: false,
@@ -82,6 +84,7 @@ nb_edit.on_blur = function (e) {
     }
     if (e.relatedTarget != insert_media_btn) {
         insert_media_btn.setAttribute('disabled', true);
+
         nb_edit.active_editor = null;
     }
 }
@@ -143,38 +146,90 @@ nb_edit.on_input = function (e) {
     document.getElementById('nb_edit_save').removeAttribute('disabled');
 };
 
+nb_edit.store_caret_pos = function () {
+    if (!nb_edit.active_editor) {
+        return;
+    }
+    const selection = window.getSelection();
+    const range = selection.getRangeAt(0);
+    const cloned_range = range.cloneRange();
+    cloned_range.selectNodeContents(nb_edit.active_editor);
+    cloned_range.setEnd(range.endContainer, range.endOffset);
+
+    const last = cloned_range.toString().length;
+    const first = last - (range.endOffset - range.startOffset);
+    nb_edit.active_editor._nb_caret_pos = {
+        start: first,
+        end: last
+    };
+}
+
+nb_edit.restore_caret_pos = function () {
+    if (!nb_edit.active_editor) {
+        return;
+    }
+    nb_edit.active_editor.focus();
+    const range = nb_edit.create_range(nb_edit.active_editor, nb_edit.active_editor._nb_caret_pos.start, nb_edit.active_editor._nb_caret_pos.end);
+    const selection = window.getSelection();
+    selection.removeAllRanges();
+    selection.addRange(range);
+}
+
+nb_edit.create_range = function (n, start, stop) {
+    let range = document.createRange();
+    range.selectNode(n);
+    range.setStart(n, 0);
+    let pos = 0;
+    const len = stop - start;
+    const stack = [n];
+    while (stack.length > 0) {
+        const current = stack.pop();
+        if (current.nodeType === Node.TEXT_NODE) {
+            const len = current.textContent.length;
+            if (pos + len >= start) {
+                range.setStart(current, start - pos);
+            }
+            if (pos + len >= stop) {
+                range.setEnd(current, stop - pos);
+                return range;
+            }
+            pos += len;
+        } else if (current.childNodes && current.childNodes.length > 0) {
+            for (let i = current.childNodes.length - 1; i >= 0; i--) {
+                stack.push(current.childNodes[i]);
+            }
+        }
+    }
+
+    range.setStart(n, n.childNodes.length - len);
+    range.setEnd(n, n.childNodes.length);
+    return range;
+}
+
 nb_edit.insert_html = function (html) {
     if (!this.active_editor) {
         return;
     }
-    this.on_input({currentTarget: this.active_editor});
+    this.on_input({ currentTarget: this.active_editor });
+    var sel = window.getSelection();
+    var range = sel.getRangeAt(0);
+    range.deleteContents();
+    var el = document.createElement('div');
+    el.innerHTML = html;
+    var frag = document.createDocumentFragment();
+    var lastNode = false;
+    while ((node = el.firstChild)) {
+        lastNode = frag.appendChild(node);
+    }
+    range.insertNode(frag);
 
-    if (window.getSelection) {
-        var sel = window.getSelection();
-        if (sel.getRangeAt && sel.rangeCount) {
-            var range = sel.getRangeAt(0);
-            range.deleteContents();
-            var el = document.createElement('div');
-            el.innerHTML = html;
-            var frag = document.createDocumentFragment();
-            var node;
-            var lastNode = false;
-            while ((node = el.firstChild)) {
-                lastNode = frag.appendChild(node);
-            }
-            range.insertNode(frag);
-
-            // Preserve the selection
-            if (lastNode) {
-                range = range.cloneRange();
-                range.setStartAfter(lastNode);
-                range.collapse(true);
-                sel.removeAllRanges();
-                sel.addRange(range);
-            }
-        }
-    } else if (document.selection && document.selection.type != 'Control') {
-        document.selection.createRange().pasteHTML(html);
+    // preserve selection
+    if (lastNode) {
+        range = range.cloneRange();
+        range.setStartAfter(lastNode);
+        range.collapse(true);
+        sel.removeAllRanges();
+        sel.addRange(range);
     }
 };
 
@@ -244,6 +299,9 @@ nb_edit.on_beforeunload = function (e) {
 nb_edit.has_changes = function () {
     return nb_edit.inputs > nb_edit.last_inputs;
 }
+
+
+
 
 
 export default nb_edit;

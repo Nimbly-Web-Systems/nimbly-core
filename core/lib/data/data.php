@@ -570,6 +570,11 @@ function data_search($data, $term, $level = 0) {
  * Simple field filter e.g. permission:yes, status:new||todo
  */
 function data_filter($data, $filter_str) {
+
+    if (empty($data)) {
+        return;
+    }
+
     $filter_str_parts =  explode(',', $filter_str);
     $filters = array();
     foreach ($filter_str_parts as $f) {
