@@ -3,6 +3,7 @@ var nb_edit = {
     enabled: false,
     editors: [],
     inputs: 0,
+    active_editor: null
 };
 
 nb_edit.init = function () {
@@ -28,11 +29,12 @@ nb_edit.init_editor = function (ed, as_form_field = false) {
         nb_edit.enable(ed);
         return;
     }
-    const buttons = ed.dataset.nbEditButtons ?
-        ed.dataset.nbEditButtons.split(',').map((v) => { return v.trim(); })
+    const options = JSON.parse(ed.dataset.nbEditOptions || '{}');
+    const buttons = options.buttons ?
+        options.buttons.split(',').map((v) => { return v.trim(); })
         : nb_edit.default_buttons;
-    const placeholder = ed.dataset.nbEditPlaceholder ?
-        ed.dataset.nbEditPlaceholder
+    const placeholder = options.placeholder ?
+        options.placeholder
         : nb.text.medium_editor_placeholder;
     var editor = new MediumEditor(ed, {
         toolbar: {
@@ -43,12 +45,45 @@ nb_edit.init_editor = function (ed, as_form_field = false) {
         }
     });
     ed._nb_medium_editor = editor;
+    ed._nb_editor_options = options;
     ed._nb_medium_editor._nb_mode = as_form_field ? 'form' : 'page';
+    ed.addEventListener("focus", (e) => {
+        nb_edit.on_focus(e);
+    });
+    ed.addEventListener("blur", (e) => {
+        nb_edit.on_blur(e);
+    });
     if (!as_form_field) {
         ed._nb_medium_editor._nb_inputs = 0;
         ed.addEventListener('input', nb_edit.on_input);
         nb_edit.editors.push(ed);
     } // else form handles everything
+}
+
+nb_edit.on_focus = function (e) {
+    const ed = e.currentTarget;
+    nb_edit.active_editor = ed;
+    const insert_media_btn = document.getElementById('nb_edit_insert_media');
+    if (!insert_media_btn) {
+        return;
+    }
+    if (ed._nb_editor_options.media) {
+        insert_media_btn.removeAttribute('disabled');
+    } else {
+        insert_media_btn.setAttribute('disabled', true);
+    }
+}
+
+nb_edit.on_blur = function (e) {
+    const ed = e.currentTarget;
+    const insert_media_btn = document.getElementById('nb_edit_insert_media');
+    if (!insert_media_btn) {
+        return;
+    }
+    if (e.relatedTarget != insert_media_btn) {
+        insert_media_btn.setAttribute('disabled', true);
+        nb_edit.active_editor = null;
+    }
 }
 
 nb_edit.toggle = function () {
@@ -108,8 +143,43 @@ nb_edit.on_input = function (e) {
     document.getElementById('nb_edit_save').removeAttribute('disabled');
 };
 
+nb_edit.insert_html = function (html) {
+    if (!this.active_editor) {
+        return;
+    }
+    this.on_input({currentTarget: this.active_editor});
+
+    if (window.getSelection) {
+        var sel = window.getSelection();
+        if (sel.getRangeAt && sel.rangeCount) {
+            var range = sel.getRangeAt(0);
+            range.deleteContents();
+            var el = document.createElement('div');
+            el.innerHTML = html;
+            var frag = document.createDocumentFragment();
+            var node;
+            var lastNode = false;
+            while ((node = el.firstChild)) {
+                lastNode = frag.appendChild(node);
+            }
+            range.insertNode(frag);
+
+            // Preserve the selection
+            if (lastNode) {
+                range = range.cloneRange();
+                range.setStartAfter(lastNode);
+                range.collapse(true);
+                sel.removeAllRanges();
+                sel.addRange(range);
+            }
+        }
+    } else if (document.selection && document.selection.type != 'Control') {
+        document.selection.createRange().pasteHTML(html);
+    }
+};
+
+
 nb_edit.save = function () {
-    console.log('nb_edit.save');
     nb_edit.inputs = 0;
 
     /* loop through editors checking if it has changes */
@@ -122,7 +192,6 @@ nb_edit.save = function () {
 };
 
 nb_edit.save_resource = function (ed) {
-
     const resource_dot = ed.dataset.nbEdit.trim().toLowerCase(); // e.g. content.contact.main (resource).(uuid).(field)
     var offset = 0;
     if (resource_dot.lastIndexOf('.', 0) === 0) {

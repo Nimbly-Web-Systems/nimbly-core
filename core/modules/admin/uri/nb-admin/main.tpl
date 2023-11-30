@@ -106,11 +106,11 @@
                 [text Notes]
             </div>
             <div class="prose" data-nb-edit="[cfield notes]" 
-                data-nb-edit-buttons="bold,italic,orderedlist,unorderedlist,quote">
+                data-nb-edit-options='{"buttons":"bold,italic,orderedlist,unorderedlist,quote","media":true}'>
                 [render notes default="[text Type here]"]
             </div>
             <div class="prose" data-nb-edit="[cfield notes2]" 
-                data-nb-edit-buttons="bold,italic,orderedlist,unorderedlist,quote">
+            data-nb-edit-options='{"buttons":"bold,italic,orderedlist,unorderedlist,quote","media":true}'>
                 [render notes2 default="[text Type here]"]
             </div>
         </div>
