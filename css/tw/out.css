@@ -3059,6 +3059,10 @@ textarea.form-control.is-invalid {
   margin-top: -1rem;
 }
 
+.-mt-\[1px\] {
+  margin-top: -1px;
+}
+
 .mb-0 {
   margin-bottom: 0px;
 }
@@ -3195,8 +3199,8 @@ textarea.form-control.is-invalid {
   margin-top: 0.15rem;
 }
 
-.mt-\[1px\] {
-  margin-top: 1px;
+.mt-auto {
+  margin-top: auto;
 }
 
 .box-border {
@@ -3331,6 +3335,10 @@ textarea.form-control.is-invalid {
   height: 22px;
 }
 
+.h-\[230px\] {
+  height: 230px;
+}
+
 .h-\[23px\] {
   height: 23px;
 }
@@ -3393,6 +3401,10 @@ textarea.form-control.is-invalid {
 
 .h-\[72px\] {
   height: 72px;
+}
+
+.h-\[80px\] {
+  height: 80px;
 }
 
 .h-\[calc\(100\%-100px\)\] {
@@ -3531,6 +3543,10 @@ textarea.form-control.is-invalid {
   width: 22px;
 }
 
+.w-\[230px\] {
+  width: 230px;
+}
+
 .w-\[23px\] {
   width: 23px;
 }
@@ -3662,6 +3678,10 @@ textarea.form-control.is-invalid {
 
 .flex-auto {
   flex: 1 1 auto;
+}
+
+.flex-none {
+  flex: none;
 }
 
 .flex-shrink-0 {
@@ -3910,6 +3930,10 @@ textarea.form-control.is-invalid {
 
 .flex-col {
   flex-direction: column;
+}
+
+.flex-col-reverse {
+  flex-direction: column-reverse;
 }
 
 .flex-wrap {
@@ -4190,6 +4214,10 @@ textarea.form-control.is-invalid {
   border-right-width: 30px;
 }
 
+.border-t {
+  border-top-width: 1px;
+}
+
 .border-t-0 {
   border-top-width: 0px;
 }
@@ -4204,6 +4232,10 @@ textarea.form-control.is-invalid {
 
 .border-solid {
   border-style: solid;
+}
+
+.border-dashed {
+  border-style: dashed;
 }
 
 .border-none {
@@ -4378,10 +4410,6 @@ textarea.form-control.is-invalid {
 
 .bg-clight\/20 {
   background-color: rgb(128 186 236 / 0.2);
-}
-
-.bg-clight\/50 {
-  background-color: rgb(128 186 236 / 0.5);
 }
 
 .bg-cnormal {
@@ -4695,6 +4723,10 @@ textarea.form-control.is-invalid {
 
 .pb-0 {
   padding-bottom: 0px;
+}
+
+.pb-0\.5 {
+  padding-bottom: 0.125rem;
 }
 
 .pb-10 {
@@ -6063,6 +6095,11 @@ form .medium-editor-element[data-medium-focused] {
   background-color: #00000026;
 }
 
+.focus\:bg-cdark:focus {
+  --tw-bg-opacity: 1;
+  background-color: rgb(0 104 195 / var(--tw-bg-opacity));
+}
+
 .focus\:bg-clight:focus {
   --tw-bg-opacity: 1;
   background-color: rgb(128 186 236 / var(--tw-bg-opacity));
@@ -6356,6 +6393,10 @@ form .medium-editor-element[data-medium-focused] {
   -webkit-user-select: none;
      -moz-user-select: none;
           user-select: none;
+}
+
+.disabled\:bg-cnormal\/50:disabled {
+  background-color: rgb(0 116 217 / 0.5);
 }
 
 .disabled\:bg-transparent:disabled {
@@ -7246,6 +7287,32 @@ form .medium-editor-element[data-medium-focused] {
   color: rgb(156 163 175 / var(--tw-text-opacity));
 }
 
+@media (min-width: 0px) {
+  .min-\[0px\]\:m-0 {
+    margin: 0px;
+  }
+
+  .min-\[0px\]\:h-full {
+    height: 100%;
+  }
+
+  .min-\[0px\]\:max-w-none {
+    max-width: none;
+  }
+
+  .min-\[0px\]\:overflow-y-auto {
+    overflow-y: auto;
+  }
+
+  .min-\[0px\]\:rounded-none {
+    border-radius: 0px;
+  }
+
+  .min-\[0px\]\:border-0 {
+    border-width: 0px;
+  }
+}
+
 @media (min-width: 576px) {
   .min-\[576px\]\:mx-auto {
     margin-left: auto;
@@ -7262,6 +7329,14 @@ form .medium-editor-element[data-medium-focused] {
 }
 
 @media (min-width: 640px) {
+  .sm\:flex-row {
+    flex-direction: row;
+  }
+
+  .sm\:flex-nowrap {
+    flex-wrap: nowrap;
+  }
+
   .sm\:p-4 {
     padding: 1rem;
   }

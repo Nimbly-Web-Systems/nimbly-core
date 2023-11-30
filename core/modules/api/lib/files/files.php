@@ -29,6 +29,7 @@ function files_post() { // create a new file and it's meta data
         "name" => $_FILES['file']['name'],
         "uuid" => $uuid,
         "type" => $_FILES['file']['type'],
+        "size" => $_FILES['file']['size']
     );
     if (exif_imagetype($from) === IMAGETYPE_JPEG) {
         load_library("exif", "images");

@@ -3,11 +3,13 @@ window.nb = {
     base_url: "[base-url]",
     text: {
         record_deleted: "[text Record deleted]",
+        file_deleted: "[text File deleted]",
         record_added: "[text Added record]",
         record_updated: "[text Updated record]",
         medium_editor_placeholder: "[text Type here]",
         saved: "[text Saved]",
-        unsaved_changes: "[text You have unsaved changed. Are you sure you want to leave this page and discard your changes?]"
+        unsaved_changes: "[text You have unsaved changed. Are you sure you want to leave this page and discard your changes?]",
+        file_added: "[text File uploaded]"
     }
 };
 [include [base-path]js/bundle/tw-elements.umd.min.js]
