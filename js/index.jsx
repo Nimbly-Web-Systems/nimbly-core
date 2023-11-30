@@ -48,3 +48,11 @@ Object.defineProperty(Number.prototype, 'fileSize', {
             + ' ' + (d ? (a[1] + 'MGTPEZY')[--d] + a[2] : 'Bytes');
     }, writable: false, enumerable: false
 });
+
+window.nb.tw_breakpoints = {
+    sm: 640,
+    md: 768,
+    lg: 1024,
+    xl: 1280,
+    xxl: 1536
+};

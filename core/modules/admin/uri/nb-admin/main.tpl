@@ -105,14 +105,12 @@
             <div class="text-lg font-primary font-medium truncate text-neutral-900">
                 [text Notes]
             </div>
+            
             <div class="prose" data-nb-edit="[cfield notes]" 
-                data-nb-edit-options='{"buttons":"bold,italic,orderedlist,unorderedlist,quote","media":true}'>
+                data-nb-edit-options='{"buttons":"bold,italic,orderedlist,unorderedlist,quote","media":true,"media_sizes":"md-50,lg-33,xl-25"}'>
                 [render notes default="[text Type here]"]
             </div>
-            <div class="prose" data-nb-edit="[cfield notes2]" 
-            data-nb-edit-options='{"buttons":"bold,italic,orderedlist,unorderedlist,quote","media":true}'>
-                [render notes2 default="[text Type here]"]
-            </div>
+
         </div>
     </div>
 </section>
