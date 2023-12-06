@@ -36,3 +36,11 @@ function rmfiles($dir) {
     }
     return true;
 }
+
+function dir_size($dir) {
+    $result = 0;
+    foreach (glob(rtrim($dir, '/').'/*', GLOB_NOSORT) as $f) {
+        $result += is_file($f) ? filesize($f) : dir_size($f);
+    }
+    return $result;
+}

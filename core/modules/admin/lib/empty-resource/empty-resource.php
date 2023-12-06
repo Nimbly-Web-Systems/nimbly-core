@@ -15,6 +15,9 @@ function empty_resource_sc()
         $response['error'] = false;
         $response['msg'] = "deleted all records for: " . $resource;
         $response['count'] = data_empty($resource);
+        if ($resource === '.files') {
+            data_empty('.files_meta');
+        }
     }
     
     return json_result($response);

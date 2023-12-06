@@ -2808,6 +2808,10 @@ textarea.form-control.is-invalid {
   left: calc(50% - 1px);
 }
 
+.left-\[calc\(50\%-32px\)\] {
+  left: calc(50% - 32px);
+}
+
 .right-0 {
   right: 0px;
 }
@@ -2862,6 +2866,10 @@ textarea.form-control.is-invalid {
 
 .top-\[50px\] {
   top: 50px;
+}
+
+.top-\[calc\(50\%-32px\)\] {
+  top: calc(50% - 32px);
 }
 
 .top-full {
@@ -3057,6 +3065,10 @@ textarea.form-control.is-invalid {
 
 .-mt-4 {
   margin-top: -1rem;
+}
+
+.-mt-8 {
+  margin-top: -2rem;
 }
 
 .-mt-\[1px\] {
@@ -3279,6 +3291,10 @@ textarea.form-control.is-invalid {
   height: 3.5rem;
 }
 
+.h-16 {
+  height: 4rem;
+}
+
 .h-2\/5 {
   height: 40%;
 }
@@ -3403,6 +3419,10 @@ textarea.form-control.is-invalid {
   height: 56px;
 }
 
+.h-\[64px\] {
+  height: 64px;
+}
+
 .h-\[6px\] {
   height: 6px;
 }
@@ -3481,6 +3501,10 @@ textarea.form-control.is-invalid {
 
 .w-10 {
   width: 2.5rem;
+}
+
+.w-16 {
+  width: 4rem;
 }
 
 .w-2 {
@@ -3597,6 +3621,10 @@ textarea.form-control.is-invalid {
 
 .w-\[50px\] {
   width: 50px;
+}
+
+.w-\[64px\] {
+  width: 64px;
 }
 
 .w-\[6px\] {
@@ -4442,6 +4470,11 @@ textarea.form-control.is-invalid {
   background-color: currentColor;
 }
 
+.bg-emerald-700 {
+  --tw-bg-opacity: 1;
+  background-color: rgb(4 120 87 / var(--tw-bg-opacity));
+}
+
 .bg-green-100 {
   --tw-bg-opacity: 1;
   background-color: rgb(220 252 231 / var(--tw-bg-opacity));
@@ -4484,6 +4517,11 @@ textarea.form-control.is-invalid {
 .bg-primary {
   --tw-bg-opacity: 1;
   background-color: rgb(0 116 217 / var(--tw-bg-opacity));
+}
+
+.bg-purple-800 {
+  --tw-bg-opacity: 1;
+  background-color: rgb(107 33 168 / var(--tw-bg-opacity));
 }
 
 .bg-red-100 {
@@ -4540,8 +4578,16 @@ textarea.form-control.is-invalid {
   fill: currentColor;
 }
 
+.fill-neutral-500\/10 {
+  fill: rgb(115 115 115 / 0.1);
+}
+
 .fill-white {
   fill: #fff;
+}
+
+.stroke-neutral-500\/40 {
+  stroke: rgb(115 115 115 / 0.4);
 }
 
 .object-scale-down {
@@ -4761,6 +4807,10 @@ textarea.form-control.is-invalid {
 
 .pb-2 {
   padding-bottom: 0.5rem;
+}
+
+.pb-4 {
+  padding-bottom: 1rem;
 }
 
 .pb-\[5px\] {
@@ -5150,6 +5200,11 @@ textarea.form-control.is-invalid {
   color: currentColor;
 }
 
+.text-emerald-700 {
+  --tw-text-opacity: 1;
+  color: rgb(4 120 87 / var(--tw-text-opacity));
+}
+
 .text-gray-200 {
   --tw-text-opacity: 1;
   color: rgb(229 231 235 / var(--tw-text-opacity));
@@ -5243,6 +5298,11 @@ textarea.form-control.is-invalid {
 .text-primary {
   --tw-text-opacity: 1;
   color: rgb(0 116 217 / var(--tw-text-opacity));
+}
+
+.text-purple-800 {
+  --tw-text-opacity: 1;
+  color: rgb(107 33 168 / var(--tw-text-opacity));
 }
 
 .text-red-800 {
@@ -5982,6 +6042,11 @@ form .medium-editor-element[data-medium-focused] {
   background-color: rgb(0 116 217 / var(--tw-bg-opacity));
 }
 
+.hover\:bg-emerald-600:hover {
+  --tw-bg-opacity: 1;
+  background-color: rgb(5 150 105 / var(--tw-bg-opacity));
+}
+
 .hover\:bg-neutral-100:hover {
   --tw-bg-opacity: 1;
   background-color: rgb(245 245 245 / var(--tw-bg-opacity));
@@ -6000,6 +6065,11 @@ form .medium-editor-element[data-medium-focused] {
 .hover\:bg-orange-400:hover {
   --tw-bg-opacity: 1;
   background-color: rgb(251 146 60 / var(--tw-bg-opacity));
+}
+
+.hover\:bg-purple-700:hover {
+  --tw-bg-opacity: 1;
+  background-color: rgb(126 34 206 / var(--tw-bg-opacity));
 }
 
 .hover\:fill-\[\#8b8b8b\]:hover {
@@ -6432,6 +6502,11 @@ form .medium-editor-element[data-medium-focused] {
 .disabled\:text-neutral-200:disabled {
   --tw-text-opacity: 1;
   color: rgb(229 229 229 / var(--tw-text-opacity));
+}
+
+.disabled\:text-neutral-300:disabled {
+  --tw-text-opacity: 1;
+  color: rgb(212 212 212 / var(--tw-text-opacity));
 }
 
 .disabled\:text-neutral-400:disabled {
@@ -7355,8 +7430,8 @@ form .medium-editor-element[data-medium-focused] {
 }
 
 @media (min-width: 640px) {
-  .sm\:grid-cols-3 {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+  .sm\:grid-cols-1 {
+    grid-template-columns: repeat(1, minmax(0, 1fr));
   }
 
   .sm\:flex-row {
@@ -7403,12 +7478,12 @@ form .medium-editor-element[data-medium-focused] {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .md\:grid-cols-4 {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
-
   .md\:flex-row {
     flex-direction: row;
+  }
+
+  .md\:flex-nowrap {
+    flex-wrap: nowrap;
   }
 
   .md\:gap-6 {
@@ -7456,10 +7531,6 @@ form .medium-editor-element[data-medium-focused] {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
-  .lg\:grid-cols-5 {
-    grid-template-columns: repeat(5, minmax(0, 1fr));
-  }
-
   .lg\:gap-8 {
     gap: 2rem;
   }
@@ -7478,9 +7549,11 @@ form .medium-editor-element[data-medium-focused] {
   .xl\:grid-cols-4 {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
+}
 
-  .xl\:grid-cols-6 {
-    grid-template-columns: repeat(6, minmax(0, 1fr));
+@media (min-width: 1536px) {
+  .\32xl\:grid-cols-5 {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
   }
 }
 
