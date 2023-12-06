@@ -98,6 +98,8 @@ $routes = [
     ['route' => 'nb-admin/pages/(id)', 'order' => 200],
     ['route' => 'nb-admin/files/(id)', 'order' => 200],
     ['route' => 'img/(id)', 'order' => 500],
+    ['route' => 'download/(id)', 'order' => 500],
+    ['route' => 'video/(id)', 'order' => 500],
     ['route' => 'password-reset/(uuid)/(key)', 'order' => 200],
     ['route' => 'change-email/(uuid)/(newuuid)/(key)', 'order' => 200]
 ];

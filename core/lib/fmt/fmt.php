@@ -25,11 +25,14 @@ function fmt_sc($params) {
         case 'date':
             $result = date(get_param_value($params, 'fmt', 'Y-m-d'), is_numeric($val)? $val : strtotime($val));
             break;
+        case 'ago':
+            $result = ago(is_numeric($val)? $val : strtotime($val));
+            break;
         case 'json':
-            var_dump($val);
-            exit();
             $result = json_encode($val, JSON_UNESCAPED_UNICODE);
-            exit($result);
+            break;
+        case 'bytes':
+            $result = fmt_bytes($val, 1);
             break;
         default:
             if (is_array($val)) {
@@ -45,4 +48,40 @@ function fmt_sc($params) {
     }
 
     return $result;
+}
+
+function ago($dt) {
+    $now = time();
+    $elapsed = $now - $dt;
+    $days = $elapsed / (24*60*60);
+    $years = $days / 365;
+    if ($years > 1) {
+        return $years < 2 ? '1 year ago' : round($years) . ' years ago';
+    }
+    $months = $days / 30;
+    if ($months > 1) {
+        return $months < 2? '1 month ago' : round($months) . ' months ago';
+    }
+    $weeks = $days / 7;
+    if ($weeks > 1) {
+        return $weeks < 2? '1 week ago' : round($weeks) . ' weeks ago';
+    }
+    if ($days > 1) {
+        return $days < 2? '1 day ago' : round($days) . ' days ago';
+    }
+    $hours = $elapsed / (60*60);
+    if ($hours > 1) {
+        return $hours < 2? '1 hour ago' : round($hours) . ' hours ago';
+    }
+    $minutes = $elapsed / 60;
+    if ($minutes > 1) {
+        return $minutes < 2? '1 minute ago' : round($minutes) . ' minutes ago';
+    }
+    return $elapsed < 2? '1 second ago' : round($elapsed) . ' seconds ago';       
+}
+
+function fmt_bytes($bytes, $decimals = 2){
+    $size = array('B','kB','MB','GB','TB','PB','EB','ZB','YB');
+    $factor = floor((strlen($bytes) - 1) / 3);
+    return sprintf("%.{$decimals}f", $bytes / pow(1024, $factor)) . @$size[$factor];
 }

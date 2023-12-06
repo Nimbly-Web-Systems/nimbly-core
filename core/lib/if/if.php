@@ -19,7 +19,10 @@ function if_sc($params) {
         } else if ($key === "or") {
             $or = true;
         } else {
-            $condition[$key] = $value;
+            $condition[] = [$key => $value];
+            if ($or) {
+                var_dump($condition);
+            }
         }
     }
     if (empty($action)) {
@@ -27,9 +30,9 @@ function if_sc($params) {
     }
     $pass = !$or;
     load_library("get");
-    foreach ($condition as $key => $value) {
+    foreach ($condition as $kv) {
         //loop through and test all conditions
-        $b = if_condition($key, $value, $negate);
+        $b = if_condition(key($kv), current($kv), $negate);
         if ($or === true && $b) {
             $pass = true;
             break;

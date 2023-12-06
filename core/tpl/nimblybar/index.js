@@ -1,6 +1,6 @@
-
 const nb_bar = document.getElementById("nb-bar");
 const nb_modal_insert_media = document.getElementById("nb-modal-insert-media");
+const nb_edit_insert_media = document.getElementById("nb_edit_insert_media");
 
 document.getElementById("nb_nav_toggler").addEventListener("click", () => {
   te.Sidenav.getInstance(nb_bar).toggleSlim();
@@ -16,11 +16,11 @@ document.getElementById("nb_edit_save").addEventListener("click", (e) => {
   nb.edit.save();
 });
 
-document
-  .getElementById("nb_edit_insert_media")
-  .addEventListener("click", (e) => {
+if (nb_edit_insert_media) {
+  nb_edit_insert_media.addEventListener("click", (e) => {
     nb.edit.store_caret_pos();
   });
+}
 
 nb_bar.addEventListener("expanded.te.sidenav", (event) => {
   nb.api.post(nb.base_url + "/api/v1/session", { nb_bar_slim: false });
@@ -46,51 +46,28 @@ nb_bar.show_edit_menu = function (show = true) {
   show ? emenu.show() : emenu.hide();
 };
 
-let nb_media = {};
-
 const alpine_media_insert = function () {
   Alpine.data("media_insert", () => ({
-    file_info: null,
     caret: null,
     caret_pos: 0,
-    handle_upload_ready(e) {
-      if (typeof e.detail !== "undefined" && e.detail.success) {
-        e.detail.files.size = e.detail.files.size || 0;
-        this.file_info = e.detail.files;
-      }
-    },
-    delete_file(uuid) {
-      nb.api.delete(nb.base_url + "/api/v1/.files/" + uuid).then((data) => {
-        if (data.success) {
-          nb.notify(nb.text.file_deleted);
-          this.file_info = null;
-          const el = document.getElementById('nb_media_item_' + uuid);
-          if (el) {
-            el.remove();
-          }
-        } else {
-          nb.notify(data.message);
-        }
+    hide_save_button: true,
+    insert_doc_html() {
+      return nb.populate_template("nb_media_insert_doc_tpl", {
+        uuid: this.file_info.uuid,
+        name: this.file_info.name,
+        title: this.file_info.title || this.file_info.name,
+        description: this.file_info.description || this.file_info.size.fileSize(1)
       });
     },
-    select_media(uuid) {
-      nb.api.get(nb.base_url + "/api/v1/.files_meta/" + uuid).then((data) => {
-        if (data.success) {
-          this.file_info = data['.files_meta'][uuid];
-          document.getElementById('nb_file_info').scrollIntoView();
-        } 
+    insert_vid_html() {
+      return nb.populate_template("nb_media_insert_vid_tpl", {
+        uuid: this.file_info.uuid,
+        type: 'video/' + this.vid_type(),
+        width: this.file_info.width,
+        height: this.file_info.height
       });
-
     },
-    insert_media() {
-      const m = te.Modal.getInstance(nb_modal_insert_media);
-      if (!nb.edit.active_editor) {
-        m.hide();
-        return;
-      }
-      nb.api.put(nb.base_url + "/api/v1/.files_meta/" + this.file_info.uuid, {
-        title: this.file_info.title, description: this.file_info.description
-      });
+    insert_img_html() {
       const img_aspect = this.file_info.aspect;
       const img_mode = "w";
       const img_sizes = [
@@ -119,25 +96,56 @@ const alpine_media_insert = function () {
       let srcset = [];
       for (let w of img_sizes) {
         srcset.push(
-          nb.base_url + "/img/" + this.file_info.uuid + "/" + w + img_mode + ' ' + w + 'w'
+          nb.base_url +
+            "/img/" +
+            this.file_info.uuid +
+            "/" +
+            w +
+            img_mode +
+            " " +
+            w +
+            "w"
         );
         if (this.file_info.width < w) {
           break;
         }
       }
+      const tpl_name = img_aspect >= 1.0? 'nb_media_insert_img_landscape_tpl' : 'nb_media_insert_img_portrait_tpl';
+      return nb.populate_template(tpl_name, {
+        uuid: this.file_info.uuid,
+        width: this.file_info.width,
+        height: this.file_info.height,
+        sizes: media_sizes.join(", "),
+        src: src,
+        srcset: srcset.join(", "),
+      });
+    },
+    insert_media() {
+      const m = te.Modal.getInstance(nb_modal_insert_media);
+      if (!nb.edit.active_editor) {
+        m.hide();
+        return;
+      }
+      nb.api.put(nb.base_url + "/api/v1/.files_meta/" + this.file_info.uuid, {
+        title: this.file_info.title,
+        description: this.file_info.description,
+      });
+
+      let html = "";
+      const file_type = this.file_type();
+      if (file_type === "img") {
+        html = this.insert_img_html();
+      } else if (file_type === "doc") {
+        html = this.insert_doc_html();
+      } else if (file_type === "vid") {
+        html = this.insert_vid_html();
+      }
+
       nb.edit.restore_caret_pos();
-      nb.edit.insert_html(
-        nb.populate_template("nb_media_insert_img_tpl", {
-          uuid: this.file_info.uuid,
-          width: this.file_info.width,
-          height: this.file_info.height,
-          sizes: media_sizes.join(', '),
-          src: src,
-          srcset: srcset.join(', '),
-        })
-      );
+      nb.edit.insert_html(html);
       m.hide();
     },
+    ...nb.media_library,
   }));
 };
 
@@ -146,4 +154,3 @@ typeof Alpine === "undefined"
       alpine_media_insert();
     })
   : alpine_media_insert();
-
