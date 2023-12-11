@@ -9,8 +9,5 @@ load_library('system-messages');
 if ($ok) {
 	system_message('Module `' . $module . '` installed succesfully');
 } else {
-	system_message('Could not install module `' . $module . '`. You might want to check the <a href="log">error log</a>');
+	system_message('Could not install module `' . $module . '`');
 }
-
-load_library('redirect');
-redirect($GLOBALS['SYSTEM']['request_uri']);

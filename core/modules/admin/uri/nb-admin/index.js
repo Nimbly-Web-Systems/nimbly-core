@@ -31,3 +31,9 @@ Alpine.data('updates', () => ({
         this.get_updates();
     }
 }));
+
+Alpine.data('fmt_bytes', () => ({
+    pretty_bytes(t, cls) {
+        return t.replace(/.{2}$/,'<span class="' + cls + '">$&</span>');
+    }
+}));

@@ -1,6 +1,7 @@
 <?php
 
 load_library("get");
+load_library("set");
 
 function fmt_sc($params) {
     $result = "";
@@ -12,7 +13,7 @@ function fmt_sc($params) {
     }
     $type = get_param_value($params, 'type', end($params)) ?? 'text';
 
-    if (empty($val)) {
+    if (empty($val) && $type !== 'boolean') {
         return get_param_value($params, 'empty', '(empty)');
     }
 
@@ -23,7 +24,7 @@ function fmt_sc($params) {
             $result = trim(strip_tags($val));
             break;
         case 'date':
-            $result = date(get_param_value($params, 'fmt', 'Y-m-d'), is_numeric($val)? $val : strtotime($val));
+            $result = date((string)get_param_value($params, 'fmt', 'Y-m-d'), is_numeric($val)? $val : strtotime($val));
             break;
         case 'ago':
             $result = ago(is_numeric($val)? $val : strtotime($val));
@@ -33,6 +34,14 @@ function fmt_sc($params) {
             break;
         case 'bytes':
             $result = fmt_bytes($val, 1);
+            break;
+        case 'boolean':
+            $bools = explode('|', (string)get_param_value($params, 'boolean', 'yes|no'), 2);    
+            $result = empty($val)? $bools[1] : $bools[0];
+            break;
+        case 'image':
+            set_variable('_img_uuid', $val, true);
+            return run_buffered(dirname(__FILE__) . '/image.tpl');
             break;
         default:
             if (is_array($val)) {
@@ -81,6 +90,9 @@ function ago($dt) {
 }
 
 function fmt_bytes($bytes, $decimals = 2){
+    if (!is_numeric($bytes)) {
+        $bytes = 0;
+    }
     $size = array('B','kB','MB','GB','TB','PB','EB','ZB','YB');
     $factor = floor((strlen($bytes) - 1) / 3);
     return sprintf("%.{$decimals}f", $bytes / pow(1024, $factor)) . @$size[$factor];

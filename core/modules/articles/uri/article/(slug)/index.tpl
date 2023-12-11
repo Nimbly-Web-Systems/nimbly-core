@@ -1,0 +1,6 @@
+[module nieuws]
+[set page-title="[get news.title]"]
+[set body-classes="secondary"]
+[set resource-name="news"]
+[set resource-uuid=[get record.uuid]]
+[html]

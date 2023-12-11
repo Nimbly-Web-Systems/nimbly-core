@@ -1,6 +1,5 @@
 Alpine.data("form_add", (resource_id = "(empty)") => ({
   resource_id: resource_id,
-  form_data: {},
   submit(e) {
     nb.api
       .post(nb.base_url + "/api/v1/" + resource_id, {
@@ -17,4 +16,5 @@ Alpine.data("form_add", (resource_id = "(empty)") => ({
         }
       });
   },
+  ...nb.forms,
 }));

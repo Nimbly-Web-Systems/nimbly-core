@@ -1,0 +1,1 @@
+<img src="[base-url]/img/[_img_uuid]/60x40c" class="shadow">

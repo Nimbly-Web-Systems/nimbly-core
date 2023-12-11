@@ -33,7 +33,7 @@ if (false === file_put_contents($htaccess_file, $htaccess_content)) {
 }
 
 /* 
- * Persist site name
+ * Persist site name in .config resource
  */
 
 $sitename = post_get('sitename');
@@ -109,14 +109,20 @@ foreach ($routes as $route) {
 }
 
 /*
- * Create admin role
+ * Create roles
  */
 
-data_create('roles', 'admin', array(
+data_create('roles', 'admin', [
     'name' => 'Admin',
-    'description' => 'For technical administration of [site-name]',
+    'description' => 'Technical system administration ',
     'features' => '(all)'
-));
+]);
+
+data_create('roles', 'editor', [
+  'name' => 'Editor',
+  'description' => 'Content writers, site maintainers',
+  'features' => 'manage-content'
+]);
 
 /*
  * Create users resource
@@ -126,15 +132,20 @@ data_create('users', '.meta', [
    'fields' => [
         'email' => [
           'type' => 'text',
+          'required' => true,
           'name' => 'email'
         ],
         'password' => [
           'type' => 'password',
-          'name' => 'password'
+          'required' => true,
+          'name' => 'password',
+          'admin_col' => false,
         ],
         'roles' => [
-          'type' => 'text',
-          'name' => 'roles'
+          'type' => 'select',
+          'multi' => true,
+          'name' => 'roles',
+          'resource' => 'roles'
         ],
         'name' => [
           'type' => 'text',
@@ -144,6 +155,7 @@ data_create('users', '.meta', [
   'pk' => 'email',
   'encrypt' => 'password'
 ]);
+
 
 /*
  * Create admin user

@@ -1,4 +1,4 @@
-<div class="flex flex-col flex-auto p-6 bg-neutral-50 shadow rounded-2xl overflow-hidden">
+<div class="flex flex-col flex-auto p-6 bg-neutral-50 shadow rounded-2xl overflow-hidden" x-data="fmt_bytes">
     <div class="flex items-start justify-between">
         <div class="flex flex-row items-center">
             <div class="text-lg font-primary font-medium truncate text-neutral-900 min-w-[100px]">
@@ -20,20 +20,36 @@
                          text-neutral-50 hover:bg-emerald-600 active:text-white active:no-underline disabled:pointer-events-none disabled:bg-transparent disabled:text-neutral-400"
                         href="[base-url]/nb-admin/syslog" data-te-dropdown-item-ref>[text System log]</a>
                 </li>
+                <li>
+                    <a class="block w-full whitespace-nowrap bg-transparent px-4 py-2 text-sm font-normal
+                         text-neutral-50 hover:bg-emerald-600 active:text-white active:no-underline disabled:pointer-events-none disabled:bg-transparent disabled:text-neutral-400"
+                        href="[base-url]/nb-admin/modules" data-te-dropdown-item-ref>[text Install modules]</a>
+                </li>
             </ul>
+            
         </div>
     </div>
     <div class="text-7xl text-emerald-700 font-bold text-center mt-4 -ml-4">
         [sys-info]
-        [fmt [jget mem_info.MemAvailable] bytes]
+        <div x-html="pretty_bytes('[fmt [jget mem_info.MemAvailable] bytes]', 'text-3xl')"></div>
     </div>
     <div class="text-lg text-emerald-700 font-bold text-center ">
-        [text mem available]. [text total:] [fmt [jget mem_info.MemTotal] bytes]
+        [text memory avail. of] <span x-html="pretty_bytes('[fmt [jget mem_info.MemTotal] bytes]', 'text-xs')"></span>
     </div>
     <div class="text-md text-neutral-500 text-center mt-4 ">
-        [text Available disk space:] <span class="font-bold text-lg">[fmt [disk-space-free] bytes]</span>
+        [text Avail. disk space:]
+        <span class="font-bold text-lg" x-html="pretty_bytes('[fmt [disk-space-free] bytes]', 'text-xs')"></span>
+        [text of]
+        <span class="text-sm" x-html="pretty_bytes('[fmt [disk-space-total] bytes]', 'text-xs')"></span>
+        
     </div>
     <div class="text-md text-neutral-500 text-center">
-        [text Total disk space:] <span class="font-bold text-lg">[fmt [disk-space-total] bytes]</span>
+        [get-system-log last-fatal]
+        [text Last error]:
+        [set last_fatal_time="[jget last_fatal.time default-0]"]
+        <span class="font-bold text-lg">
+            [if last_fatal_time=(empty) echo="[text None]"]
+            [if last_fatal_time=(not-empty) echo="<a href='[base-url]/nb-admin/syslog' class='text-emerald-700 hover:underline'>[fmt [last_fatal_time] ago]</a>"]
+        <span>
     </div>
 </div>

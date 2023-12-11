@@ -11,7 +11,6 @@
     <div>
       [feature-cond features="manage-content,delete_.files,(any)_.files" tpl=btn_delete_all]
     </div>
-
   </section>
 
   <section class="bg-neutral-100 px-2 sm:px-4 md:px-6 lg:px-8 pb-10">
@@ -28,7 +27,7 @@
   </section>
   <section class="flex items-center justify-center bg-neutral-100 pb-4">
     <template x-if="last-first > 10">
-    [media-pagination]
-  </template>
+      [media-pagination]
+    </template>
   </section>
 </div>

@@ -9,5 +9,5 @@ function data_count_sc($params) {
     if (count($params) < 1) {
         return;
     }
-    return count(data_list(current($params)));
+    echo count(data_list(current($params)));
 }

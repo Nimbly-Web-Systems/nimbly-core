@@ -4,6 +4,7 @@
         <h3 class="text-sm md:text-base pt-1 pb-2 text-neutral-700 font-medium">[text help_create_resource]</h3>
     </div>
 </section>
+
 <section class="bg-neutral-100 px-2 sm:px-4 md:px-6 lg:px-8 pb-10">
     <form autocomplete="false" x-data="form_add('[data.resource]')" 
         @submit.prevent="submit"

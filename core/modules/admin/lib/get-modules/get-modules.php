@@ -23,9 +23,11 @@ function get_modules_sc() {
         		continue;
         	}
         	$install_file = $path . '/' . $module . '/.install.inc';
+            if (!file_exists($install_file)) {
+                continue;
+            }
         	$result[$k] = array(
         		"name" => $module,
-        		"has_install" => file_exists($install_file),
         		"env" => $env_path,
         		"path" => $path . '/' . $module
         	);

@@ -1,7 +1,8 @@
 <?php 
 
-load_library('url-key');
+load_library('util');
 
 function cfield_sc($params) {
-    return '.content.' . url_key_sc() . '.' . current($params);
+    $rs = dot2rs(current($params));
+    return $rs? implode('.', $rs) : '(empty)';
 }
