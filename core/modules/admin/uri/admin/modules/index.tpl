@@ -1,5 +1,0 @@
-[module user admin forms]
-[access feature=system-maintenance]
-[set page-title="Modules"]
-[post]
-[admin-html]

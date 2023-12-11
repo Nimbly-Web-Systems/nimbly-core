@@ -51,20 +51,22 @@ const alpine_media_insert = function () {
     caret: null,
     caret_pos: 0,
     hide_save_button: true,
+    mode: "insert",
     insert_doc_html() {
       return nb.populate_template("nb_media_insert_doc_tpl", {
         uuid: this.file_info.uuid,
         name: this.file_info.name,
         title: this.file_info.title || this.file_info.name,
-        description: this.file_info.description || this.file_info.size.fileSize(1)
+        description:
+          this.file_info.description || this.file_info.size.fileSize(1),
       });
     },
     insert_vid_html() {
       return nb.populate_template("nb_media_insert_vid_tpl", {
         uuid: this.file_info.uuid,
-        type: 'video/' + this.vid_type(),
+        type: "video/" + this.vid_type(),
         width: this.file_info.width,
-        height: this.file_info.height
+        height: this.file_info.height,
       });
     },
     insert_img_html() {
@@ -110,7 +112,10 @@ const alpine_media_insert = function () {
           break;
         }
       }
-      const tpl_name = img_aspect >= 1.0? 'nb_media_insert_img_landscape_tpl' : 'nb_media_insert_img_portrait_tpl';
+      const tpl_name =
+        img_aspect >= 1.0
+          ? "nb_media_insert_img_landscape_tpl"
+          : "nb_media_insert_img_portrait_tpl";
       return nb.populate_template(tpl_name, {
         uuid: this.file_info.uuid,
         width: this.file_info.width,
@@ -120,16 +125,29 @@ const alpine_media_insert = function () {
         srcset: srcset.join(", "),
       });
     },
+    set_field_value() {
+      //used for form image fields and inline image editing
+      nb.api.put(nb.base_url + "/api/v1/.files_meta/" + this.file_info.uuid, {
+        title: this.file_info.title,
+        description: this.file_info.description,
+      });
+
+      const m = te.Modal.getInstance(nb_modal_insert_media);
+      m.hide();
+      nb.media_modal._set_field(nb.media_modal.field, this.file_info.uuid);
+    },
     insert_media() {
+      //used for medium editor
+      nb.api.put(nb.base_url + "/api/v1/.files_meta/" + this.file_info.uuid, {
+        title: this.file_info.title,
+        description: this.file_info.description,
+      });
+
       const m = te.Modal.getInstance(nb_modal_insert_media);
       if (!nb.edit.active_editor) {
         m.hide();
         return;
       }
-      nb.api.put(nb.base_url + "/api/v1/.files_meta/" + this.file_info.uuid, {
-        title: this.file_info.title,
-        description: this.file_info.description,
-      });
 
       let html = "";
       const file_type = this.file_type();

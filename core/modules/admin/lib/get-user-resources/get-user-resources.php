@@ -7,8 +7,10 @@ load_library("access", "user");
 function get_user_resources_sc($params) {
 	$result = array();
     $rs = data_resources_list();
-    $rs['files'] = ['name' => 'Files'];
     foreach ($rs as $k => $v) {
+		if (in_array($k, ['users', 'roles'])) {
+			continue;
+		}
     	if (get_user_resources_access($k)) {
     		$result[$k] = ['key' => $k, 'name' => ucfirst(trim($k, '. '))];
     	}

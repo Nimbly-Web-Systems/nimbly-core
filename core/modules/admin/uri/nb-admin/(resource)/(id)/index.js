@@ -1,7 +1,6 @@
 Alpine.data("form_edit", (resource_id, record_id) => ({
   resource_id: resource_id,
   record_id: record_id,
-  form_data: {},
   submit(e) {
     if (this.form_data.hasOwnProperty("keep_password")) {
       if (
@@ -27,4 +26,5 @@ Alpine.data("form_edit", (resource_id, record_id) => ({
         }
       });
   },
+  ...nb.forms,
 }));

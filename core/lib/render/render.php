@@ -1,25 +1,16 @@
 <?php
 
 load_library('lookup');
-load_library('url-key');
+load_library('util');
 function render_sc($params)
 {
-    $resource_set = explode('.', current($params));
-    if (count($resource_set) === 1) {
-        $resource = '.content';
-        $uuid = url_key_sc();
-        $field = $resource_set[0];
-    } else if (count($resource_set) === 4 && empty($resource_set[0])) {
-        $resource = '.' . $resource_set[1];
-        $uuid = $resource_set[2];
-        $field = $resource_set[3];
-    } else if (count($resource_set) !== 3) {
+    $resource_set = dot2rs(current($params));
+    if (!$resource_set) {
         return;
-    } else {
-        $resource = $resource_set[0];
-        $uuid = $resource_set[1];
-        $field = $resource_set[2];
     }
+    $resource = $resource_set[0];
+    $uuid = $resource_set[1];
+    $field = $resource_set[2];
 
     if (!data_exists($resource)) {
         data_create_resource($resource, ['fields' => false]);

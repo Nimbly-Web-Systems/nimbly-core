@@ -1,1 +1,0 @@
-<img src="[base-url]/img/[item.uuid]/100x50f">

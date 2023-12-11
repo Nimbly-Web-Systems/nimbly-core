@@ -1,0 +1,1 @@
+outline-4 outline-offset-1 outline-primary/20 group-data-[nb-edit-img-enabled=true]:outline

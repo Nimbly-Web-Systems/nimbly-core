@@ -84,7 +84,7 @@ function data_is_subkey($resource, $uuid) {
  */
 function data_list($resource, $uuid = null) {
     if (!empty($uuid)) {
-        return data_exists($resource, $uuid)? array($uuid) : array();
+        return data_exists($resource, $uuid)? [$uuid] : [];
     }
     $path = $GLOBALS['SYSTEM']['data_base'] . '/' . $resource;
     $all = @scandir($path);
@@ -173,8 +173,8 @@ function _data_read_all($resource, $setting = null) {
         return $result;
     }
     
-    $result = _data_read_cache('_data_read_all', $resource, $setting);
-    if ($result === false) {
+    $cache = _data_read_cache('_data_read_all', $resource, $setting);
+    if ($cache === false) {
        $all = scandir($path);
         if (is_array($all)) {
             foreach ($all as $uuid) {
@@ -188,6 +188,8 @@ function _data_read_all($resource, $setting = null) {
             }
         }
         _data_write_cache('_data_read_all', $resource, $setting, $result);
+    } else {
+        $result = $cache;
     }
 
     return $result;
@@ -292,7 +294,8 @@ function data_update($resource, $uuid, $data_update_ls) {
     }
 
     // additional handling if PK field changed
-    $pk_field =  $data_update_ls['pk-field-name'] ?? false;
+    $meta = data_meta($resource);
+    $pk_field =  $data_update_ls['pk-field-name'] ?? ($meta['pk'] ?? false);
     if ($pk_field) {
         $pk_value = $data_update_ls[$pk_field] ?? false;
         $uuid = data_update_pk($resource, $uuid, $pk_value);

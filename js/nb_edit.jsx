@@ -1,5 +1,3 @@
-import { __isOptionsFunction } from "@tailwindcss/typography";
-
 var nb_edit = {
     default_buttons: ['bold', 'italic'],
     enabled: false,
@@ -12,8 +10,9 @@ nb_edit.init = function () {
     if (typeof MediumEditor === "undefined") {
         return;
     }
+    const imgs = document.querySelectorAll("[data-nb-edit-img]");
     const all_editors = document.querySelectorAll("[data-nb-edit]");
-    if (all_editors.length > 0) {
+    if (all_editors.length > 0 || imgs.length > 0) {
         const edit_menu = document.getElementById('nb_edit_menu');
         if (edit_menu) {
             edit_menu.classList.remove('hidden');
@@ -23,8 +22,10 @@ nb_edit.init = function () {
     form_editors.forEach(ed => {
         nb_edit.init_editor(ed, true);
     });
+
     window.addEventListener('beforeunload', nb_edit.on_beforeunload);
 }
+
 
 nb_edit.init_editor = function (ed, as_form_field = false) {
     if (nb_edit.editors.includes(ed)) {
@@ -77,14 +78,12 @@ nb_edit.on_focus = function (e) {
 }
 
 nb_edit.on_blur = function (e) {
-    const ed = e.currentTarget;
     const insert_media_btn = document.getElementById('nb_edit_insert_media');
     if (!insert_media_btn) {
         return;
     }
     if (e.relatedTarget != insert_media_btn) {
         insert_media_btn.setAttribute('disabled', true);
-
         nb_edit.active_editor = null;
     }
 }
@@ -106,6 +105,14 @@ nb_edit.toggle = function () {
             nb_edit.disable_editor(ed);
         }
     });
+    const all_imgs = document.querySelectorAll("[data-nb-edit-img]");
+    all_imgs.forEach(eimg => {
+        if (nb_edit.enabled) {
+            nb_edit.enable_img(eimg);
+        } else {
+            nb_edit.disable_img(eimg);
+        }
+    });
 }
 
 nb_edit.enable_editor = function (ed) {
@@ -123,6 +130,28 @@ nb_edit.disable_editor = function (ed) {
     ed.setAttribute('contenteditable', false);
 }
 
+nb_edit.enable_img = function (eimg) {
+    eimg.setAttribute('data-nb-edit-img-enabled', true);
+    eimg.classList.add('relative');
+    const img_src = eimg.querySelector('img').src;
+    let img_uuid = img_src.slice(img_src.indexOf('/img/') + 5);
+    img_uuid = img_uuid.substr(0, img_uuid.indexOf('/'));
+    eimg.setAttribute('data-nb-edit-img-value', img_uuid);
+    if (eimg.querySelectorAll('button[data-te-toggle=modal]').length === 0) {
+        eimg.insertAdjacentHTML('beforeend', document.getElementById('nb_edit_img_btn').innerHTML);
+        eimg.querySelector('button[data-te-toggle=modal').addEventListener('click', function () {
+            nb.media_alpine.mode = 'select';
+            nb.media_alpine.filter(['img']);
+            nb.media_modal._set_field = nb_edit.set_img;
+            nb.media_modal.field = eimg;
+        });
+    }
+}
+
+nb_edit.disable_img = function (eimg) {
+    eimg.removeAttribute('data-nb-edit-img-enabled');
+}
+
 nb_edit.get_field_values = function (el) {
     var result = {};
     const fields = el.querySelectorAll('[data-nb-edit');
@@ -130,6 +159,14 @@ nb_edit.get_field_values = function (el) {
         const key = f.dataset.nbEdit;
         if (key) {
             result[key] = f.innerHTML;
+        }
+    });
+    const imgs = el.querySelectorAll('[data-nb-edit-img');
+    imgs.forEach(eimg => {
+        const key = eimg.dataset.nbEditImg;
+        if (key) {
+            eimg.dataset.nbEditImgValue;
+            result[key] = eimg.dataset.nbEditImgValue;
         }
     });
     return result;
@@ -233,6 +270,19 @@ nb_edit.insert_html = function (html) {
     }
 };
 
+nb_edit.set_img = function (eimg, uuid) {
+    const old_uuid = eimg.dataset.nbEditImgValue;
+    if (old_uuid === uuid) {
+        return;
+    }
+    nb_edit.inputs++;
+    eimg._nb = eimg._nb || { inputs: 0 };
+    eimg._nb.inputs++;
+    eimg.innerHTML = eimg.innerHTML.replace('/img/' + old_uuid + '/', '/img/' + uuid + '/');
+    eimg.setAttribute('data-nb-edit-img-value', uuid);
+    document.getElementById('nb_edit_save').removeAttribute('disabled');
+}
+
 
 nb_edit.save = function () {
     nb_edit.inputs = 0;
@@ -243,18 +293,31 @@ nb_edit.save = function () {
             ed._nb_medium_editor._nb_inputs = 0;
             nb_edit.save_resource(ed);
         }
+    });
+
+    const imgs = document.querySelectorAll('[data-nb-edit-img');
+    imgs.forEach(eimg => {
+        if (typeof eimg._nb === 'undefined'
+            || typeof eimg._nb.inputs === 'undefined'
+            || eimg._nb.inputs < 1) {
+            return;
+        }
+        eimg._nb.inputs = 0;
+        nb_edit.save_resource(eimg);
+
     })
 };
 
 nb_edit.save_resource = function (ed) {
-    const resource_dot = ed.dataset.nbEdit.trim().toLowerCase(); // e.g. content.contact.main (resource).(uuid).(field)
+    const is_img = typeof ed.dataset.nbEditImg !== 'undefined';
+    let resource_dot = ed.dataset[is_img ? 'nbEditImg' : 'nbEdit'].trim().toLowerCase();
     var offset = 0;
     if (resource_dot.lastIndexOf('.', 0) === 0) {
         // hidden resource
         offset = 1;
     }
 
-    const resource_set = ed.dataset.nbEdit.split('.');
+    const resource_set = resource_dot.split('.');
     if ((resource_set.length - offset) !== 3) {
         console.warn('nb_edit.save_resource: unknown resource', resource_set, resource_set.length - offset);
         return;
@@ -268,7 +331,7 @@ nb_edit.save_resource = function (ed) {
     const api_url = nb.base_url + '/api/v1/' + resource + '/' + uuid;
 
     const data = {};
-    data[field] = ed.innerHTML;
+    data[field] = is_img ? ed.dataset.nbEditImgValue : ed.innerHTML.trim();
     nb.api.put(api_url, data).then(d1 => {
         if (d1.success) {
             nb.notify(nb.text.saved);

@@ -116,3 +116,18 @@ form .medium-editor-element[data-medium-focused] {
   @apply outline-2 outline-primary outline-offset-0 border-transparent;
 }
 
+/* editable images */
+
+[data-nb-edit-img-enabled=true] img {
+  @apply outline-8 outline-clight/20 outline;
+}
+
+[data-nb-edit-img] button {
+  @apply hidden;
+}
+
+[data-nb-edit-img][data-nb-edit-img-enabled=true] button {
+  @apply block;
+} 
+
+

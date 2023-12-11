@@ -6,17 +6,39 @@ var nb_media_library = {
     last: 0,
     file_info: null,
     files: [],
+    unfiltered: [],
+    allowed_types: [],
     page: [],
     init() {
+        this.fetch_media();
+        if (typeof nb_modal_insert_media !== 'undefined') {
+            window.nb.media_modal.el = nb_modal_insert_media;
+            window.nb.media_alpine = this;
+            window.addEventListener('show.te.modal', this.handle_modal_show);
+        } 
+    },
+    fetch_media() {
         nb.api.get(nb.base_url + "/api/v1/.files_meta").then((data) => {
             if (!data.success) {
                 nb.notify(data.message);
                 return;
             }
-            this.files = Object.values(data[".files_meta"]);
+            this.unfiltered = Object.values(data[".files_meta"]);
+            this.files = [...this.unfiltered];
             this.sort_files();
             this.set_page(this.current_page);
         });
+    },
+    filter(allowed_types) {
+        if (!allowed_types || allowed_types.length === 0) {
+            this.files = [...this.unfiltered];
+        } else {
+            this.files = this.unfiltered.filter((x) => {
+                const t = this._type(x);
+                return allowed_types.includes(t);
+            })    
+        }
+        this.set_page(this.current_page);
     },
     sort_files() {
         this.files.sort((a, b) => {
@@ -43,6 +65,10 @@ var nb_media_library = {
     },
     file_type(ix) {
         const f = typeof ix === 'undefined' ? this.file_info : this.page[ix];
+        return this._type(f);
+        
+    },
+    _type(f) {
         if (f && f.type.startsWith("image")) {
             return "img";
         } else if (f && f.type.startsWith("video")) {

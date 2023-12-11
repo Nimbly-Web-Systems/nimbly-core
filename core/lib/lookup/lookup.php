@@ -1,25 +1,27 @@
 <?php
 
+load_library('util');
+
 /*
- * @doc `[lookup resource uuid key]` gets value of field key for a specific resource, 
- * @doc e.g. `[lookup users admin@local.test fullname]` to get the fullname field
+ * @doc `[lookup resource.uuid.key]` gets value of field key for a specific resource, 
+ * @doc e.g. `[lookup users.1234.fullname]` to get the fullname field
  */
 function lookup_sc($params) {
-    if (count($params) === 1) {
-        //dot notation like users.1.name
-        $params = explode('.', current($params));
-    }
-
-    if (count($params) < 3) {
+    $parts = dot2rs(current($params));
+    if (!$parts) {
         return;
     }
-
-    $resource = get_param_value($params, "resource", current($params));
-    $uuid = get_param_value($params, "uuid", next($params));
-    $key = get_param_value($params, "key", next($params));
-
+    $resource = $parts[0];
+    $uuid = $parts[1];
+    $key = $parts[2];
+    $empty = get_param_value($params, 'empty');
     $v = lookup_data($resource, $uuid, $key);
-    echo $v;
+
+    if (!empty($v)) {
+        echo $v;
+    } else if ($empty) {
+        echo $empty;
+    }
 }
 
 function lookup_data($resource, $uuid, $key, $default = '') {
