@@ -27,6 +27,6 @@
 <div class="mt-2 mb-3 px-3 text-xs text-neutral-500 flex items-center gap-2">
 	<label for="[item.key]_slug" class="font-medium">[text url]:</label>
       <input type="text" name="[item.key]_slug" value="[get record.[item.key]_slug]"
-		class="focus:outline-none bg-transparent w-full" readonly
+		class="focus:outline-none bg-transparent w-full" 
 		x-init="form_data.[item.key]_slug='[get record.[item.key]_slug]'" [[ ]] x-model="form_data.[item.key]_slug" />
 </div>

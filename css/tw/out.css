@@ -2951,6 +2951,10 @@ textarea.form-control.is-invalid {
   right: 2.25rem;
 }
 
+.right-\[30px\] {
+  right: 30px;
+}
+
 .top-0 {
   top: 0px;
 }
@@ -3570,6 +3574,10 @@ textarea.form-control.is-invalid {
   height: calc(100% - 100px);
 }
 
+.h-\[calc\(100\%-50px\)\] {
+  height: calc(100% - 50px);
+}
+
 .h-auto {
   height: auto;
 }
@@ -3584,6 +3592,10 @@ textarea.form-control.is-invalid {
 
 .h-screen {
   height: 100vh;
+}
+
+.max-h-\[100\%\] {
+  max-height: 100%;
 }
 
 .max-h-\[calc\(100\%-64px\)\] {
@@ -5745,18 +5757,6 @@ textarea.form-control.is-invalid {
   outline-style: solid;
 }
 
-.outline-4 {
-  outline-width: 4px;
-}
-
-.outline-offset-1 {
-  outline-offset: 1px;
-}
-
-.outline-primary\/20 {
-  outline-color: rgb(0 116 217 / 0.2);
-}
-
 .blur {
   --tw-blur: blur(8px);
   filter: var(--tw-blur) var(--tw-brightness) var(--tw-contrast) var(--tw-grayscale) var(--tw-hue-rotate) var(--tw-invert) var(--tw-saturate) var(--tw-sepia) var(--tw-drop-shadow);
@@ -7421,10 +7421,6 @@ form .medium-editor-element[data-medium-focused] {
   box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow);
 }
 
-.group[data-nb-edit-img-enabled=true] .group-data-\[nb-edit-img-enabled\=true\]\:outline {
-  outline-style: solid;
-}
-
 .group\/validation[data-te-was-validated] .peer:valid ~ .group-data-\[te-was-validated\]\/validation\:peer-valid\:block {
   display: block;
 }
@@ -7940,6 +7936,12 @@ form .medium-editor-element[data-medium-focused] {
   .md\:text-base {
     font-size: 1rem;
     line-height: 1.5rem;
+  }
+}
+
+@media (min-width: 786px) {
+  .min-\[786px\]\:max-w-\[710px\] {
+    max-width: 710px;
   }
 }
 

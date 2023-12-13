@@ -34,12 +34,12 @@
         <div x-html="pretty_bytes('[fmt [jget mem_info.MemAvailable] bytes]', 'text-3xl')"></div>
     </div>
     <div class="text-lg text-emerald-700 font-bold text-center ">
-        [text memory avail. of] <span x-html="pretty_bytes('[fmt [jget mem_info.MemTotal] bytes]', 'text-xs')"></span>
+        [text free of] <span x-html="pretty_bytes('[fmt [jget mem_info.MemTotal] bytes]', 'text-xs')"> </span> [text RAM]
     </div>
     <div class="text-md text-neutral-500 text-center mt-4 ">
-        [text Avail. disk space:]
+        [text Disk:]
         <span class="font-bold text-lg" x-html="pretty_bytes('[fmt [disk-space-free] bytes]', 'text-xs')"></span>
-        [text of]
+        [text free of]
         <span class="text-sm" x-html="pretty_bytes('[fmt [disk-space-total] bytes]', 'text-xs')"></span>
         
     </div>

@@ -46,7 +46,7 @@ $result = data_create_resource("articles", [
   ]
 ]);
 
-$route = 'nieuws/(slug)';
+$route = 'article/(slug)';
 $result &= data_exists(".routes", md5($route)) 
 	|| data_create(".routes", md5($route), ["route" => $route, "order" => 200]);
 

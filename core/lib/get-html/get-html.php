@@ -2,7 +2,7 @@
 
 load_library('lookup');
 load_library('util');
-function render_sc($params)
+function get_html_sc($params)
 {
     $resource_set = dot2rs(current($params));
     if (!$resource_set) {

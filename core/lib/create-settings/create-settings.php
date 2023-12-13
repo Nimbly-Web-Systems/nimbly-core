@@ -1,7 +1,9 @@
 <?php
 
+load_library('url-key');
+
 function create_settings_sc () {
-    $settings_id = get_variable('uuid', $GLOBALS['SYSTEM']['uri_key']);
+    $settings_id = get_variable('uuid', url_key_sc());
     if (empty($settings_id)) {
         return;
     }
