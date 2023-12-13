@@ -16,12 +16,14 @@ function data_sc($params) {
     if (empty($params)) {
         return;
     }
-    $resource = get_param_value($params, "resource", current($params));
-    if (empty($resource)) {
-        return;
+    $set = explode('.', (string)get_param_value($params, 'resource', current($params)));
+    if (empty($set[0]) && count($set) > 1) {
+        array_shift($set);
+        $set[0] = '.' . $set[0];
     }
+    $resource = $set[0];
+    $uuid = count($set) > 1? $set[1] : get_param_value($params, 'uuid', null);
     $op = get_param_value($params, "op", "read");
-    $uuid = get_param_value($params, "uuid", null);
     $var_id = get_param_value($params, "var", null);
     $function_name = sprintf("data_%s", $op);
     $result = call_user_func($function_name, $resource, $uuid);

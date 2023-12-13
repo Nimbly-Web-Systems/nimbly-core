@@ -61,7 +61,7 @@
                     [text Insert media]
                 </button>
                 <button type="button" class="[btn-class-primary] ml-2" :disabled="!file_info" x-show="mode==='select'"
-                    @click="set_field_value">
+                    @click="set_media">
                     [text Select]
                 </button>
             </div>

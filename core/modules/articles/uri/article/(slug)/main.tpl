@@ -4,7 +4,7 @@
             [article]
         </div>
         <div class="lg:basis-1/4 pl-5  hidden lg:block">
-            [sidebar]
+            [article-sidebar]
         </div>
     </div>
 </section>

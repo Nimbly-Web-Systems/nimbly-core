@@ -1,6 +1,7 @@
 const nb_bar = document.getElementById("nb-bar");
 const nb_modal_insert_media = document.getElementById("nb-modal-insert-media");
 const nb_edit_insert_media = document.getElementById("nb_edit_insert_media");
+const nb_modal_settings = document.getElementById("nb-modal-settings");
 
 document.getElementById("nb_nav_toggler").addEventListener("click", () => {
   te.Sidenav.getInstance(nb_bar).toggleSlim();
@@ -18,6 +19,10 @@ document.getElementById("nb_edit_save").addEventListener("click", (e) => {
 
 if (nb_edit_insert_media) {
   nb_edit_insert_media.addEventListener("click", (e) => {
+    if (nb.media_alpine) {
+      nb.media_alpine.filter();
+      nb.media_alpine.mode = 'insert';
+    }
     nb.edit.store_caret_pos();
   });
 }
@@ -125,7 +130,7 @@ const alpine_media_insert = function () {
         srcset: srcset.join(", "),
       });
     },
-    set_field_value() {
+    set_media() {
       //used for form image fields and inline image editing
       nb.api.put(nb.base_url + "/api/v1/.files_meta/" + this.file_info.uuid, {
         title: this.file_info.title,
@@ -134,7 +139,7 @@ const alpine_media_insert = function () {
 
       const m = te.Modal.getInstance(nb_modal_insert_media);
       m.hide();
-      nb.media_modal._set_field(nb.media_modal.field, this.file_info.uuid);
+      nb.media_modal._set_media(nb.media_modal.field, this.file_info);
     },
     insert_media() {
       //used for medium editor
@@ -167,8 +172,29 @@ const alpine_media_insert = function () {
   }));
 };
 
+const alpine_modal_settings = function () {
+  Alpine.data("modal_settings", (page_id) => ({
+    page_id: page_id,
+    settings: {},
+    save() {
+      nb.api
+        .put(nb.base_url + "/api/v1/.config/" + this.page_id, this.settings)
+        .then((data) => {
+          if (data.success) {
+            const m = te.Modal.getInstance(nb_modal_settings);
+            nb.notify(nb.text.saved);
+            m.hide();
+          } else {
+            nb.notify(data.message);
+          }
+        });
+    },
+  }));
+};
+
 typeof Alpine === "undefined"
   ? document.addEventListener("alpine:initializing", () => {
       alpine_media_insert();
+      alpine_modal_settings();
     })
-  : alpine_media_insert();
+  : alpine_media_insert() && alpine_modal_settings();
