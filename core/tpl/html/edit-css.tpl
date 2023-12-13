@@ -1,3 +1,3 @@
 <style>
-    [include [base-path]css/bundle/medium-editor.min.css]
+    [include [base-path]css/medium-editor.min.css]
 </style>

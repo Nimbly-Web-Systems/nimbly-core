@@ -26,18 +26,7 @@ function thumbnail_create($uuid, $size, $ratio=0, $mode='h') {
 
     $MAX_UPSCALE = 1.0; // @todo: make this dynamic
 
-    // 1. Check cache
-
-    load_library("data");
-    $file_name = sprintf("%s_%s%s_%s.jpg", $uuid, $size, $mode, str_replace('.', '_', $ratio));
-    $path = sprintf(".tmp/thumb/%s", $file_name);
-    $cache_path = $GLOBALS['SYSTEM']['data_base'] . '/' . $path;
-
-    if (@file_exists($cache_path)) {
-        //return $cache_path;
-    }
-
-    // 2. Create thumbnail from original
+    // 1. Create thumbnail from original
 
     $org_path = sprintf("%s/.files/%s", $GLOBALS['SYSTEM']['data_base'], $uuid);
     list($org_w, $org_h, $org_type) = @getimagesize($org_path);
@@ -64,7 +53,7 @@ function thumbnail_create($uuid, $size, $ratio=0, $mode='h') {
     $max_w = min(get_variable('max_img_w', 1920), $org_w * $MAX_UPSCALE); // max enlarging
     $max_h = min(get_variable('max_img_h', 1080), $org_h * $MAX_UPSCALE);
 
-    //3: Calc thumbnail size given height and aspect ratio
+    //2: Calc thumbnail size given height and aspect ratio
     $no_ratio = empty($ratio) || ($ratio < 0) || (abs($asp - $ratio) < 0.01) || $mode === 'f';
     $a = $no_ratio? $asp : $ratio;
 
@@ -117,21 +106,15 @@ function thumbnail_create($uuid, $size, $ratio=0, $mode='h') {
         thumbnail_stamp($thumb_img, $wm, $w, $h, get_variable('watermark_position', 'rightbottom'));
     }
 
-    //4: save image to cache
-
-    @mkdir(dirname($cache_path), 0750, true);
-
-    if (imagejpeg($thumb_img, $cache_path, 85)) {
-        $result = $cache_path;
-    }
-
-    //5: save image to static hosting (should be configurable)
+    //3: save image to cache
     $static_path = $GLOBALS['SYSTEM']['file_base'] . 'ext/static/_thumb_/' . $GLOBALS['SYSTEM']['request_uri'];
     @mkdir(dirname($static_path), 0750, true);
-    copy($cache_path, $static_path);
 
-    //6: clean up and return result
+    if (imagejpeg($thumb_img, $static_path, 85)) {
+        $result = $static_path;
+    }
 
+    //4: clean up and return result
     imagedestroy($org_img);
     imagedestroy($thumb_img);
     return $result;
