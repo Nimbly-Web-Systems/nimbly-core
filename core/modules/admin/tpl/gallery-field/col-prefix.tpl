@@ -1,6 +1,6 @@
 <td>((media_nr))</td>
 <td>
-	<img src='[empty-img]' 
+	<img src='[#empty-img#]' 
 		data-empty=false 
 		data-cover-img=true
 		data-edit-img='((field_name_cover))' 

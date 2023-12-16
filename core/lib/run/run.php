@@ -1,27 +1,28 @@
 <?php
 
-define('sc_TAG_OPEN', '[');
-define('sc_TAG_CLOSE', ']');
-define('sc_ESCAPE_CHAR', '\\');
-define('BUFFER_SIZE', 0);
-define('QUOT_CHAR', '"');
-define('QUOTID', '%quot_');
-define('ASSIGNMENT_CHAR', '=');
+define('NB_TAG_OPEN', '[#');
+define('NB_TAG_LENGTH', 2);
+define('NB_TAG_CLOSE', '#]');
+define('NB_ESCAPE_CHAR', '\\');
+define('NB_BUFFER_SIZE', 0);
+define('NB_QUOT_CHAT', '"');
+define('NB_QUOTID', '%quot_');
+define('NB_ASSIGNMENT_CHAR', '=');
 
 global $SYSTEM;
-$SYSTEM['sc_stack'] = array();
+$SYSTEM['sc_stack'] = [];
 
 /**
  * Executes a template from file, parsing it line by line replacing
  * any scs.
  * @param type $file filename of the template to run
  */
-function run($file) {
-    $fh = @fopen($file, "r");
+function run(string $file) {
+    $fh = @fopen((string)$file, "r");
     if ($fh === false) {
         return;
     }
-    ob_start("run_output", BUFFER_SIZE);
+    ob_start("run_output", NB_BUFFER_SIZE);
     while (!feof($fh)) {
         run_template(fgets($fh));
     }
@@ -71,7 +72,7 @@ function run_uri($uri) {
 
 /**
  * Same as run, but runs a string/template
- * @param type $str the string which might contain scs. The string should not
+ * @param string $str the string which might contain scs. The string should not
  * be too large.
  */
 function run_template($str) {
@@ -79,7 +80,7 @@ function run_template($str) {
         return;
     }
 
-    $sc_start = strpos($str, sc_TAG_OPEN);
+    $sc_start = strpos($str, NB_TAG_OPEN);
 
     /*
      * 1. If there are no scs in this string, it's a very easy case.
@@ -89,27 +90,29 @@ function run_template($str) {
         echo $str;
         return;
     }
-    $tail = substr($str, $sc_start + 1);
+    $tail = substr($str, $sc_start + NB_TAG_LENGTH);
 
     if ($sc_start > 0) {
         $head = substr($str, 0, $sc_start); //the head part without scs
 
         /*
-         * 2. Check if the sc is escaped, like this: \[sc]
+         * 2. Check if the sc is escaped, like this: \[#sc#]
          * In that case it is not a real sc ("false alarm")
          * and it does not require any special processing.
          * Just echo sc and look for more scs in the remaining string.
          */
 
 
-        if ($str[$sc_start - 1] == sc_ESCAPE_CHAR) {
-            $head[$sc_start - 1] = sc_TAG_OPEN;
+        if ($str[$sc_start - 1] == NB_ESCAPE_CHAR) {
+            $head[$sc_start - 1] = NB_TAG_OPEN;
             echo $head;
-            $sc_start = strpos($tail, sc_TAG_OPEN);
-            if ($sc_start !== false) { //there are more scs...
-                run_template($tail, $sc_start); //...so let's process them.
+            $sc_start = strpos($tail, NB_TAG_OPEN);
+            if ($sc_start !== false) { 
+                //process remaining shortcodes in str (if has any)
+                run_template($tail, $sc_start);
             } else {
-                echo $tail; //otherwise,just output the tail;
+                //otherwise,just output the tail;
+                echo $tail; 
             }
             return;
         }
@@ -119,14 +122,14 @@ function run_template($str) {
 
     $sub_levels = 0;
     do {
-        $sc_end = strpos($tail, ']');
+        $sc_end = strpos($tail, NB_TAG_CLOSE);
 
         /*
-         * 3.  If the sc is not properly closed, e.g. "[sc"
+         * 3.  If the sc is not properly closed, e.g. "[#sc"
          * it's also not a real sc. Just output it and done.
          */
         if ($sc_end === false) {
-            echo sc_TAG_OPEN . $tail;
+            echo NB_TAG_OPEN . $tail;
             return;
         }
 
@@ -134,7 +137,7 @@ function run_template($str) {
          * 3a. Check for sub-scs and handle these first before continuing
          */
 
-        $sub_sc_start = strpos($tail, '[');
+        $sub_sc_start = strpos($tail, NB_TAG_OPEN);
         if ($sub_sc_start === false || $sub_sc_start > $sc_end) {
             break;
         }
@@ -156,7 +159,7 @@ function run_template($str) {
     /*
      * 5. Processing remaining string (tail)
      */
-    $tail = substr($tail, $sc_end + 1);
+    $tail = substr($tail, $sc_end + NB_TAG_LENGTH);
     if ($sc_start == 0) { //if a line only contains a sc, just return
         $trimmed_tail = rtrim($tail, "\n\r\0");
         if (empty($trimmed_tail)) {
@@ -173,7 +176,7 @@ function run_template($str) {
  */
 function _recover_quoted_strings(&$str, &$quoted_parts = null) {
     if (!empty($quoted_parts)) {
-        $quot_pos = strpos($str, QUOTID);
+        $quot_pos = strpos($str, NB_QUOTID);
         if ($quot_pos !== false) {
             $quot_id = substr($str, $quot_pos);
             $quot = $quoted_parts[$quot_id];
@@ -194,17 +197,17 @@ function run_single_sc($sc_call) {
 
     global $SYSTEM;
     $call = trim($sc_call); //trim outer spaces
-    if (strpos($call, QUOT_CHAR) > 0) { //handle quoted parts
-        $quoted_parts = array();
-        //preg_match_all('/' . ASSIGNMENT_CHAR . '[.]*"([^"\\\\]*[\\\\"]*[^"\\\\]*)"/s', $sc_call, $dq_matches);
-        preg_match_all('/' . ASSIGNMENT_CHAR . '[.]*"([^"\\\\]*)"/s', $sc_call, $dq_matches);
+    if (strpos($call, NB_QUOT_CHAT) > 0) { //handle quoted parts
+        $quoted_parts = [];
+        //preg_match_all('/' . NB_ASSIGNMENT_CHAR . '[.]*"([^"\\\\]*[\\\\"]*[^"\\\\]*)"/s', $sc_call, $dq_matches);
+        preg_match_all('/' . NB_ASSIGNMENT_CHAR . '[.]*"([^"\\\\]*)"/s', $sc_call, $dq_matches);
         if (count($dq_matches) > 1) {
             $str_parts = $dq_matches[0];
             $str_vals = $dq_matches[1];
             for ($i = 0; $i < count($str_parts); $i++) {
-                $quot_id = QUOTID . count($quoted_parts);
+                $quot_id = NB_QUOTID . count($quoted_parts);
                 $search = $str_parts[$i];
-                $call = str_replace($search, ASSIGNMENT_CHAR . $quot_id, $call);
+                $call = str_replace($search, NB_ASSIGNMENT_CHAR . $quot_id, $call);
                 $quoted_parts[$quot_id] = $str_vals[$i];
             }
         }
@@ -216,11 +219,11 @@ function run_single_sc($sc_call) {
      */
     $call_parts = explode(" ", $call);
     $function_id = $call_parts[0];
-    $params = array();
+    $params = [];
     for ($i = 1; $i < count($call_parts); $i++) { //get parameters (if any)
         $param = $call_parts[$i];
         _recover_quoted_strings($param, $quoted_parts); //recover quoted values
-        $assignment_pos = strpos($param, ASSIGNMENT_CHAR);
+        $assignment_pos = strpos($param, NB_ASSIGNMENT_CHAR);
         if ($assignment_pos > 0) { //handle key-value pairs in syntax as: [sc key=value]
             $param_id = substr($param, 0, $assignment_pos);
             $param_value = substr($param, $assignment_pos + 1);
@@ -274,15 +277,15 @@ function run_single_sc($sc_call) {
     /*
      * 6. If not found as template or as module, just echo the sc name
      */
-    echo sc_TAG_OPEN . $function_id;
+    echo NB_TAG_OPEN . $function_id;
     foreach ($params as $key => $param) {
         if (is_numeric($key)) {
             echo " " . $param;
         } else {
-            echo " " . $key . ASSIGNMENT_CHAR . $param;
+            echo " " . $key . NB_ASSIGNMENT_CHAR . $param;
         }
     }
-    echo sc_TAG_CLOSE;
+    echo NB_TAG_CLOSE;
 }
 
 function add_sc_level($sc_name, $path) {

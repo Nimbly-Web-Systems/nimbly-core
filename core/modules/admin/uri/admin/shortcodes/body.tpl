@@ -1,6 +1,6 @@
 
     <h1>Short codes</h1>
-    [get-libraries]
+    [#get-libraries#]
     <table class="nb-table">
       <thead>
         <tr>
@@ -11,6 +11,6 @@
         </tr>
       </thead>
       <tbody>
-      [repeat data.libraries]
+      [#repeat data.libraries#]
       </tbody>
     </table>

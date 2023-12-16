@@ -1,8 +1,8 @@
 <?php
 
 /** 
- *  @doc * `[active-if news]` stores 'active_if=true' if the current url starts with _news_
- *  @doc * `[active-if news =]` outputs 'active_if=true' if the current url is exactly _news_
+ *  @doc * `[#active-if news#]` stores 'active_if=true' if the current url starts with _news_
+ *  @doc * `[#active-if news =#]` outputs 'active_if=true' if the current url is exactly _news_
  */
 
 load_library('set');

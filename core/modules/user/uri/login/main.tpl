@@ -4,7 +4,7 @@
         <section class="container mx-auto lg:w-[420px]">
             <div
                 class="shadow-lg p-4 md:p-6 rounded-lg border-r-cnormal border-r-[30px] bg-neutral-50 font-primary m-4 relative">
-                <h1 class="font-bold my-4">[text Log in]</h1>
+                <h1 class="font-bold my-4">[#text Log in#]</h1>
                 <svg width="137px" height="47px" viewBox="0 0 137 47" version="1.1" xmlns="http://www.w3.org/2000/svg"
                     xmlns:xlink="http://www.w3.org/1999/xlink"
                     class="absolute rotate-90 h-[24px] w-auto -right-[50px] bottom-[40px] z-[1090]">
@@ -15,8 +15,8 @@
                             id="nimbly" fill="#FFFFFF"></path>
                     </g>
                 </svg>
-                <form name="login" action="[url]" method="post" accept-charset="utf-8" class="mt-8">
-                    [form-key login]
+                <form name="login" action="[#url#]" method="post" accept-charset="utf-8" class="mt-8">
+                    [#form-key login#]
 
                     <div class="relative mb-6 border" data-te-input-wrapper-init>
                         <input type="email" class="
@@ -26,7 +26,7 @@
                                 motion-reduce:transition-none
                                 data-[te-input-state-active]:placeholder:opacity-100 
                                 [&:not([data-te-input-placeholder-active])]:placeholder:opacity-0" id="email"
-                            name="email" value="[sticky email]" placeholder="[text Email]" required />
+                            name="email" value="[#sticky email#]" placeholder="[#text Email#]" required />
                         <label for="email" class="pointer-events-none absolute left-3 top-0 mb-0 
                                 max-w-[90%] origin-[0_0] truncate pt-[0.37rem] leading-[2.15] 
                                 text-neutral-600 transition-all duration-200 ease-out 
@@ -35,7 +35,7 @@
                                 peer-data-[te-input-state-active]:-translate-y-[1.15rem] 
                                 peer-data-[te-input-state-active]:scale-[0.8] 
                                 motion-reduce:transition-none">
-                            [text Email]
+                            [#text Email#]
                         </label>
                     </div>
 
@@ -48,7 +48,7 @@
                             focus:placeholder:opacity-100 data-[te-input-state-active]:placeholder:opacity-100 
                             motion-reduce:transition-none 
                             [&:not([data-te-input-placeholder-active])]:placeholder:opacity-0" id="password"
-                            name="password" placeholder="[text Password]" required />
+                            name="password" placeholder="[#text Password#]" required />
                         <label for="password" class="pointer-events-none absolute left-3 top-0 mb-0 max-w-[90%] 
                                 origin-[0_0] truncate pt-[0.37rem] leading-[2.15] text-neutral-600 
                                 transition-all duration-200 ease-out peer-focus:-translate-y-[1.15rem] 
@@ -56,18 +56,18 @@
                                 peer-data-[te-input-state-active]:-translate-y-[1.15rem] 
                                 peer-data-[te-input-state-active]:scale-[0.8] 
                                 motion-reduce:transition-none">
-                            [text Password]
+                            [#text Password#]
                         </label>
                     </div>
 
-                    <input type="submit" value="[text Login]" class="[btn-class-primary]" />
+                    <input type="submit" value="[#text Login#]" class="[#btn-class-primary#]" />
 
-                    [form-errors]
+                    [#form-errors#]
 
                 </form>
                 <a href="#!" class="block mt-4 text-neutral-500 hover:text-cnormal hover:underline cursor-pointer"
                     data-te-toggle="modal" data-te-target="#forgot_pw_modal">
-                    [text Forgot password?]
+                    [#text Forgot password?#]
                 </a>
             </div>
         </section>
@@ -88,7 +88,7 @@
                 class="flex flex-shrink-0 items-center justify-between rounded-t-md border-b-2 border-neutral-100 border-opacity-100 p-4 ">
                 <!--Modal title-->
                 <h5 class="text-xl font-medium leading-normal text-neutral-800" id="forgot_pw_modal_label">
-                    [text Forgot password?]
+                    [#text Forgot password?#]
                 </h5>
                 <!--Close button-->
                 <button type="button"
@@ -109,12 +109,12 @@
             <!--Modal footer-->
             <div
                 class="flex flex-shrink-0 flex-wrap items-center justify-end rounded-b-md border-t-2 border-neutral-100 border-opacity-100 p-4 ">
-                <button type="button" class="[btn-class-secondary]" data-te-modal-dismiss data-te-ripple-init
+                <button type="button" class="[#btn-class-secondary#]" data-te-modal-dismiss data-te-ripple-init
                     data-te-ripple-color="light">
                     Close
                 </button>
-                <button type="button" class="[btn-class-primary] ml-2" data-te-ripple-init data-te-ripple-color="light">
-                    [text Request new password]
+                <button type="button" class="[#btn-class-primary#] ml-2" data-te-ripple-init data-te-ripple-color="light">
+                    [#text Request new password#]
                 </button>
             </div>
         </div>

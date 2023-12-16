@@ -1,3 +1,3 @@
-[module admin user]
-[access feature=manage-content]
-[html]
+[#module admin user#]
+[#access feature=manage-content#]
+[#html#]

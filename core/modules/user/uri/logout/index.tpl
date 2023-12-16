@@ -1,2 +1,2 @@
-[module user]
-[logout redirect=""]
+[#module user#]
+[#logout redirect=""#]

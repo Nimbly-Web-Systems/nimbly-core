@@ -1,3 +1,3 @@
 <style>
-[include [base-path]/ext/static/app.css]
+[#include [#base-path#]/ext/static/app.css#]
 </style>

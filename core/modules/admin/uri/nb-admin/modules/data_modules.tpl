@@ -1,17 +1,17 @@
 <tr>
     <td>
-        [record.name]
+        [#record.name#]
     </td>
     <td>
-        [record.env]
+        [#record.env#]
     </td>
     <td>
-        <div class="flex items-center [if subkey=(not-empty) echo=hidden]">
-            <form action="[url]" method="post" accept-charset="utf-8">
-                [form-key install_module]
-                <input type="hidden" name="module_name" value="[record.name]">
-                <input type="hidden" name="module_path" value="[record.path]">
-                <button type="submit" class="[btn-class-secondary]">Install</button>
+        <div class="flex items-center [#if subkey=(not-empty) echo=hidden#]">
+            <form action="[#url#]" method="post" accept-charset="utf-8">
+                [#form-key install_module#]
+                <input type="hidden" name="module_name" value="[#record.name#]">
+                <input type="hidden" name="module_path" value="[#record.path#]">
+                <button type="submit" class="[#btn-class-secondary#]">Install</button>
             </form>
         </div>
     </td>

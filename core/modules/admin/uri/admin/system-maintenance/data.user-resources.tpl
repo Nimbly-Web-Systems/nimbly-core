@@ -1,1 +1,1 @@
-<li><a href="[base-url]/admin/[item.key]">[item.name]</a></li>
+<li><a href="[#base-url#]/admin/[#item.key#]">[#item.name#]</a></li>

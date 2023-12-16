@@ -1,7 +1,7 @@
 
     <h1>Pages</h1>
-    <a href="[base-url]/admin/pages/add" class="nb-button">Add Page</a>
-    [get-pages]
+    <a href="[#base-url#]/admin/pages/add" class="nb-button">Add Page</a>
+    [#get-pages#]
     <table class="nb-table">
       <thead>
         <tr>
@@ -12,6 +12,6 @@
         </tr>
       </thead>
       <tbody>
-      [repeat data.pages]
+      [#repeat data.pages#]
       </tbody>
     </table>

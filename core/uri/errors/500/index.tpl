@@ -1,2 +1,2 @@
-[set page-title="Internal server error"]
-[html]
+[#set page-title="Internal server error"#]
+[#html#]

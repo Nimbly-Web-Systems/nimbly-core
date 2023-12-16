@@ -1,8 +1,8 @@
 <div class="relative my-6" data-te-input-wrapper-init>
-    <input type="[item.type]" value="[get record.[item.key]]" name="[item.key]" placeholder="" 
-        x-init="form_data.[item.key]='[get record.[item.key]]'"
-        x-model="form_data.[item.key]"
-        [if item.required=(not-empty) echo=required]
+    <input type="[#item.type#]" value="[#get record.[#item.key#]#]" name="[#item.key#]" placeholder="" 
+        x-init="form_data.[#item.key#]='[#get record.[#item.key#]#]'"
+        x-model="form_data.[#item.key#]"
+        [#if item.required=(not-empty) echo=required#]
         class="
             peer block min-h-[auto] w-full rounded border-0 bg-transparent px-2 py-[0.2rem] 
             leading-[2.15] outline-none transition-all duration-200 ease-linear 
@@ -19,6 +19,6 @@
             peer-data-[te-input-state-active]:-translate-y-[1.15rem] 
             peer-data-[te-input-state-active]:scale-[0.8] 
             motion-reduce:transition-none">
-            [text [field-name name="[item.name]"]]
+            [#text [#field-name name="[#item.name#]"#]#]
     </label>
 </div>

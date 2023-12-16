@@ -1,8 +1,8 @@
 <h3 class="modal-caption">Change your email address</h3>
 <a data-close="#modal" class="icon-close">×</a>
 <div class="form-wrapper">
-    <form name="change-email" action="[url]" method="post" accept-charset="utf-8" class="nb-form">
-        [form-key change-email]
+    <form name="change-email" action="[#url#]" method="post" accept-charset="utf-8" class="nb-form">
+        [#form-key change-email#]
         <label>
             Your current password<br>
             <input type="password" name="password" required />
@@ -18,7 +18,7 @@
         >
              Change email
         </a> 
-        [form-error]
+        [#form-error#]
     </form>
 </div>
 <div id="email-change-message" class="nb-close">

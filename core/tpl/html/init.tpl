@@ -1,3 +1,3 @@
-[create-settings]
-[data .config.[url-key] var=page_settings]
-[set page-title="[get page_settings.page_title default="..."]"]
+[#create-settings#]
+[#data .config.[#url-key#] var=page_settings#]
+[#set page-title="[#get page_settings.page_title default="..."#]"#]

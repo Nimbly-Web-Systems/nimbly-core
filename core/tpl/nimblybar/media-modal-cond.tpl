@@ -1,1 +1,1 @@
-[if nb-skip-insert-media=(empty) tpl=media-modal]
+[#if nb-skip-insert-media=(empty) tpl=media-modal#]

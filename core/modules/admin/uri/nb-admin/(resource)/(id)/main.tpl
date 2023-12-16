@@ -1,4 +1,4 @@
-[if subkey=(empty) tpl=edit]
-[if subkey=(not-empty) tpl=subkey]
+[#if subkey=(empty) tpl=edit#]
+[#if subkey=(not-empty) tpl=subkey#]
 
 
