@@ -32,7 +32,7 @@ AddDefaultCharset utf-8
 DefaultLanguage en-US
 
 # set the security pepper hash code (unique per installation)
-SetEnv PEPPER [get sticky.pepper]
+SetEnv PEPPER [#get sticky.pepper#]
 
 # compress text, html, javascript, css, xml:
 AddOutputFilterByType DEFLATE text/plain
@@ -59,17 +59,17 @@ AddOutputFilterByType DEFLATE application/x-javascript
 
 # rewrite: initialize
 RewriteEngine on
-RewriteBase /[get sticky.rewritebase]
+RewriteBase /[#get sticky.rewritebase#]
 
 # rewrite: use EXT static if available for the requested file
-RewriteCond %{REQUEST_URI} ^/[get rewritebase-slash](.*)
+RewriteCond %{REQUEST_URI} ^/[#get rewritebase-slash#](.*)
 RewriteCond ext/static/%1 -F
-RewriteRule ^ ext/static/%1 \[END]
+RewriteRule ^ ext/static/%1 [END]
 
 # rewrite: use CORE static if availble for the requested file
-RewriteCond %{REQUEST_URI} ^/[get rewritebase-slash](.*)
+RewriteCond %{REQUEST_URI} ^/[#get rewritebase-slash#](.*)
 RewriteCond core/static/%1 -F
-RewriteRule ^ core/static/%1 \[END]
+RewriteRule ^ core/static/%1 [END]
 
 # finally, fallback to PHP to handle the request.
 php_flag register_globals off
@@ -87,11 +87,11 @@ php_value error_log ext/data/.tmp/logs/system.log
 
 # rewrite: redirect anything that is not a file to index.php
 RewriteCond %{REQUEST_FILENAME} !-f
-RewriteRule ^ index.php \[END]
+RewriteRule ^ index.php [END]
 
 #rewrite: redirect any attempt to access a hidden file/dir (starting with a .) to index.php
-RewriteRule ^\..*$ index.php \[END]
+RewriteRule ^\..*$ index.php [END]
 
 # rewrite: don't allow a direct request to a static file folder (redirect to index.php)
-RewriteCond %{THE_REQUEST} ^[A-Z]{3,9}\ /\[^\ ]+/(ext|core)/static/.*($|\ ) \[NC]
-RewriteRule ^ index.php \[END]
+RewriteCond %{THE_REQUEST} ^[A-Z]{3,9}\ /[^\ ]+/(ext|core)/static/.*($|\ ) [NC]
+RewriteRule ^ index.php [END]

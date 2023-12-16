@@ -1,45 +1,45 @@
-[module downloads]
-[module user]
-[data .config uuid=site]
-[set site-name="[get-key data.config.site name]"]
-[set app-name="Nimbly Framework"]
-[set language=en]
-[set body-classes=]
-[set html-classes="[logged-in]"]
-[set page-title=]
-[set head=]
-[set footer=]
-[set header=]
-[set main=]
-[set head-scripts=]
-[init]
+[#module downloads#]
+[#module user#]
+[#data .config uuid=site#]
+[#set site-name="[#get-key data.config.site name#]"#]
+[#set app-name="Nimbly Framework"#]
+[#set language=en#]
+[#set body-classes=#]
+[#set html-classes="[#logged-in#]"#]
+[#set page-title=#]
+[#set head=#]
+[#set footer=#]
+[#set header=#]
+[#set main=#]
+[#set head-scripts=#]
+[#init#]
 <!doctype html>
-<html class="[html-classes] scroll-smooth" lang="[language]">
+<html class="[#html-classes#] scroll-smooth" lang="[#language#]">
     <head>
-        <title>[page-title] | [site-name]</title>
-        [meta]
-        [fonts]
-        [stylesheets]
-        [head]
-        [head-scripts]
-        [favicon]
+        <title>[#page-title#] | [#site-name#]</title>
+        [#meta#]
+        [#fonts#]
+        [#stylesheets#]
+        [#head#]
+        [#head-scripts#]
+        [#favicon#]
     </head>
-    <body class="[body-classes]">
-        [feature-cond manage-content tpl=nimblybar]
-        [callouts]
+    <body class="[#body-classes#]">
+        [#feature-cond manage-content tpl=nimblybar#]
+        [#callouts#]
         <div id="page">
             <header id="header">
-                [header]
+                [#header#]
             </header> 
             <main id="main">
-                [main]
+                [#main#]
                </main> 
             <footer id="footer">
-                [footer]
+                [#footer#]
             </footer>
         </div>
         <script> 
-            [scripts]
+            [#scripts#]
         </script>
     </body>
 </html>

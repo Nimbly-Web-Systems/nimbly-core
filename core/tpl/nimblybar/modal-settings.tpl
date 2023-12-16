@@ -1,4 +1,4 @@
-<div data-te-modal-init x-data="modal_settings('[url-key]')"
+<div data-te-modal-init x-data="modal_settings('[#url-key#]')"
   class="fixed left-0 top-0 z-[1055] hidden h-full right-[30px] overflow-y-auto overflow-x-hidden outline-none"
   id="nb-modal-settings" tabindex="-1" aria-labelledby="modal_settings" aria-hidden="true">
   <div data-te-modal-dialog-ref
@@ -27,8 +27,8 @@
         <form autocomplete="false" class="mt-2">
 
           <div class="relative my-6" data-te-input-wrapper-init>
-            <input type="text" value="[get page_settings.page_title]" name="page_title" placeholder=""
-              x-init='settings.page_title="[get page_settings.page_title]"' x-model="settings.page_title" class="
+            <input type="text" value="[#get page_settings.page_title#]" name="page_title" placeholder=""
+              x-init='settings.page_title="[#get page_settings.page_title#]"' x-model="settings.page_title" class="
                   peer block min-h-[auto] w-full rounded border-0 bg-transparent px-2 py-[0.2rem] 
                   leading-[2.15] outline-none transition-all duration-200 ease-linear 
                   focus:placeholder:opacity-100 
@@ -43,12 +43,12 @@
                   peer-data-[te-input-state-active]:-translate-y-[1.15rem] 
                   peer-data-[te-input-state-active]:scale-[0.8] 
                   motion-reduce:transition-none">
-              [text Page title]
+              [#text Page title#]
             </label>
           </div>
 
-          [set page-settings-fields=]
-          [page-settings-fields]
+          [#set page-settings-fields=#]
+          [#page-settings-fields#]
         </form>
       </div>
 
@@ -56,10 +56,10 @@
       <!-- Modal footer -->
       <div class="mt-auto flex flex-shrink-0 gap-4 flex-wrap items-center justify-end rounded-b-md p-4 
 border-t border-neutral-200 min-[0px]:rounded-none">
-        <button type="button" class="[btn-class-secondary]" data-te-modal-dismiss>
-          [text Cancel]
+        <button type="button" class="[#btn-class-secondary#]" data-te-modal-dismiss>
+          [#text Cancel#]
         </button>
-        <button type="button" class="[btn-class-primary]" @click="save">[text Save]</button>
+        <button type="button" class="[#btn-class-primary#]" @click="save">[#text Save#]</button>
       </div>
 
     </div>

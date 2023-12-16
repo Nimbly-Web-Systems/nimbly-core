@@ -1,3 +1,3 @@
-[load-scripts]
+[#load-scripts#]
 
- [include [uri-path]/field_editor.js]
+ [#include [#uri-path#]/field_editor.js#]

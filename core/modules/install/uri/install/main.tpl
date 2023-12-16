@@ -13,7 +13,7 @@
                             id="nimbly" fill="#FFFFFF"></path>
                     </g>
                 </svg>
-                [body-step]
+                [#body-step#]
             </div>
         </section>
     </div>

@@ -7,7 +7,7 @@
             <!-- image -->
             <template x-if="file_type(index) === 'img'">
                 <figure class="flex items-center justify-center h-full">
-                    <img :src="`[base-url]/img/${file.uuid}/480x480f`" :width="file.width" :height="file.height"
+                    <img :src="`[#base-url#]/img/${file.uuid}/480x480f`" :width="file.width" :height="file.height"
                         loading="lazy" class="object-scale-down max-h-full">
                 </figure>
             </template>
@@ -16,7 +16,7 @@
             <template x-if="file_type(index) === 'vid'">
                 <div class="relative w-full h-full">
                     <video width="480" height="480" class="flex items-center justify-center h-full">
-                        <source :src="`[base-url]/video/${file.uuid}`" :type="`video/${vid_type(index)}`">
+                        <source :src="`[#base-url#]/video/${file.uuid}`" :type="`video/${vid_type(index)}`">
                     </video>
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
                         stroke="currentColor" class="w-[64px] h-[64px] absolute 

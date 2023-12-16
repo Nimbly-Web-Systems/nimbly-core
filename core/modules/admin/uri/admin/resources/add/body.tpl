@@ -3,12 +3,12 @@
     <form class="nb-form">
         <label>Resource Name:
             <input type="text" maxlength="64" name="resource"
-                   placeholder="resource name, e.g. `books`" value="[sticky resource]" required />
+                   placeholder="resource name, e.g. `books`" value="[#sticky resource#]" required />
         </label>
 
         <fieldset id="field_entry">
             <label>Fields:</label>
-            [set row-id=[uuid]]
+            [#set row-id=[#uuid#]#]
             <div class="nb-field" id="nb-field-1">
                 <input
                     type="text"

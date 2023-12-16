@@ -1,2 +1,2 @@
-[module api]
-[pages]
+[#module api#]
+[#pages#]

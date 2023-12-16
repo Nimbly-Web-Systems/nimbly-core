@@ -1,2 +1,2 @@
-[module api]
-[resources]
+[#module api#]
+[#resources#]

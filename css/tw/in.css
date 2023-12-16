@@ -118,8 +118,8 @@ form .medium-editor-element[data-medium-focused] {
 
 /* editable images */
 
-[data-nb-edit-img-enabled=true] img {
-  @apply outline-8 outline-clight/20 outline;
+[data-nb-edit-img-enabled=true] {
+  @apply outline-8 outline-clight/20 outline bg-clight/20;
 }
 
 [data-nb-edit-img] button {

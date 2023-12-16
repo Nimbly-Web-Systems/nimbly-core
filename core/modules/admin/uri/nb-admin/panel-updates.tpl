@@ -2,7 +2,7 @@
     <div class="flex items-start justify-between">
         <div class="flex flex-row items-center">
             <div class="text-lg font-primary font-medium truncate text-neutral-900 min-w-[100px]">
-                [text Last system update]
+                [#text Last system update#]
             </div>
             <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"
                 class="animate-spin w-6 h-6" x-cloak x-show="busy">
@@ -12,7 +12,7 @@
                 <path d="M2 12C2 6.47715 6.47715 2 12 2V5C8.13401 5 5 8.13401 5 12H2Z" fill="#000000" />
             </svg>
         </div>
-        <div class="relative [feature-cond manage-system echo_else=hidden]" data-te-dropdown-ref>
+        <div class="relative [#feature-cond manage-system echo_else=hidden#]" data-te-dropdown-ref>
             <button class="rounded-full hover:bg-neutral-100 p-2 -mt-1" data-te-dropdown-toggle-ref>
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5">
                     <path
@@ -28,30 +28,30 @@
                         text-sm font-normal text-neutral-50 hover:bg-orange-400 disabled:cursor-auto
                          active:text-white active:no-underline disabled:pointer-events-none disabled:bg-transparent disabled:text-neutral-200"
                         data-te-dropdown-item-ref @click="pull_site" :disabled="site_updates==0">
-                        [text Get site updates] (<span x-text="site_updates"></span>)</button>
+                        [#text Get site updates#] (<span x-text="site_updates"></span>)</button>
                 </li>
                 <li>
                     <button
                         class="block w-full whitespace-nowrap bg-transparent disabled:cursor-auto px-4 py-2 text-sm font-normal text-neutral-50 hover:bg-orange-400 active:text-white active:no-underline disabled:pointer-events-none disabled:bg-transparent disabled:text-neutral-200"
                         data-te-dropdown-item-ref @click="pull_core" :disabled="core_updates==0">
-                        [text Get core updates] (<span x-text="core_updates"></span>)</button>
+                        [#text Get core updates#] (<span x-text="core_updates"></span>)</button>
                 </li>
             </ul>
         </div>
     </div>
     <div class="text-7xl text-orange-600 font-bold text-center mt-4 -ml-4">
-        [fmt [last-update] type=date fmt="d"]
-        <span class="text-3xl uppercase">[date [last-update] fmt="M"]</span>
+        [#fmt [#last-update#] type=date fmt="d"#]
+        <span class="text-3xl uppercase">[#date [#last-update#] fmt="M"#]</span>
     </div>
     <div class="text-lg text-orange-600 font-bold text-center ">
-        [fmt [last-update] ago]
+        [#fmt [#last-update#] ago#]
     </div>
     <div class="text-md text-neutral-500 text-center mt-4 ">
-        [text Available site updates]:
+        [#text Available site updates#]:
         <span class="font-bold text-lg" x-text="site_updates"></span>
     </div>
     <div class="text-md text-neutral-500 text-center">
-        [text Core updates]:
+        [#text Core updates#]:
         <span class="font-bold text-lg" x-text="core_updates"></span>
     </div>
 </div>

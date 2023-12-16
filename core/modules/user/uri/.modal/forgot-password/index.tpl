@@ -1,4 +1,4 @@
-[module user forms]
-[access role=anonymous redirect=]
-[post]
-[modal]
+[#module user forms#]
+[#access role=anonymous redirect=#]
+[#post#]
+[#modal#]

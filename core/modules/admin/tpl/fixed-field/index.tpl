@@ -1,1 +1,1 @@
-<input type="hidden" name="[item.key]" value="[item.value]" />
+<input type="hidden" name="[#item.key#]" value="[#item.value#]" />

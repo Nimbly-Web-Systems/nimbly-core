@@ -1,3 +1,3 @@
 
 /* medium editor */
-[include [base-path]js/bundle/medium-editor.min.js]
+[#include [#base-path#]js/bundle/medium-editor.min.js#]
