@@ -10,7 +10,7 @@
         @submit.prevent="submit"
         class="bg-neutral-50 rounded-2xl p-10 shadow-md mx-auto">
         [#set nb_form_edit=false overwrite#]
-        [#form-key add_resource_[#data.resource#]]
+        [#form-key add_resource_[#data.resource#]#]
         <div class="max-w-lg mx-auto">
             [#repeat data.fields#]
         
