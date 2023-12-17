@@ -17,7 +17,7 @@
                     </h5>
                     <h6 class="text-sm text-neutral-700">
                         <span x-text="`${first} - ${last} of ${files.length}`"></span>
-                        [#text files#]
+                        [#text files#] <span x-text="mode"></span>
                     </h6>
 
                 </div>
@@ -39,6 +39,7 @@
             <div class="relative min-[0px]:overflow-y-auto">
 
                 <div class="flex">
+                    <!-- tab buttons -->
                     <ul class="flex list-none flex-col flex-wrap pl-0 w-12" role="tablist" data-te-nav-ref>
                         <li role="presentation" class="text-center w-12">
                             <a href="#tab_media_library" class="w-12 my-2 block border-x-0 border-b-2 border-t-0 border-transparent px-3 pb-3.5 
@@ -49,7 +50,8 @@
                                       data-[te-nav-active]:text-primary
                                       data-[te-nav-active]:bg-neutral-100" data-te-toggle="pill"
                                 title="[#text Pick from media library#]" data-te-target="#tab_media_library"
-                                data-te-nav-active role="tab" aria-controls="tab_media_library" aria-selected="true">
+                                @click="if (mode != 'select') mode='insert'" data-te-nav-active role="tab"
+                                aria-controls="tab_media_library" aria-selected="true">
 
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
                                     stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
@@ -59,21 +61,25 @@
                             </a>
                         </li>
                         <li role="presentation" class="w-12 text-center">
-                            <a href="#tab_media_embed"
-                                title="[#text Embed external media#]"
-                                class="w-12 my-2 block border-x-0 border-b-2 border-t-0 border-transparent 
+                            <a href="#tab_media_embed" 
+                                :class="mode==='select' && 'opacity-50 pointer-events-none'"
+                                @click="if (mode != 'select') mode='embed'" title="[#text Embed external media#]" class="w-12 my-2 block border-x-0 border-b-2 border-t-0 border-transparent 
                                 px-3 pb-3.5 pt-4 text-xs font-medium uppercase leading-tight
-                                 text-neutral-500 hover:isolate hover:border-transparent hover:bg-neutral-100
-                                 focus:isolate focus:border-transparent data-[te-nav-active]:border-primary
+                                 text-neutral-500 
+                                 hover:isolate hover:border-transparent hover:bg-neutral-100
+                                 focus:isolate focus:border-transparent
+                                  data-[te-nav-active]:border-primary
                                  data-[te-nav-active]:bg-neutral-100
-                                  data-[te-nav-active]:text-primary"
-                                data-te-toggle="pill" data-te-target="#tab_media_embed" role="tab"
-                                aria-controls="tab_media_embed" aria-selected="false">
-                            
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
-                                  </svg>
-                                  
+                                  data-[te-nav-active]:text-primary" data-te-toggle="pill"
+                                data-te-target="#tab_media_embed" role="tab" aria-controls="tab_media_embed"
+                                aria-selected="false">
+
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                    stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
+                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                        d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
+                                </svg>
+
                             </a>
                         </li>
                     </ul>
@@ -95,16 +101,15 @@
                         </div>
 
                         <div class="hidden opacity-100 transition-opacity duration-150 ease-linear data-[te-tab-active]:block"
-                            id="tab_media_embed" role="tabpanel" aria-labelledby="tab_media_embed"
-                            data-te-tab-active>
+                            id="tab_media_embed" role="tabpanel" aria-labelledby="tab_media_embed">
 
                             <div class="flex flex-wrap flex-col-reverse sm:flex-row sm:flex-nowrap">
 
                                 <div class="grow p-4 md:p-6 lg:p-8">
-                                    [#accordion#]
+                                    [#embed_media_content#]
                                 </div>
                                 <div class="flex-none w-[300px] p-2 mx-auto sm:p-4 bg-neutral-200">
-                                    
+
                                 </div>
                             </div>
 

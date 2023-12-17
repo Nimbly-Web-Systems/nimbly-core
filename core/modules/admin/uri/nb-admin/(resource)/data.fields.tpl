@@ -1,3 +1,3 @@
 <th>
-	[#text [#field-name name="[field.name#]"#]]
+	[#text [#field-name name="[#field.name#]"#]#]
 </th>

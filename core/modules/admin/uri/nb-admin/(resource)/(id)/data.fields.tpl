@@ -1,3 +1,3 @@
 <div class="mb-4">
-    [[#item.type#]-field]
+    [#[#item.type#]-field#]
 </div>
