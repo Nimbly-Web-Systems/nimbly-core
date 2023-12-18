@@ -40,6 +40,11 @@ var nb_media_library = {
         }
         this.set_page(this.current_page);
     },
+    reset_tab() {
+        const media_tab_el = document.getElementById('tab_media_library_btn');
+        const media_tab = new te.Tab(media_tab_el);
+        media_tab.show();
+    },
     sort_files() {
         this.files.sort((a, b) => {
             return b._modified - a._modified;
