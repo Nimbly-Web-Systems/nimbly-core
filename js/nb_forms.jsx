@@ -16,6 +16,7 @@ var nb_forms = {
     select_image(field_name) {
         nb.media_alpine.mode = 'select';
         nb.media_alpine.filter(['img']);
+        nb.media_alpine.reset_tab();
         nb.media_modal.me = this; //remember this
         nb.media_modal._set_media = this._set_media;
         nb.media_modal.field = field_name;

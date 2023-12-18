@@ -42,7 +42,8 @@
                     <!-- tab buttons -->
                     <ul class="flex list-none flex-col flex-wrap pl-0 w-12" role="tablist" data-te-nav-ref>
                         <li role="presentation" class="text-center w-12">
-                            <a href="#tab_media_library" class="w-12 my-2 block border-x-0 border-b-2 border-t-0 border-transparent px-3 pb-3.5 
+                            <a href="#tab_media_library" 
+                                id='tab_media_library_btn' class="w-12 my-2 block border-x-0 border-b-2 border-t-0 border-transparent px-3 pb-3.5 
                                     pt-4 text-xs font-medium uppercase leading-tight text-neutral-500 
                                     hover:isolate hover:border-transparent
                                      hover:bg-neutral-100 focus:isolate 
