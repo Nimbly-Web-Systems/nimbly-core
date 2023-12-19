@@ -10,8 +10,9 @@
     "js-build": "cp ./node_modules/medium-editor/dist/js/medium-editor.min.js ./js/bundle/medium-editor.min.js && cp ./node_modules/tw-elements/dist/js/tw-elements.umd.min.js ./js/bundle/tw-elements.umd.min.js && esbuild js/index.jsx --bundle --minify --outfile=js/bundle/app.js",
     "css-build": "cp ./node_modules/medium-editor/dist/css/medium-editor.min.css ./css/medium-editor.min.css && esbuild css/index.css --bundle --minify --outfile=ext/static/app.css",
     "tw-build": "npx tailwindcss -i ./css/tw/in.css -o ./css/tw/out.css",
+    "text-build": "find core -name text.po | xargs msgcat > ext/data/.i18n/text.po",
     "tw": "npx tailwindcss -i ./css/tw/in.css -o ./css/tw/out.css --watch",
-    "build": "npm run tw-build && npm run css-build && npm run js-build"
+    "build": "npm run tw-build && npm run css-build && npm run js-build && npm run text-build"
   },
   "repository": {
     "type": "git",

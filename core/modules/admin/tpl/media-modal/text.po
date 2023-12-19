@@ -1,0 +1,2 @@
+msgid "vimeo_embed_help"
+msgstr "Enter the vimeo id. You find this in the url: <b>vimeo.com/{id}</b>, example <b>vimeo.com/022439234</b>. For unlisted private video's, there is a second id, named hash that you need to fill in: vimeo url: <b>vimeo.com/{id}/{hash}</b>."

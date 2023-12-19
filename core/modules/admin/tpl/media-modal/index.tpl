@@ -42,8 +42,7 @@
                     <!-- tab buttons -->
                     <ul class="flex list-none flex-col flex-wrap pl-0 w-12" role="tablist" data-te-nav-ref>
                         <li role="presentation" class="text-center w-12">
-                            <a href="#tab_media_library" 
-                                id='tab_media_library_btn' class="w-12 my-2 block border-x-0 border-b-2 border-t-0 border-transparent px-3 pb-3.5 
+                            <a href="#tab_media_library" id='tab_media_library_btn' class="w-12 my-2 block border-x-0 border-b-2 border-t-0 border-transparent px-3 pb-3.5 
                                     pt-4 text-xs font-medium uppercase leading-tight text-neutral-500 
                                     hover:isolate hover:border-transparent
                                      hover:bg-neutral-100 focus:isolate 
@@ -62,8 +61,7 @@
                             </a>
                         </li>
                         <li role="presentation" class="w-12 text-center">
-                            <a href="#tab_media_embed" 
-                                :class="mode==='select' && 'opacity-50 pointer-events-none'"
+                            <a href="#tab_media_embed" :class="mode==='select' && 'opacity-50 pointer-events-none'"
                                 @click="if (mode != 'select') mode='embed'" title="[#text Embed external media#]" class="w-12 my-2 block border-x-0 border-b-2 border-t-0 border-transparent 
                                 px-3 pb-3.5 pt-4 text-xs font-medium uppercase leading-tight
                                  text-neutral-500 
@@ -98,28 +96,21 @@
                                     [#media-side-panel#]
                                 </div>
                             </div>
-
                         </div>
 
                         <div class="hidden opacity-100 transition-opacity duration-150 ease-linear data-[te-tab-active]:block"
                             id="tab_media_embed" role="tabpanel" aria-labelledby="tab_media_embed">
 
-                            <div class="flex flex-wrap flex-col-reverse sm:flex-row sm:flex-nowrap">
-
-                                <div class="grow p-4 md:p-6 lg:p-8">
-                                    [#embed_media_content#]
-                                </div>
-                                <div class="flex-none w-[300px] p-2 mx-auto sm:p-4 bg-neutral-200">
-
+                            <div class="w-full p-4 md:p-6 lg:p-8">
+                                <div id="media_modal_embed_options">
+                                    [#embed_vimeo#]
+                                    [#embed_youtube#]
+                                    [#embed_img#]
                                 </div>
                             </div>
-
                         </div>
-
                     </div>
-
                 </div>
-
             </div>
 
 
@@ -137,6 +128,10 @@
                 <button type="button" class="[#btn-class-primary#] ml-2" :disabled="!file_info" x-show="mode==='select'"
                     @click="set_media">
                     [#text Select#]
+                </button>
+                <button type="button" class="[#btn-class-primary#] ml-2" :disabled="!can_embed()"
+                    x-show="mode==='embed'" @click="embed_media">
+                    [#text Embed media#]
                 </button>
             </div>
         </div>

@@ -21,7 +21,8 @@ if (nb_edit_insert_media) {
   nb_edit_insert_media.addEventListener("click", (e) => {
     if (nb.media_alpine) {
       nb.media_alpine.filter();
-      nb.media_alpine.mode = 'insert';
+      nb.media_alpine.mode = "insert";
+      nb.media_alpine.reset_tab();
     }
     nb.edit.store_caret_pos();
   });
@@ -166,6 +167,25 @@ const alpine_media_insert = function () {
 
       nb.edit.restore_caret_pos();
       nb.edit.insert_html(html);
+      m.hide();
+    },
+    embed_media() {
+      //used for medium editor
+      if (!this.embed_info || !this.embed_info.active) {
+        return;
+      }
+      const embed_data_el = document.querySelector(
+        "#media_modal_embed_options div[data-nb-embed=" +
+          this.embed_info.active +
+          "]"
+      );
+      const m = te.Modal.getInstance(nb_modal_insert_media);
+      if (m && embed_data_el) {
+        nb.edit.restore_caret_pos();
+        const html = embed_data_el.innerHTML.trim().replaceAll(/:(\w+)="(.+?)"/g,'');
+        console.log('html to embed', html);
+        nb.edit.insert_html(html);
+      }
       m.hide();
     },
     ...nb.media_library,
