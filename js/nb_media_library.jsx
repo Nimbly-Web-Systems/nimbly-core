@@ -5,6 +5,24 @@ var nb_media_library = {
     first: 0,
     last: 0,
     file_info: null,
+    embed_info: {
+        active: 'vimeo',
+        vimeo: {
+            id: null,
+            height: 360,
+            width: 640,
+            mode: 'responsive',
+            hash: null
+        },
+        youtube: {
+            id: null,
+            width: 640,
+            height: 360
+        },
+        extimg: {
+            url: null
+        }
+    },
     files: [],
     unfiltered: [],
     allowed_types: [],
@@ -15,7 +33,7 @@ var nb_media_library = {
             window.nb.media_modal.el = nb_modal_insert_media;
             window.nb.media_alpine = this;
             window.addEventListener('show.te.modal', this.handle_modal_show);
-        } 
+        }
     },
     fetch_media() {
         nb.api.get(nb.base_url + "/api/v1/.files_meta").then((data) => {
@@ -36,7 +54,7 @@ var nb_media_library = {
             this.files = this.unfiltered.filter((x) => {
                 const t = this._type(x);
                 return allowed_types.includes(t);
-            })    
+            })
         }
         this.set_page(this.current_page);
     },
@@ -71,7 +89,7 @@ var nb_media_library = {
     file_type(ix) {
         const f = typeof ix === 'undefined' ? this.file_info : this.page[ix];
         return this._type(f);
-        
+
     },
     _type(f) {
         if (f && f.type.startsWith("image")) {
@@ -124,6 +142,19 @@ var nb_media_library = {
     },
     select_media(ix) {
         this.file_info = this.page[ix];
+    },
+    can_embed() {
+        if (this.embed_info.active) {
+            switch (this.embed_info.active) {
+                case 'youtube':
+                    return !!this.embed_info.youtube.id;
+                case 'vimeo':
+                    return !!this.embed_info.vimeo.id;
+                case 'extimg':
+                    return !!this.embed_info.extimg.url;
+            }
+        }
+        return false;
     },
     delete_file(uuid) {
         nb.api.delete(nb.base_url + "/api/v1/.files/" + uuid).then((data) => {

@@ -10,6 +10,7 @@ RUN apt-get -y install apache2
 RUN apt-get -y install php 
 RUN apt-get -y install php-mbstring php-gd php-gmp php-curl 
 RUN apt-get -y install libapache2-mod-php
+RUN apt-get -y install gettext
 
 # Add scripts and configuration files
 ADD apache2.conf /etc/apache2/apache2.conf
