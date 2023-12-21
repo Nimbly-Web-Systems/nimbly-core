@@ -6,12 +6,10 @@
 [#set language=en#]
 [#set body-classes=#]
 [#set html-classes="[#logged-in#]"#]
-[#set page-title=#]
 [#set head=#]
 [#set footer=#]
 [#set header=#]
 [#set main=#]
-[#set head-scripts=#]
 [#init#]
 <!doctype html>
 <html class="[#html-classes#] scroll-smooth" lang="[#language#]">
@@ -21,7 +19,6 @@
         [#fonts#]
         [#stylesheets#]
         [#head#]
-        [#head-scripts#]
         [#favicon#]
     </head>
     <body class="[#body-classes#]">

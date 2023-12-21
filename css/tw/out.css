@@ -3314,8 +3314,8 @@ textarea.form-control.is-invalid {
   margin-right: 12px;
 }
 
-.mr-\[1px\] {
-  margin-right: 1px;
+.mr-\[2px\] {
+  margin-right: 2px;
 }
 
 .mr-\[6px\] {
@@ -3750,6 +3750,10 @@ textarea.form-control.is-invalid {
   width: 160px;
 }
 
+.w-\[180px\] {
+  width: 180px;
+}
+
 .w-\[1em\] {
   width: 1em;
 }
@@ -3945,6 +3949,10 @@ textarea.form-control.is-invalid {
 
 .basis-auto {
   flex-basis: auto;
+}
+
+.border-collapse {
+  border-collapse: collapse;
 }
 
 .origin-\[0_0\] {
@@ -4658,6 +4666,11 @@ textarea.form-control.is-invalid {
 .border-neutral-400 {
   --tw-border-opacity: 1;
   border-color: rgb(163 163 163 / var(--tw-border-opacity));
+}
+
+.border-neutral-700 {
+  --tw-border-opacity: 1;
+  border-color: rgb(64 64 64 / var(--tw-border-opacity));
 }
 
 .border-neutral-950 {
@@ -5760,6 +5773,10 @@ textarea.form-control.is-invalid {
 
 .opacity-0 {
   opacity: 0;
+}
+
+.opacity-10 {
+  opacity: 0.1;
 }
 
 .opacity-100 {
@@ -7035,6 +7052,11 @@ form .medium-editor-element[data-medium-focused] {
   color: rgb(250 250 250 / var(--tw-text-opacity));
 }
 
+.active\:text-neutral-800:active {
+  --tw-text-opacity: 1;
+  color: rgb(38 38 38 / var(--tw-text-opacity));
+}
+
 .active\:text-white:active {
   --tw-text-opacity: 1;
   color: rgb(255 255 255 / var(--tw-text-opacity));
@@ -7772,6 +7794,11 @@ form .medium-editor-element[data-medium-focused] {
 :is(.dark .dark\:border-\[\#dc4c64\]) {
   --tw-border-opacity: 1;
   border-color: rgb(220 76 100 / var(--tw-border-opacity));
+}
+
+:is(.dark .dark\:border-neutral-200) {
+  --tw-border-opacity: 1;
+  border-color: rgb(229 229 229 / var(--tw-border-opacity));
 }
 
 :is(.dark .dark\:border-neutral-400) {

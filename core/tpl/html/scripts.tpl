@@ -6,6 +6,7 @@ window.nb = {
         file_deleted: "[#text File deleted#]",
         record_added: "[#text Added record#]",
         record_updated: "[#text Updated record#]",
+        profile_updated: "[#text Updated profile#]",
         medium_editor_placeholder: "[#text Type here#]",
         saved: "[#text Saved#]",
         unsaved_changes: "[#text You have unsaved changed. Are you sure you want to leave this page and discard your changes?#]",
