@@ -9,7 +9,7 @@
         class="flex flex-shrink-0 items-center justify-between rounded-t-md border-b border-solid border-neutral-100 border-opacity-100 p-4">
         <!--Modal title-->
         <h5 class="text-xl font-medium leading-normal text-neutral-800" id="modal_settings_label">
-          Instellingen
+          [#text Page settings#]
         </h5>
         <!--Close button-->
         <button type="button"

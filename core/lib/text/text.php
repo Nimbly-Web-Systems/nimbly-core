@@ -7,7 +7,7 @@ function text_sc($params)
     } else {
         $languages = [''];
     }
-    $path = $GLOBALS['SYSTEM']['file_base'] . 'ext/data/.i18n/text.';
+    $path = $GLOBALS['SYSTEM']['file_base'] . 'ext/data/.i18n/bundle.';
     $key = implode(' ', $params);
     static $results = [];
     if (isset($results[$key])) {

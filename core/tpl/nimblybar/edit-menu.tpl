@@ -32,7 +32,7 @@
         <li class='relative'>
             [#if nb-skip-insert-media=(empty) tpl=media-btn#]
 
-            [nop #feature-cond manage-content tpl=html-btn#]
+            [#nop #feature-cond manage-content tpl=html-btn#]
 
 
             <button id="nb_edit_save" disabled data-te-ripple-init data-te-ripple-color="light"

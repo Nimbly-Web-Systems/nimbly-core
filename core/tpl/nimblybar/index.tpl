@@ -16,7 +16,7 @@
 
     <ul class="pt-3 relative" data-te-sidenav-menu-ref>
         <li class="h-[30px] block">
-            <div class="flex items-center truncate w-full gap-2">
+            <div class="flex items-center w-full gap-2">
                 <button class="inline-block rounded text-white w-[30px] h-[30px]
                 hover:bg-clight" data-te-sidenav-link-ref aria-haspopup="true" id="nb_nav_toggler">
                     <svg aria-hidden="true" focusable="false" data-prefix="fas" data-icon="bars"
@@ -66,18 +66,58 @@
                     </svg>
                 </button>
 
-
-                <div class="[#if api_nb_bar_slim=(not-empty) echo=hidden#] h-[30px] w-[30px] rounded truncate ml-auto mr-[1px]"
-                    data-te-sidenav-slim="false">
-                    <a class="flex items-center  justify-center h-[30px] w-[30px] text-white cursor-pointer hover:bg-clight"
-                        href="[#base-url#]/logout">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.0"
-                            stroke="currentColor" class="w-6 h-6">
-                            <title>[#text Logout#]</title>
+                <div class="[#if api_nb_bar_slim=(not-empty) echo=hidden#] relative ml-auto mr-[2px] h-[30px]"
+                    data-te-dropdown-ref data-te-sidenav-slim="false">
+                    <button id="nb_account_btn" data-te-dropdown-toggle-ref aria-expanded="false" class="text-white rounded w-[30px] h-[30px]
+                hover:bg-clight" aria-haspopup="true">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                            stroke="currentColor" data-slot="icon" class="w-6 h-6 ml-[3px]">
+                            <title>[#text Account#]</title>
                             <path stroke-linecap="round" stroke-linejoin="round"
-                                d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9" />
+                                d="M17.982 18.725A7.488 7.488 0 0 0 12 15.75a7.488 7.488 0 0 0-5.982 2.975m11.963 0a9 9 0 1 0-11.963 0m11.963 0A8.966 8.966 0 0 1 12 21a8.966 8.966 0 0 1-5.982-2.275M15 9.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
                         </svg>
-                    </a>
+                    </button>
+                    <ul class="absolute z-[1000] w-[180px] float-left m-0 hidden min-w-max list-none overflow-hidden rounded-lg border-none bg-neutral-50 bg-clip-padding text-left text-base shadow-lg dark:bg-neutral-700 [&[data-te-dropdown-show]]:block"
+                        aria-labelledby="nb_account_btn" data-te-dropdown-menu-ref>
+                        <li >
+                            <p class="text-xs text-neutral-500 pt-4 pb-2 px-4">
+                                [#text Logged in as#] <br />
+                                <span class="text-neutral-700">[#username#]</span>
+                            </p>
+                        </li>
+                        <hr
+                            class="my-2 h-0 border border-t-0 border-solid border-neutral-700 opacity-10 dark:border-neutral-200" />
+                        
+                        <li>
+                            <a class="flex items-center w-full whitespace-nowrap bg-transparent p-2 text-sm font-normal
+                             text-neutral-700 hover:bg-clight/20 active:text-neutral-800 active:no-underline disabled:pointer-events-none disabled:bg-transparent disabled:text-neutral-400 dark:text-neutral-200 dark:hover:bg-neutral-600"
+                                href="[#base-url#]/nb-admin/profile" data-te-dropdown-item-ref>
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                    stroke-width="1.5" stroke="currentColor" data-slot="icon" class="w-6 h-6 mr-2">
+                                    <title>[#text Account#]</title>
+                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                        d="M17.982 18.725A7.488 7.488 0 0 0 12 15.75a7.488 7.488 0 0 0-5.982 2.975m11.963 0a9 9 0 1 0-11.963 0m11.963 0A8.966 8.966 0 0 1 12 21a8.966 8.966 0 0 1-5.982-2.275M15 9.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                                </svg>
+                                [#text Profile#]</a>
+                        </li>
+                        <hr
+                            class="my-2 h-0 border border-t-0 border-solid border-neutral-700 opacity-10 dark:border-neutral-200" />
+                        <li>
+                            <a class="flex items-center flex-row w-full whitespace-nowrap bg-transparent p-2 
+                                text-sm font-normal text-neutral-700 hover:bg-clight/20 active:text-neutral-800 active:no-underline disabled:pointer-events-none disabled:bg-transparent disabled:text-neutral-400 dark:text-neutral-200 dark:hover:bg-neutral-600"
+                                href="[#base-url#]/logout" data-te-dropdown-item-ref>
+
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                    stroke-width="1.5" stroke="currentColor" data-slot="icon" class="w-6 h-6 mr-2">
+                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                        d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15m3 0 3-3m0 0-3-3m3 3H9" />
+                                </svg>
+
+                                [#text Logout#]
+
+                            </a>
+                        </li>
+                    </ul>
                 </div>
             </div>
         </li>
