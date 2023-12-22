@@ -1,5 +1,5 @@
 <!-- Sidenav -->
-[#module admin#]
+[#module admin user#]
 <nav id="nb-bar" class="group fixed right-0 top-0 z-[1035]  font-primary
         h-screen w-60 -translate-x-full overflow-hidden bg-cnormal 
         shadow-[0_4px_12px_0_rgba(0,0,0,0.07),_0_2px_4px_rgba(0,0,0,0.05)] 
@@ -174,6 +174,7 @@
                         [#text Media Library#]
                     </a>
                 </li>
+                [#feature-cond list_shortcodes tpl=menu-shortcodes-item#]
                 [#get-user-resources#]
                 [#repeat data.user-resources tpl=menu-resource-item#]
             </ul>

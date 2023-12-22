@@ -146,7 +146,7 @@ nb_edit.enable_img = function (eimg) {
     eimg.setAttribute('data-nb-edit-img-value', img_uuid);
     if (eimg.querySelectorAll('button[data-te-toggle=modal]').length === 0) {
         eimg.insertAdjacentHTML('beforeend', document.getElementById('nb_edit_img_btn').innerHTML);
-        eimg.querySelector('button[data-te-toggle=modal').addEventListener('click', function () {
+        eimg.querySelector('button[data-te-toggle=modal]').addEventListener('click', function () {
             nb.media_alpine.mode = 'select';
             nb.media_alpine.filter(['img']);
             nb.media_alpine.reset_tab();

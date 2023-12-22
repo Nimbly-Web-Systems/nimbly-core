@@ -1,14 +1,18 @@
 <?php
 
 /*
- * Accept route if it follows the pattern /thumb/img-uuid/*
+ * Accept route if it follows the pattern /img/(id)/*
  */
+
+ var_dump('here');
+ exit();
 
 router_deny();
 $parts = $GLOBALS['SYSTEM']['uri_parts'];
 if (count($parts) < 2 || $parts[0] !== 'img') {
     return;
 }
+
 $uuid = $parts[1];
 load_library("data");
 if (!data_exists(".files", $uuid)) {
@@ -29,6 +33,8 @@ if (isset($headers['If-Modified-Since']) && strtotime($headers['If-Modified-Sinc
     header('Last-Modified: '. gmdate('D, d M Y H:i:s', $t).' GMT', true, 304);
     exit();
 }
+
+
 
 // prepare thumbnail creation
 $size = $parts[count($parts) - 1] ?? 240;
@@ -83,11 +89,13 @@ if (empty($file)) {
     return;
 }
 
+$meta = data_read(".files_meta", $uuid);
+
 // return thumb with cache headers
 $cache_time = 315360000; //10 years
 header("Expires: " . gmdate("D, d M Y H:i:s", $t + $cache_time) . " GMT");
 header('Last-Modified: '. gmdate('D, d M Y H:i:s', $t).' GMT');
 header('Content-Length: '. filesize($file));
-header('Content-Type: image/jpg');
+header('Content-Type: ' . $meta['type'] ?? 'image/jpg');
 readfile($file);
 exit();
