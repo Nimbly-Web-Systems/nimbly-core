@@ -11,5 +11,7 @@
 </section>
 
 <section class="bg-neutral-100 px-2 sm:px-4 md:px-6 lg:px-8 pb-10">
-	[#debug#]
+	<div class="text-neutral-800 pt-4 bg-neutral-50 rounded-2xl shadow p-4 md:p-6">
+		[#debug#]
+	</div>
 </section>

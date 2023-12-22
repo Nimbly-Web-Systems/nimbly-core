@@ -1,6 +1,7 @@
 <?php
 
-function thumbnail_sc($params) {
+function thumbnail_sc($params)
+{
     $uuid = get_param_value($params, "uuid", current($params));
     $mode = get_param_value($params, "mode", "h");
     $size = get_param_value($params, "size", 240) + 0;
@@ -8,7 +9,8 @@ function thumbnail_sc($params) {
     return thumbnail_create($uuid, $size, $ratio, $mode);
 }
 
-function thumbnail_sharpen($img) {
+function thumbnail_sharpen($img)
+{
     static $sharpen = false;
     static $divisor = false;
     if (!$sharpen || !$divisor) {
@@ -22,7 +24,8 @@ function thumbnail_sharpen($img) {
     imageconvolution($img, $sharpen, $divisor, 0);
 }
 
-function thumbnail_create($uuid, $size, $ratio=0, $mode='h') {
+function thumbnail_create($uuid, $size, $ratio = 0, $mode = 'h')
+{
 
     $MAX_UPSCALE = 1.0; // @todo: make this dynamic
 
@@ -30,6 +33,7 @@ function thumbnail_create($uuid, $size, $ratio=0, $mode='h') {
 
     $org_path = sprintf("%s/.files/%s", $GLOBALS['SYSTEM']['data_base'], $uuid);
     list($org_w, $org_h, $org_type) = @getimagesize($org_path);
+    exit($org_type);
     switch ($org_type) {
         case IMAGETYPE_GIF:
             $org_img = imagecreatefromgif($org_path);
@@ -55,7 +59,7 @@ function thumbnail_create($uuid, $size, $ratio=0, $mode='h') {
 
     //2: Calc thumbnail size given height and aspect ratio
     $no_ratio = empty($ratio) || ($ratio < 0) || (abs($asp - $ratio) < 0.01) || $mode === 'f';
-    $a = $no_ratio? $asp : $ratio;
+    $a = $no_ratio ? $asp : $ratio;
 
     if ($mode === 'f') {
         if ($size < $max_w) {
@@ -66,13 +70,13 @@ function thumbnail_create($uuid, $size, $ratio=0, $mode='h') {
         }
         $w = $size;
         $h = $size / $asp;
-    } else if ($mode === 'w')  {
+    } else if ($mode === 'w') {
         $w = $size;
         $h = $size / $a;
     } else { // defaults to mode 'h'
         $h = $size;
-        $w = $a * $size; 
-    } 
+        $w = $a * $size;
+    }
 
     if ($no_ratio === false) {
         if ($ratio > $asp) {
@@ -88,7 +92,7 @@ function thumbnail_create($uuid, $size, $ratio=0, $mode='h') {
 
     if ($w > $max_w) {
         $w = $max_w;
-        $h = $w / $a;  
+        $h = $w / $a;
     }
 
     if ($h > $max_h) {
@@ -96,22 +100,41 @@ function thumbnail_create($uuid, $size, $ratio=0, $mode='h') {
         $w = $a * $h;
     }
 
+    //3. handling based on image type, e.g. transparency and store to static cache
 
     $thumb_img = imagecreatetruecolor($w, $h);
-    imagecopyresampled($thumb_img, $org_img, 0, 0, $org_x, $org_y, $w, $h, $org_w, $org_h);
-
-    thumbnail_sharpen($thumb_img);
-    $wm = get_variable('watermark_image', false);
-    if (!empty($wm) && ($w > 640 || $h > 640)) {
-        thumbnail_stamp($thumb_img, $wm, $w, $h, get_variable('watermark_position', 'rightbottom'));
-    }
-
-    //3: save image to cache
     $static_path = $GLOBALS['SYSTEM']['file_base'] . 'ext/static/_thumb_/' . $GLOBALS['SYSTEM']['request_uri'];
     @mkdir(dirname($static_path), 0750, true);
 
-    if (imagejpeg($thumb_img, $static_path, 85)) {
-        $result = $static_path;
+    switch ($org_type) {
+        case IMAGETYPE_GIF:
+            imagecopyresampled($thumb_img, $org_img, 0, 0, $org_x, $org_y, $w, $h, $org_w, $org_h);
+            $bg = imagecolorallocate($thumb_img, 0, 0, 0);
+            imagecolortransparent($thumb_img, $bg);
+            if (imagegif($thumb_img, $static_path)) {
+                $result = $static_path;
+            }
+            break;
+        case IMAGETYPE_JPEG:
+            imagecopyresampled($thumb_img, $org_img, 0, 0, $org_x, $org_y, $w, $h, $org_w, $org_h);
+            thumbnail_sharpen($thumb_img);
+            $wm = get_variable('watermark_image', false);
+            if (!empty($wm) && ($w > 640 || $h > 640)) {
+                thumbnail_stamp($thumb_img, $wm, $w, $h, get_variable('watermark_position', 'rightbottom'));
+            }
+            if (imagejpeg($thumb_img, $static_path, 85)) {
+                $result = $static_path;
+            }
+            break;
+        case IMAGETYPE_PNG:
+            imagealphablending($thumb_img, true);
+            imagesavealpha($thumb_img, true);
+            imagecopyresampled($thumb_img, $org_img, 0, 0, $org_x, $org_y, $w, $h, $org_w, $org_h);
+            thumbnail_sharpen($thumb_img);
+            if (imagepng($thumb_img, $static_path)) {
+                $result = $static_path;
+            }
+            break;
     }
 
     //4: clean up and return result
@@ -120,7 +143,8 @@ function thumbnail_create($uuid, $size, $ratio=0, $mode='h') {
     return $result;
 }
 
-function thumbnail_stamp($img, $wm_path, $w, $h, $position) {
+function thumbnail_stamp($img, $wm_path, $w, $h, $position)
+{
     if (!@file_exists($wm_path)) {
         return 0;
     }
@@ -149,6 +173,6 @@ function thumbnail_stamp($img, $wm_path, $w, $h, $position) {
     } else {
         imagecopyresampled($img, $wm_img, $x, $y, 0, 0, $max_w, $max_h, $ww, $wh);
     }
-    
+
     return $ww;
 }

@@ -9,7 +9,11 @@ function get_img_html_sc($params)
     set_variable('img-uuid', $uuid);
     $img_meta = data_read('.files_meta', $uuid);
     if (empty($img_meta)) {
-        return;
+        $img_meta = [
+            'width' => 1,
+            'height' => 1,
+        ];
+        $uuid = '(empty)';
     }
     $w = intval($img_meta['width']);
     set_variable('img-height', $img_meta['height']);
