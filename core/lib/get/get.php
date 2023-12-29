@@ -49,6 +49,12 @@ function get_sc($params, $default = null) {
         echo $result;
         return;
     }
+
+    if (get_param_value($params, "json", false)) {
+        echo json_encode($result, JSON_UNESCAPED_UNICODE);
+        return;
+    }
+
     return $result;
 }
 

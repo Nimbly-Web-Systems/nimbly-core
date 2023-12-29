@@ -31,9 +31,9 @@ function thumbnail_create($uuid, $size, $ratio = 0, $mode = 'h')
 
     // 1. Create thumbnail from original
 
+    $result = "";
     $org_path = sprintf("%s/.files/%s", $GLOBALS['SYSTEM']['data_base'], $uuid);
     list($org_w, $org_h, $org_type) = @getimagesize($org_path);
-    exit($org_type);
     switch ($org_type) {
         case IMAGETYPE_GIF:
             $org_img = imagecreatefromgif($org_path);
@@ -44,9 +44,15 @@ function thumbnail_create($uuid, $size, $ratio = 0, $mode = 'h')
         case IMAGETYPE_PNG:
             $org_img = imagecreatefrompng($org_path);
             break;
+        case IMAGETYPE_BMP:
+            $org_img = imagecreatefrombmp($org_path);
+            break;
+        default:
+            load_library('system-messages');
+            system_message('unknown image type: ' . $org_type);
+            return $result;
     }
-    $result = "";
-
+    
     if (empty($org_img)) {
         return $result;
     }
@@ -107,31 +113,35 @@ function thumbnail_create($uuid, $size, $ratio = 0, $mode = 'h')
     @mkdir(dirname($static_path), 0750, true);
 
     switch ($org_type) {
-        case IMAGETYPE_GIF:
-            imagecopyresampled($thumb_img, $org_img, 0, 0, $org_x, $org_y, $w, $h, $org_w, $org_h);
-            $bg = imagecolorallocate($thumb_img, 0, 0, 0);
-            imagecolortransparent($thumb_img, $bg);
-            if (imagegif($thumb_img, $static_path)) {
-                $result = $static_path;
-            }
-            break;
         case IMAGETYPE_JPEG:
+        case IMAGETYPE_BMP:
             imagecopyresampled($thumb_img, $org_img, 0, 0, $org_x, $org_y, $w, $h, $org_w, $org_h);
             thumbnail_sharpen($thumb_img);
-            $wm = get_variable('watermark_image', false);
+            /*$wm = get_variable('watermark_image', false);
             if (!empty($wm) && ($w > 640 || $h > 640)) {
                 thumbnail_stamp($thumb_img, $wm, $w, $h, get_variable('watermark_position', 'rightbottom'));
-            }
-            if (imagejpeg($thumb_img, $static_path, 85)) {
+            }*/
+            if (imageavif($thumb_img, $static_path, 65)) {
                 $result = $static_path;
             }
             break;
         case IMAGETYPE_PNG:
-            imagealphablending($thumb_img, true);
-            imagesavealpha($thumb_img, true);
+            imagealphablending($thumb_img, false);
             imagecopyresampled($thumb_img, $org_img, 0, 0, $org_x, $org_y, $w, $h, $org_w, $org_h);
             thumbnail_sharpen($thumb_img);
-            if (imagepng($thumb_img, $static_path)) {
+            imagesavealpha($thumb_img, true);
+
+            if (imagewebp($thumb_img, $static_path, 85)) {
+                $result = $static_path;
+            }
+            break;
+        case IMAGETYPE_GIF:
+            imagealphablending($thumb_img, false);
+            imagecopyresampled($thumb_img, $org_img, 0, 0, $org_x, $org_y, $w, $h, $org_w, $org_h);
+            $bg = imagecolorallocate($thumb_img, 0, 0, 0);
+            imagecolortransparent($thumb_img, $bg);
+            imagesavealpha($thumb_img, true);
+            if (imagewebp($thumb_img, $static_path)) {
                 $result = $static_path;
             }
             break;

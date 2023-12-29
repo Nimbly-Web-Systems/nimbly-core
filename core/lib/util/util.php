@@ -17,6 +17,17 @@ function rrmdir($dir) {
     return rmdir($dir);
 }
 
+function _rmdirr($dir) {
+    foreach (glob($dir . '/*') as $file) {
+        if (is_dir($file)) {
+            _rmdirr($file);
+        } else {
+            unlink($file);
+        }
+    }
+    @rmdir($dir);
+}
+
 function rmfiles($dir) {
     if (is_dir($dir) !== true) {
         return unlink($dir);

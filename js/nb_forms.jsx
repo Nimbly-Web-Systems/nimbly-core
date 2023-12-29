@@ -21,6 +21,9 @@ var nb_forms = {
         nb.media_modal._set_media = this._set_media;
         nb.media_modal.field = field_name;
     },
+    init_multi_image_field(field_name, value) {
+        console.log('init_multi_image_field', field_name, value);
+    },
     _set_media(field_name, field_data) {
         // note: in this function 'this' refs the media modal, not this alpine object
         nb.media_modal.me.form_data[field_name] = field_data.uuid;
