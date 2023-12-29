@@ -291,8 +291,17 @@ nb_edit.set_img = function (eimg, data) {
     const img = eimg.querySelector('img');
     img.setAttribute('width', data.width || '');
     img.setAttribute('height', data.height || '');
-    img.style.maxWidth = 'min(' + data.width + 'px, 100vw)';
-    img.style.maxHeight = 'min(' + data.height + 'px, 100vh)';
+    if (data.orientation === 'landscape') {
+        img.style.maxWidth = 'min(' + data.width + 'px, 100vw)';
+        img.style.maxHeight = null;
+        img.style.height = 'auto';
+        img.style.width = null;
+    } else if (data.orientation === 'portrait') {
+        img.style.maxHeight = 'min(' + data.height + 'px, 100vh)';
+        img.style.maxWidth = null;
+        img.style.width = 'auto';
+        img.style.height = null;
+    }
     document.getElementById('nb_edit_save').removeAttribute('disabled');
 }
 

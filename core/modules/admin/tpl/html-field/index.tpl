@@ -1,7 +1,7 @@
 <div class="relative my-6">
     <div data-nb-edit="[#item.key#]" 
         data-nb-edit-options='{"buttons":"[#get item.buttons default=bold,italic#]"}' class="prose">
-        [#get record.[#item.key]#]
+        [#get record.[#item.key#]#]
     </div>
     <label class="pointer-events-none absolute left-3 top-0 mb-0 
     bg-neutral-50
