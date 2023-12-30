@@ -41,16 +41,23 @@ function get_sc($params, $default = null) {
         }
     }
 
+    $echo = get_param_value($params, "echo", false);
+    $json = get_param_value($params, "json", false);
+
     if (empty($result)) {
         $result = get_param_value($params, "empty", $result);
+        if ($echo || $json) {
+            echo $result;
+            return;
+        }
     }
 
-    if (get_param_value($params, "echo", false)) {
+    if ($echo) {
         echo $result;
         return;
     }
 
-    if (get_param_value($params, "json", false)) {
+    if ($json) {
         echo json_encode($result, JSON_UNESCAPED_UNICODE);
         return;
     }
