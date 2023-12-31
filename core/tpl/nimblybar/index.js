@@ -4,7 +4,12 @@ const nb_edit_insert_media = document.getElementById("nb_edit_insert_media");
 const nb_modal_settings = document.getElementById("nb-modal-settings");
 
 document.getElementById("nb_nav_toggler").addEventListener("click", () => {
-  te.Sidenav.getInstance(nb_bar).toggleSlim();
+  const nb_bar_te = te.Sidenav.getInstance(nb_bar);
+  if (window.innerWidth < 768) {
+    nb_bar_te.toggle();
+  } else {
+    nb_bar_te.toggleSlim();
+  }
 });
 
 document.getElementById("nb_edit_toggler").addEventListener("click", (e) => {
@@ -43,6 +48,13 @@ nb_bar.addEventListener("expand.te.sidenav", (event) => {
 
 nb_bar.addEventListener("collapse.te.sidenav", (event) => {
   nb_bar.classList.remove("px-2", "data-[te-sidenav-slim='false']:px-2");
+});
+
+nb_bar.addEventListener("show.te.sidenav", (event) => {
+  const nb_bar_te = te.Sidenav.getInstance(nb_bar);
+  if (nb_bar_te._slimCollapsed) {
+    nb_bar_te.toggleSlim();
+  }
 });
 
 nb_bar.show_edit_menu = function (show = true) {
