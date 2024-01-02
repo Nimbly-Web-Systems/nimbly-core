@@ -7,7 +7,7 @@
 <section class="bg-neutral-100 px-2 sm:px-4 md:px-6 lg:px-8 pb-10">
     <form autocomplete="false" x-data="form_edit('[#data.resource#]', '[#data.uuid#]')" 
         @submit.prevent="submit"
-        class="bg-neutral-50 rounded-2xl p-10 shadow-md">
+        class="bg-neutral-50 rounded-2xl p-2 sm:p-4 md:p-6 lg:p-8 xl:p-10 shadow-md">
         <div class="max-w-lg mx-auto">
         [#set nb_form_edit=true overwrite#]
         [#form-key add_resource_[#data.resource#]#]

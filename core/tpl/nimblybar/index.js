@@ -204,6 +204,13 @@ const alpine_media_insert = function () {
   }));
 };
 
+const nb_bar_init = function() {
+  if (window.innerWidth < 768) {
+    const nb_bar_te = te.Sidenav.getInstance(nb_bar);
+    nb_bar_te.toggle();
+  }
+}
+
 const alpine_modal_settings = function () {
   Alpine.data("modal_settings", (page_id) => ({
     page_id: page_id,
@@ -228,5 +235,6 @@ typeof Alpine === "undefined"
   ? document.addEventListener("alpine:initializing", () => {
       alpine_media_insert();
       alpine_modal_settings();
+      nb_bar_init();
     })
-  : alpine_media_insert() && alpine_modal_settings();
+  : alpine_media_insert() && alpine_modal_settings() && nb_bar_init();
