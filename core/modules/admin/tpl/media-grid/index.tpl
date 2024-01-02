@@ -1,7 +1,11 @@
 <div
     class="grid grid-cols-2 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 md:gap-6 lg:gap-8">
     <template x-for="(file, index) in page">
-        <div :key="file.uuid" class="overflow-hidden cursor-pointer shadow bg-neutral-50 aspect-square text-neutral-500"
+        <div :key="file.uuid" 
+            class="overflow-hidden cursor-pointer shadow bg-neutral-50 aspect-square text-neutral-500 
+                transition-all
+                hover:outline-clight/50 hover:rounded hover:outline hover:outline-4"
+            :class="file_info && file_info.uuid==file.uuid? 'outline-clight/50 outline-4 outline rounded' : 'outline-none'"
             @click="select_media(index)">
 
             <!-- image -->

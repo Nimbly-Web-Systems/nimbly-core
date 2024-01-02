@@ -86,7 +86,8 @@ nb_edit.on_blur = function (e) {
     if (!insert_media_btn) {
         return;
     }
-    if (e.relatedTarget != insert_media_btn) {
+    const nb_bar_toggle_btn = document.getElementById('nb-bar-toggler');
+    if (e.relatedTarget != insert_media_btn && e.relatedTarget != nb_bar_toggle_btn) {
         insert_media_btn.setAttribute('disabled', true);
         nb_edit.active_editor = null;
     }

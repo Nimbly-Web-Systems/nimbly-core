@@ -5901,6 +5901,14 @@ textarea.form-control.is-invalid {
   outline-style: solid;
 }
 
+.outline-4 {
+  outline-width: 4px;
+}
+
+.outline-clight\/50 {
+  outline-color: rgb(128 186 236 / 0.5);
+}
+
 .blur {
   --tw-blur: blur(8px);
   filter: var(--tw-blur) var(--tw-brightness) var(--tw-contrast) var(--tw-grayscale) var(--tw-hue-rotate) var(--tw-invert) var(--tw-saturate) var(--tw-sepia) var(--tw-drop-shadow);
@@ -6584,6 +6592,10 @@ form .medium-editor-element[data-medium-focused] {
   cursor: pointer;
 }
 
+.hover\:rounded:hover {
+  border-radius: 0.25rem;
+}
+
 .hover\:rounded-\[50\%\]:hover {
   border-radius: 50%;
 }
@@ -6749,6 +6761,18 @@ form .medium-editor-element[data-medium-focused] {
 .hover\:outline-none:hover {
   outline: 2px solid transparent;
   outline-offset: 2px;
+}
+
+.hover\:outline:hover {
+  outline-style: solid;
+}
+
+.hover\:outline-4:hover {
+  outline-width: 4px;
+}
+
+.hover\:outline-clight\/50:hover {
+  outline-color: rgb(128 186 236 / 0.5);
 }
 
 .hover\:ease-in-out:hover {
@@ -8210,6 +8234,10 @@ form .medium-editor-element[data-medium-focused] {
     margin-bottom: 0px;
   }
 
+  .md\:hidden {
+    display: none;
+  }
+
   .md\:w-\[330px\] {
     width: 330px;
   }
@@ -8324,6 +8352,10 @@ form .medium-editor-element[data-medium-focused] {
 @media (min-width: 1280px) {
   .xl\:grid-cols-4 {
     grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .xl\:p-10 {
+    padding: 2.5rem;
   }
 
   .xl\:px-0 {
