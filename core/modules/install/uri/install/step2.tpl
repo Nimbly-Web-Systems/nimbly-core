@@ -93,7 +93,7 @@
             motion-reduce:transition-none
             data-[te-input-state-active]:placeholder:opacity-100 
             [&:not([data-te-input-placeholder-active])]:placeholder:opacity-0" id="pepper"
-        name="pepper" value="[#sticky pepper default=[salt#]]" placeholder="[#text Pepper code#]" />
+        name="pepper" value="[#sticky pepper default=[#salt#]#]" placeholder="[#text Pepper code#]" />
     <label for="pepper" class="pointer-events-none absolute left-3 top-0 mb-0 
             max-w-[90%] origin-[0_0] truncate pt-[0.37rem] leading-[2.15] 
             text-neutral-600 transition-all duration-200 ease-out 
