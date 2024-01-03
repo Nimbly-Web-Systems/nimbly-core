@@ -117,7 +117,7 @@ function load_user_features($name) {
 }
 
 function persist_login_error() {
-    $GLOBALS['SYSTEM']['validation_errors']['_global'][] = "[text validate_invalid_email_or_password]";
+    $GLOBALS['SYSTEM']['validation_errors']['_global'][] = "[#text validate_invalid_email_or_password#]";
     $_SESSION['username'] = 'anonymous';
     return false;
 }
