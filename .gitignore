@@ -1,7 +1,7 @@
 /ext/
 /contrib/
 /node_modules/
-css/tw/out.css
+/css/tw/out.css
 .sass-cache/
 .htaccess
 .DS_Store
