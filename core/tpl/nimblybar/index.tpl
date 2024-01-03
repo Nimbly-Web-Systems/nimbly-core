@@ -11,7 +11,7 @@
         [&[data-te-sidenav-slim-collapsed='true'][data-te-sidenav-slim='true']]:[display:unset]" data-te-sidenav-init
     data-te-sidenav-mode-breakpoint-side="md" data-te-sidenav-hidden="false" data-te-sidenav-mode="over"
     data-te-sidenav-slim="[#if api_nb_bar_slim=(empty) echo=false#][#if api_nb_bar_slim=(not-empty) echo=true#]"
-    data-te-sidenav-right="true" data-te-sidenav-slim-width="30" data-te-sidenav-content="#main"
+    data-te-sidenav-right="true" data-te-sidenav-slim-width="30" data-te-sidenav-content="#page"
     data-te-sidenav-slim-collapsed="[#if api_nb_bar_slim=(empty) echo=false#][#if api_nb_bar_slim=(not-empty) echo=true#]">
 
     <ul class="pt-3 relative" data-te-sidenav-menu-ref>

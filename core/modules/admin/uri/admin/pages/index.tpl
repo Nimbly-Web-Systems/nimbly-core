@@ -1,5 +1,0 @@
-[#module user admin#]
-[#access feature=list_pages,(any)_pages#]
-[#set page-title="Pages"#]
-[#set html-classes="admin-page" append#]
-[#admin-html#]

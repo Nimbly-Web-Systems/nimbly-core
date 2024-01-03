@@ -20,6 +20,15 @@
                           disabled:text-neutral-400"
                         href="[#base-url#]/nb-admin/media" data-te-dropdown-item-ref>[#text Manage uploads#]</a>
                 </li>
+                <li>
+                    <form action="[#url#]" method="post" accept-charset="utf-8" id="ccache_thumbs">
+                        [#form-key ccache_thumbs#]
+                        <button type="submit" class="block w-full whitespace-nowrap bg-transparent px-4 py-2 text-sm font-normal
+                         text-neutral-50 hover:bg-purple-700 active:text-white 
+                         active:no-underline disabled:pointer-events-none disabled:bg-transparent
+                          disabled:text-neutral-400">[#text Clear cache#] ([#fmt [#disk-space-thumbs#] bytes#])</a>
+                    </form>
+                </li>
             </ul>
         </div>
     </div>

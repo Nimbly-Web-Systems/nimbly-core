@@ -1,5 +1,0 @@
-[#module articles#]
-[#set page-title="[#get record.title#]"#]
-[#set resource-name="artciles"#]
-[#set resource-uuid=[#get record.uuid#]#]
-[#html#]
