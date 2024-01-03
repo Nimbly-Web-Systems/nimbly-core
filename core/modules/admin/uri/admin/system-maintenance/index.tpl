@@ -1,6 +1,0 @@
-[#module user admin forms disk-space#]
-[#access feature=system-maintenance#]
-[#set page-title="System maintenance"#]
-[#set html-classes="admin-page" append#]
-[#post#]
-[#admin-html#]
