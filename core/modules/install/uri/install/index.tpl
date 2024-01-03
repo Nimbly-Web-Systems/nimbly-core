@@ -2,7 +2,7 @@
 [#check-fresh-install#]
 [#if not fresh_install="yes" redirect=errors/404#]
 [#set step=1#]
-[#set page-title="Installation Step [step#]/3"]
+[#set page-title="Installation Step [#step#]/3"#]
 [#session-test#]
 [#if session_ok=pass tpl=post#]
 [#set site-name="Nimbly Core"#]

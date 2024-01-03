@@ -83,7 +83,7 @@ msgid "gitignore_created_fail"
 msgstr "Could not create or overwrite gitignore file. Please create or modify the file manually."
 
 msgid "user_created_ok"
-msgstr "Created admin account with email <strong>[get sticky.email]</strong>."
+msgstr "Created admin account."
 
 msgid "user_created_fail"
 msgstr "Could not create admin account. Please review file writing permissions to data directory."
