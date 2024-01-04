@@ -3,7 +3,7 @@
         <div class="text-lg font-primary font-medium truncate text-neutral-900">
             [#text Media Library#]
         </div>
-        <div class="relative [#feature-cond manage-users echo_else=hidden#]" data-te-dropdown-ref>
+        <div class="relative [#feature-cond manage-content echo_else=hidden#]" data-te-dropdown-ref>
             <button class="rounded-full hover:bg-neutral-100 p-2 -mt-1" data-te-dropdown-toggle-ref>
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5">
                     <path

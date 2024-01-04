@@ -1,5 +1,5 @@
 [#header json#]
 [#module admin user data forms api#]
-[#access feature=pull_repos#]
+[#access feature=manage-content#]
 [#json2post#]
 [#git-status#]

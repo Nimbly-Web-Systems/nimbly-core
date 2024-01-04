@@ -35,12 +35,12 @@
             </template>
 
 
-            <p class="text-xs font-bold mt-2" x-text="file_info.name"></p>
+            <p class="text-xs font-bold mt-2 break-words" x-text="file_info.name"></p>
             <p class="text-xs mb-2 flex justify-between text-neutral-400">
                 <template x-if="file_info.width">
                     <span x-text="`${file_info.width}x${file_info.height}`">---</span>
                 </template>
-                <span x-text="file_info.size.fileSize(1) || ''">---</span>
+                <span x-text="file_info.size? file_info.size.fileSize(1) : ''">---</span>
             </p>
             <a :href="`[#base-url#]/download/${file_info.uuid}`" :download="file_info.name" class="inline-block cursor-pointer rounded border border-neutral-400
           hover:border-cnormal px-1 pb-0.5 pt-1
