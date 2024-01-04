@@ -32,7 +32,7 @@ function git_status_sc() {
     } else if (stripos($sh_result, 'your branch is behind')) {
         $response['error'] = false;
         $response['status'] = 'behind';
-        preg_match('/(by )(\d)( commits)/', $sh_result, $matches);
+        preg_match('/(by )(\d)( commit[s]*)/', $sh_result, $matches);
         $response['updates'] = $matches[2] ?? 0;
     }
 
