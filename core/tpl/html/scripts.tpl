@@ -1,4 +1,4 @@
-
+<script>
 window.nb = {
     base_url: "[#base-url#]",
     text: {
@@ -13,8 +13,15 @@ window.nb = {
         file_added: "[#text File uploaded#]"
     }
 };
-[#include [#base-path#]js/bundle/tw-elements.umd.min.js#]
-[#feature-cond edit tpl=edit-script#]
-[#include [#base-path#]js/bundle/app.js#]
+</script>
+
+<script src="[#base-url#]/app.js"></script>
+
+[#feature-cond edit echo="<script src='[#base-url#]/medium-editor.min.js'></script>"#]
+
+<script>
 [#include [#uri-path#]/index.js#]
 Alpine.start();
+</script>
+
+<script src="[#base-url#]/tw-elements.umd.min.js"></script>
