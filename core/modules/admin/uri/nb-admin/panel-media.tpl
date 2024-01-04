@@ -18,7 +18,7 @@
                          text-neutral-50 hover:bg-purple-700 active:text-white 
                          active:no-underline disabled:pointer-events-none disabled:bg-transparent
                           disabled:text-neutral-400"
-                        href="[#base-url#]/nb-admin/media" data-te-dropdown-item-ref>[#text Manage uploads#]</a>
+                        href="[#base-url#]/nb-admin/media" data-te-dropdown-item-ref>[#text View files#]</a>
                 </li>
                 <li>
                     <form action="[#url#]" method="post" accept-charset="utf-8" id="ccache_thumbs">
