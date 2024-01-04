@@ -22,7 +22,7 @@ Alpine.data('updates', () => ({
     },
     async pull_core() {
         this.busy = true;
-        nb.api.get('api/v1/git-status').then(data => {
+        nb.api.get('api/v1/git-pull').then(data => {
             this.core_updates = data.error? this.core_updates : 0;
             this.busy = false;
         });
