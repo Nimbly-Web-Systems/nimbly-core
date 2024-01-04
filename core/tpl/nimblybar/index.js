@@ -76,7 +76,7 @@ const alpine_media_insert = function () {
         name: this.file_info.name,
         title: this.file_info.title || this.file_info.name,
         description:
-          this.file_info.description || this.file_info.size.fileSize(1),
+          this.file_info.description || (this.file_info.size? this.file_info.size.fileSize(1) : ''),
       });
     },
     insert_vid_html() {

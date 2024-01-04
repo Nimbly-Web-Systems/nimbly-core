@@ -15,7 +15,7 @@ function feature_cond_sc($params) {
     $echo = get_param_value($params, "echo", null);
     $echo_else = get_param_value($params, "echo_else", null);
 
-    if (empty($features) || (empty($tpl) && empty($echo)) || !session_resume()) {
+    if (empty($features) || (empty($tpl) && empty($echo) && empty($echo_else) && empty($tpl_else)) || !session_resume()) {
         return;
     }
 
