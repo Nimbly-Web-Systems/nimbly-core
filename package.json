@@ -7,7 +7,7 @@
     "lib": "lib"
   },
   "scripts": {
-    "js-build": "cp ./node_modules/medium-editor/dist/js/medium-editor.min.js ./js/bundle/medium-editor.min.js && cp ./node_modules/tw-elements/dist/js/tw-elements.umd.min.js ./js/bundle/tw-elements.umd.min.js && esbuild js/index.jsx --bundle --minify --outfile=js/bundle/app.js",
+    "js-build": "cp ./node_modules/medium-editor/dist/js/medium-editor.min.js ext/static/medium-editor.min.js && cp ./node_modules/tw-elements/dist/js/tw-elements.umd.min.js ext/static/tw-elements.umd.min.js && esbuild js/index.jsx --bundle --minify --outfile=ext/static/app.js",
     "css-build": "cp ./node_modules/medium-editor/dist/css/medium-editor.min.css ./css/medium-editor.min.css && esbuild css/index.css --bundle --minify --outfile=ext/static/app.css",
     "tw-build": "npx tailwindcss -i ./css/tw/in.css -o ./css/tw/out.css",
     "text-build": "find -name text.po | xargs msgcat > ext/data/.i18n/bundle.po",

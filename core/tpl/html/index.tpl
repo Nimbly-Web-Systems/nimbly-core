@@ -35,8 +35,6 @@
                 [#footer#]
             </footer>
         </div>
-        <script> 
-            [#scripts#]
-        </script>
+        [#scripts#]
     </body>
 </html>

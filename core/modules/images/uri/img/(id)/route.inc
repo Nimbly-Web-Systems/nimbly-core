@@ -85,11 +85,18 @@ if (empty($file)) {
 
 $meta = data_read(".files_meta", $uuid);
 
+$type = $meta['type'] ?? 'image/jpg';
+if ($type === 'image/jpeg' || $type === 'image/bmp' || $type === 'image/jpg') {
+	$type = 'image/avif';
+} else if ($type === 'image/png') {
+	$type = 'image/webp';
+}
+
 // return thumb with cache headers
 $cache_time = 315360000; //10 years
 header("Expires: " . gmdate("D, d M Y H:i:s", $t + $cache_time) . " GMT");
 header('Last-Modified: '. gmdate('D, d M Y H:i:s', $t).' GMT');
 header('Content-Length: '. filesize($file));
-header('Content-Type: ' . $meta['type'] ?? 'image/jpg');
+header('Content-Type: ' . $type);
 readfile($file);
 exit();
