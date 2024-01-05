@@ -1,5 +1,5 @@
 <div data-te-modal-init x-data="modal_settings('[#url-key#]')"
-  class="fixed left-0 top-0 z-[1055] hidden h-full right-[30px] overflow-y-auto overflow-x-hidden outline-none"
+  class="fixed left-0 top-0 z-[1054] hidden h-full right-[30px] overflow-y-auto overflow-x-hidden outline-none"
   id="nb-modal-settings" tabindex="-1" aria-labelledby="modal_settings" aria-hidden="true">
   <div data-te-modal-dialog-ref
     class="pointer-events-none relative w-auto h-[calc(100%-50px)] translate-y-[-50px] opacity-0 transition-all duration-300 ease-in-out min-[576px]:mx-auto min-[576px]:mt-7 min-[576px]:max-w-[500px] min-[786px]:max-w-[710px]">
