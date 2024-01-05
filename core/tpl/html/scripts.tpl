@@ -15,9 +15,9 @@ window.nb = {
 };
 </script>
 
-<script src="[#base-url#]/app.js"></script>
-
 [#feature-cond edit echo="<script src='[#base-url#]/medium-editor.min.js'></script>"#]
+
+<script src="[#base-url#]/app.js"></script>
 
 <script>
 [#include [#uri-path#]/index.js#]
