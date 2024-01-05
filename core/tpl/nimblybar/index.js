@@ -76,7 +76,8 @@ const alpine_media_insert = function () {
         name: this.file_info.name,
         title: this.file_info.title || this.file_info.name,
         description:
-          this.file_info.description || (this.file_info.size? this.file_info.size.fileSize(1) : ''),
+          this.file_info.description ||
+          (this.file_info.size ? this.file_info.size.fileSize(1) : ""),
       });
     },
     insert_vid_html() {
@@ -194,8 +195,10 @@ const alpine_media_insert = function () {
       const m = te.Modal.getInstance(nb_modal_insert_media);
       if (m && embed_data_el) {
         nb.edit.restore_caret_pos();
-        const html = embed_data_el.innerHTML.trim().replaceAll(/:(\w+)="(.+?)"/g,'');
-        console.log('html to embed', html);
+        const html = embed_data_el.innerHTML
+          .trim()
+          .replaceAll(/:(\w+)="(.+?)"/g, "");
+        console.log("html to embed", html);
         nb.edit.insert_html(html);
       }
       m.hide();
@@ -204,17 +207,42 @@ const alpine_media_insert = function () {
   }));
 };
 
-const nb_bar_init = function() {
+const nb_bar_init = function () {
   if (window.innerWidth < 768) {
     const nb_bar_te = te.Sidenav.getInstance(nb_bar);
     nb_bar_te.toggle();
   }
-}
+};
 
 const alpine_modal_settings = function () {
   Alpine.data("modal_settings", (page_id) => ({
     page_id: page_id,
     settings: {},
+
+    select_image(field_name, field_ix = undefined) {
+      // @todo: unduplicate
+      nb.media_alpine.mode = "select";
+      nb.media_alpine.filter(["img"]);
+      nb.media_alpine.reset_tab();
+      nb.media_modal.me = this; //remember this
+      nb.media_modal._set_media = this._set_media;
+      nb.media_modal.field = field_name;
+      nb.media_modal.field_ix = field_ix;
+    },
+    _set_media(field_name, field_data) {
+      // note: in this function 'this' refs the media modal, not this alpine object
+      // @todo: unduplicate
+      const ix = Number(nb.media_modal.field_ix);
+      if (Number.isInteger(ix)) {
+        nb.media_modal.me.settings[field_name][ix] = field_data.uuid;
+      } else {
+        nb.media_modal.me.settings[field_name] = field_data.uuid;
+      }
+    },
+    delete_image(field_name, field_ix = undefined) {
+      this.settings[field_name] = "";
+    },
+
     save() {
       nb.api
         .put(nb.base_url + "/api/v1/.config/" + this.page_id, this.settings)
