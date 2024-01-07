@@ -52,7 +52,7 @@ AddOutputFilterByType DEFLATE application/x-javascript
     FileETag None
 
     # 480 weeks
-    <FilesMatch ".(ico|pdf|webm|mp4|jpg|jpeg|png|gif|js|css|svg)$">
+    <FilesMatch ".(ico|pdf|webm|mp4|jpg|jpeg|png|gif|js|css|svg|webp|avif)$">
     Header set Cache-Control "max-age=290304000, public"
     </FilesMatch>
 </IfModule>
