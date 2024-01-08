@@ -32,6 +32,12 @@ if (false === file_put_contents($htaccess_file, $htaccess_content)) {
     set_variable('htaccess_ok', 'ok');
 }
 
+/*
+ * Create theme file
+ */
+
+copy(realpath(dirname(__FILE__)) . '/tailwind.theme.js', $GLOBALS['SYSTEM']['file_base'] . '/ext/tailwind.theme.js');
+
 /* 
  * Persist site name in .config resource
  */
