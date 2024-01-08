@@ -19,7 +19,7 @@ function git_pull_sc() {
     $pull_result = shell_exec($pull_cmd . " 2>&1");
     $response['status'] .= $pull_result;
 
-    if (stripos($pull_result, 'updating')) {
+    if (stripos($pull_result, 'updating') !== false) {
         $response['error'] = false;
     }
 
