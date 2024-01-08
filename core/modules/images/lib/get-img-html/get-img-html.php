@@ -27,12 +27,14 @@ function get_img_html_sc($params)
         "xxl" => 1536
     ];
     static $sizes = [120, 180, 240, 320, 480, 640, 800, 960, 1120, 1280, 1440, 1600, 1760, 1920];
+    $img_mode = get_param_value($params, 'mode', 'w');
+    set_variable('img-mode', $img_mode);
     $img_url = base_url_sc() . '/img/';
     foreach ($sizes as $i => $size) {
         if ($i > 0 && $size > $w) {
             break;
         }
-        $size_options[] = $img_url . $uuid . '/' . $size . 'w ' . $size . 'w';
+        $size_options[] = $img_url . $uuid . '/' . $size . $img_mode . ' ' . $size . 'w';
     }
     set_variable('img-srcset', join(', ', $size_options));
 
@@ -51,6 +53,7 @@ function get_img_html_sc($params)
         array_unshift($resp_size_list, sprintf('(min-width: %dpx) %svw', $tw_breakpoints[$bp], $vw));
     }
 
+    set_variable('img-class', get_param_value($params, 'class', 'w-full'));
     set_variable('img-sizes', join(', ', $resp_size_list));
     return run_buffered(dirname(__FILE__) . '/image.tpl');
 }
