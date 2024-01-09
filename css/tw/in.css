@@ -11,6 +11,11 @@
     @apply text-clink no-underline;
   }
 
+  .prose.prose-dark a {
+    @apply text-neutral-50 no-underline;
+  }
+  
+
   .prose a:hover {
     @apply underline;
   }
