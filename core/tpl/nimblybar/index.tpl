@@ -201,7 +201,7 @@
     </a>
 </nav>
 
-<button class="md:hidden rounded-l fixed top-[12px] right-0 z-[1034] w-[30px] h-[30px] bg-cnormal hover:bg-clight" 
+<button class="md:hidden rounded-l fixed top-[40px] right-0 z-[1034] w-[30px] h-[30px] bg-cnormal/50 hover:bg-clight" 
     id="nb-bar-toggler"
     data-te-sidenav-toggle-ref
     data-te-target="#nb-bar" aria-controls="#nb-bar" aria-haspopup="true">
