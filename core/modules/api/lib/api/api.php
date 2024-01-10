@@ -128,7 +128,7 @@ function api_check_csrf(&$data) {
 
 function resource_get($resource) { // get all
     $modified = data_modified($resource);
-    header_not_modified($modified);
+    http_header_not_modified($modified);
     $result = data_read($resource);
     return json_result([$resource => $result, 'count' => count($result)], 200, $modified);
 }
@@ -188,7 +188,7 @@ function resource_delete($resource) { // delete all
 
 function resource_id_get($resource, $uuid) { // read one
     $modified = data_modified($resource, $uuid);
-    header_not_modified($modified);
+    http_header_not_modified($modified);
     return json_result(array($resource => array($uuid => data_read($resource, $uuid)), 'count' => 1), 200, $modified);
 }
 

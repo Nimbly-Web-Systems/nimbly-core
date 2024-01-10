@@ -1,13 +1,13 @@
 <?php
 
 /**
- * @doc `[header (type)]` outputs a http header, possible header types: css, js, json, woff, 403, 404, 500, csv
+ * @doc `[#http-header (type)#]` outputs a http header, possible header types: css, js, json, woff, 403, 404, 500, csv
  */
-function header_sc($params) {
-    header_sent($type = current($params), $cached = end($params));
+function http_header_sc($params) {
+    http_header_sent($type = current($params), $cached = end($params));
 }
 
-function header_sent($type, $cached=false, $modified=0) {
+function http_header_sent($type, $cached=false, $modified=0) {
     if ($cached !== false) {
         $t = $modified === 0? time() : $modified;
         $headers = apache_request_headers();
@@ -35,7 +35,7 @@ function header_sent($type, $cached=false, $modified=0) {
     }
 }
 
-function header_not_modified($modified) {
+function http_header_not_modified($modified) {
     $headers = apache_request_headers();
     if (!isset($headers['If-Modified-Since'])) {
         return;

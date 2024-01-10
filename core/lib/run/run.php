@@ -237,6 +237,7 @@ function run_single_sc($sc_call) {
     /*
      * 3. If the sc function exists, run it and done.
      */
+    
     $function_name = str_replace("-", "_", $function_id) . "_sc";
     if (function_exists($function_name)) {
         run_template($function_name($params));
@@ -249,7 +250,10 @@ function run_single_sc($sc_call) {
      */
     if (count($params) == 0) {
 
+        
+
         $path_tpl = find_template($function_id);
+
         if ($path_tpl !== false) {
             add_sc_level($function_id, $path_tpl);
             run($path_tpl);
