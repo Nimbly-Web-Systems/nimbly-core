@@ -1,6 +1,6 @@
 <?php
 
-load_library('header');
+load_library('http-header');
 
 function json_sc($params) {
     $code = get_param_value($params, 'code', current($params));
@@ -16,7 +16,7 @@ function json_result($result, $code = 200, $modified = 0) {
     if (empty($code)) {
         return $result;
     }
-    header_sent('json', true, $modified);
+    http_header_sent('json', true, $modified);
     http_response_code($code);
     exit(json_encode($result, JSON_UNESCAPED_UNICODE));
 }
