@@ -47,12 +47,18 @@ function thumbnail_create($uuid, $size, $ratio = 0, $mode = 'h')
         case IMAGETYPE_BMP:
             $org_img = imagecreatefrombmp($org_path);
             break;
+        case IMAGETYPE_WEBP:
+            $org_img = imagecreatefromwebp($org_path);
+            break;
+        case IMAGETYPE_AVIF:
+            $org_img = imagecreatefromavif($org_path);
+            break;
         default:
             load_library('system-messages');
             system_message('unknown image type: ' . $org_type);
             return $result;
     }
-    
+
     if (empty($org_img)) {
         return $result;
     }
@@ -113,6 +119,7 @@ function thumbnail_create($uuid, $size, $ratio = 0, $mode = 'h')
     @mkdir(dirname($static_path), 0750, true);
 
     switch ($org_type) {
+        case IMAGETYPE_AVIF:
         case IMAGETYPE_JPEG:
         case IMAGETYPE_BMP:
             imagecopyresampled($thumb_img, $org_img, 0, 0, $org_x, $org_y, $w, $h, $org_w, $org_h);
@@ -125,6 +132,7 @@ function thumbnail_create($uuid, $size, $ratio = 0, $mode = 'h')
                 $result = $static_path;
             }
             break;
+        case IMAGETYPE_WEBP:
         case IMAGETYPE_PNG:
             imagealphablending($thumb_img, false);
             imagecopyresampled($thumb_img, $org_img, 0, 0, $org_x, $org_y, $w, $h, $org_w, $org_h);
