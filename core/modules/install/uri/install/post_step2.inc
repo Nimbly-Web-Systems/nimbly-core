@@ -33,10 +33,11 @@ if (false === file_put_contents($htaccess_file, $htaccess_content)) {
 }
 
 /*
- * Create theme file
+ * Create theme files
  */
 
 copy(realpath(dirname(__FILE__)) . '/tailwind.theme.js', $GLOBALS['SYSTEM']['file_base'] . '/ext/tailwind.theme.js');
+touch($GLOBALS['SYSTEM']['file_base'] . '/ext/theme.css');
 
 /* 
  * Persist site name in .config resource
