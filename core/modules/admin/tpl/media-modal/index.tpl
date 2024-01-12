@@ -149,6 +149,10 @@
         srcset="{{srcset}}" sizes="{{sizes}}" height="{{height}}" width="{{width}}">
 </template>
 
+<template id="nb_media_insert_svg_tpl">
+    <img class="w-full" src="{{src}}">
+</template>
+
 <template id="nb_media_insert_doc_tpl">
     <a href="[#base_url#]/download/{{uuid}}" class="cursor-pointer" download="{{name}}"
         title="{{description}}">{{title}}</a>

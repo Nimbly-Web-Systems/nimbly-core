@@ -27,6 +27,13 @@
                 </figure>
             </template>
 
+            <template x-if="file_type() === 'svg'">
+                <figure class="h-[230px] w-[230px] mx-auto flex items-center justify-center bg-neutral-50 shadow-md">
+                    <img :src="`[#base_url#]/img/${file_info.uuid}`" 
+                        :class="file_info.aspect_ratio < 1.0? 'max-h-full w-auto' : 'max-w-full h-auto'">
+                </figure>
+            </template>
+
             <template x-if="file_type() === 'vid'">
                 <video width="230" height="230" controls loading="lazy"
                     class="h-[230px] w-[230px] mx-auto flex items-center justify-center bg-neutral-50 shadow-md">

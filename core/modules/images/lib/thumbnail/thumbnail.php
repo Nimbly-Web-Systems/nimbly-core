@@ -34,6 +34,9 @@ function thumbnail_create($uuid, $size, $ratio = 0, $mode = 'h')
     $result = "";
     $org_path = sprintf("%s/.files/%s", $GLOBALS['SYSTEM']['data_base'], $uuid);
     list($org_w, $org_h, $org_type) = @getimagesize($org_path);
+    if (empty($org_type)) {
+        $org_type = @mime_content_type($org_path); 
+    }
     switch ($org_type) {
         case IMAGETYPE_GIF:
             $org_img = imagecreatefromgif($org_path);
@@ -52,6 +55,9 @@ function thumbnail_create($uuid, $size, $ratio = 0, $mode = 'h')
             break;
         case IMAGETYPE_AVIF:
             $org_img = imagecreatefromavif($org_path);
+            break;
+        case 'image/svg+xml':
+            return $org_path;
             break;
         default:
             load_library('system-messages');

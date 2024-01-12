@@ -95,7 +95,9 @@ var nb_media_library = {
         if (f === undefined) {
             return '---';
         }
-        if (f && f.type.startsWith("image")) {
+        if (f && f.type.startsWith("image/svg")) {
+            return "svg";
+        } else if (f && f.type.startsWith("image")) {
             return "img";
         } else if (f && f.type.startsWith("video")) {
             return "vid";
