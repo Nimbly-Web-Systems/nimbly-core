@@ -149,7 +149,7 @@ nb_edit.enable_img = function (eimg) {
         eimg.insertAdjacentHTML('beforeend', document.getElementById('nb_edit_img_btn').innerHTML);
         eimg.querySelector('button[data-te-toggle=modal]').addEventListener('click', function () {
             nb.media_alpine.mode = 'select';
-            nb.media_alpine.filter(['img']);
+            nb.media_alpine.filter(['img', 'svg']);
             nb.media_alpine.reset_tab();
             nb.media_modal._set_media = nb_edit.set_img;
             nb.media_modal.field = eimg;

@@ -88,6 +88,11 @@ const alpine_media_insert = function () {
         height: this.file_info.height,
       });
     },
+    insert_svg_html() {
+      return nb.populate_template("nb_media_insert_svg_tpl", {
+        src: nb.base_url + "/img/" + this.file_info.uuid
+      })
+    },
     insert_img_html() {
       const img_aspect = this.file_info.aspect;
       const img_mode = "w";
@@ -176,6 +181,8 @@ const alpine_media_insert = function () {
         html = this.insert_doc_html();
       } else if (file_type === "vid") {
         html = this.insert_vid_html();
+      } else if (file_type === "svg") {
+        html = this.insert_svg_html();
       }
 
       nb.edit.restore_caret_pos();
@@ -222,7 +229,7 @@ const alpine_modal_settings = function () {
     select_image(field_name, field_ix = undefined) {
       // @todo: unduplicate
       nb.media_alpine.mode = "select";
-      nb.media_alpine.filter(["img"]);
+      nb.media_alpine.filter(["img", "svg"]);
       nb.media_alpine.reset_tab();
       nb.media_modal.me = this; //remember this
       nb.media_modal._set_media = this._set_media;

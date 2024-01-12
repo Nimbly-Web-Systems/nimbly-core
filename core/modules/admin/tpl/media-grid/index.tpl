@@ -16,6 +16,13 @@
                 </figure>
             </template>
 
+            <!-- svg vector image -->
+            <template x-if="file_type(index) === 'svg'">
+                <figure class="flex items-center justify-center h-full">
+                    <img :src="`[#base-url#]/img/${file.uuid}`" class="object-scale-down max-h-full">
+                </figure>
+            </template>
+
             <!-- video -->
             <template x-if="file_type(index) === 'vid'">
                 <div class="relative w-full h-full">
