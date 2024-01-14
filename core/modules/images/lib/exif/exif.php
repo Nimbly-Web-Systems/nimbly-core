@@ -121,6 +121,13 @@ function exif_date($exif_data, $format) {
         return null;
     }
     $date_in = date_create_from_format("Y:m:d H:i:s", $ed); //2016:12:07 12:12:59
+    if ($date_in === false) {
+        return $date_in = strtotime($ed);
+    }
+    if ($date_in === false) {
+        return null;
+    }
+
     $result = date_format($date_in, $format);
     return $result;
 }
