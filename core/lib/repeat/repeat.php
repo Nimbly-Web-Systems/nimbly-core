@@ -68,7 +68,9 @@ function repeat_sc($params) {
         $excluded = @in_array($item, $exclude_ls) || (is_array($item) && @in_array(key($item), $exclude_ls));
         if ($excluded) {
             continue;
-        } else if (is_string($item)) {
+        } 
+        set_variable($var_id . '.ix', $k);
+        if (is_string($item)) {
             set_variable($var_id . '.key', $item);
         } else if (is_int($item)) {
             set_variable($var_id . '.key', $item);

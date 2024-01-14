@@ -3,7 +3,9 @@
     x-init='form_data.[#item.key#]=[#get record.[#item.key#] json#]'
     x-model="form_data.[#item.key#]">
     <option value="(empty)">[#text None#]</option>
+    [#repeat item.options tpl=option_item var=option#]
     [#data [#item.resource#]#]
-    [#repeat data.[#item.resource#] tpl=option var=option#]
+    [#repeat data.[#item.resource#] tpl=option_data var=option#]
 </select>
 <label data-te-select-label-ref>[#field-name name="[#item.name#]"#]</label>
+
