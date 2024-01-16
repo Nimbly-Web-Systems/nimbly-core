@@ -1,5 +1,5 @@
-[#active-if nb-admin/shortcodes#]
-<li class='relative [#if active-if=(not-empty) echo="bg-clight/20 font-bold"#]'>
+[#is-url nb-admin/shortcodes#]
+<li class='relative [#if is-url=(not-empty) echo="bg-clight/20 font-bold"#]'>
     <a class="flex h-6 cursor-pointer items-center truncate rounded-[5px] py-4 pl-[42px] pr-2 text-[0.8rem] text-neutral-100 
                         outline-none transition 
                         duration-300 ease-linear hover:bg-clight/40 hover:text-neutral-50 hover:outline-none focus:bg-slate-50 
