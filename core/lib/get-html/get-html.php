@@ -35,7 +35,7 @@ function get_html_sc($params)
     $base_url = $GLOBALS['SYSTEM']['uri_base'];
     if (strlen($base_url) > 1) {
         // insert base_url in any src="/img/(uuid)" with base-url
-        $html = preg_replace('/[", ](\/img\/)[0-9a-z]{20,32}\//i', $base_url . "/img/", $html);
+        $html = preg_replace('/[", ](\/img\/)[0-9a-z]{20,32}\//i', $base_url . "img/", $html);
     }
 
     // replace legacy lazy loading images
