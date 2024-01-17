@@ -30,12 +30,12 @@ function get_html_sc($params)
     }
 
     // remove any base_url like src="/(base-url)/img/(uuid)
-    preg_replace('/="\/([\w]{2,})\/img\/[0-9a-z]{20,32}\//i', '', $html);
+    preg_replace('/[" ,]\/([\w]{2,})\/img\/[0-9a-z]{20,32}\//i', '', $html);
 
     $base_url = $GLOBALS['SYSTEM']['uri_base'];
     if (strlen($base_url) > 1) {
         // insert base_url in any src="/img/(uuid)" with base-url
-        preg_replace('/="(\/img\/)[0-9a-z]{20,32}\//i', $base_url . "\/img\/", $html);
+        preg_replace('/[", ](\/img\/)[0-9a-z]{20,32}\//i', $base_url . "\/img\/", $html);
     }
 
     // replace legacy lazy loading images
