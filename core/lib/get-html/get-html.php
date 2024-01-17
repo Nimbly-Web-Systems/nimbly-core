@@ -29,6 +29,15 @@ function get_html_sc($params)
         $html = lookup_data($resource, $uuid, $field, get_param_value('default', ''));
     }
 
+    // remove any base_url like src="/(base-url)/img/(uuid)
+    preg_replace('/="\/([\w]{2,})\/img\/[0-9a-z]{20,32}\//i', '', $html);
+
+    $base_url = $GLOBALS['SYSTEM']['uri_base'];
+    if (strlen($base_url) > 1) {
+        // insert base_url in any src="/img/(uuid)" with base-url
+        preg_replace('/="(\/img\/)[0-9a-z]{20,32}\//i', $base_url . "\/img\/", $html);
+    }
+
     // replace legacy lazy loading images
     $legacy_img_sizes = get_param_value($params, 'legacy-img-sizes');
     if (!empty($legacy_img_sizes)) {
