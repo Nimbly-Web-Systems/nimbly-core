@@ -31,7 +31,7 @@ window.nb.hide_notification = function () {
     el.classList.add('hidden');
 }
 
-window.nb.populate_template = function(tpl_id, data) {
+window.nb.populate_template = function (tpl_id, data) {
     const tpl_el = document.getElementById(tpl_id);
     if (!tpl_el) {
         console.warn('template not found:', tpl_id);
