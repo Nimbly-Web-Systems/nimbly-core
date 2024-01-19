@@ -19,7 +19,7 @@ Alpine.data("form_edit", (resource_id, record_id) => ({
       .then((data) => {
         if (data.success) {
           nb.system_message(nb.text.record_updated).then((data) => {
-            window.location.href = nb.base_url + "/nb-admin/" + resource_id;
+            history.back();
           });
         } else {
           nb.notify(data.message);
