@@ -68,19 +68,13 @@ function if_action($action) {
 
 function if_condition($key, $value, $negate = false) {
     $result = null;
+    $eval = get_sc($key);
     if ($value === "(not-empty)") {
-        $eval = get_sc($key);
         $result = !empty($eval);
     } else if ($value === "(empty)") {
-        $eval = get_sc($key);
-        $result = empty($eval);
+        $result = $eval === $value || empty($eval);
     } else {
-        $eval = get_sc($key);
         $result = $eval == $value;
     }
-    if ($negate === false) {
-        return $result;
-    } else {
-        return !$result;
-    }
+    return $negate? !$result : $result;
 }
