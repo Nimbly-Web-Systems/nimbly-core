@@ -1,7 +1,6 @@
 <?php
 
 function set_sc($params) {
-    global $SYSTEM;
     $if_exists = false;
     if (isset($params["append"])) {
         $if_exists = get_param_value($params, "append", false);
