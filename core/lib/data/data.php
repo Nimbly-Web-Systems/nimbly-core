@@ -21,10 +21,20 @@ function data_sc($params) {
         return;
     }
     $op = get_param_value($params, "op", "read");
+
     $uuid = get_param_value($params, "uuid", null);
     $var_id = get_param_value($params, "var", null);
-    $function_name = sprintf("data_%s", $op);
-    $result = call_user_func($function_name, $resource, $uuid);
+
+    if ($op === "read") {
+        $fields = get_param_value($params, "fields");
+        if ($fields) {
+            $fields = explode(',', $fields);
+        }
+        $result = data_read($resource, $uuid, $fields);
+    } else {
+        $function_name = sprintf("data_%s", $op);
+        $result = call_user_func($function_name, $resource, $uuid);
+    }
 
     $sort = get_param_value($params, "sort", false);
     if ($sort) {
