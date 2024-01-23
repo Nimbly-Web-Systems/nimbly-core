@@ -55,5 +55,7 @@ function get_img_html_sc($params)
     $class = get_param_value($params, 'class', 'w-full');
     set_variable('img-class', $class);
     set_variable('img-sizes', join(', ', $resp_size_list));
+    $lazy = get_param_value($params, 'lazy', 1);
+    set_variable('lazy-loading', empty($lazy)? '' : ' loading="lazy" ');
     return run_buffered(dirname(__FILE__) . '/image.tpl');
 }

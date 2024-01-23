@@ -63,13 +63,14 @@ function repeat_sc($params) {
 
     $var_id = get_param_value($params, "var", "item");
     $limit = get_param_value($params, "limit", 0);
+    $ix_offset = intval(get_param_value($params, "ix_offset", 0));
     $iterations = 0;
     foreach ($data as $k => $item) {
         $excluded = @in_array($item, $exclude_ls) || (is_array($item) && @in_array(key($item), $exclude_ls));
         if ($excluded) {
             continue;
         } 
-        set_variable($var_id . '.ix', $k);
+        set_variable($var_id . '.ix', intval($k) + $ix_offset);
         if (is_string($item)) {
             set_variable($var_id . '.key', $item);
         } else if (is_int($item)) {
