@@ -34,28 +34,23 @@ if (nb_edit_insert_media) {
 }
 
 nb_bar.addEventListener("expanded.te.sidenav", (event) => {
-  console.log("expanded");
   nb.api.post(nb.base_url + "/api/v1/session", { nb_bar_slim: false });
   nb_bar.show_edit_menu(nb.edit.enabled);
 });
 
 nb_bar.addEventListener("collapsed.te.sidenav", (event) => {
-  console.log("collapsed");
   nb.api.post(nb.base_url + "/api/v1/session", { nb_bar_slim: true });
 });
 
 nb_bar.addEventListener("expand.te.sidenav", (event) => {
-  console.log("expand");
   nb_bar.classList.add("px-2");
 });
 
 nb_bar.addEventListener("collapse.te.sidenav", (event) => {
-  console.log("collapse");
   nb_bar.classList.remove("px-2", "data-[te-sidenav-slim='false']:px-2");
 });
 
 nb_bar.addEventListener("show.te.sidenav", (event) => {
-  console.log("show");
   document.getElementById("nb-bar").style.visibility = null;
   const nb_bar_te = te.Sidenav.getInstance(nb_bar);
   if (nb_bar_te._slimCollapsed) {
