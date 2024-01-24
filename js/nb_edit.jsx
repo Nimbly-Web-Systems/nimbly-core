@@ -29,7 +29,11 @@ nb_edit.init = function () {
 
 nb_edit.init_editor = function (ed, as_form_field = false) {
     if (nb_edit.editors.includes(ed)) {
-        nb_edit.enable(ed);
+        if (ed._nb_plain) {
+            ed.setAttribute('contenteditable', true);
+        } else {
+            nb_edit.enable(ed);
+        }
         return;
     }
     const options = JSON.parse(ed.dataset.nbEditOptions || '{}');
@@ -39,21 +43,29 @@ nb_edit.init_editor = function (ed, as_form_field = false) {
     const placeholder = options.placeholder ?
         options.placeholder
         : nb.text.medium_editor_placeholder;
-    const plain_text = buttons.length < 1 || (buttons.length === 1 && buttons[0] === '');
-    var editor_options = plain_text ? {
-        toolbar: false
-    } : {
-        toolbar: {
-            buttons: buttons
+    ed._nb_plain = typeof options.plain === "boolean" && options.plain === true;
+
+    if (ed._nb_plain) {
+        ed.setAttribute('contenteditable', true);
+    } else {
+        const has_buttons = buttons.length > 0 && buttons[0] != '';
+        var editor_options = has_buttons ? {
+            toolbar: {
+                buttons: buttons
+            }
+        } : {
+            toolbar: false
         }
+        editor_options['placeholder'] = {
+            text: placeholder
+        };
+        var editor = new MediumEditor(ed, editor_options);
+        ed._nb_medium_editor = editor;
     }
-    editor_options['placeholder'] = {
-        text: placeholder
-    };
-    var editor = new MediumEditor(ed, editor_options);
-    ed._nb_medium_editor = editor;
+
     ed._nb_editor_options = options;
-    ed._nb_medium_editor._nb_mode = as_form_field ? 'form' : 'page';
+    ed._nb_mode = as_form_field ? 'form' : 'page';
+
     ed.addEventListener("focus", (e) => {
         nb_edit.on_focus(e);
     });
@@ -61,7 +73,7 @@ nb_edit.init_editor = function (ed, as_form_field = false) {
         nb_edit.on_blur(e);
     });
     if (!as_form_field) {
-        ed._nb_medium_editor._nb_inputs = 0;
+        ed._nb_inputs = 0;
         ed.addEventListener('input', nb_edit.on_input);
         nb_edit.editors.push(ed);
     } // else form handles everything
@@ -129,9 +141,6 @@ nb_edit.enable_editor = function (ed) {
 }
 
 nb_edit.disable_editor = function (ed) {
-    if (typeof ed._nb_medium_editor == 'undefined') {
-        return;
-    }
     ed.setAttribute('contenteditable', false);
 }
 
@@ -186,8 +195,8 @@ nb_edit.on_input = function (e) {
         return;
     }
     nb_edit.inputs++;
-    if (e.currentTarget._nb_medium_editor._nb_mode == 'page') {
-        e.currentTarget._nb_medium_editor._nb_inputs++;
+    if (e.currentTarget._nb_mode == 'page') {
+        e.currentTarget._nb_inputs++;
     }
     document.getElementById('nb_edit_save').removeAttribute('disabled');
 };
@@ -312,8 +321,8 @@ nb_edit.save = function () {
 
     /* loop through editors checking if it has changes */
     this.editors.forEach(ed => {
-        if (ed._nb_medium_editor._nb_inputs > 0) {
-            ed._nb_medium_editor._nb_inputs = 0;
+        if (ed._nb_inputs > 0) {
+            ed._nb_inputs = 0;
             nb_edit.save_resource(ed);
         }
     });
