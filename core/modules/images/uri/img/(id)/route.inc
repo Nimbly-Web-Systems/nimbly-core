@@ -82,12 +82,11 @@ if (empty($file)) {
     return;
 }
 
-
 $meta = data_read(".files_meta", $uuid);
 
 $type = $meta['type'] ?? 'image/jpg';
 if ($type === 'image/jpeg' || $type === 'image/bmp' || $type === 'image/jpg') {
-	$type = 'image/avif';
+	$type = 'image/webp'; //'image/avif'; 
 } else if ($type === 'image/png') {
 	$type = 'image/webp';
 }

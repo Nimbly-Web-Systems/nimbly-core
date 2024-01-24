@@ -134,7 +134,12 @@ function thumbnail_create($uuid, $size, $ratio = 0, $mode = 'h')
             if (!empty($wm) && ($w > 640 || $h > 640)) {
                 thumbnail_stamp($thumb_img, $wm, $w, $h, get_variable('watermark_position', 'rightbottom'));
             }*/
+            /* not yet supported in edge (grr)
             if (imageavif($thumb_img, $static_path, 65)) {
+                $result = $static_path;
+            }
+            */
+            if (imagewebp($thumb_img, $static_path, 85)) { //@todo switch to avif when available
                 $result = $static_path;
             }
             break;
