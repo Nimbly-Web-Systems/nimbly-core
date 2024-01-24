@@ -15,9 +15,9 @@ function get_img_html_sc($params)
         ];
         $uuid = '(empty)';
     }
-    $w = intval($img_meta['width']);
-    set_variable('img-height', $img_meta['height']);
-    set_variable('img-width', $img_meta['width']);
+    $w = intval($img_meta['width'] ?? '');
+    set_variable('img-height', $img_meta['height'] ?? '');
+    set_variable('img-width', $img_meta['width'] ?? '');
     $size_options = [];
     static $tw_breakpoints = [
         "sm" => 640,
