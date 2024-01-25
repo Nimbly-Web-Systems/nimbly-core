@@ -15,6 +15,18 @@ function get_img_html_sc($params)
         ];
         $uuid = '(empty)';
     }
+
+    /* legacy code to get image width and height */
+    if (!isset($img_meta['width'])) {
+        $img_file_path = sprintf("%s/.files/%s", $GLOBALS['SYSTEM']['data_base'], $uuid);
+        $size_info = getimagesize($img_file_path);
+        if ($size_info !== false && count($size_info) > 2) {
+            $img_meta['width'] = $size_info[0];
+            $img_meta['height'] = $size_info[1];
+            data_update('.files_meta', $uuid, ['width' => $size_info[0], 'height' => $size_info[1]]);
+        }
+    }
+    
     $w = intval($img_meta['width'] ?? '');
     set_variable('img-height', $img_meta['height'] ?? '');
     set_variable('img-width', $img_meta['width'] ?? '');
