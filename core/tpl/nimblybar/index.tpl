@@ -1,7 +1,7 @@
 <!-- Sidenav -->
 [#module admin user#]
 <nav id="nb-bar" class="group fixed right-0 top-0 z-[1035]  font-primary
-        h-screen w-60 -translate-x-full overflow-hidden bg-cnormal 
+        h-screen w-60 -translate-x-full overflow-hidden bg-cbar
         shadow-[0_4px_12px_0_rgba(0,0,0,0.07),_0_2px_4px_rgba(0,0,0,0.05)] 
         data-[te-sidenav-slim-collapsed='true']:w-[30px] 
         data-[te-sidenav-slim='true']:w-[30px] 
@@ -192,7 +192,7 @@
     </a>
 </nav>
 
-<button class="md:hidden rounded-l-xl fixed top-[32%] right-0 z-[1034] w-[30px] bg-cnormal/60 hover:bg-cnormal"
+<button class="md:hidden rounded-l-xl fixed top-[32%] right-0 z-[1034] w-[30px] bg-cbar/60 hover:bg-cbar"
     id="nb-bar-toggler" data-te-sidenav-toggle-ref data-te-target="#nb-bar" aria-controls="#nb-bar"
     aria-haspopup="true">
 
