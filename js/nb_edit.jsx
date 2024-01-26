@@ -59,6 +59,7 @@ nb_edit.init_editor = function (ed, as_form_field = false) {
         editor_options['placeholder'] = {
             text: placeholder
         };
+        editor_options['imageDragging'] = typeof options.media === "boolean" && options.media === true;
         var editor = new MediumEditor(ed, editor_options);
         ed._nb_medium_editor = editor;
     }

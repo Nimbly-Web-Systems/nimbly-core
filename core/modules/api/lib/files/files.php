@@ -1,18 +1,26 @@
 <?php
 
-function files_sc($params) {
+function files_sc($params)
+{
     load_library("api", "api");
     api_method_switch("files");
 }
 
-function files_get() { // get all files (list)
+function files_get()
+{ // get all files (list)
     $files = data_read(".files_meta");
     return json_result(array('files' => $files, 'count' => count($files)), 200);
 }
 
-function files_post() { // create a new file and it's meta data
+function files_post()
+{ // create a new file and it's meta data
     if (empty($_FILES) || empty($_FILES['file']['tmp_name'])) {
-        return json_result(array('message' => 'BAD_REQUEST'), 400);
+        load_library('util');
+        if (isset($_SERVER['CONTENT_LENGTH']) &&
+            (int) $_SERVER['CONTENT_LENGTH'] > max_upload_size()) {
+            return json_result(['message' => 'UPLOAD_TOO_LARGE'], 413);
+        }
+        return json_result(['message' => 'BAD_REQUEST'], 400);
     }
     $from = $_FILES['file']['tmp_name'];
     $uuid = hash_file('md5', $from); // use checksum as uuid
@@ -49,7 +57,8 @@ function files_post() { // create a new file and it's meta data
     return json_result(array('message' => 'RESOURCE_CREATE_FAILED'), 500);
 }
 
-function files_delete() {  // delete all files
+function files_delete()
+{  // delete all files
     $delete_count = data_delete('.files_meta');
     if ($delete_count !== false) {
         data_delete('.files');
@@ -64,15 +73,18 @@ function files_delete() {  // delete all files
  *  Implementation on files item:
  */
 
-function files_id_get($resource=".files_meta", $uuid) { // read one
+function files_id_get($resource = ".files_meta", $uuid)
+{ // read one
     return resource_id_get($resource, $uuid);
 }
 
-function files_id_put($resource=".files_meta", $uuid) { // update one
+function files_id_put($resource = ".files_meta", $uuid)
+{ // update one
     return resource_id_put($resource, $uuid);
 }
 
-function files_id_delete($resource=".files_meta", $uuid) { // delete one
+function files_id_delete($resource = ".files_meta", $uuid)
+{ // delete one
     if (data_delete($resource, $uuid)) {
         data_delete(".files", $uuid);
         load_library('util');
