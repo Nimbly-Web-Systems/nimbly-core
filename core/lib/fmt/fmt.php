@@ -40,7 +40,7 @@ function fmt_sc($params) {
             $result = empty($val)? $bools[1] : $bools[0];
             break;
         case 'image':
-            set_variable('_img_uuid', $val, true);
+            set_variable('_img_uuid', is_array($val)? current($val) : $val, true);
             return run_buffered(dirname(__FILE__) . '/image.tpl');
             break;
         default:
