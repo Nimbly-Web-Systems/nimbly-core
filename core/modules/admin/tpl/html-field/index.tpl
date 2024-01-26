@@ -1,6 +1,10 @@
 <div class="relative my-6">
     <div data-nb-edit="[#item.key#]" 
-        data-nb-edit-options='{"buttons":"[#get item.buttons default=bold,italic#]"}' class="prose">
+        data-nb-edit-options='{
+            "buttons":"[#get item.buttons default=bold,italic#]", 
+            "media_sizes":"[#get item.media_sizes default=#]",
+            "media": [#fmt var=item.media type=boolean boolean=true|false#]}' 
+            class="prose">
         [#get record.[#item.key#]#]
     </div>
     <label class="pointer-events-none absolute left-3 top-0 mb-0 
