@@ -1,6 +1,7 @@
 <script>
 window.nb = {
     base_url: "[#base-url#]",
+    max_upload_size: "[#max-upload-size bytes#]",
     text: {
         record_deleted: "[#text Record deleted#]",
         file_deleted: "[#text File deleted#]",

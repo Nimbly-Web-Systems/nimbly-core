@@ -1,6 +1,6 @@
 <?php 
 
 function max_upload_size_sc() {
-    load_libraries(['util', 'fmt']);
-    echo fmt_bytes(max_upload_size(), 0);
+    load_library('util');
+    echo max_upload_size();
 }
