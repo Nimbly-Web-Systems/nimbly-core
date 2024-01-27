@@ -81,10 +81,18 @@ var nb_media_library = {
             set_page(p - 1);
             return;
         }
+        this.clear_page();
         this.current_page = p;
         this.first = first + 1;
         this.last = Math.min(this.files.length, first + this.page_size);
         this.page = this.files.slice(first, first + this.page_size);
+    },
+    clear_page() {
+        // empty the image src immediately so the new images lazy load on white bg (not on previous img)
+        var imgs = document.querySelectorAll('#nb-media-grid img');
+        imgs.forEach((img_el) => {
+            img_el.src = "data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==";
+        });
     },
     file_type(ix) {
         const f = typeof ix === 'undefined' ? this.file_info : this.page[ix];
