@@ -1,4 +1,4 @@
-<div
+<div id="nb-media-grid"
     class="grid grid-cols-2 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 md:gap-6 lg:gap-8">
     <template x-for="(file, index) in page">
         <div :key="file.uuid" 
@@ -11,7 +11,8 @@
             <!-- image -->
             <template x-if="file_type(index) === 'img'">
                 <figure class="flex items-center justify-center h-full">
-                    <img :src="`[#base-url#]/img/${file.uuid}/480x480f`" :width="file.width" :height="file.height"
+                    <img src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="    
+                        :src="`[#base-url#]/img/${file.uuid}/300x300f`" :width="file.width" :height="file.height"
                         loading="lazy" class="object-scale-down max-h-full">
                 </figure>
             </template>
@@ -19,14 +20,15 @@
             <!-- svg vector image -->
             <template x-if="file_type(index) === 'svg'">
                 <figure class="flex items-center justify-center h-full">
-                    <img :src="`[#base-url#]/img/${file.uuid}`" class="object-scale-down max-h-full">
+                    <img src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="   
+                        :src="`[#base-url#]/img/${file.uuid}`" class="object-scale-down max-h-full">
                 </figure>
             </template>
 
             <!-- video -->
             <template x-if="file_type(index) === 'vid'">
                 <div class="relative w-full h-full">
-                    <video width="480" height="480" class="flex items-center justify-center h-full">
+                    <video width="300" height="300" class="flex items-center justify-center h-full">
                         <source :src="`[#base-url#]/video/${file.uuid}`" :type="`video/${vid_type(index)}`">
                     </video>
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
@@ -49,9 +51,9 @@
                         <path stroke-linecap="round" stroke-linejoin="round"
                             d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
                     </svg>
-                    <div class="text-sm text-neutral-600 -mt-8 bg-white uppercase font-bold" x-text="doc_type(index)">
+                    <div class="text-sm text-center text-neutral-600 -mt-8 bg-white uppercase font-bold" x-text="doc_type(index)">
                     </div>
-                    <div class="text-xs text-neutral-400 mt-4 " x-text="file.title || file.name">
+                    <div class="text-xs text-center text-neutral-400 mt-4 " x-text="file.title || file.name">
 
                     </div>
                 </div>
