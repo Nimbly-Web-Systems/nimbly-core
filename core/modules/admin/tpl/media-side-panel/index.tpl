@@ -11,7 +11,7 @@
                     d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
             </svg>
             <p>[#text Click to upload file#]</p>
-            <p>[#text Max file size:#] [#max-upload-size#]</p>
+            <p class="text-xs text-neutral-500">[#text Max file size:#] [#fmt [#max-upload-size#] bytes#]</p>
         </div>
     </div>
 </div>
