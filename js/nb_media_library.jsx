@@ -91,7 +91,7 @@ var nb_media_library = {
         // empty the image src immediately so the new images lazy load on white bg (not on previous img)
         var imgs = document.querySelectorAll('#nb-media-grid img');
         imgs.forEach((img_el) => {
-            img_el.src = "data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==";
+            img_el.src = "";
         });
     },
     file_type(ix) {
