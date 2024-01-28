@@ -4,6 +4,7 @@ var nb_media_library = {
     current_page: 0,
     first: 0,
     last: 0,
+    _in_use_tolerance: new Date() - 4*60*60*1000, //now minus four hours
     file_info: null,
     embed_info: {
         active: 'vimeo',
@@ -36,16 +37,17 @@ var nb_media_library = {
         }
     },
     fetch_media() {
-        nb.api.get(nb.base_url + "/api/v1/.files_meta").then((data) => {
-            if (!data.success) {
+        nb.api.get(nb.base_url + "/api/v1/.files_meta").then((files_meta_data) => {
+            if (!files_meta_data.success) {
                 nb.notify(data.message);
                 return;
             }
-            this.unfiltered = Object.values(data[".files_meta"]);
+            this.unfiltered = Object.values(files_meta_data[".files_meta"]);
             this.files = [...this.unfiltered];
             this.sort_files();
             this.set_page(this.current_page);
         });
+
     },
     filter(allowed_types) {
         if (!allowed_types || allowed_types.length === 0) {
@@ -65,8 +67,25 @@ var nb_media_library = {
     },
     sort_files() {
         this.files.sort((a, b) => {
-            return b._modified - a._modified;
+            let d = b._created - a._created;
+            if (d == 0) {
+                d = b._modified - a._modified;
+            }
+            return d;
         });
+    },
+    file_date(f) {
+        let d = new Date(f * 1000);
+        let result = d.getFullYear() + "-";
+        if (d.getMonth() < 9) {
+            result += "0";
+        }
+        result += (d.getMonth() + 1) + "-";
+        if (d.getDate() < 10) {
+            result += "0";
+        }
+        result += d.getDate();
+        return result;
     },
     page_count() {
         return Math.ceil(this.files.length / this.page_size);
@@ -85,7 +104,16 @@ var nb_media_library = {
         this.current_page = p;
         this.first = first + 1;
         this.last = Math.min(this.files.length, first + this.page_size);
-        this.page = this.files.slice(first, first + this.page_size);
+        var fs = this.files.slice(first, first + this.page_size);
+        nb.api.get(nb.base_url + "/api/v1/.files-unused?_ids=" + fs.map(f => f.uuid).join()).then((unused_files) => {
+            if (!unused_files.success || unused_files.count === 0) {
+                this.page = fs;
+                return;
+            }
+            var ufs = unused_files['.files_unused'];
+            fs.forEach((f) => f.in_use = !ufs.includes(f.uuid) || ((1000 * f._created) > this._in_use_tolerance));
+            this.page = fs;
+        });
     },
     clear_page() {
         // empty the image src immediately so the new images lazy load on white bg (not on previous img)

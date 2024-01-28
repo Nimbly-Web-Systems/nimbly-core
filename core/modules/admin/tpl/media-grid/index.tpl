@@ -1,17 +1,29 @@
 <div id="nb-media-grid"
     class="grid grid-cols-2 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 md:gap-6 lg:gap-8">
     <template x-for="(file, index) in page">
-        <div :key="file.uuid" 
-            class="overflow-hidden cursor-pointer shadow bg-neutral-50 aspect-square text-neutral-500 
+        <div :key="file.uuid" class="overflow-hidden cursor-pointer shadowaspect-square bg-neutral-50 text-neutral-500 relative
                 transition-all
                 hover:outline-clight/50 hover:rounded hover:outline hover:outline-4"
             :class="file_info && file_info.uuid==file.uuid? 'outline-clight/50 outline-4 outline rounded' : 'outline-none'"
             @click="select_media(index)">
 
+            <template x-if="file.in_use === false">
+                <div class="absolute top-1 right-1 w-6 h-6 text-yellow-600 bg-neutral-50/80 rounded">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" 
+                        class="w-6 h-6 shadow-sm"
+                        >
+                        <title>[#text File not in use#]</title>
+                        <path fill-rule="evenodd"
+                            d="M9.401 3.003c1.155-2 4.043-2 5.197 0l7.355 12.748c1.154 2-.29 4.5-2.599 4.5H4.645c-2.309 0-3.752-2.5-2.598-4.5L9.4 3.003ZM12 8.25a.75.75 0 0 1 .75.75v3.75a.75.75 0 0 1-1.5 0V9a.75.75 0 0 1 .75-.75Zm0 8.25a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Z"
+                            clip-rule="evenodd" />
+                    </svg>
+                </div>
+            </template>
+
             <!-- image -->
             <template x-if="file_type(index) === 'img'">
                 <figure class="flex items-center justify-center h-full">
-                    <img src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="    
+                    <img src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="
                         :src="`[#base-url#]/img/${file.uuid}/300x300f`" :width="file.width" :height="file.height"
                         loading="lazy" class="object-scale-down max-h-full">
                 </figure>
@@ -20,7 +32,7 @@
             <!-- svg vector image -->
             <template x-if="file_type(index) === 'svg'">
                 <figure class="flex items-center justify-center h-full">
-                    <img src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="   
+                    <img src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="
                         :src="`[#base-url#]/img/${file.uuid}`" class="object-scale-down max-h-full">
                 </figure>
             </template>
@@ -51,7 +63,8 @@
                         <path stroke-linecap="round" stroke-linejoin="round"
                             d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
                     </svg>
-                    <div class="text-sm text-center text-neutral-600 -mt-8 bg-white uppercase font-bold" x-text="doc_type(index)">
+                    <div class="text-sm text-center text-neutral-600 -mt-8 bg-white uppercase font-bold"
+                        x-text="doc_type(index)">
                     </div>
                     <div class="text-xs text-center text-neutral-400 mt-4 " x-text="file.title || file.name">
 
