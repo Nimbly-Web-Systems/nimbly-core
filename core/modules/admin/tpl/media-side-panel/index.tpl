@@ -30,7 +30,7 @@
 
             <template x-if="file_type() === 'svg'">
                 <figure class="h-[230px] w-[230px] mx-auto flex items-center justify-center bg-neutral-50 shadow-md">
-                    <img :src="`[#base_url#]/img/${file_info.uuid}`" 
+                    <img :src="`[#base_url#]/img/${file_info.uuid}`"
                         :class="file_info.aspect_ratio < 1.0? 'max-h-full w-auto' : 'max-w-full h-auto'">
                 </figure>
             </template>
@@ -44,12 +44,25 @@
 
 
             <p class="text-xs font-bold mt-2 break-words" x-text="file_info.name"></p>
-            <p class="text-xs mb-2 flex justify-between text-neutral-400">
+            <div class="text-xs flex items-center flex-wrap justify-between text-neutral-600 mt-0.5 mb-4 gap-x-1 gap-y-0.5">
+                <span class="text-xs text-neutral-600" x-text="file_date(file_info._created)">---</span>
                 <template x-if="file_info.width">
                     <span x-text="`${file_info.width}x${file_info.height}`">---</span>
                 </template>
                 <span x-text="file_info.size? file_info.size.fileSize(1) : ''">---</span>
-            </p>
+                <template x-if="!file_info.in_use">
+                    <div class="flex flex-row items-center font-bold text-yellow-900 bg-yellow-400 border border-yellow-700 rounded py-1 px-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"
+                            class="w-4 h-4 mr-1">
+                            <title>[#text File not in use#]</title>
+                            <path fill-rule="evenodd"
+                                d="M9.401 3.003c1.155-2 4.043-2 5.197 0l7.355 12.748c1.154 2-.29 4.5-2.599 4.5H4.645c-2.309 0-3.752-2.5-2.598-4.5L9.4 3.003ZM12 8.25a.75.75 0 0 1 .75.75v3.75a.75.75 0 0 1-1.5 0V9a.75.75 0 0 1 .75-.75Zm0 8.25a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Z"
+                                clip-rule="evenodd" />
+                        </svg>
+                        [#text File not in use#]
+                    </div>
+                </template>
+            </div>
             <a :href="`[#base-url#]/download/${file_info.uuid}`" :download="file_info.name" class="inline-block cursor-pointer rounded border border-neutral-400
           hover:border-cnormal px-1 pb-0.5 pt-1
           text-xs font-medium uppercase text-neutral-700 transition duration-150 ease-in-out
@@ -88,7 +101,8 @@
                     [#text Description#]
                 </label>
             </div>
-            <button class="[#btn-class-primary#] my-4" @click="save_media" x-show="typeof hide_save_button === 'undefined'">Save</button>
+            <button class="[#btn-class-primary#] my-4" @click="save_media"
+                x-show="typeof hide_save_button === 'undefined'">Save</button>
         </div>
     </template>
 </div>

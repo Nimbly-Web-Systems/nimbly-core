@@ -35,7 +35,7 @@ function get_sc($params, $default = null) {
     } else if (isset($_COOKIE[$key])) {
         $result = $_COOKIE[$key];
     } else {
-        $req_get = filter_input(INPUT_GET, $key, FILTER_SANITIZE_STRING);
+        $req_get = filter_input(INPUT_GET, $key, FILTER_SANITIZE_SPECIAL_CHARS);
         if (isset($req_get)) {
             $result = $req_get;
         }
