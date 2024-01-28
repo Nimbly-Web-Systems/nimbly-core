@@ -27,14 +27,17 @@ function files_unused_get()
 
 function file_in_use($search, $dir = null)
 {
-    static $EXCLUDE = ['.tmp', '.files', '.files_meta', '.routes', '.i18n', 
-        '.log-entries', 'roles', 'static', '.tailwind', '.sass-cache', '.git', 'lib'];
-    $dir = $dir ?? $GLOBALS['SYSTEM']['file_base'] . '/ext';
+    static $EXCLUDE = [
+        '.tmp', '.files', '.files_meta', '.routes', '.i18n', '.changelog',
+        '.log-entries', 'roles', 'static', '.tailwind', '.sass-cache', '.git', 'lib'
+    ];
+    $dir = $dir ?? $GLOBALS['SYSTEM']['file_base'] . 'ext/';
     $bdir = trim(strtolower(basename($dir)));
     if (in_array($bdir, $EXCLUDE)) {
         return false;
     }
-    foreach (glob($dir . '/*') as $file) {
+    $files = glob($dir . '{,.}[!.,!..]*',GLOB_MARK|GLOB_BRACE);
+    foreach ($files as $file) {
         if (is_dir($file)) {
             if (file_in_use($search, $file)) {
                 return true;
