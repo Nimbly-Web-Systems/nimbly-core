@@ -58,6 +58,7 @@ var nb_media_library = {
                 return allowed_types.includes(t);
             })
         }
+        this.sort_files();
         this.set_page(this.current_page);
     },
     reset_tab() {

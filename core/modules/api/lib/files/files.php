@@ -33,11 +33,15 @@ function files_post()
     if (!file_exists($dir)) {
         @mkdir($dir, 0750, true);
     }
+    $now = time();
     $meta = array(
         "name" => $_FILES['file']['name'],
         "uuid" => $uuid,
         "type" => $_FILES['file']['type'],
-        "size" => $_FILES['file']['size']
+        "size" => $_FILES['file']['size'],
+        "_created" => $now,
+        "_modified" => $now,
+        "_uplaoded" => $now
     );
     if (exif_imagetype($from) === IMAGETYPE_JPEG) {
         load_library("exif", "images");
