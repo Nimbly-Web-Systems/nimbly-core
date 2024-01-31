@@ -26,7 +26,17 @@
                         <button type="submit" class="block w-full whitespace-nowrap bg-transparent px-4 py-2 text-sm font-normal
                          text-neutral-50 hover:bg-purple-700 active:text-white 
                          active:no-underline disabled:pointer-events-none disabled:bg-transparent
-                          disabled:text-neutral-400">[#text Clear cache#] ([#fmt [#disk-space-thumbs#] bytes#])</a>
+                          disabled:text-neutral-400">[#text Clear cache#] ([#fmt [#disk-space-thumbs#] bytes#])</button>
+                    </form>
+                </li>
+                <li>
+                    <form action="[#url#]" method="post" accept-charset="utf-8" id="ccache_thumbs">
+                        [#form-key delete_unusued_media#]
+                        <button type="submit"
+                        class="block w-full whitespace-nowrap bg-transparent px-4 py-2 text-sm font-normal
+                         text-neutral-50 hover:bg-purple-700 active:text-white 
+                         active:no-underline disabled:pointer-events-none disabled:bg-transparent
+                          disabled:text-neutral-400">[#text Delete unused media#]</button>
                     </form>
                 </li>
             </ul>
