@@ -29,7 +29,7 @@
                           disabled:text-neutral-400">[#text Clear cache#] ([#fmt [#disk-space-thumbs#] bytes#])</button>
                     </form>
                 </li>
-                <li>
+                <li class="[#feature-cond manage-system echo_else=hidden#]">
                     <form action="[#url#]" method="post" accept-charset="utf-8" id="ccache_thumbs">
                         [#form-key delete_unusued_media#]
                         <button type="submit"
