@@ -21,7 +21,7 @@ function if_sc($params) {
         } else {
             $condition[] = [$key => $value];
             if ($or) {
-                var_dump($condition);
+                //var_dump($condition);
             }
         }
     }

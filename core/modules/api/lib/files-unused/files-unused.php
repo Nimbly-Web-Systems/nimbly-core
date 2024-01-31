@@ -1,15 +1,21 @@
 <?php
 
+load_library('api', 'api');
+load_library('get');
 load_library('set');
 
 function files_unused_sc()
 {
-    load_library('api', 'api');
     api_method_switch('files_unused');
 }
 
 function files_unused_get()
 {
+    $result = get_unused_files();
+    return json_result(['.files_unused' => $result, 'count' => count($result)], 200);
+}
+
+function get_unused_files() {
     $ids_from_url = get_variable('_ids');
     if (!empty($ids_from_url)) {
         $file_ids = explode(',', $ids_from_url);
@@ -22,7 +28,7 @@ function files_unused_get()
             $result[] = $id;
         }
     }
-    return json_result(['.files_unused' => $result, 'count' => count($result)], 200);
+    return $result;
 }
 
 function file_in_use($search, $dir = null)
