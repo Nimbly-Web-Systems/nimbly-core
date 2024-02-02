@@ -13,28 +13,39 @@
 [#init#]
 <!doctype html>
 <html class="[#html-classes#] scroll-smooth" lang="[#language#]">
-    <head>
-        <title>[#page-title#] | [#site-name#]</title>
-        [#meta#]
-        [#fonts#]
-        [#stylesheets#]
-        [#head#]
-        [#favicon#]
-    </head>
-    <body class="[#body-classes#]">
-        [#feature-cond manage-content tpl=nimblybar#]
-        [#callouts#]
-        <div id="page">
-            <header id="header">
-                [#header#]
-            </header> 
-            <main id="main">
-                [#main#]
-               </main> 
-            <footer id="footer">
-                [#footer#]
-            </footer>
-        </div>
-        [#scripts#]
-    </body>
+<!--
+
+# This website is developed with #
+ __ _  __  _  _  ____  __    _  _ 
+(  ( \(  )( \/ )(  _ \(  )  ( \/ )
+/    / )( / \/ \ ) _ (/ (_/\ )  / 
+\_)__)(__)\_)(_/(____/\____/(__/  
+
+-->
+<head>
+    <title>[#page-title#] | [#site-name#]</title>
+    [#meta#]
+    [#fonts#]
+    [#stylesheets#]
+    [#head#]
+    [#favicon#]
+</head>
+
+<body class="[#body-classes#]">
+    [#feature-cond manage-content tpl=nimblybar#]
+    [#callouts#]
+    <div id="page">
+        <header id="header">
+            [#header#]
+        </header>
+        <main id="main">
+            [#main#]
+        </main>
+        <footer id="footer">
+            [#footer#]
+        </footer>
+    </div>
+    [#scripts#]
+</body>
+
 </html>
