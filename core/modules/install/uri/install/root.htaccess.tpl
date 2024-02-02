@@ -61,6 +61,11 @@ AddOutputFilterByType DEFLATE application/x-javascript
 RewriteEngine on
 RewriteBase /[#get sticky.rewritebase#]
 
+# rewrite: use EXT static/_thumb_  if available for requested img file
+RewriteCond %{REQUEST_URI} ^/[#get rewritebase-slash#]img/(.*)
+RewriteCond ext/static/_thumb_/img/%1 -F
+RewriteRule ^ ext/static/_thumb_/img/%1 [END]
+
 # rewrite: use EXT static if available for the requested file
 RewriteCond %{REQUEST_URI} ^/[#get rewritebase-slash#](.*)
 RewriteCond ext/static/%1 -F
