@@ -2,17 +2,16 @@ Installation
 ============
 
 **Install Nimbly Core**<br />
-[#set repos-name="nimbly-[slug [site-name#]]"]
+[#set repos-name="nimbly-[#slug [#site-name#]#]"#]
 Clone the nimbly core into '[#repos-name#]':<br />
 
 ```
-cd ~/work (or replace with your project root dir)
-git clone git@gitlab.com:Nimbly-Web-Systems-firma/nimbly-core.git [#repos-name#]
+cd ~/dev (or replace with your project root dir)
+git clone git@github.com:Nimbly-Web-Systems/nimbly-core.git [#repos-name#]
 cd [#repos-name#]
 ```
 
-**Clone scaleup repos into ext**<br />
-Clone the [#repos-name#] repos into 'ext':<br />
+**Clone [#repos-name#] into ext directory**<br />
 
 ```
 git clone git@github.com:Nimbly-Web-Systems/[#repos-name#].git ext
@@ -29,7 +28,6 @@ Install required modules and build css/js files
 npm install
 npm run build
 ```
-
 
 Installation Script
 -------------------
