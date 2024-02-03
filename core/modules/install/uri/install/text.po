@@ -38,16 +38,16 @@ msgid "require_data_dir"
 msgstr "Could not create directory structure. Please review ownership and permissions."
 
 msgid "requirements_fail"
-msgstr "Sorry, your system does not yet meet all the requirements to install [app-name]:"
+msgstr "Sorry, your system does not yet meet all the requirements to install Nimbly:"
 
 msgid "requirements_pass"
-msgstr "Your system meets all requirements for installing [app-name]. Click next to continue."
+msgstr "Your system meets all requirements for installing Nimbly. Click next to continue."
 
 msgid "form_error"
 msgstr "Please fill in "
 
 msgid "email_required"
-msgstr "Please fill in an email for administrating [app-name]"
+msgstr "Please fill in an email for administrating Nimbly"
 
 msgid "password_required"
 msgstr "Please type in a password"
@@ -56,7 +56,7 @@ msgid "passwords_no_match"
 msgstr "The passwords do not match. Please enter the same password twice."
 
 msgid "help_rewritebase"
-msgstr "If Apache is hosting [app-name] with an alias, please enter it here. Otherwise, leave this field blank."
+msgstr "If Apache is hosting Nimbly with an alias, please enter it here. Otherwise, leave this field blank."
 
 msgid "help_pepper"
 msgstr "The pepper code is a system wide security code, unique for this installation."

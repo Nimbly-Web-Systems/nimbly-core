@@ -7,16 +7,16 @@ load_library('encrypt');
 load_library('salt');
 
 if (post_get('submit', false) === 'Next') {
-    run_library('set', array('step' => '3', 'overwrite' => true));
-} 
+  run_library('set', array('step' => '3', 'overwrite' => true));
+}
 
 run_library('sticky-post');
 
 $alias = get_sc('sticky.rewritebase');
 if (!empty($alias)) {
-    run_library('set', array('rewritebase-slash' => $alias . '/',  'overwrite' => true));
+  run_library('set', array('rewritebase-slash' => $alias . '/',  'overwrite' => true));
 } else {
-    run_library('set', array('rewritebase-slash' => '', 'overwrite' => true));
+  run_library('set', array('rewritebase-slash' => '', 'overwrite' => true));
 }
 
 /*
@@ -26,18 +26,22 @@ if (!empty($alias)) {
 $htaccess_content = run_buffered(realpath(dirname(__FILE__)) . '/root.htaccess.tpl');
 $htaccess_file = $GLOBALS['SYSTEM']['file_base'] . '.htaccess';
 if (false === file_put_contents($htaccess_file, $htaccess_content)) {
-    set_variable('htaccess_ok', 'fail');
+  set_variable('htaccess_ok', 'fail');
 } else {
-    chmod($htaccess_file, 0640);
-    set_variable('htaccess_ok', 'ok');
+  chmod($htaccess_file, 0640);
+  set_variable('htaccess_ok', 'ok');
 }
 
 /*
  * Create theme files
  */
 
-copy(realpath(dirname(__FILE__)) . '/tailwind.theme.js', $GLOBALS['SYSTEM']['file_base'] . '/ext/tailwind.theme.js');
-touch($GLOBALS['SYSTEM']['file_base'] . '/ext/theme.css');
+if (!file_exists($GLOBALS['SYSTEM']['file_base'] . '/ext/tailwind.theme.js')) {
+  copy(realpath(dirname(__FILE__)) . '/tailwind.theme.js', $GLOBALS['SYSTEM']['file_base'] . '/ext/tailwind.theme.js');
+}
+if (!file_exists($GLOBALS['SYSTEM']['file_base'] . '/ext/theme.css')) {
+  touch($GLOBALS['SYSTEM']['file_base'] . '/ext/theme.css');
+}
 
 /* 
  * Persist site name in .config resource
@@ -45,11 +49,17 @@ touch($GLOBALS['SYSTEM']['file_base'] . '/ext/theme.css');
 
 $sitename = post_get('sitename');
 set_variable('site-name', $sitename);
-$ok = data_create('.config', 'site', [
-  'name' => $sitename,
-  'description' => $sitename . ': a nimbly site',
-  'keywords' => $sitename . ', nimbly'
-]);
+if (data_exists('.config', 'site')) {
+  $ok = data_update('.config', 'site', [
+    'name' => $sitename
+  ]);
+} else {
+  $ok = data_create('.config', 'site', [
+    'name' => $sitename,
+    'description' => $sitename . ': a nimbly site',
+    'keywords' => $sitename . ', nimbly'
+  ]);
+}
 if ($ok) {
   set_variable('sitename_ok', 'ok');
 } else {
@@ -59,8 +69,11 @@ if ($ok) {
 /*
  * Create .content resource
  */
- 
- data_create_resource(".content", ["fields" => false]);
+
+if (!data_exists('.content', '.meta')) {
+  data_create_resource(".content", ["fields" => false]);
+}
+
 
 /*
  * Create readme file
@@ -69,10 +82,10 @@ if ($ok) {
 $readme_content = run_buffered(realpath(dirname(__FILE__)) . '/readme.md.tpl');
 $readme_file = $GLOBALS['SYSTEM']['file_base'] . 'ext/readme.md';
 if (false === file_put_contents($readme_file, $readme_content)) {
-    set_variable('readme_ok', 'fail');
+  set_variable('readme_ok', 'fail');
 } else {
-    chmod($readme_file, 0640);
-    set_variable('readme_ok', 'ok');
+  chmod($readme_file, 0640);
+  set_variable('readme_ok', 'ok');
 }
 
 /*
@@ -82,10 +95,10 @@ if (false === file_put_contents($readme_file, $readme_content)) {
 $gitignore_content = run_buffered(realpath(dirname(__FILE__)) . '/.gitignore.tpl');
 $gitignore_file = $GLOBALS['SYSTEM']['file_base'] . 'ext/.gitignore';
 if (false === file_put_contents($gitignore_file, $gitignore_content)) {
-    set_variable('gitignore_ok', 'fail');
+  set_variable('gitignore_ok', 'fail');
 } else {
-    chmod($gitignore_file, 0640);
-    set_variable('gitignore_ok', 'ok');
+  chmod($gitignore_file, 0640);
+  set_variable('gitignore_ok', 'ok');
 }
 
 /*
@@ -93,26 +106,27 @@ if (false === file_put_contents($gitignore_file, $gitignore_content)) {
  */
 
 $routes = [
-    ['route' => 'api', 'order' => 900],
-    ['route' => 'api/v1/(resource)', 'order' => 500],
-    ['route' => 'api/v1/(resource)/(id)', 'order' => 200],
-    ['route' => 'api/v1/(resource)/(id)/(id)', 'order' => 200],
-    ['route' => 'api/v1/.pages/(id)', 'order' => 200],
-    ['route' => 'api/v1/.files/(id)', 'order' => 200],
-    ['route' => 'nb-admin/(resource)', 'order' => 400],
-    ['route' => 'nb-admin/(resource)/(id)', 'order' => 500],
-    ['route' => 'nb-admin/(resource)/add', 'order' => 300],
-    ['route' => 'nb-admin/pages/(id)', 'order' => 200],
-    ['route' => 'nb-admin/files/(id)', 'order' => 200],
-    ['route' => 'img/(id)', 'order' => 500],
-    ['route' => 'download/(id)', 'order' => 500],
-    ['route' => 'video/(id)', 'order' => 500],
-    ['route' => 'password-reset/(uuid)/(key)', 'order' => 200],
-    ['route' => 'change-email/(uuid)/(newuuid)/(key)', 'order' => 200]
+  ['route' => 'api', 'order' => 900],
+  ['route' => 'api/v1/(resource)', 'order' => 500],
+  ['route' => 'api/v1/(resource)/(id)', 'order' => 200],
+  ['route' => 'api/v1/(resource)/(id)/(id)', 'order' => 200],
+  ['route' => 'api/v1/.pages/(id)', 'order' => 200],
+  ['route' => 'api/v1/.files/(id)', 'order' => 200],
+  ['route' => 'nb-admin/(resource)', 'order' => 400],
+  ['route' => 'nb-admin/(resource)/(id)', 'order' => 500],
+  ['route' => 'nb-admin/(resource)/add', 'order' => 300],
+  ['route' => 'nb-admin/pages/(id)', 'order' => 200],
+  ['route' => 'nb-admin/files/(id)', 'order' => 200],
+  ['route' => 'img/(id)', 'order' => 500],
+  ['route' => 'download/(id)', 'order' => 500],
+  ['route' => 'video/(id)', 'order' => 500],
+  ['route' => 'password-reset/(uuid)/(key)', 'order' => 200],
+  ['route' => 'change-email/(uuid)/(newuuid)/(key)', 'order' => 200]
 ];
 
 foreach ($routes as $route) {
-    data_create('.routes', md5($route['route']), $route);
+
+  data_create('.routes', md5($route['route']), $route);
 }
 
 /*
@@ -120,9 +134,9 @@ foreach ($routes as $route) {
  */
 
 data_create('roles', 'admin', [
-    'name' => 'Admin',
-    'description' => 'Technical system administration ',
-    'features' => '(all)'
+  'name' => 'Admin',
+  'description' => 'Technical system administration ',
+  'features' => '(all)'
 ]);
 
 data_create('roles', 'editor', [
@@ -136,28 +150,28 @@ data_create('roles', 'editor', [
  */
 
 data_create('users', '.meta', [
-   'fields' => [
-        'email' => [
-          'type' => 'text',
-          'required' => true,
-          'name' => 'email'
-        ],
-        'password' => [
-          'type' => 'password',
-          'required' => true,
-          'name' => 'password',
-          'admin_col' => false,
-        ],
-        'roles' => [
-          'type' => 'select',
-          'multi' => true,
-          'name' => 'roles',
-          'resource' => 'roles'
-        ],
-        'name' => [
-          'type' => 'text',
-          'name' => 'name'
-        ]
+  'fields' => [
+    'email' => [
+      'type' => 'text',
+      'required' => true,
+      'name' => 'email'
+    ],
+    'password' => [
+      'type' => 'password',
+      'required' => true,
+      'name' => 'password',
+      'admin_col' => false,
+    ],
+    'roles' => [
+      'type' => 'select',
+      'multi' => true,
+      'name' => 'roles',
+      'resource' => 'roles'
+    ],
+    'name' => [
+      'type' => 'text',
+      'name' => 'name'
+    ]
   ],
   'pk' => 'email',
   'encrypt' => 'password'
@@ -172,12 +186,12 @@ $salt = salt_sc();
 $email = post_get('email');
 $pw = post_get('password');
 if (false !== data_create('users', md5($email), array(
-    'email' => $email,
-    'roles' => 'admin,user',
-    'salt' => $salt,
-    'password' => encrypt($pw, $salt)
+  'email' => $email,
+  'roles' => 'admin,user',
+  'salt' => $salt,
+  'password' => encrypt($pw, $salt)
 ))) {
-    set_variable('user_ok', 'ok');
+  set_variable('user_ok', 'ok');
 } else {
-    set_variable('user_ok', 'fail');
+  set_variable('user_ok', 'fail');
 }

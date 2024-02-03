@@ -26,7 +26,6 @@ function thumbnail_sharpen($img)
 
 function thumbnail_create($uuid, $size, $ratio = 0, $mode = 'h')
 {
-
     $MAX_UPSCALE = 1.0; // @todo: make this dynamic
 
     // 1. Create thumbnail from original
@@ -76,7 +75,7 @@ function thumbnail_create($uuid, $size, $ratio = 0, $mode = 'h')
     $max_h = min(get_variable('max_img_h', 1080), $org_h * $MAX_UPSCALE);
 
     //2: Calc thumbnail size given height and aspect ratio
-    $no_ratio = empty($ratio) || ($ratio < 0) || (abs($asp - $ratio) < 0.01) || $mode === 'f';
+    $no_ratio = empty($ratio) || ($ratio < 0) || (abs($asp - $ratio) < 0.01) || $mode === 'f' || $mode === 'c';
     $a = $no_ratio ? $asp : $ratio;
 
     if ($mode === 'f') {
@@ -122,6 +121,12 @@ function thumbnail_create($uuid, $size, $ratio = 0, $mode = 'h')
 
     $thumb_img = imagecreatetruecolor($w, $h);
     $static_path = $GLOBALS['SYSTEM']['file_base'] . 'ext/static/_thumb_/' . $GLOBALS['SYSTEM']['request_uri'];
+
+    $query_ratio = get_variable('ratio');
+    if (!empty($query_ratio)) {
+        $static_path .= '_r' . $query_ratio;
+    }
+    
     @mkdir(dirname($static_path), 0750, true);
 
     switch ($org_type) {
