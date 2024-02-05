@@ -31,6 +31,7 @@ function get_sessions() {
         $sid = str_replace("sess_", "", $session);
         session_id($sid);
         session_start();
+        header_remove ("Set-Cookie"); // prevents returning numerous Set-Cookie headers
         $result[$sid] = $_SESSION;
         session_abort();
     }
