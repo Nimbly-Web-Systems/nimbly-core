@@ -50,7 +50,7 @@
                     <span x-text="`${file_info.width}x${file_info.height}`">---</span>
                 </template>
                 <span x-text="file_info.size? file_info.size.fileSize(1) : ''">---</span>
-                <template x-if="!file_info.in_use">
+                <template x-if="file_info.in_use===false">
                     <div class="flex flex-row items-center font-bold text-yellow-900 bg-yellow-400 border border-yellow-700 rounded py-1 px-2">
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"
                             class="w-4 h-4 mr-1">
