@@ -17,6 +17,7 @@ let appTheme = {
     colors: {
       primary: "#0074D9",
       cnormal: "#0074D9",
+      cbar: "#0074D9",
       clink: "#0074D9",
       cdark: "#0068c3",
       cdarkest: "#005198",
