@@ -4,7 +4,7 @@ var nb_media_library = {
     current_page: 0,
     first: 0,
     last: 0,
-    _in_use_tolerance: new Date() - 4*60*60*1000, //now minus four hours
+    _in_use_tolerance: new Date() - 4 * 60 * 60 * 1000, //now minus four hours
     file_info: null,
     embed_info: {
         active: 'vimeo',
@@ -39,7 +39,11 @@ var nb_media_library = {
     fetch_media() {
         nb.api.get(nb.base_url + "/api/v1/.files_meta").then((files_meta_data) => {
             if (!files_meta_data.success) {
-                nb.notify(data.message);
+                if (files_meta_data.message === 'RESOURCE_NOT_FOUND') {
+                    console.warn('Could not get media data');
+                } else {
+                    nb.notify(files_meta_data.message);
+                }
                 return;
             }
             this.unfiltered = Object.values(files_meta_data[".files_meta"]);
