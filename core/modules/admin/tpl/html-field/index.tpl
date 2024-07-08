@@ -5,7 +5,7 @@
             "media_sizes":"[#get item.media_sizes default=#]",
             "media": [#fmt var=item.media type=boolean boolean=true|false#]}' 
             class="prose">
-        [#get record.[#item.key#]#]
+        [#get-html record.[#item.key#] legacy-img-sizes=lg-70,xl-50#]
     </div>
     <label class="pointer-events-none absolute left-3 top-0 mb-0 
     bg-neutral-50
