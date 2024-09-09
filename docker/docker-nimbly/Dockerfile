@@ -1,4 +1,6 @@
-FROM ubuntu:latest
+FROM ubuntu:latest 
+
+RUN userdel -r ubuntu
 
 # Install required software and modules
 ENV DEBIAN_FRONTEND noninteractive
