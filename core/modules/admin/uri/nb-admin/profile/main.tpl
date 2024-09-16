@@ -38,7 +38,7 @@
             </div>
 
             <div class="mt-8"></div>
-            <input type="submit" value="Save" class="[#btn-class-primary#]" />
+            <input type="submit" value="Save" method="post" class="[#btn-class-primary#]" />
         </div>
         </div>
     </form>

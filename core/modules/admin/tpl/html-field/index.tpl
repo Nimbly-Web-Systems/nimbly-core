@@ -8,7 +8,7 @@
         [#get-html record.[#item.key#] legacy-img-sizes=lg-70,xl-50#]
     </div>
     <label class="pointer-events-none absolute left-3 top-0 mb-0 
-    bg-neutral-50
+    [#_fbg#]
     px-1
     max-w-[90%] origin-[0_0] truncate pt-[0.37rem] leading-[2.15] 
     text-neutral-600 transition-all duration-200 ease-out 
