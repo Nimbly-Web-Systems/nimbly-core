@@ -46,16 +46,23 @@ function _api_access_str($method, $perm, $uuid) {
 }
 
 function api_access($feature='api', $resource=false) {
-    return get_variable('api_public', false) || api_key_access($feature) || api_user_access($feature, $resource);
+    return api_key_access($feature) || api_user_access($feature, $resource);
 }
 
 function api_key_access($feature) {
-    $key = get_variable('key', false);
-    if (empty($key)) {
+    load_library('form-key', 'forms');
+    $key = filter_input(INPUT_GET, 'key', FILTER_SANITIZE_SPECIAL_CHARS);    
+    $fkey = form_key_get();
+    if (empty($key) || empty($fkey)) {
         return false;
     }
-    // todo: check if api key exists and allows feature
-    return false;
+    if ($key !== $fkey) {
+        return false;
+    }
+    $api_allowed = explode(',', get_variable('api.allow', ''));
+    $features = explode(',', $feature);
+    $grants = array_intersect($api_allowed, $features);
+    return count($grants) >= 1;
 }
 
 function api_user_access($feature, $resource = false) {
