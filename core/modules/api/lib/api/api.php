@@ -53,6 +53,7 @@ function api_key_access($feature) {
     load_library('form-key', 'forms');
     $key = filter_input(INPUT_GET, 'key', FILTER_SANITIZE_SPECIAL_CHARS);    
     $fkey = form_key_get();
+    
     if (empty($key) || empty($fkey)) {
         return false;
     }
