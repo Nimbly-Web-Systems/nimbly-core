@@ -44,7 +44,6 @@ function data_sc($params) {
         $result = data_filter($result, $filter);
     }
 
-    
     $data_var = $var_id ?? data_var($resource, $uuid, $op);
     load_library('set');
     set_variable($data_var, $result);
