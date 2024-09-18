@@ -14,8 +14,11 @@ var nb_forms = {
         }
     },
     select_image(field_name, field_ix=undefined) {
+        this.select_media(field_name, field_ix, ['img', 'svg']);
+    },
+    select_media(field_name, field_ix=undefined, filter=[]) {
         nb.media_alpine.mode = 'select';
-        nb.media_alpine.filter(['img', 'svg']);
+        nb.media_alpine.filter(filter);
         nb.media_alpine.reset_tab();
         nb.media_modal.me = this; //remember this
         nb.media_modal._set_media = this._set_media;
