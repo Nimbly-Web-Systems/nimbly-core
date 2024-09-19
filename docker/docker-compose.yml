@@ -6,3 +6,10 @@ services:
       - ..:/var/www/nimbly
     ports:
       - 80:80
+ nimbly-openshift:
+    build: 
+      context: ../
+      dockerfile: ./docker/docker-nimbly-openshift/Dockerfile
+    container_name: nimbly_openshift
+    ports:
+      - 8080:8080
