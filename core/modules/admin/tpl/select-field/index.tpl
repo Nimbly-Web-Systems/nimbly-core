@@ -6,6 +6,7 @@
     [#repeat item.options tpl=option_item var=option#]
     [#data [#item.resource#]#]
     [#repeat data.[#item.resource#] tpl=option_data var=option#]
+    [#get _foptions default=""#]
 </select>
-<label data-te-select-label-ref>[#field-name name="[#item.name#]"#]</label>
+<label data-te-select-label-ref class="[#_fbg#] z-10">[#field-name name="[#item.name#]"#]</label>
 
