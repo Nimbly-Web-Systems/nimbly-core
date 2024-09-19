@@ -13,6 +13,7 @@
 			dark:border-white/70 dark:text-white  file:dark:text-white"
 		type="file" id="[#_fname#]" 
 		accept='[#get _faccept default=""#]' 
+		data-nb-max-file-size="[#max-upload-size#]"
 		/>
 
 		<label class="pointer-events-none absolute left-3 top-0 mb-0 
