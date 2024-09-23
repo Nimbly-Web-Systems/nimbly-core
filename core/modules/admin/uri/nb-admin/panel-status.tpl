@@ -36,7 +36,7 @@
                         href="[#base-url#]/nb-admin/debug" data-te-dropdown-item-ref>[#text Debug info#]</a>
                 </li>
             </ul>
-            
+
         </div>
     </div>
     <div class="text-7xl text-emerald-700 font-bold text-center mt-4 -ml-4">
@@ -44,14 +44,15 @@
         <div x-html="pretty_bytes('[#fmt [#jget mem_info.MemAvailable#] bytes#]', 'text-3xl')"></div>
     </div>
     <div class="text-lg text-emerald-700 font-bold text-center ">
-        [#text free of#] <span x-html="pretty_bytes('[#fmt [#jget mem_info.MemTotal#] bytes#]', 'text-xs')"> </span> [#text RAM#]
+        [#text free of#] <span x-html="pretty_bytes('[#fmt [#jget mem_info.MemTotal#] bytes#]', 'text-xs')"> </span>
+        [#text RAM#]
     </div>
     <div class="text-md text-neutral-500 text-center mt-4 ">
         [#text Disk:#]
         <span class="font-bold text-lg" x-html="pretty_bytes('[#fmt [#disk-space-free#] bytes#]', 'text-xs')"></span>
         [#text free of#]
         <span class="text-sm" x-html="pretty_bytes('[#fmt [#disk-space-total#] bytes#]', 'text-xs')"></span>
-        
+
     </div>
     <div class="text-md text-neutral-500 text-center">
         [#get-system-log last-fatal#]
@@ -60,6 +61,6 @@
         <span class="font-bold text-lg">
             [#if last_fatal_time=(empty) echo="[#text None#]"#]
             [#if last_fatal_time=(not-empty) echo="<a href='[#base-url#]/nb-admin/syslog' class='text-emerald-700 hover:underline'>[#fmt [#last_fatal_time#] ago#]</a>"#]
-        <span>
+            <span>
     </div>
 </div>

@@ -19,14 +19,14 @@ msgstr "3. Done"
 msgid "require_session"
 msgstr "A session is required to continue, but could not be created"
 
-msgid "require_php7"
-msgstr "You need PHP version 7 or higher to continue"
+msgid "require_php8"
+msgstr "You need PHP version 8 or higher to continue"
 
 msgid "require_ext_session"
 msgstr "PHP extension <strong>session</strong> is required but not enabled."
 
 msgid "require_apache"
-msgstr "You need Apache server version 2.0.0 or higher"
+msgstr "You need Apache server version 2.2.0 or higher"
 
 msgid "require_apache_rewrite"
 msgstr "The apache module <strong>rewrite</strong> should be enabled. Example:<br />sudo a2enmod rewrite"

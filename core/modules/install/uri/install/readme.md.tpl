@@ -19,7 +19,7 @@ git clone git@github.com:Nimbly-Web-Systems/[#repos-name#].git ext
 
 **Create and run docker image**<br />
 ```
-cd docker && docker-compose up -d && cd ..
+cd docker && docker-compose up nimbly -d && cd ..
 ```
 
 Install required modules and build css/js files
