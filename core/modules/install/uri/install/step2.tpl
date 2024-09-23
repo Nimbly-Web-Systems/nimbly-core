@@ -60,7 +60,7 @@
             [#text Enter site name#]
     </label>
 </div>
-
+[#set sticky.rewritebase="[#guess-alias#]"#]
 <div class="relative border" data-te-input-wrapper-init>
     <input type="text" maxlength="64" 
         class="

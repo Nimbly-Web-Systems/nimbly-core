@@ -25,9 +25,13 @@ if (!empty($alias)) {
 
 $htaccess_content = run_buffered(realpath(dirname(__FILE__)) . '/root.htaccess.tpl');
 $htaccess_file = $GLOBALS['SYSTEM']['file_base'] . '.htaccess';
-if (false === file_put_contents($htaccess_file, $htaccess_content)) {
-  set_variable('htaccess_ok', 'fail');
-} else {
+if (!file_exists($htaccess_file)) {
+  if (false === file_put_contents($htaccess_file, $htaccess_content)) {
+    set_variable('htaccess_ok', 'fail');
+  }
+}
+
+if (file_exists($htaccess_file)) {
   chmod($htaccess_file, 0640);
   set_variable('htaccess_ok', 'ok');
 }
@@ -56,10 +60,11 @@ if (data_exists('.config', 'site')) {
 } else {
   $ok = data_create('.config', 'site', [
     'name' => $sitename,
-    'description' => $sitename . ': a nimbly site',
-    'keywords' => $sitename . ', nimbly'
+    'description' => $sitename . ': a Nimbly site',
+    'keywords' => $sitename . ', Nimbly'
   ]);
 }
+
 if ($ok) {
   set_variable('sitename_ok', 'ok');
 } else {
@@ -81,9 +86,13 @@ if (!data_exists('.content', '.meta')) {
 
 $readme_content = run_buffered(realpath(dirname(__FILE__)) . '/readme.md.tpl');
 $readme_file = $GLOBALS['SYSTEM']['file_base'] . 'ext/readme.md';
-if (false === file_put_contents($readme_file, $readme_content)) {
-  set_variable('readme_ok', 'fail');
-} else {
+if (!file_exists($readme_file)) {
+  if (false === file_put_contents($readme_file, $readme_content)) {
+    set_variable('readme_ok', 'fail');
+  }
+}
+
+if (file_exists($readme_file)) {
   chmod($readme_file, 0640);
   set_variable('readme_ok', 'ok');
 }
@@ -94,9 +103,13 @@ if (false === file_put_contents($readme_file, $readme_content)) {
 
 $gitignore_content = run_buffered(realpath(dirname(__FILE__)) . '/.gitignore.tpl');
 $gitignore_file = $GLOBALS['SYSTEM']['file_base'] . 'ext/.gitignore';
-if (false === file_put_contents($gitignore_file, $gitignore_content)) {
-  set_variable('gitignore_ok', 'fail');
-} else {
+if (!file_exists($gitignore_file)) {
+  if (false === file_put_contents($gitignore_file, $gitignore_content)) {
+    set_variable('gitignore_ok', 'fail');
+  }
+}
+
+if (file_exists($gitignore_file)) {
   chmod($gitignore_file, 0640);
   set_variable('gitignore_ok', 'ok');
 }
@@ -125,73 +138,84 @@ $routes = [
 ];
 
 foreach ($routes as $route) {
-
-  data_create('.routes', md5($route['route']), $route);
+  $uuid = md5($route['route']);
+  if (data_exists('.routes', $uuid)) {
+    continue;
+  }
+  data_create('.routes', $uuid, $route);
 }
 
 /*
  * Create roles
  */
 
-data_create('roles', 'admin', [
-  'name' => 'Admin',
-  'description' => 'Technical system administration ',
-  'features' => '(all)'
-]);
+if (!data_exists('roles', 'admin')) {
+  data_create('roles', 'admin', [
+    'name' => 'Admin',
+    'description' => 'Technical system administration ',
+    'features' => '(all)'
+  ]);
+}
 
-data_create('roles', 'editor', [
-  'name' => 'Editor',
-  'description' => 'Content writers, site maintainers',
-  'features' => 'manage-content'
-]);
+if (!data_exists('roles', 'editor')) {
+
+  data_create('roles', 'editor', [
+    'name' => 'Editor',
+    'description' => 'Content writers, site maintainers',
+    'features' => 'manage-content'
+  ]);
+}
 
 /*
  * Create users resource
  */
 
-data_create('users', '.meta', [
-  'fields' => [
-    'email' => [
-      'type' => 'text',
-      'required' => true,
-      'name' => 'email'
+if (!data_exists('users', '.meta')) {
+  data_create('users', '.meta', [
+    'fields' => [
+      'email' => [
+        'type' => 'text',
+        'required' => true,
+        'name' => 'email'
+      ],
+      'password' => [
+        'type' => 'password',
+        'required' => true,
+        'name' => 'password',
+        'admin_col' => false,
+      ],
+      'roles' => [
+        'type' => 'select',
+        'multi' => true,
+        'name' => 'roles',
+        'resource' => 'roles'
+      ],
+      'name' => [
+        'type' => 'text',
+        'name' => 'name'
+      ]
     ],
-    'password' => [
-      'type' => 'password',
-      'required' => true,
-      'name' => 'password',
-      'admin_col' => false,
-    ],
-    'roles' => [
-      'type' => 'select',
-      'multi' => true,
-      'name' => 'roles',
-      'resource' => 'roles'
-    ],
-    'name' => [
-      'type' => 'text',
-      'name' => 'name'
-    ]
-  ],
-  'pk' => 'email',
-  'encrypt' => 'password'
-]);
-
+    'pk' => 'email',
+    'encrypt' => 'password'
+  ]);
+}
 
 /*
  * Create admin user
  */
 
-$salt = salt_sc();
-$email = post_get('email');
-$pw = post_get('password');
-if (false !== data_create('users', md5($email), array(
-  'email' => $email,
-  'roles' => 'admin,user',
-  'salt' => $salt,
-  'password' => encrypt($pw, $salt)
-))) {
-  set_variable('user_ok', 'ok');
-} else {
-  set_variable('user_ok', 'fail');
+if (!data_exists('users', md5($email))) {
+  $salt = salt_sc();
+  $email = post_get('email');
+  $pw = post_get('password');
+  if (false !== data_create('users', md5($email), array(
+    'email' => $email,
+    'roles' => 'admin,user',
+    'salt' => $salt,
+    'password' => encrypt($pw, $salt)
+  ))) {
+    set_variable('user_ok', 'ok');
+  } else {
+    set_variable('user_ok', 'fail');
+  }
 }

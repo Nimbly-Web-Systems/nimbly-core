@@ -10,8 +10,8 @@ function check_requirements_sc($params) {
         return;
     }
 
-    if (require_higher_version(phpversion(), "7.0.0") === false) {
-        set_variable("require_msg", "require_php7");
+    if (require_higher_version(phpversion(), "8.2.0") === false) {
+        set_variable("require_msg", "require_php8");
         return;
     }
 
@@ -34,7 +34,7 @@ function check_requirements_sc($params) {
         $start = strlen("apache/");
         $stop = strpos($version_string, ' ');
         $version_number = substr($version_string, $start, $stop - $start);
-        $apache_version_ok = require_higher_version($version_number, "2.0.0");
+        $apache_version_ok = require_higher_version($version_number, "2.2.0");
     }
 
     if ($apache_version_ok === false) {
