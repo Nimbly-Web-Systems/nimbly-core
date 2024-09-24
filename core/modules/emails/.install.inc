@@ -57,7 +57,7 @@ $result = data_create_resource(".emails", [
 
     ],
     "pk" => "tpl",
-    "encrypt" => "pw",
+    "encrypt2way" => "pw",
     "uuid" => ".meta",
     "sort" => [
         "field" => "tpl",

@@ -27,6 +27,7 @@ function trigger($event, $data) {
                 	if (!file_exists($lib_path)) {
                 		continue;
                 	}
+					
                 	$file = $lib_path . '/' . $hname . '.php';
                 	if (!file_exists($file)) {
                 		continue;

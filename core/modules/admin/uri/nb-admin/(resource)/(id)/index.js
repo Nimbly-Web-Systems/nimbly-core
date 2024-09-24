@@ -1,7 +1,9 @@
 Alpine.data("form_edit", (resource_id, record_id) => ({
   resource_id: resource_id,
   record_id: record_id,
+  busy: false,
   submit(e) {
+    this.busy = true;
     if (this.form_data.hasOwnProperty("keep_password")) {
       if (
         this.form_data.keep_password &&
@@ -17,6 +19,7 @@ Alpine.data("form_edit", (resource_id, record_id) => ({
         ...nb.edit.get_field_values(e.target),
       })
       .then((data) => {
+        this.busy = false;
         if (data.success) {
           nb.system_message(nb.text.record_updated).then((data) => {
             history.back();

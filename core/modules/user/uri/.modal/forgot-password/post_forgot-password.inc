@@ -35,10 +35,10 @@ data_update('users', $user_uuid, $user);
 set_variable('name', $user['name']);
 set_variable('email', $email);
 set_variable('reset-url', url_absolute('password-reset/' . $user_uuid . '/' . $reset_token));
-$cfg = data_read('.config', 'email-password-reset');
+$cfg = data_read('.emails', 'email-password-reset');
 
 if (empty($cfg)) {
-	log_system('Error: could not send email. setting `email-password-reset` is empty');
+	log_system('Error: could not send email. Email configuration for `email-password-reset` is empty');
 	return json_result(['message' => $msg] , 200);
 }
 

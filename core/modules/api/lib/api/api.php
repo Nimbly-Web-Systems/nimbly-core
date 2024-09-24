@@ -101,13 +101,24 @@ function api_json_input($resource) {
             $data[$f] = encrypt($data[$f], $salt);
         }
     }
+    if (isset($meta['encrypt2way'])) {
+        load_library('salt');
+        load_library('encrypt');
+        $salt = salt_sc();
+        $fs = explode(',', $meta['encrypt2way']);
+        foreach ($fs as $f) {
+            if (!isset($data[$f])) {
+                continue;
+            }
+            $data['salt'] = $salt;
+            $data[$f] = encrypt_2way($data[$f], $salt);
+        }
+    }
     return $data;
 }
 
 function api_check_csrf(&$data) {
     if (!isset($data['form_key'])) {
-        load_library('log');
-        log_system('api: no csrf key set');
         return null;
     }
     $key = $data['form_key'];

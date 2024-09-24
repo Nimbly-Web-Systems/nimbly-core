@@ -26,21 +26,16 @@ function email($email_data)
 		return false;
 	}
 
-	echo 'A';
-
 	$tpl = find_template($email_data['tpl']);
 	if (!$tpl) {
 		throw new Exception('Template not found');
 		return false;
 	}
 
-	echo 'B';
-
 	$email_data['tpl'] = $tpl;
 	$service = $email_data['service'] ?? 'system';
 
 	$result = false;
-
 
 	if ($service === 'system') {
 		$result = email_via_system($email_data);
@@ -118,26 +113,29 @@ function email_via_phpmailer($email_data)
 	require_once 'php_mailer/SMTP.php';
 
 	$mail = new PHPMailer(false);
-	echo 'here we go';
+
+	if (isset($email_data['pw']) && is_array($email_data['pw']) && isset($email_data['pw']['cipher'])) {
+		load_library('encrypt');
+		$email_data['pw'] = decrypt_2way($email_data['pw'], $email_data['salt']);
+	}
 
 	try {
-		//Server settings
-		$mail->SMTPDebug = 2;                      					
-		$mail->isSMTP();                                            
-		$mail->Host       = $email_data['server'];                    
-		$mail->SMTPAuth   = true;                                  
-		$mail->Username   = $email_data['user'];                    
-		$mail->Password   = $email_data['pw'];                             
-		$mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;            
-		$mail->Port       = $email_data['port'] ?? 465;             
+		$mail->SMTPDebug = 0;
+		$mail->isSMTP();
+		$mail->Host       = $email_data['server'];
+		$mail->SMTPAuth   = true;
+		$mail->Username   = $email_data['user'];
+		$mail->Password   = $email_data['pw'];
+		$mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
+		$mail->Port       = $email_data['port'] ?? 465;
 
 		$mail->setFrom($email_data['from'] ?? 'info@nimblycms.com', $email_data['from_name'] ?? 'Nimbly CMS');
-		$mail->addAddress($email_data['recipient'] ?? $email_data['to'], $email_data['recipient_name'] ?? '');   
-		
+		$mail->addAddress($email_data['recipient'] ?? $email_data['to'], $email_data['recipient_name'] ?? '');
+
 		$html = run_buffered($email_data['tpl']);
 		load_library('plain-text');
 		$plain = plain_text($html);
-		
+
 		//Content
 		$mail->isHTML(true);                                  //Set email format to HTML
 		$mail->Subject = $email_data['subject'];
@@ -145,7 +143,6 @@ function email_via_phpmailer($email_data)
 		$mail->AltBody = $plain;
 
 		$mail->send();
-		echo 'email send';
 		return true;
 	} catch (Exception $e) {
 		return false;
