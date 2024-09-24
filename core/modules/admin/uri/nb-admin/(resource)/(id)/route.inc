@@ -30,8 +30,14 @@ if (!empty($meta['subkey'])) {
 
 $record = data_read($resource, $uuid);
 
-// store data and fields and render the page
-
+// decrypt 2-way encrypted fields
+if (!empty($meta['encrypt2way'])) {
+	load_library('encrypt');
+	$fs = explode(',', $meta['encrypt2way']);
+	foreach ($fs as $f) {
+		$record[$f] = decrypt_2way($record[$f], $record['salt']);
+	}
+}
 
 if (empty($meta['fields'])) { 
 	//build it dynamically from the record
@@ -54,4 +60,5 @@ load_library("get-user-resources", "admin");
 if (access_by_feature('manage-content') && get_user_resources_access($resource)) {
 	$_SESSION['features']['manage-' . $resource] = true;
 }
+
 router_accept();
