@@ -1,0 +1,1 @@
+[#set _fvalue="[#get record.[#item.key#]#]" overwrite#]
