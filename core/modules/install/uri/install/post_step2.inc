@@ -54,9 +54,7 @@ if (!file_exists($GLOBALS['SYSTEM']['file_base'] . '/ext/theme.css')) {
 $sitename = post_get('sitename');
 set_variable('site-name', $sitename);
 if (data_exists('.config', 'site')) {
-  $ok = data_update('.config', 'site', [
-    'name' => $sitename
-  ]);
+  $ok = true;
 } else {
   $ok = data_create('.config', 'site', [
     'name' => $sitename,
