@@ -2,13 +2,14 @@ Installation
 ============
 
 **Install Nimbly Core**<br />
-[#set repos-name="nimbly-[#slug [#site-name#]#]"#]
+[#set repos-name="[#slug [#site-name#]#]"#]
 Clone the nimbly core into '[#repos-name#]':<br />
 
 ```
 cd ~/dev (or replace with your project root dir)
 git clone git@github.com:Nimbly-Web-Systems/nimbly-core.git [#repos-name#]
 cd [#repos-name#]
+git checkout 1.0
 ```
 
 **Clone [#repos-name#] into ext directory**<br />
@@ -19,7 +20,7 @@ git clone git@github.com:Nimbly-Web-Systems/[#repos-name#].git ext
 
 **Create and run docker image**<br />
 ```
-cd docker && docker-compose up nimbly -d && cd ..
+cd docker && docker-compose up -d nimbly && cd ..
 ```
 
 Install required modules and build css/js files
