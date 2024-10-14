@@ -68,6 +68,7 @@ RewriteRule ^ - [E=IMG_RATIO:_r%1]
 
 RewriteCond %{REQUEST_URI} ^/[#get rewritebase-slash#]img/(.*)
 RewriteCond ext/static/_thumb_/img/%1%{ENV:IMG_RATIO} -F
+Header set Content-Type "image/webp" "expr=-z %{CONTENT_TYPE}"
 RewriteRule ^ ext/static/_thumb_/img/%1%{ENV:IMG_RATIO} [END]
 
 # rewrite: use EXT static if available for the requested file
