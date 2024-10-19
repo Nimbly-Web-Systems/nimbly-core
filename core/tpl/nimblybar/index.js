@@ -12,15 +12,17 @@ document.getElementById("nb_nav_toggler").addEventListener("click", () => {
   }
 });
 
-document.getElementById("nb_edit_toggler").addEventListener("click", (e) => {
-  e.currentTarget.classList.toggle("bg-clight/50");
-  nb.edit.toggle();
-});
+if (document.getElementById("nb_edit_menu")) {
+  document.getElementById("nb_edit_toggler").addEventListener("click", (e) => {
+    e.currentTarget.classList.toggle("bg-clight/50");
+    nb.edit.toggle();
+  });
 
-document.getElementById("nb_edit_save").addEventListener("click", (e) => {
-  e.currentTarget.setAttribute("disabled", true);
-  nb.edit.save();
-});
+  document.getElementById("nb_edit_save").addEventListener("click", (e) => {
+    e.currentTarget.setAttribute("disabled", true);
+    nb.edit.save();
+  });
+}
 
 if (nb_edit_insert_media) {
   nb_edit_insert_media.addEventListener("click", (e) => {
@@ -35,7 +37,7 @@ if (nb_edit_insert_media) {
 
 nb_bar.addEventListener("expanded.te.sidenav", (event) => {
   nb.api.post(nb.base_url + "/api/v1/session", { nb_bar_slim: false });
-  nb_bar.show_edit_menu(nb.edit.enabled);
+  document.getElementById("nb_edit_menu") && nb_bar.show_edit_menu(nb.edit.enabled);
 });
 
 nb_bar.addEventListener("collapsed.te.sidenav", (event) => {
