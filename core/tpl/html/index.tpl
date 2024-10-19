@@ -32,7 +32,7 @@
 </head>
 
 <body class="[#body-classes#]">
-    [#feature-cond manage-content tpl=nimblybar#]
+    [#feature-cond manage-content,nimblybar tpl=nimblybar#]
     [#callouts#]
     <div id="page">
         <header id="header">

@@ -3,7 +3,7 @@
 $GLOBALS['SYSTEM']['data_base'] = $GLOBALS['SYSTEM']['file_base'] . 'ext/data';
 
 /**
- * Implements [data] shortcode
+ * Implements [#data#] shortcode
  * Example: [data resource=users op=read]
  * @doc * `[data users]` loads all users in variable _data.users_
  * @doc * `[data users var=all_users]` use custom variable name. This example loads all users in variable named all_users
