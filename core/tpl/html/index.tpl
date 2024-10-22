@@ -3,7 +3,7 @@
 [#data .config uuid=site#]
 [#set site-name="[#get-key data.config.site name#]"#]
 [#set app-name="Nimbly Framework"#]
-[#set language=en#]
+[#set language=[#detect-language#]#]
 [#set body-classes=#]
 [#set html-classes="[#logged-in#]"#]
 [#set head=#]
