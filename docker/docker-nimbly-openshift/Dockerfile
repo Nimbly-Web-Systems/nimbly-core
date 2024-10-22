@@ -33,6 +33,12 @@ COPY --from=build /opt/app-root/src/ext/static/tw-elements.umd.min.js /opt/app-r
 COPY --from=build /opt/app-root/src/ext/static/medium-editor.min.js  /opt/app-root/src/ext/static/medium-editor.min.js 
 COPY --from=build /opt/app-root/src/ext/data/.i18n/bundle.po /opt/app-root/src/ext/data/.i18n/bundle.po
 ADD index.php .
+
+USER 0
+RUN find ext -type d -exec chmod 750 {} +
+RUN chown -R 1001:0 ext
+USER 1001
+
 ADD docker/docker-nimbly-openshift/.htaccess .
 
 CMD /usr/libexec/s2i/run

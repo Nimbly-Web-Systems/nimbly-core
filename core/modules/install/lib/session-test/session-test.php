@@ -8,9 +8,10 @@ function session_test_sc() {
     load_library("set");
     $sess_path = "ext/data/.tmp/sessions";
     $test = file_exists($sess_path) || @mkdir($sess_path, 0750, true);
+    $test &= chmod($sess_path, 0750);
     $test &= is_writable($sess_path);
     session_sc();
-    $test = session_resume();
+    $test &= session_resume();
     if (empty($test)) {
         set_variable("session_ok", "fail");
     } else {
@@ -21,6 +22,6 @@ function session_test_sc() {
 function session_test_hard_fail() {
     $error = error_get_last();
     if ($error['type'] === 1) {
-    	echo "<strong>Uh oh! Test failed</strong><br />";
+    	echo "<strong>Uh oh! Session test failed</strong><br />";
     }
 }

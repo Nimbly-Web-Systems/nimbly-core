@@ -28,9 +28,10 @@ function check_requirements_sc($params) {
     }
 
     $apache_version_ok = false;
-    $version_string = apache_get_version();
-
-    if (stripos($version_string, "apache/") === 0) {
+    $version_string = function_exists('apache_get_version')? apache_get_version() : 'unknown';
+    if ($version_string === 'unknown') {
+        $apache_version_ok = true;
+    } else if (stripos($version_string, "apache/") === 0) {
         $start = strlen("apache/");
         $stop = strpos($version_string, ' ');
         $version_number = substr($version_string, $start, $stop - $start);
@@ -42,8 +43,8 @@ function check_requirements_sc($params) {
         return;
     }
 
-    $mods = apache_get_modules();
-    if (in_array("mod_rewrite", $mods) === false) {
+    $mods = function_exists('apache_get_modules')? apache_get_modules() : 'unknown';
+    if (is_array($mods) && in_array("mod_rewrite", $mods) === false) {
         set_variable("require_msg", "require_apache_rewrite");
         return;
     }

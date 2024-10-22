@@ -31,7 +31,7 @@ function debug_sc($params) {
     if (empty($params) || get_param_value($params, "apache") !== null) {
         echo '<div class="scroll-h">';
         debug_pretty_caption('Apache Modules');
-        debug_pretty_print(array('Installed' => join(", ", apache_get_modules())));
+        debug_pretty_print(array('Installed' => join(", ", function_exists('apache_get_modules')? apache_get_modules() : ['unknown'])));
         echo '</div><hr />';
     }
     if (get_param_value($params, "php") !== null) {
