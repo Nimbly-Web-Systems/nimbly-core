@@ -2,6 +2,7 @@
 	<input type="text" value="[#get record.[#item.key#]#]" name="[#item.key#]" placeholder="" 
 		@keyup="update_slug" 
 		@change="update_slug"
+            @paste="update_slug"
 		x-init="form_data.[#item.key#]='[#get record.[#item.key#]#]'" 
             x-model="form_data.[#item.key#]" 
             [#if item.required=(not-empty) echo=required#] 
