@@ -6,6 +6,8 @@ function url_sc($params=null) {
 		return $GLOBALS['SYSTEM']['uri_base'] . $GLOBALS['SYSTEM']['request_uri'];
 	} else if (current($params) === "relative") {
 		return $GLOBALS['SYSTEM']['request_uri'];
+	} else if (current($params) === "absolute") {
+		return url_absolute($GLOBALS['SYSTEM']['request_uri']);
 	} else {
 		$url = current($params) ?? $GLOBALS['SYSTEM']['request_uri'];
 		return url_absolute($url);

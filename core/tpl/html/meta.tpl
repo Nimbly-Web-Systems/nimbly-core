@@ -8,5 +8,5 @@
 <meta property="og:locale" content="[#language#]">
 <meta property="og:type" content="website">
 <meta property="og:title" content="[#page-title#]">
-<meta property="og:url" content="[#url absolute=#]">
+<meta property="og:url" content="[#url absolute#]">
 <meta property="og:site_name" content="[#site-name#]">
