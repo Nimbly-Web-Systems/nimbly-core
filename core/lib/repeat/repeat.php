@@ -71,6 +71,7 @@ function repeat_sc($params) {
             continue;
         } 
         set_variable($var_id . '.ix', intval($k) + $ix_offset);
+        set_variable($var_id . '.x', $k);
         if (is_string($item)) {
             set_variable($var_id . '.key', $item);
         } else if (is_int($item)) {
