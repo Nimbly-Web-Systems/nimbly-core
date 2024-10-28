@@ -10,7 +10,7 @@
     "js-build": "cp ./node_modules/medium-editor/dist/js/medium-editor.min.js ext/static/medium-editor.min.js && cp ./node_modules/tw-elements/dist/js/tw-elements.umd.min.js ext/static/tw-elements.umd.min.js && esbuild js/index.jsx --bundle --minify --outfile=ext/static/app.js",
     "css-build": "cp ./node_modules/medium-editor/dist/css/medium-editor.min.css ./css/medium-editor.min.css && esbuild css/index.css --bundle --minify --external:img/* --external:font/* --outfile=ext/static/app.css",
     "tw-build": "npx tailwindcss -i ./css/tw/in.css -o ./css/tw/out.css",
-    "text-build": "find -name text.po | xargs msgcat > ext/data/.i18n/bundle.po",
+    "text-build": "find -name text.po | xargs msgcat > ext/data/.i18n/text.base.po",
     "tw": "npx tailwindcss -i ./css/tw/in.css -o ./css/tw/out.css --watch",
     "build": "npm run tw-build && npm run css-build && npm run js-build && npm run text-build",
     "up": "cd docker && docker-compose down && docker-compose up -d nimbly && cd ..",
