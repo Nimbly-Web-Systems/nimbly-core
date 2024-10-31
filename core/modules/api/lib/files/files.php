@@ -41,7 +41,7 @@ function files_post()
         "size" => $_FILES['file']['size'],
         "_created" => $now,
         "_modified" => $now,
-        "_uplaoded" => $now
+        "_uploaded" => $now
     );
     if (exif_imagetype($from) === IMAGETYPE_JPEG) {
         load_library("exif", "images");
