@@ -6,6 +6,7 @@ USER 0
 
 ADD docker/docker-nimbly-openshift/empty_file ext/theme.css
 ADD docker/docker-nimbly-openshift/empty_file ext/data/.i18n/_.po
+ADD docker/docker-nimbly-openshift/empty_file ext/data/.tmp/sessions/_.
 ADD core/modules/install/uri/install/tailwind.theme.js ext/tailwind.theme.js
 ADD tailwind.config.js .
 ADD package.json .
