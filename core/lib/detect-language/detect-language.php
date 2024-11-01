@@ -6,7 +6,7 @@ function detect_language_sc() {
     static $ALLOWED_LANG = ['nl', 'en'];
 
     //1. from url
-    $uri = $GLOBALS['SYSTEM']['uri_base'] . $GLOBALS['SYSTEM']['request_uri'];
+    $uri = $GLOBALS['SYSTEM']['request_uri'];
     foreach ($ALLOWED_LANG as $l) {
         
         if (stripos($uri, '/' . $l . '/') !== false) {
