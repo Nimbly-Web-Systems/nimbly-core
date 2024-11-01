@@ -11,7 +11,12 @@ function detect_language_sc() {
         if (stripos($uri, '/' . $l . '/') !== false) {
             return $l;
         }     
-        if ($uri === $l || $uri === '/' . $l) {
+
+        if (stripos($uri, $l . '/') === 0) {
+            return $l;
+        }  
+
+        if ($uri === $l || $uri === '/' . $l || $uri === '/' . $l . '/') {
             return $l;
         }
     }
