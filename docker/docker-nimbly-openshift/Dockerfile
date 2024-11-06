@@ -29,7 +29,7 @@ COPY --from=build /opt/app-root/src/ext/static/app.css /opt/app-root/src/ext/sta
 COPY --from=build /opt/app-root/src/ext/static/app.js /opt/app-root/src/ext/static/app.js
 COPY --from=build /opt/app-root/src/ext/static/tw-elements.umd.min.js /opt/app-root/src/ext/static/tw-elements.umd.min.js
 COPY --from=build /opt/app-root/src/ext/static/medium-editor.min.js  /opt/app-root/src/ext/static/medium-editor.min.js 
-COPY --from=build /opt/app-root/src/ext/data/.i18n/bundle.po /opt/app-root/src/ext/data/.i18n/bundle.po
+COPY --from=build /opt/app-root/src/ext/data/.i18n/text.base.po /opt/app-root/src/ext/data/.i18n/text.base.po
 ADD docker/docker-nimbly-openshift/.htaccess .
 ADD index.php .
 
