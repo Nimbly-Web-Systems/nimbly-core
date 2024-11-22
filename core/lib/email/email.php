@@ -9,7 +9,7 @@ function email_sc($params)
 {
 	$config_id = current($params);
 	load_library('data');
-	$data = data_read('.emails', $config_id);
+	$data = data_read('.services', $config_id);
 	email($data);
 }
 

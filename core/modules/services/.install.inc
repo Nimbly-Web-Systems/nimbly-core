@@ -2,7 +2,7 @@
 
 load_library("data");
 
-$result = data_create_resource(".emails", [
+$result = data_create_resource(".services", [
     "fields" => [
         "service" => [
             "type" => "text",
