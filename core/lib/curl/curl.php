@@ -1,5 +1,7 @@
 <?php
 
+load_library('log');
+
 function _curl_init($url, $headers = false)
 {
     $ch = curl_init();
@@ -18,7 +20,7 @@ function _curl_exec($ch)
     $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
     $errno = curl_errno($ch);
     if ($http_code != 200 || $errno || !$response) {
-        load_library('log');
+        
         $error_message = $errno ? curl_error($ch) : 'unknown';
         log_system('cURL error (' . $errno . ') or invalid response code (' . $http_code . '): ' . $error_message);
         if ($response) {

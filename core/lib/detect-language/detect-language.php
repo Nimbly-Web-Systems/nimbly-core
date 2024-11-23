@@ -30,7 +30,8 @@ function detect_language_sc() {
     }
 
     //3. from top level domain
-    $tld = end(explode('.', $_SERVER['SERVER_NAME']));
+    $server_name_parts = explode('.', $_SERVER['SERVER_NAME']);
+    $tld = end($server_name_parts);
     if (!empty($tld) && in_array($tld, $ALLOWED_LANG)) {
         return $tld;
     } 

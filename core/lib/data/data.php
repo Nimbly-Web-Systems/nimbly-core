@@ -439,7 +439,7 @@ function data_delete($resource, $uuid = null) {
             return $result;
         }
         $meta = data_meta($resource);
-        if (isset($meta['index']) || isset($meta['children'])) {
+        if (isset($meta['index']) || isset($meta['children']) || isset($meta['translations'])) {
             $data_ls = data_read($resource, $uuid);
             if (isset($meta['index']) && is_array($meta['index'])) {
                 load_library('md5');
@@ -466,6 +466,15 @@ function data_delete($resource, $uuid = null) {
                     $result ++;
                     @rrmdir($child_dir);
                 }        
+            }
+            if (isset($data_ls['translations']) && is_array($data_ls['translations'])) {
+                foreach($data_ls['translations'] as $id) {
+                    $r = data_read($resource, $id);
+                    if (isset($r['translations'][$data_ls['lang']])) {
+                        unset($r['translations'][$data_ls['lang']]);
+                        data_update($resource, $id, ['translations' => $r['translations']]);
+                    }
+                }
             }
         }
         $result += (int) unlink($file);

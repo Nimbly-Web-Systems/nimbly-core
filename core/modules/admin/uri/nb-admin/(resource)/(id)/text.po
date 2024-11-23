@@ -1,2 +1,8 @@
 msgid "help_edit_resource"
 msgstr "Update this record by filling in the form below"
+
+msgid "nl"
+msgstr "Nederlands"
+
+msgid "en"
+msgstr "English"
