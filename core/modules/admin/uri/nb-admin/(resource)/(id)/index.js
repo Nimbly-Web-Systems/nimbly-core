@@ -22,7 +22,11 @@ Alpine.data("form_edit", (resource_id, record_id) => ({
         this.busy = false;
         if (data.success) {
           nb.system_message(nb.text.record_updated).then((data) => {
-            history.back();
+            if (document.referrer && !document.referrer.includes('/nb-admin/')) {
+              window.location.href = document.referrer;
+            } else {
+              window.location.href = nb.base_url + '/nb-admin/' + resource_id;
+            }
           });
         } else {
           nb.notify(data.message);
