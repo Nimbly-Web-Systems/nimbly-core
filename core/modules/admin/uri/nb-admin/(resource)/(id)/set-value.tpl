@@ -1,1 +1,1 @@
-[#set _fvalue="[#get record.[#item.key#]#]" overwrite#]
+[#set _fvalue="[#unquote record.[#item.key#] #]" overwrite#]

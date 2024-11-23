@@ -29,5 +29,26 @@ Alpine.data("form_edit", (resource_id, record_id) => ({
         }
       });
   },
+  translate(lang) {
+    this.busy = true;
+    nb.api
+      .post(nb.base_url + "/api/v1/openai/translate", {
+        resource: this.resource_id,
+        uuid: this.record_id,
+        lang: lang,
+      })
+      .then((data) => {
+        this.busy = false;
+        if (data.success) {
+          var uuid = Object.keys(data[this.resource_id])[0];
+          nb.system_message(nb.text.record_added).then((data) => {
+            window.location.href =
+              nb.base_url + "/nb-admin/" + this.resource_id + "/" + uuid;
+          });
+        } else {
+          nb.notify(data.message);
+        }
+      });
+  },
   ...nb.forms,
 }));

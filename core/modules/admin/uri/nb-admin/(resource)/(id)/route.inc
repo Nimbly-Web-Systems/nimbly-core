@@ -4,14 +4,14 @@ router_deny();
 
 $parts = $GLOBALS['SYSTEM']['uri_parts'];
 if (count($parts) !== 3 || $parts[0] !== 'nb-admin') {
-    return;
+	return;
 }
 $resource = $parts[1];
 $uuid = $parts[2];
 
 load_library("data");
 if (!data_exists($resource, $uuid)) {
-    return;
+	return;
 }
 
 
@@ -39,7 +39,7 @@ if (!empty($meta['encrypt2way'])) {
 	}
 }
 
-if (empty($meta['fields'])) { 
+if (empty($meta['fields'])) {
 	//build it dynamically from the record
 	$meta['fields'] = [];
 	foreach ($record as $key => $value) {
@@ -51,10 +51,21 @@ if (empty($meta['fields'])) {
 			"type" => "text"
 		];
 	}
-} 
+}
 set_variable("data.fields", $meta['fields']);
 set_variables("data.field.", $meta['fields']);
+if (isset($meta['translations'])) {
+	$languages = $meta['translations']['languages'];
+	$lang = $record['lang'];
+	$ix = array_search($lang, $languages);
+	if ($ix !== false) {
+		unset($languages[$ix]);
+	}
+	set_variable('languages', $languages);
+}
+set_variable("has_translations", !!$meta['translations']);
 set_variable_dot('record', $record);
+set_variable_dot('translations', $record['translations'] ?? '');
 load_library("access", "user");
 load_library("get-user-resources", "admin");
 if (access_by_feature('manage-content') && get_user_resources_access($resource)) {
