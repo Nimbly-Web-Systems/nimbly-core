@@ -29,5 +29,5 @@
         </path>
     </svg>
 
-    <span class="text-xs normal-case mx-1" x-cloak x-show="busy">AI Translating. Please wait...</span>
+    <span class="text-xs normal-case" x-cloak x-show="busy">AI Translating. Please wait...</span>
 </button>
