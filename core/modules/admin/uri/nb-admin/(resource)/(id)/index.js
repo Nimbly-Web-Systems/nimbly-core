@@ -54,5 +54,17 @@ Alpine.data("form_edit", (resource_id, record_id) => ({
         }
       });
   },
+  delete_record() {
+    nb.api
+      .delete(nb.base_url + "/api/v1/" + this.resource_id + "/" + this.record_id)
+      .then((data) => {
+        if (data.success) {
+          nb.system_message(nb.text.record_deleted);
+          window.location.href = nb.base_url + '/nb-admin/' + resource_id;
+        } else {
+          nb.notify(data.message);
+        }
+      });
+  },
   ...nb.forms,
 }));

@@ -1,5 +1,5 @@
 <div class="relative my-6 border border-neutral-300 rounded bg-neutral-50 p-4" data-nb-edit-image="[#_fname#]"
-	x-init="[#_fmodel#]='[#_fvalue#]'">
+	x-init="[#_fmodel#]=`[#_fvalue#]`">
 
 	[#if _fvalue=(not-empty) tpl=init_file_info#]
 	
