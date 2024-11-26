@@ -57,10 +57,8 @@ function openai_translate_post()
                 return json_result(['message' => 'OPENAI_FAIL'], 500);
             }
             $translated_record[$field] = $response;
-            log_system($response);
         }
         if (!empty($meta['fields'][$field]['slug'])) {
-            log_system($translated_record[$field]);
             load_library('slug');
             $translated_record[$field . '_slug'] = slug_sc($translated_record[$field]);
         }
