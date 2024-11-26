@@ -49,13 +49,14 @@ function openai_translate_post()
     foreach ($translations['rules'] as $field => $recipe) {
         if (is_scalar($recipe)) {
             $translated_record[$field] = $recipe;
-        } else if (!empty($record[$field]) && is_array($recipe)) {
+        } else if (!empty(trim($record[$field])) && is_array($recipe)) {
             $messages = openai_get_system_instructions($recipe, $data['lang']);
             $messages[] = ["role" => "user", "content" => $record[$field]];
             $response = openai_get_completion($api_key, $messages);
             if ($response === false) {
+                log_system('Translation fail');
                 return json_result(['message' => 'OPENAI_FAIL'], 500);
-            }
+            } 
             $translated_record[$field] = $response;
         }
         if (!empty($meta['fields'][$field]['slug'])) {

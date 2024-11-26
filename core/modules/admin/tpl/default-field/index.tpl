@@ -1,6 +1,6 @@
 <div class="relative my-6" data-te-input-wrapper-init>
     <input type="[#_ftype#]" value="[#_fvalue#]" name="[#_fname#]" placeholder="" 
-        x-init="[#_fmodel#]='[#_fvalue#]'"
+        x-init="[#_fmodel#]=`[#_fvalue#]`"
         x-model="[#_fmodel#]"
         [#if item.required=(not-empty) echo=required#]
         class="

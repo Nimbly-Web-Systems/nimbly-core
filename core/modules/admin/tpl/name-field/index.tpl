@@ -1,9 +1,9 @@
 <div class="relative mt-6" data-te-input-wrapper-init>
-	<input type="text" value="[#get record.[#item.key#]#]" name="[#item.key#]" placeholder="" 
+	<input type="text" value="[#_fvalue#]" name="[#item.key#]" placeholder="" 
 		@keyup="update_slug" 
 		@change="update_slug"
             @paste="update_slug"
-		x-init="form_data.[#item.key#]='[#get record.[#item.key#]#]'" 
+		x-init="form_data.[#item.key#]=`[#_fvalue#]`"
             x-model="form_data.[#item.key#]" 
             [#if item.required=(not-empty) echo=required#] 
             class="
