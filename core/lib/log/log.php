@@ -11,5 +11,5 @@ function log_system($str) {
     if (is_array($str)) {
         $str = print_r($str, true);
     }
-    error_log('NIMBLY ' . $str);
+    error_log('Nimbly: ' . $str);
 }
