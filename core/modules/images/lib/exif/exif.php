@@ -11,7 +11,7 @@ function exif_sc($params) {
     } else {
         $meta = data_read('.files_meta', $img_uuid);
     }
-    if (emtpy($meta['exif_pretty'])) {
+    if (empty($meta['exif_pretty'])) {
         return '';
     }
     if ($meta['exif_pretty'] === 'n/a') {
