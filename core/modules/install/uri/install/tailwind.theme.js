@@ -1,4 +1,4 @@
-const defaultTheme = require('tailwindcss/defaultTheme');
+import defaultTheme from 'tailwindcss/defaultTheme';
 
 let appTheme = {
   extend: {
