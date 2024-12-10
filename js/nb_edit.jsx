@@ -177,6 +177,7 @@ nb_edit.get_field_values = function (el) {
     fields.forEach(f => {
         const key = f.dataset.nbEdit;
         if (key) {
+            nb_edit.make_links_target_blank(f);
             result[key] = f.innerHTML;
         }
     });
