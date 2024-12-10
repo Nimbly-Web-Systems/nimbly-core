@@ -316,6 +316,16 @@ nb_edit.set_img = function (eimg, data) {
     document.getElementById('nb_edit_save').removeAttribute('disabled');
 }
 
+nb_edit.make_links_target_blank = function (ed) {
+    const links = ed.querySelectorAll('a');
+    links.forEach(link => {
+        const href = link.getAttribute('href');
+        if (href && href.includes('://') && !href.startsWith(window.location.origin)) {
+            link.setAttribute('target', '_blank');
+            link.setAttribute('rel', 'noopener noreferrer'); // security best practice
+        }
+    });
+};
 
 nb_edit.save = function () {
     nb_edit.inputs = 0;
@@ -328,7 +338,7 @@ nb_edit.save = function () {
         }
     });
 
-    const imgs = document.querySelectorAll('[data-nb-edit-img');
+    const imgs = document.querySelectorAll('[data-nb-edit-img]');
     imgs.forEach(eimg => {
         if (typeof eimg._nb === 'undefined'
             || typeof eimg._nb.inputs === 'undefined'
@@ -362,6 +372,11 @@ nb_edit.save_resource = function (ed) {
     const uuid = resource_set[offset + 1];
     const field = resource_set[offset + 2];
     const api_url = nb.base_url + '/api/v1/' + resource + '/' + uuid;
+
+    // add target=_blank to external links
+    if (!is_img) {
+        nb_edit.make_links_target_blank(ed);
+    }
 
     const data = {};
     data[field] = is_img ? ed.dataset.nbEditImgValue : ed.innerHTML.trim();
