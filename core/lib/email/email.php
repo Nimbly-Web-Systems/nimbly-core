@@ -16,6 +16,7 @@ function email_sc($params)
 function email($email_data)
 {
 
+
 	if (empty($email_data['recipient'])) {
 		throw new Exception('Email field "recipient" not set');
 		return false;
@@ -130,7 +131,14 @@ function email_via_phpmailer($email_data)
 		$mail->Port       = $email_data['port'] ?? 465;
 
 		$mail->setFrom($email_data['from'] ?? 'info@nimblycms.com', $email_data['from_name'] ?? 'Nimbly CMS');
-		$mail->addAddress($email_data['recipient'] ?? $email_data['to'], $email_data['recipient_name'] ?? '');
+
+		$recipients = explode(',', $email_data['recipient'] ?? $email_data['to']);
+		$recipient_names = explode(',', $email_data['recipient_name'] ?? '');
+
+		foreach ($recipients as $ix => $recipient) {
+			$jx = $ix > (count($recipient_names) - 1) ? (count($recipient_names) - 1) : $ix;
+			$mail->addAddress($recipient, $recipient_names[$jx]);
+		}
 
 		$html = run_buffered($email_data['tpl']);
 		load_library('plain-text');
