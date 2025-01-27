@@ -13,8 +13,8 @@
     "text-build": "find -name text.po | xargs msgcat > ext/data/.i18n/text.base.po",
     "tw": "npx tailwindcss -i ./css/tw/in.css -o ./css/tw/out.css --watch",
     "build": "npm run tw-build && npm run css-build && npm run js-build && npm run text-build",
-    "up": "cd docker && docker-compose down && docker-compose up -d nimbly && cd ..",
-    "up-os": "cd docker && docker-compose down && docker-compose build --no-cache nimbly-openshift && docker-compose up --force-recreate nimbly-openshift && cd ..",
+    "up": "cd docker && docker compose down && docker compose up -d nimbly && cd ..",
+    "up-os": "cd docker && docker compose down && docker compose build --no-cache nimbly-openshift && docker compose up --force-recreate nimbly-openshift && cd ..",
     "init": "mkdir -p ./ext/data/.i18n && rsync -u ./core/modules/install/uri/install/tailwind.theme.js ./ext/tailwind.theme.js && touch ./ext/theme.css"
   },
   "repository": {
