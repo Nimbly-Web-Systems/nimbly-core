@@ -27,6 +27,5 @@ function system_message($msg) {
     if (!session_exists()) {
         return;
     }
-    session_sc();
     $_SESSION['SYSTEM']['messages'][] = $msg;
 }

@@ -1,5 +1,7 @@
 <?php
 
+load_library('text');
+
 function resource_name_sc($params) {
     $r = trim(strtolower(current($params)), '. ');
     if (substr($r, -1) === 's' && $r !== 'news') {
@@ -9,5 +11,5 @@ function resource_name_sc($params) {
             $r = substr($r, 0, -2) . 'y';
         }
     }
-    return ucfirst($r);
+    return t(ucfirst($r));
 }
