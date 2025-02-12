@@ -1,5 +1,7 @@
 <?php
 
+load_library('text');
+
 function field_name_sc($params) {
-    return ucfirst(trim(current($params), '. '));
+    return t(ucfirst(trim(current($params), '. ')));
 }
