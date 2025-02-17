@@ -14,7 +14,6 @@
   .prose.prose-dark a {
     @apply text-neutral-50 no-underline;
   }
-  
 
   .prose a:hover {
     @apply underline;
@@ -38,8 +37,14 @@
   @apply bg-red-50 border border-red-400 rounded text-red-600 p-4 my-4;
 }
 
-[x-cloak], form #anti-spam-field {
+[x-cloak] {
   display: none !important;
+}
+
+form #anti-spam-field {
+  position: absolute;
+  left: -9999px;
+  opacity: 0;
 }
 
 /* medium editor */
@@ -93,18 +98,18 @@
 }
 
 .medium-editor-toolbar-form a:hover {
-    @apply bg-clight/50;
-  }
+  @apply bg-clight/50;
+}
 
 .medium-editor-toolbar-anchor-preview {
   @apply bg-cdarkest rounded text-neutral-50;
 }
 
-.medium-editor-placeholder[contenteditable=true]:after {
+.medium-editor-placeholder[contenteditable="true"]:after {
   @apply text-neutral-300;
 }
 
-.medium-editor-placeholder[contenteditable=false]:after {
+.medium-editor-placeholder[contenteditable="false"]:after {
   @apply hidden;
 }
 
@@ -112,7 +117,8 @@
   @apply min-h-0;
 }
 
-form .medium-editor-element, form [data-nb-edit] {
+form .medium-editor-element,
+form [data-nb-edit] {
   @apply rounded border border-neutral-300 bg-transparent px-2 py-3;
   @apply outline-none outline-offset-0 min-h-[41px] transition-all duration-200 ease-linear;
 }
@@ -123,7 +129,7 @@ form .medium-editor-element[data-medium-focused] {
 
 /* editable images */
 
-[data-nb-edit-img-enabled=true] {
+[data-nb-edit-img-enabled="true"] {
   @apply outline-8 outline-clight/20 outline bg-clight/20;
 }
 
@@ -131,8 +137,6 @@ form .medium-editor-element[data-medium-focused] {
   @apply hidden;
 }
 
-[data-nb-edit-img][data-nb-edit-img-enabled=true] button {
+[data-nb-edit-img][data-nb-edit-img-enabled="true"] button {
   @apply block;
-} 
-
-
+}
