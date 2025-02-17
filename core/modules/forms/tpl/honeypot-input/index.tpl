@@ -1,3 +1,4 @@
+<input type="hidden" name="form_timestamp" value="[#date fmt=U#]">
 <div class="relative my-6" data-te-input-wrapper-init id="anti-spam-field">
     <input type="text" value="" name="anti-spam" placeholder="" required 
         class="
