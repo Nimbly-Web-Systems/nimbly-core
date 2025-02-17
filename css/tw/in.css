@@ -38,7 +38,7 @@
   @apply bg-red-50 border border-red-400 rounded text-red-600 p-4 my-4;
 }
 
-[x-cloak] {
+[x-cloak], form #anti-spam-field {
   display: none !important;
 }
 
