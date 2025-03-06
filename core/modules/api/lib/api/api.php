@@ -46,19 +46,19 @@ function _api_access_str($method, $perm, $uuid) {
 }
 
 function api_access($feature='api', $resource=false) {
-    return api_key_access($feature) || api_user_access($feature, $resource);
+    return api_public_access($feature) || api_user_access($feature, $resource) || api_token_access($feature, $resource);
 }
 
-function api_key_access($feature) {
-    load_library('form-key', 'forms');
-    $key = filter_input(INPUT_GET, 'key', FILTER_SANITIZE_SPECIAL_CHARS);    
-    $fkey = form_key_get();
-    
-    if (empty($key) || empty($fkey)) {
+function api_public_access($feature) {
+    $key = get_variable('key');
+    if (empty($key)) {
         return false;
     }
-    if ($key !== $fkey) {
-        return false;
+    if ($key !== $_SERVER['PEPPER']) {
+        load_library('form-key', 'forms');
+        if ($key !== form_key_get()) {
+            return false;
+        }
     }
     $api_allowed = explode(',', get_variable('api.allow', ''));
     $features = explode(',', $feature);
@@ -67,13 +67,53 @@ function api_key_access($feature) {
 }
 
 function api_user_access($feature, $resource = false) {
-    if (access_by_feature($feature)) {
+     if (access_by_feature($feature)) {
         return true;
     }
     if (access_by_feature('manage-content') && $resource && !in_array($resource, ['users', 'roles'])) {
         return true;
     }
     return false;
+}
+
+function api_token_access($feature, $resource = false) {
+    $headers = getallheaders();
+
+    if (empty($headers["Authorization"])) {
+        return false;
+    }
+
+    list($type, $token) = explode(" ", $headers["Authorization"], 2);
+
+    if (empty($token) || strcasecmp($type, 'Bearer') !== 0) {
+        return false;
+    }
+
+    $users = data_filter(data_read('users', null, ['email', 'api']), 'api:(exists)');
+    $user = null;
+
+    foreach ($users as $u) {
+        if ($u['api']['access'] && $u['api']['token'] === $token) {
+            $user = $u;
+            break;
+        }
+    }
+
+    if (empty($user) || empty($user['api']['expires']) || !is_numeric($user['api']['expires'])) {
+        return false;
+    }
+
+    if (time() > $user['api']['expires']) {
+        return false;
+    }
+
+    if (!_persist_user_roles($user['email'])) {
+        return false;
+    }
+
+    _persist_user_features($user['email']);
+    $_SESSION['username'] = $user['email'];
+    return api_user_access($feature, $resource);
 }
 
 /*
