@@ -228,7 +228,7 @@ function resource_put($resource) { // update multiple
             $resource => $result,
             'count' => count($result),
             'message' => 'RESOURCE_UPDATED'
-        ), 201);
+        ), 200);
     }
     return json_result(array('message' => 'RESOURCE_UPDATE_FAILED'), 500);
 }
@@ -285,12 +285,15 @@ function resource_id_put($resource, $uuid) { // update one
             $resource => array($uuid => $result),
             'count' => 1,
             'message' => 'RESOURCE_UPDATED'
-        ), 201);
+        ), 200);
     }
     return json_result(array('message' => 'RESOURCE_UPDATE_FAILED'), 500);
 }
 
 function resource_id_delete($resource, $uuid) { // delete one
+    if (!data_exists($resource, $uuid)) {
+        return json_result(array('message' => 'RESOURCE_NOT FOUND'), 404);
+    } 
     if (data_delete($resource, $uuid)) {
         return json_result(array('message' => 'RESOURCE_DELETED', 'count' => 1), 200);
     }
