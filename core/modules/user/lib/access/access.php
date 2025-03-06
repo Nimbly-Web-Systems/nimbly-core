@@ -49,7 +49,7 @@ function access_by_feature($feature) {
         return false;
     }
     if (isset($_SESSION['features']['(all)']) && $_SESSION['features']['(all)'] === true) {
-        return true;
+        return true;        
     }
     $features = explode(',', $feature);
     foreach ($features as $f) {
@@ -70,12 +70,6 @@ function access_by_key($key) {
     if (isset($_SESSION['key']) && $key === $_SESSION['key']) {
         return true;
     }
-    if (isset($_POST['api-key']) && $key === $_POST['api-key']) {
-        return true;
-    }
-    if (isset($_SERVER['HTTP_X_API_KEY']) && $key === $_SERVER['HTTP_X_API_KEY']) {
-        return true;
-    }
     return false;
 }
 
@@ -94,6 +88,7 @@ function load_user_roles($name) {
 }
 
 function load_user_features($name) {
+   
     $features = data_read('users', md5($name), 'features');
     if (!empty($features)) {
         $result = array_map('trim', explode(',', $features));
@@ -103,7 +98,6 @@ function load_user_features($name) {
     $result = array();
     foreach ($roles as $role) {
         $features = data_read('roles', $role, 'features');
-
         if (!empty($features)) {
             $fs = array_map('trim', explode(',', $features));
             $result = array_merge($result, $fs);
