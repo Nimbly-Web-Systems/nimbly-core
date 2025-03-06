@@ -148,7 +148,7 @@ function pages_update($uuid, $data) {
             $resource => array($uuid => $result),
             'count' => 1,
             'message' => 'RESOURCE_UPDATED'
-        ), 201);
+        ), 200);
     }
     return json_result(array('message' => 'RESOURCE_UPDATE_FAILED'), 500);
 }
@@ -175,7 +175,7 @@ function pages_id_put($resource, $uuid) { // update one
             "pages" => array($uuid => $result),
             'count' => 1,
             'message' => 'RESOURCE_UPDATED'
-        ), 201);
+        ), 200);
     }
     return json_result(array('message' => 'RESOURCE_UPDATE_FAILED'), 500);
 }

@@ -8,13 +8,14 @@ if (count($parts) !== 4 || $parts[0] !== 'api' || $parts[1] !== 'v1') {
 }
 
 $resource = $parts[2];
+
 if (!data_exists($resource)) {
     return;
 }
 
 $uuid = $parts[3];
 $method = $_SERVER['REQUEST_METHOD'];
-if ($method !== 'POST' && !data_exists($resource, $uuid)) {
+if ($method !== 'POST' && $method !== 'DELETE' && !data_exists($resource, $uuid)) {
     return;
 }
 
