@@ -2,7 +2,7 @@
     <input type="[#_ftype#]" value="[#_fvalue#]" name="[#_fname#]" placeholder="" 
         x-init="[#_fmodel#]=`[#_fvalue#]`"
         x-model="[#_fmodel#]"
-        [#if item.required=(not-empty) echo=required#]
+        [#if item.required=(not-empty) or _frequired=(not-empty) echo=required#]
         class="
             peer block min-h-[auto] w-full rounded border-0 bg-transparent px-2 py-[0.2rem] 
             leading-[2.15] outline-none transition-all duration-200 ease-linear 
