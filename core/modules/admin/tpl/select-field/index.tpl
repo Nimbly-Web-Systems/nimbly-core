@@ -1,5 +1,6 @@
 <select data-te-select-init name="[#item.key#]" data-te-select-size="lg" [#if item.multi=(not-empty) echo=multiple#]
     class="[#if item.hidden=(not-empty) echo=hidden#]" 
+    [#if item.required=(not-empty) or _frequired=(not-empty) echo=required#]
     x-init='form_data.[#item.key#]=[#get record.[#item.key#] default=(empty) json#]'
     x-model="form_data.[#item.key#]">
     <option value="(empty)">[#text None#]</option>

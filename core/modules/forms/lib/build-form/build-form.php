@@ -41,7 +41,7 @@ function build_form($form_def)
             continue;
         }
         if ($type === 'select') {
-            echo '<div class="p-2"></div>';
+            echo '<div class="p-1"></div>';
             set_variable('item.key', $key);
             set_variable('item.name', $def['name']);
             foreach ($def['options'] as $k => $v) {
@@ -62,7 +62,7 @@ function build_form($form_def)
         set_variable('_fattr', $def['attr'] ?? '');
         run_single_sc($type . '-field');
         if ($type === 'select') {
-            echo '<div class="p-3"></div>';
+            echo '<div class="p-2"></div>';
         }
         if (isset($def['help'])) {
             set_variable('_fhelp', $def['help']);
