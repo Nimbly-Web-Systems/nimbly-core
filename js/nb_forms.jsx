@@ -14,10 +14,10 @@ var nb_forms = {
             this.form_data[slug_child_name] = clean_val;
         }
     },
-    select_image(field_name, field_ix=undefined) {
+    select_image(field_name, field_ix = undefined) {
         this.select_media(field_name, field_ix, ['img', 'svg']);
     },
-    select_media(field_name, field_ix=undefined, filter=[]) {
+    select_media(field_name, field_ix = undefined, filter = []) {
         nb.media_alpine.mode = 'select';
         nb.media_alpine.filter(filter);
         nb.media_alpine.reset_tab();
@@ -34,7 +34,7 @@ var nb_forms = {
         } else {
             nb.media_modal.me.form_data[field_name] = field_data.uuid;
         }
-        nb.media_modal.me.file_info[field_name] = field_data;
+        nb.media_modal.me.file_info[field_data.uuid] = field_data;
     },
     move_item(field_name, old_ix, new_ix) {
         if (old_ix === new_ix || new_ix < 0 || new_ix >= this.form_data[field_name].length) {
@@ -43,12 +43,35 @@ var nb_forms = {
         var value = this.form_data[field_name].splice(old_ix, 1)[0];
         this.form_data[field_name].splice(new_ix, 0, value);
     },
-    delete_image(field_name, field_ix=undefined) {
+    delete_image(field_name, field_ix = undefined) {
         if (field_ix) {
             this.form_data[field_name].splice(field_ix, 1);
         } else {
             this.form_data[field_name] = '';
         }
+    },
+    get_file_meta(field_name) {
+        this.form_data[field_name].forEach((item) => {
+            this.fetch_file_meta(item).then(r => this.file_info[item] = r);
+        });
+    },
+    async fetch_file_meta(uuid) {
+        if (this.file_info[uuid] !== undefined) {
+            return this.file_info[uuid];
+        }
+        // todo: check if media library has this file info
+        if (nb.media_library.files && nb.media_library.files.lengh) {
+            console.log('does media lib have info on file', uuid, nb.media_library);
+        }
+
+        // otherwise, look it up:
+        var result = {}
+        await nb.api.get(nb.base_url + '/api/v1/.files_meta/' + uuid).then(data => {
+            if (data.success) {
+                result = data['.files_meta'][uuid];
+            }
+        });
+        return result;
     }
 };
 
