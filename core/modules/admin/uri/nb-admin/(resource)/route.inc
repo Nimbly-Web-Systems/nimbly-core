@@ -27,6 +27,35 @@ if (empty($items) && isset($meta['subkey'])) {
 	set_variable('subkey', $meta['subkey']);
 }
 
+/* set select values */
+foreach ($meta['fields'] as $k => $v) {
+    if (empty($v['type']) || $v['type'] !== 'select') {
+        continue;
+    }
+    if (isset ($v['resource'])) {
+        $options = data_read($v['resource']);
+    }
+    // todo: other sources for options
+    if (empty($options)) {
+        continue;
+    }
+    foreach ($items as $item_ix => $i) {
+        if (empty($i[$k]) || $i[$k] === '(empty)') {
+            continue;
+        }
+        if (!empty($v['multi'])) {
+            $vs = explode(',', $v['multi']);
+        } else {
+            $vs = [$i[$k]];
+        }
+        $new_v = [];
+        foreach ($vs as $opt_id) {
+            $new_v[] = $options[$opt_id]['name'] ?? $options[$opt_id]['title'] ?? '(unknown)';
+        }
+        $items[$item_ix][$k] = implode(', ', $new_v);
+    }
+}
+
 // store data and fields and render the page
 load_library("set");
 set_variable('_order', $meta['order'] ?? false);	
@@ -42,5 +71,9 @@ load_library("get-user-resources", "admin");
 if (access_by_feature('manage-content') && get_user_resources_access($resource)) {
 	$_SESSION['features']['manage-' . $resource] = true;
 }
+
+
+
+
 load_module("admin");
 router_accept();
