@@ -7,6 +7,7 @@
         <div class="flex items-center [#if subkey=(not-empty) echo=hidden#]">
             [#feature-cond features="manage-[#data.resource#],delete_[#data.resource#],(any)_[#data.resource#]" tpl="action_delete"#]
             [#feature-cond features="manage-[#data.resource#],edit_[#data.resource#],(any)_[#data.resource#]" tpl="action_edit"#]
+            [#if action_url=(not-empty) tpl=action_url#]
         </div>
     </td>
 </tr>
