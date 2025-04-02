@@ -61,6 +61,7 @@ load_library("set");
 set_variable('_order', $meta['order'] ?? false);	
 set_variable("data.resource", $resource);
 set_variable("data.records", $items);
+set_variable('action_url', $meta['actions']['url'] ?? ''); 
 $meta['fields'] = data_exclude($meta['fields'], 'admin_col', false);
 unset($meta['fields']['_created_by']);
 unset($meta['fields']['_created']);
@@ -71,9 +72,6 @@ load_library("get-user-resources", "admin");
 if (access_by_feature('manage-content') && get_user_resources_access($resource)) {
 	$_SESSION['features']['manage-' . $resource] = true;
 }
-
-
-
 
 load_module("admin");
 router_accept();
