@@ -42,16 +42,24 @@
                 </video>
             </template>
 
+            <template x-if="file_type() === 'audio'">
+                <audio controls width="230" class="w-[130px] mx-auto">
+                    <source :src="`[#base-url#]/download/${file_info.uuid}`" 
+                    :type="`audio/${audio_type()}`">
+                </audio>
+            </template>
 
             <p class="text-xs font-bold mt-2 break-words" x-text="file_info.name"></p>
-            <div class="text-xs flex items-center flex-wrap justify-between text-neutral-600 mt-0.5 mb-4 gap-x-1 gap-y-0.5">
+            <div
+                class="text-xs flex items-center flex-wrap justify-between text-neutral-600 mt-0.5 mb-4 gap-x-1 gap-y-0.5">
                 <span class="text-xs text-neutral-600" x-text="file_date(file_info._created)">---</span>
                 <template x-if="file_info.width">
                     <span x-text="`${file_info.width}x${file_info.height}`">---</span>
                 </template>
                 <span x-text="file_info.size? file_info.size.fileSize(1) : ''">---</span>
                 <template x-if="file_info.in_use===false">
-                    <div class="flex flex-row items-center font-bold text-yellow-900 bg-yellow-400 border border-yellow-700 rounded py-1 px-2">
+                    <div
+                        class="flex flex-row items-center font-bold text-yellow-900 bg-yellow-400 border border-yellow-700 rounded py-1 px-2">
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"
                             class="w-4 h-4 mr-1">
                             <title>[#text File not in use#]</title>

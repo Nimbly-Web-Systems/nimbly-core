@@ -9,9 +9,8 @@
 
             <template x-if="file.in_use === false">
                 <div class="absolute top-1 right-1 w-6 h-6 text-yellow-600 bg-neutral-50/80 rounded">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" 
-                        class="w-6 h-6 shadow-sm"
-                        >
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"
+                        class="w-6 h-6 shadow-sm">
                         <title>[#text File not in use#]</title>
                         <path fill-rule="evenodd"
                             d="M9.401 3.003c1.155-2 4.043-2 5.197 0l7.355 12.748c1.154 2-.29 4.5-2.599 4.5H4.645c-2.309 0-3.752-2.5-2.598-4.5L9.4 3.003ZM12 8.25a.75.75 0 0 1 .75.75v3.75a.75.75 0 0 1-1.5 0V9a.75.75 0 0 1 .75-.75Zm0 8.25a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Z"
@@ -40,7 +39,7 @@
             <!-- video -->
             <template x-if="file_type(index) === 'vid'">
                 <div class="relative w-full h-full">
-                    <video width="300" height="300" class="flex items-center justify-center h-full">
+                    <video loading="lazy" width="300" height="300" class="flex items-center justify-center h-full">
                         <source :src="`[#base-url#]/video/${file.uuid}`" :type="`video/${vid_type(index)}`">
                     </video>
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
@@ -52,6 +51,21 @@
                             d="M15.75 10.5l4.72-4.72a.75.75 0 011.28.53v11.38a.75.75 0 01-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 002.25-2.25v-9a2.25 2.25 0 00-2.25-2.25h-9A2.25 2.25 0 002.25 7.5v9a2.25 2.25 0 002.25 2.25z" />
                     </svg>
 
+                </div>
+            </template>
+
+            <!-- audio -->
+            <template x-if="file_type(index) === 'audio'">
+                <div class="flex flex-col items-center justify-center h-full p-4">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                        stroke="currentColor" class="w-8 h-8 stroke-neutral-500/40 
+                        ">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                            d="m9 9 10.5-3m0 6.553v3.75a2.25 2.25 0 0 1-1.632 2.163l-1.32.377a1.803 1.803 0 1 1-.99-3.467l2.31-.66a2.25 2.25 0 0 0 1.632-2.163Zm0 0V2.25L9 5.25v10.303m0 0v3.75a2.25 2.25 0 0 1-1.632 2.163l-1.32.377a1.803 1.803 0 0 1-.99-3.467l2.31-.66A2.25 2.25 0 0 0 9 15.553Z" />
+                    </svg>
+                    <div class="text-xs text-center text-neutral-500 mt-2" x-text="file.title || file.name">
+
+                    </div>
                 </div>
             </template>
 
