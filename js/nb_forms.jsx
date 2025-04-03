@@ -34,7 +34,7 @@ var nb_forms = {
         } else {
             nb.media_modal.me.form_data[field_name] = field_data.uuid;
         }
-        nb.media_modal.me.file_info[field_data.uuid] = field_data;
+        nb.media_modal.me.file_info[field_data.uuid] = field_data;        
     },
     move_item(field_name, old_ix, new_ix) {
         if (old_ix === new_ix || new_ix < 0 || new_ix >= this.form_data[field_name].length) {

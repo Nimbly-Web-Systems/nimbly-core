@@ -142,7 +142,9 @@ var nb_media_library = {
             return "img";
         } else if (f && f.type.startsWith("video")) {
             return "vid";
-        }
+        } else if (f && f.type.startsWith("audio")) {
+            return "audio";
+        } 
         return "doc";
     },
     doc_type(ix) {
@@ -176,7 +178,19 @@ var nb_media_library = {
         if (t.length !== 2) {
             return default_result;
         }
-        return default_result;
+        return t[1];
+    },
+    audio_type(ix) {
+        const f = typeof ix === 'undefined' ? this.file_info : this.page[ix];
+        const default_result = 'mp3';
+        if (!f) {
+            return default_result;
+        }
+        const t = f.type.split('/');
+        if (t.length !== 2) {
+            return default_result;
+        }
+        return t[1];
     },
     handle_upload_ready(e) {
         if (typeof e.detail !== "undefined" && e.detail.success) {

@@ -16,7 +16,10 @@
 				</svg>
 
 				<div class="text-xs py-2 text-neutral-600">
-					<p x-text="file_info.[#_fname#].name"></p>
+					<p x-text="file_info[`${[#_fmodel#]}`] ? 
+						file_info[`${[#_fmodel#]}`].name
+						: file_info.[#_fname#]? file_info.[#_fname#].name : '---'">
+					</p>
 				</div>
 			</a>
 

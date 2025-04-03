@@ -42,6 +42,9 @@ function fmt_sc($params) {
         case 'image':
             set_variable('_img_uuid', is_array($val)? current($val) : $val, true);
             return run_buffered(dirname(__FILE__) . '/image.tpl');
+        case 'file':
+            set_variable('_file_uuid', is_array($val)? current($val) : $val, true);
+            return run_buffered(dirname(__FILE__) . '/file.tpl');
             break;
         default:
             if (is_array($val)) {
