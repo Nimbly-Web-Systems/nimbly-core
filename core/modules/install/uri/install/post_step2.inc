@@ -58,8 +58,7 @@ if (data_exists('.config', 'site')) {
 } else {
   $ok = data_create('.config', 'site', [
     'name' => $sitename,
-    'description' => $sitename . ': a Nimbly site',
-    'keywords' => $sitename . ', Nimbly'
+    'description' => $sitename . ': a Nimbly site'
   ]);
 }
 
