@@ -1,5 +1,5 @@
 <div data-te-modal-init x-data="modal_settings('[#url-key#]')"
-  class="fixed left-0 top-0 z-[1054] hidden h-full right-[30px] overflow-y-auto overflow-x-hidden outline-none"
+  class="fixed left-0 top-0 z-[1054] hidden h-full right-[30px] overflow-y-auto overflow-x-hidden outline-none text-neutral-700"
   id="nb-modal-settings" tabindex="-1" aria-labelledby="modal_settings" aria-hidden="true">
   <div data-te-modal-dialog-ref
     class="pointer-events-none relative w-auto h-[calc(100%-50px)] translate-y-[-50px] opacity-0 transition-all duration-300 ease-in-out min-[576px]:mx-auto min-[576px]:mt-7 min-[576px]:max-w-[500px] min-[786px]:max-w-[710px]">
@@ -35,7 +35,7 @@
                   motion-reduce:transition-none
                   data-[te-input-state-active]:placeholder:opacity-100 
                   [&:not([data-te-input-placeholder-active])]:placeholder:opacity-0" />
-            <label for="rewritebase" class="pointer-events-none absolute left-3 top-0 mb-0 
+            <label for="page_title" class="pointer-events-none absolute left-3 top-0 mb-0 
                   max-w-[90%] origin-[0_0] truncate pt-[0.37rem] leading-[2.15] 
                   text-neutral-600 transition-all duration-200 ease-out 
                   peer-focus:-translate-y-[1.15rem] 
