@@ -6,7 +6,7 @@
         class="pointer-events-none relative w-auto translate-y-[-50px] opacity-0 transition-all duration-300 ease-in-out min-[0px]:m-0 min-[0px]:h-full min-[0px]:max-w-none">
         <div
             class="pointer-events-auto relative flex w-full flex-col rounded-md bg-neutral-50
-       bg-clip-padding text-current shadow-lg outline-none dark:bg-neutral-600 min-[0px]:h-full min-[0px]:rounded-none min-[0px]:border-0">
+       bg-clip-padding text-current shadow-lg outline-none min-[0px]:h-full min-[0px]:rounded-none min-[0px]:border-0">
             <div
                 class="flex flex-shrink-0 items-center justify-between rounded-t-md border-b border-neutral-200 px-4 py-2 min-[0px]:rounded-none">
 
