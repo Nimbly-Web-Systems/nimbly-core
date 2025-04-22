@@ -1,8 +1,9 @@
 <?php
 
 function slug_sc($params) {
-	$result = is_array($params)? implode(' ', $params) : $params;
-	$result = strtolower($result);
-	$result = preg_replace("![^a-z0-9]+!i", "-", $result);
-	return $result;
+    $result = is_array($params) ? implode(' ', $params) : $params;
+    $result = mb_strtolower($result, 'UTF-8'); // Lowercase with Unicode support
+    $result = preg_replace('/[^\p{L}\p{Nd}]+/u', '-', $result); // Allow letters and numbers (Unicode-aware)
+    $result = trim($result, '-'); // Remove leading/trailing hyphens
+    return $result;
 }
