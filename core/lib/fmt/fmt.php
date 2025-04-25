@@ -55,8 +55,8 @@ function fmt_sc($params) {
             break;
     }
     
-    if ($max_length > 0 && strlen($result) > $max_length) {
-        $result = substr($result, 0, $max_length) . '…';        
+    if ($max_length > 0 && mb_strlen($result) > $max_length) {
+        $result = mb_substr($result, 0, $max_length) . '…';        
     }
 
     return $result;
