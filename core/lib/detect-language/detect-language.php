@@ -3,11 +3,11 @@
 
 
 function detect_language_sc() {
-    static $ALLOWED_LANG = ['nl', 'en'];
-
+    load_library('lookup');
+    $allowed_lang = lookup_data('.config', 'site', 'languages', ['en']);
     //1. from url
     $uri = $GLOBALS['SYSTEM']['request_uri'];
-    foreach ($ALLOWED_LANG as $l) {
+    foreach ($allowed_lang as $l) {
         
         if (stripos($uri, '/' . $l . '/') !== false) {
             return $l;
@@ -25,20 +25,20 @@ function detect_language_sc() {
     //2. from user preference
     load_library('get');
     $lang = get_variable('lang');
-    if (!empty($lang) && strlen($lang) === 2 && in_array($lang, $ALLOWED_LANG)) {
+    if (!empty($lang) && strlen($lang) === 2 && in_array($lang, $allowed_lang)) {
         return $lang;
     }
 
     //3. from top level domain
     $server_name_parts = explode('.', $_SERVER['SERVER_NAME']);
     $tld = end($server_name_parts);
-    if (!empty($tld) && in_array($tld, $ALLOWED_LANG)) {
+    if (!empty($tld) && in_array($tld, $allowed_lang)) {
         return $tld;
     } 
     
     //4. from browser language
     $browser_language = substr($_SERVER['HTTP_ACCEPT_LANGUAGE'] ?? 'en', 0, 2);
-    if (in_array($browser_language, $ALLOWED_LANG)) {
+    if (in_array($browser_language, $allowed_lang)) {
         return $browser_language;
     }
     
