@@ -1,6 +1,7 @@
 <?php
 
 load_library('util');
+load_library('data');
 
 /*
  * @doc `[lookup resource.uuid.key]` gets value of field key for a specific resource, 
