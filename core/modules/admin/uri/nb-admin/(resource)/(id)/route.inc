@@ -82,9 +82,6 @@ if (isset($meta['languages']) && !isset($meta['translations'])) {
 	set_variable('translation_mode', 'record');
 }
 
-
-
-
 if (isset($meta['translations'])) { //deprecated way
 	$languages = $meta['translations']['languages'];
 	$lang = $record['lang'];
