@@ -2,7 +2,7 @@
 
 load_library("get");
 load_library("set");
-load_library("detect_language");
+load_library("detect-language");
 
 
 /**
