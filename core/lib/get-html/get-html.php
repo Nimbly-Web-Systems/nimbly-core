@@ -29,6 +29,16 @@ function get_html_sc($params)
         $html = lookup_data($resource, $uuid, $field, get_param_value('default', ''));
     }
 
+    if (is_array($html)) {
+        load_library('detect-language');
+        $language = detect_language_sc();
+        if (isset($html[$language])) {
+            $html = $html[$language];
+        } else {
+            $html = '';
+        }
+    }
+
     // remove any base_url like src="/(base-url)/img/(uuid)
     $html = preg_replace('/([" ,])\/[\w]{2,}(\/img\/[0-9a-z]{20,32}\/)/i', '$1$2', $html);
 
