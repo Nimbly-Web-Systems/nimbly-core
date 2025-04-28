@@ -2,10 +2,14 @@
 
 load_library('get');
 
-function get_i18n_sc($params) {
+function get_i18n_sc($params)
+{
     $v = get_sc($params);
 
     if (empty($v)) {
+        return '';
+    }
+    if (!is_array($v) && strlen($v) === 2) {
         return '';
     }
 
