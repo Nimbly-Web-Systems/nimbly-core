@@ -112,10 +112,12 @@ function data_sort_string($data, $key, $sort_order = SORT_ASC) {
 }
 
 function _get_key($record, $field) {
-    static $result = false;
-    if ($result) {
-        return $result;
+    static $cached_result = [];
+    $hash = md5($record['uuid'] . $field .  $record[$field]);
+    if (isset($cached_result[$hash])) {
+        return $cached_result[$hash];
     }
+    
     $v = $record[$field];
     if (is_array($v)) {
         $lang = detect_language_sc();
@@ -125,6 +127,6 @@ function _get_key($record, $field) {
             $v = (string)current($v);
         }
     } 
-    $result = $v;
-    return $result;
+    $cached_result[$hash] = $v;
+    return $v;
 }
