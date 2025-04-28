@@ -263,6 +263,18 @@ function data_read_index($resource, $index_name, $index_uuid) {
     return $result;
 }
 
+function array_merge_recursive_distinct(array &$array1, array &$array2) {
+    $merged = $array1;
+    foreach ($array2 as $key => &$value) {
+        if (is_array($value) && isset($merged[$key]) && is_array($merged[$key])) {
+            $merged[$key] = array_merge_recursive_distinct($merged[$key], $value);
+        } else {
+            $merged[$key] = $value;
+        }
+    }
+    return $merged;
+}
+
 /**
  * Updates a specific data object file
  */
@@ -291,7 +303,7 @@ function data_update($resource, $uuid, $data_update_ls) {
     if (empty($data_ls)) {
         $data_merged_ls = $data_update_ls;
     } else {
-        $data_merged_ls = array_merge($data_ls, $data_update_ls);
+        $data_merged_ls = array_merge_recursive_distinct($data_ls, $data_update_ls);
     }
 
     // additional handling if PK field changed
