@@ -44,6 +44,9 @@ if (empty($meta['fields'])) {
 		if ($key === 'uuid' || $key[0] === '_') {
 			continue;
 		}
+		if (!is_scalar($value)) {
+			continue;
+		}
 		$meta['fields'][$key] = [
 			"name" => $key,
 			"type" => "text"
