@@ -2,6 +2,7 @@
 
 load_library("get");
 load_library("set");
+load_library("detect_language");
 
 
 /**
@@ -91,21 +92,39 @@ function data_sort($data, $key, $sort_flags = SORT_REGULAR, $sort_order = SORT_A
 
 function data_sort_regular($data, $key, $sort_order = SORT_ASC) {
     uasort($data, $sort_order === SORT_ASC?
-            function($a, $b) use ($key) { return $a[$key] ?? '' - $b[$key] ?? ''; }
-        :   function($b, $a) use ($key) { return $a[$key] ?? '' - $b[$key] ?? ''; });
+            function($a, $b) use ($key) { return _get_key($a, $key) ?? '' - _get_key($b, $key) ?? ''; }
+        :   function($b, $a) use ($key) { return _get_key($a, $key) ?? '' - _get_key($b, $key) ?? ''; });
     return $data;
 }
 
 function data_sort_numeric($data, $key, $sort_order = SORT_ASC) {
     uasort($data,  $sort_order ===  SORT_ASC?
-            function($a, $b) use ($key) { return floatval($a[$key] ?? 0) - floatval($b[$key] ?? 0); }
-        :   function($b, $a) use ($key) { return floatval($a[$key] ?? 0) - floatval($b[$key] ?? 0); });
+            function($a, $b) use ($key) { return floatval(_get_key($a, $key) ?? 0) - floatval(_get_key($b, $key) ?? 0); }
+        :   function($b, $a) use ($key) { return floatval(_get_key($a, $key) ?? 0) - floatval(_get_key($b, $key) ?? 0); });
     return $data;
 }
 
 function data_sort_string($data, $key, $sort_order = SORT_ASC) {
     uasort($data, $sort_order ===  SORT_ASC?
-            function($a, $b) use ($key) { return strcasecmp($a[$key] ?? '', $b[$key] ?? ''); }
-        :   function($b, $a) use ($key) { return strcasecmp($a[$key] ?? '', $b[$key] ?? ''); });
+            function($a, $b) use ($key) { return strcasecmp(_get_key($a, $key) ?? '', _get_key($b, $key) ?? ''); }
+        :   function($b, $a) use ($key) { return strcasecmp(_get_key($a, $key) ?? '', _get_key($b, $key) ?? ''); });
     return $data;
+}
+
+function _get_key($record, $field) {
+    static $result = false;
+    if ($result) {
+        return $result;
+    }
+    $v = $record[$field];
+    if (is_array($v)) {
+        $lang = detect_language_sc();
+        if (isset($v[$lang]) && is_scalar($v[$lang])) {
+            $v = $v[$lang];
+        } else {
+            $v = (string)current($v);
+        }
+    } 
+    $result = $v;
+    return $result;
 }
