@@ -10,6 +10,7 @@
 
         <div class="max-w-lg mx-auto">
             [#if has_translations=(not-empty) tpl=tabs-translations#]
+            [#if show_language_tabs=(not-empty) tpl=tabs-languages#]
 
             [#set nb_form_edit=true overwrite#]
             [#form-key add_resource_[#data.resource#]#]
@@ -40,3 +41,6 @@
         </div>
     </form>
 </section>
+<script>
+var _initial_lang="[#get record.lang default=en#]"
+</script>

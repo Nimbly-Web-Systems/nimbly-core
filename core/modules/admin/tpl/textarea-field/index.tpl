@@ -1,4 +1,5 @@
 <div class="relative mb-3 mt-6" data-te-input-wrapper-init [#get _fattr#]>
+  [#if _fai=(not-empty) tpl=ai-btn#]
   <textarea
     class="peer block min-h-[auto] w-full rounded border-0 bg-transparent p-2 leading-[1.6] 
       outline-none transition-all duration-200 ease-linear 
