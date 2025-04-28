@@ -27,6 +27,9 @@ if (empty($items) && isset($meta['subkey'])) {
 	set_variable('subkey', $meta['subkey']);
 }
 
+load_library('detect-language');
+$lang = detect_language_sc();
+
 /* set select values */
 foreach ($meta['fields'] as $k => $v) {
     if (empty($v['type']) || $v['type'] !== 'select') {
@@ -35,6 +38,7 @@ foreach ($meta['fields'] as $k => $v) {
     if (isset ($v['resource'])) {
         $options = data_read($v['resource']);
     }
+    
     // todo: other sources for options
     if (empty($options)) {
         continue;
@@ -50,7 +54,12 @@ foreach ($meta['fields'] as $k => $v) {
         }
         $new_v = [];
         foreach ($vs as $opt_id) {
-            $new_v[] = $options[$opt_id]['name'] ?? $options[$opt_id]['title'] ?? '(unknown)';
+            $_v = $options[$opt_id]['name'] ?? $options[$opt_id]['title'] ?? '(unknown)';
+            if (is_array($_v) && isset($_v[$lang])) {
+                $new_v[] = $_v[$lang];
+            } else {
+                $new_v[] = $_v;
+            }
         }
         $items[$item_ix][$k] = implode(', ', $new_v);
     }

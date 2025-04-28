@@ -2,6 +2,7 @@
 
 load_library("get");
 load_library("set");
+load_library("detect-language");
 
 function fmt_sc($params) {
     $result = "";
@@ -11,14 +12,13 @@ function fmt_sc($params) {
     } else {
         $val = get_variable($var);
     }
-    $type = get_param_value($params, 'type', end($params)) ?? 'text';
+    $type = get_param_value($params, 'type', end($params)) ?? 'text';    
 
     if (empty($val) && $type !== 'boolean') {
         return get_param_value($params, 'empty', '(empty)');
     }
 
     $max_length = intval(get_param_value($params, 'max_length') ?? 0);
-    
     switch ($type) {
         case 'html':
             $result = trim(strip_tags($val));
@@ -47,11 +47,18 @@ function fmt_sc($params) {
             return run_buffered(dirname(__FILE__) . '/file.tpl');
             break;
         default:
+            $lang = detect_language_sc();
+            if (is_array($val) && isset($val[$lang])) {
+                $val = $val[$lang];
+            }
+            
             if (is_array($val)) {
                 $result =  fmt_sc([implode(', ', $val)]);
             } else if (is_object($val)) {
                 $result =  json_encode($val);
-            } else $result =  strval($val);
+            } else {
+                $result =  strval($val);
+            }
             break;
     }
     
