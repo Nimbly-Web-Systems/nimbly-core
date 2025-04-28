@@ -2,8 +2,9 @@ Alpine.data("form_edit", (resource_id, record_id) => ({
   resource_id: resource_id,
   record_id: record_id,
   lang: _initial_lang,
+  redirect_on_submit: true,
   busy: false,
-  submit(e) {
+  submit() {
     this.busy = true;
     if (this.form_data.hasOwnProperty("keep_password")) {
       if (
@@ -17,22 +18,32 @@ Alpine.data("form_edit", (resource_id, record_id) => ({
     nb.api
       .put(nb.base_url + "/api/v1/" + resource_id + "/" + record_id, {
         ...this.form_data,
-        ...nb.edit.get_field_values(e.target),
+        ...nb.edit.get_field_values(this.$refs.edit_resource_form),
       })
       .then((data) => {
         this.busy = false;
         if (data.success) {
-          nb.system_message(nb.text.record_updated).then((data) => {
-            if (document.referrer && !document.referrer.includes('/nb-admin/')) {
-              window.location.href = document.referrer;
-            } else {
-              window.location.href = nb.base_url + '/nb-admin/' + resource_id;
-            }
-          });
+          if (this.redirect_on_submit) {
+            nb.system_message(nb.text.record_updated).then((data) => {
+              if (
+                document.referrer &&
+                !document.referrer.includes("/nb-admin/")
+              ) {
+                window.location.href = document.referrer;
+              } else {
+                window.location.href = nb.base_url + "/nb-admin/" + resource_id;
+              }
+            });
+          } else {
+          }
         } else {
           nb.notify(data.message);
         }
       });
+  },
+  save() {
+    this.redirect_on_submit = false;
+    this.submit();
   },
   ai(field, lang) {
     this.busy = true;
@@ -41,7 +52,7 @@ Alpine.data("form_edit", (resource_id, record_id) => ({
         resource: this.resource_id,
         uuid: this.record_id,
         lang: lang,
-        field: field
+        field: field,
       })
       .then((data) => {
         this.busy = false;
@@ -49,7 +60,7 @@ Alpine.data("form_edit", (resource_id, record_id) => ({
         if (data.success) {
           this.form_data[field][lang] = data.completion;
           if (data.completion.length === 0) {
-            nb.notify('Empty result');
+            nb.notify("Empty result");
           }
         } else {
           nb.notify(data.message);
@@ -79,11 +90,13 @@ Alpine.data("form_edit", (resource_id, record_id) => ({
   },
   delete_record() {
     nb.api
-      .delete(nb.base_url + "/api/v1/" + this.resource_id + "/" + this.record_id)
+      .delete(
+        nb.base_url + "/api/v1/" + this.resource_id + "/" + this.record_id
+      )
       .then((data) => {
         if (data.success) {
           nb.system_message(nb.text.record_deleted);
-          window.location.href = nb.base_url + '/nb-admin/' + resource_id;
+          window.location.href = nb.base_url + "/nb-admin/" + resource_id;
         } else {
           nb.notify(data.message);
         }
