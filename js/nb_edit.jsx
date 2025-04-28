@@ -362,7 +362,10 @@ nb_edit.save_resource = function (ed) {
     }
 
     const resource_set = resource_dot.split('.');
-    if ((resource_set.length - offset) !== 3) {
+    let lang = false;
+    if ((resource_set.length - offset) === 4 && resource_set[offset + 3].length === 2) {
+        lang = resource_set[offset + 3];
+    } else if ((resource_set.length - offset) !== 3) {
         console.warn('nb_edit.save_resource: unknown resource', resource_set, resource_set.length - offset);
         return;
     }
@@ -380,7 +383,13 @@ nb_edit.save_resource = function (ed) {
     }
 
     const data = {};
-    data[field] = is_img ? ed.dataset.nbEditImgValue : ed.innerHTML.trim();
+    const val = is_img ? ed.dataset.nbEditImgValue : ed.innerHTML.trim();
+    if (lang) {
+        data[field] = {};
+        data[field][lang] = val;
+    } else {
+        data[field] = val;
+    }
     nb.api.put(api_url, data).then(d1 => {
         if (d1.success) {
             nb.notify(nb.text.saved);
