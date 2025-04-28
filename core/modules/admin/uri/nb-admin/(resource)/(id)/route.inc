@@ -14,7 +14,6 @@ if (!data_exists($resource, $uuid)) {
 	return;
 }
 
-
 load_library("set");
 set_variable("data.uuid", $uuid);
 set_variable("data.resource", $resource);
@@ -26,7 +25,6 @@ if (!empty($meta['subkey'])) {
 	router_accept();
 	return;
 }
-
 
 $record = data_read($resource, $uuid);
 
@@ -54,7 +52,37 @@ if (empty($meta['fields'])) {
 }
 set_variable("data.fields", $meta['fields']);
 set_variables("data.field.", $meta['fields']);
-if (isset($meta['translations'])) {
+
+if (isset($meta['languages']) && !isset($meta['translations'])) {
+	$meta['translations'] = ['languages' => $meta['languages']];
+	$record['lang'] = $record['lang'] ?? current($meta['languages']);
+	foreach ($meta['languages'] as $lang) {
+		foreach ($meta['fields'] as $fk => $field) {
+			if (empty($field['i18n'])) {
+				continue;
+			}
+			if (!is_array($record[$fk])) {
+				$record[$fk] = [
+					$lang => $record[$fk] ?? ''
+				];
+				continue;
+			} 
+			if (!isset($record[$fk][$lang])) {
+				$record[$fk][$lang] = '';
+			} else {
+				$record['translations'][$lang] = true;
+			}
+		}		
+	}
+	set_variable('translation_mode', 'field');
+} else {
+	set_variable('translation_mode', 'record');
+}
+
+
+
+
+if (isset($meta['translations'])) { //deprecated way
 	$languages = $meta['translations']['languages'];
 	$lang = $record['lang'];
 	$ix = array_search($lang, $languages);
@@ -62,8 +90,9 @@ if (isset($meta['translations'])) {
 		unset($languages[$ix]);
 	}
 	set_variable('languages', $languages);
-}
-set_variable("has_translations", !!$meta['translations']);
+	set_variable('has_translations', true);
+} 
+
 set_variable_dot('record', $record);
 set_variable_dot('translations', $record['translations'] ?? '');
 load_library("access", "user");

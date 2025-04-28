@@ -1,3 +1,7 @@
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=utf-8\n"
+
 msgid "help_edit_resource"
 msgstr "Update this record by filling in the form below"
 
@@ -6,3 +10,6 @@ msgstr "Nederlands"
 
 msgid "en"
 msgstr "English"
+
+msgid "ua"
+msgstr "Українська"

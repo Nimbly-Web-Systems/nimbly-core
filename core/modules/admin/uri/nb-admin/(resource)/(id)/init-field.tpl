@@ -1,5 +1,6 @@
 [#set _fbg="bg-neutral-50" overwrite#]
 [#set _ftype="[#item.type#]" overwrite#]
 [#set _fname="[#item.key#]" overwrite#]
-[#set _fmodel="form_data.[#item.key#]" overwrite#]
+[#set _fai=[#if item.ai_prompts=(not-empty) echo=1#][#if item.ai_prompts=(empty) echo=0#] overwrite#]
+[#set _fmodel="form_data.[#item.key#][#if item.i18n=(not-empty) echo=[lang]#]" overwrite#]
 [#set _ftitle="[#text [#field-name name="[#item.name#]"#]#]" overwrite#]

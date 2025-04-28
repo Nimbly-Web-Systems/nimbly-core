@@ -1,6 +1,7 @@
 Alpine.data("form_edit", (resource_id, record_id) => ({
   resource_id: resource_id,
   record_id: record_id,
+  lang: _initial_lang,
   busy: false,
   submit(e) {
     this.busy = true;
@@ -28,6 +29,28 @@ Alpine.data("form_edit", (resource_id, record_id) => ({
               window.location.href = nb.base_url + '/nb-admin/' + resource_id;
             }
           });
+        } else {
+          nb.notify(data.message);
+        }
+      });
+  },
+  ai(field, lang) {
+    this.busy = true;
+    nb.api
+      .post(nb.base_url + "/api/v1/openai/complete", {
+        resource: this.resource_id,
+        uuid: this.record_id,
+        lang: lang,
+        field: field
+      })
+      .then((data) => {
+        this.busy = false;
+        this.me_busy = false;
+        if (data.success) {
+          this.form_data[field][lang] = data.completion;
+          if (data.completion.length === 0) {
+            nb.notify('Empty result');
+          }
         } else {
           nb.notify(data.message);
         }

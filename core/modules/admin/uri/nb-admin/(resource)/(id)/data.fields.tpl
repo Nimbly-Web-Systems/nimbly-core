@@ -1,6 +1,6 @@
 <div class="mb-4">
     [#init-field#]
     [#if item.multi=(not-empty) tpl=multi-field#]
-    [#if not item.multi=(not-empty) item.type=html tpl=set-value#]
+    [#if not item.multi=(not-empty) item.type=html tpl=set-value[#if item.i18n=(not-empty) echo=-i18n#]#]
     [#if item.multi=(empty) tpl=[#item.type#]-field#]
 </div>
