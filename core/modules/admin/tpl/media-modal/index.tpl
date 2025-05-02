@@ -153,8 +153,13 @@
     <img class="w-full" src="{{src}}">
 </template>
 
-<template id="nb_media_insert_doc_tpl">
+<template id="nb_media_insert_doc_download_tpl">
     <a href="[#base_url#]/download/{{uuid}}" class="cursor-pointer" download="{{name}}"
+        title="{{description}}">{{title}}</a>
+</template>
+
+<template id="nb_media_insert_doc_link_tpl">
+    <a href="[#base_url#]/download/{{uuid}}" class="cursor-pointer" target="_blank"
         title="{{description}}">{{title}}</a>
 </template>
 

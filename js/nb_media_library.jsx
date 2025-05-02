@@ -22,6 +22,9 @@ var nb_media_library = {
         },
         extimg: {
             url: null
+        },
+        doc: {
+            insert_mode: 'link'
         }
     },
     files: [],
