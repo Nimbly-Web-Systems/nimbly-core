@@ -74,7 +74,7 @@ const alpine_media_insert = function () {
     hide_save_button: true,
     mode: "insert",
     insert_doc_html() {
-      return nb.populate_template("nb_media_insert_doc_tpl", {
+      return nb.populate_template("nb_media_insert_doc_" + this.embed_info.doc.insert_mode + "_tpl", {
         uuid: this.file_info.uuid,
         name: this.file_info.name,
         title: this.file_info.title || this.file_info.name,

@@ -44,8 +44,7 @@
 
             <template x-if="file_type() === 'audio'">
                 <audio controls width="230" class="w-[130px] mx-auto">
-                    <source :src="`[#base-url#]/download/${file_info.uuid}`" 
-                    :type="`audio/${audio_type()}`">
+                    <source :src="`[#base-url#]/download/${file_info.uuid}`" :type="`audio/${audio_type()}`">
                 </audio>
             </template>
 
@@ -109,8 +108,33 @@
                     [#text Description#]
                 </label>
             </div>
+
             <button class="[#btn-class-primary#] my-4" @click="save_media"
                 x-show="typeof hide_save_button === 'undefined'">Save</button>
+
+            <!-- document template picker -->
+            <template x-if="file_type() === 'doc'">
+                <div class="text-xs my-8 text-neutral-700">
+
+                    <fieldset class="border border-neutral-200 px-4 py-2">
+                        <legend class="text-xs text-neutral-600">[#text Select link type#]</legend>
+
+                        <div class="flex flex-row items-center">
+                            <input type="radio" id="link" name="link_type" value="link" checked
+                                x-model="embed_info.doc.insert_mode" />
+                            <label for="link" class="text-neutral-600 ml-2 pt-[1px]">Link</label>
+                        </div>
+
+                        <div class="mt-2 flex flex-row items-center">
+                            <input type="radio" id="download" name="link_type" value="download"
+                                x-model="embed_info.doc.insert_mode" />
+                            <label for="download" class="text-neutral-600 ml-2 pt-[1px]">Download</label>
+                        </div>
+
+                    </fieldset>
+
+                </div>
+            </template>
         </div>
     </template>
 </div>
