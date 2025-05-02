@@ -113,7 +113,7 @@
                 x-show="typeof hide_save_button === 'undefined'">Save</button>
 
             <!-- document template picker -->
-            <template x-if="file_type() === 'doc'">
+            <template x-if="file_type() === 'doc' && typeof hide_save_button !== 'undefined'">
                 <div class="text-xs my-8 text-neutral-700">
 
                     <fieldset class="border border-neutral-200 px-4 py-2">
