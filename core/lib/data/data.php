@@ -266,7 +266,12 @@ function data_read_index($resource, $index_name, $index_uuid) {
 function array_merge_recursive_distinct(array &$array1, array &$array2) {
     $merged = $array1;
     foreach ($array2 as $key => &$value) {
-        if (is_array($value) && isset($merged[$key]) && is_array($merged[$key])) {
+        if (
+            is_array($value) &&
+            isset($merged[$key]) &&
+            is_array($merged[$key]) &&
+            array_keys($value) !== range(0, count($value) - 1) // merge only if associative
+        ) {
             $merged[$key] = array_merge_recursive_distinct($merged[$key], $value);
         } else {
             $merged[$key] = $value;
