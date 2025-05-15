@@ -13,7 +13,7 @@ if (!data_exists($resource)) {
 }
 
 $items = data_read($resource);
-if (empty ($items)) {
+if (empty($items)) {
     $items = null;
 }
 
@@ -23,8 +23,8 @@ if (!empty($items) && isset($meta['sort'])) {
 }
 
 if (empty($items) && isset($meta['subkey'])) {
-	$items = data_read_subkeys($resource, $meta['subkey']);
-	set_variable('subkey', $meta['subkey']);
+    $items = data_read_subkeys($resource, $meta['subkey']);
+    set_variable('subkey', $meta['subkey']);
 }
 
 load_library('detect-language');
@@ -35,7 +35,7 @@ foreach ($meta['fields'] as $k => $v) {
     if (empty($v['type']) || $v['type'] !== 'select') {
         continue;
     }
-    if (isset ($v['resource'])) {
+    if (isset($v['resource'])) {
         $options = data_read($v['resource']);
     }
     
@@ -47,11 +47,9 @@ foreach ($meta['fields'] as $k => $v) {
         if (empty($i[$k]) || $i[$k] === '(empty)') {
             continue;
         }
-        if (!empty($v['multi'])) {
-            $vs = explode(',', $v['multi']);
-        } else {
-            $vs = [$i[$k]];
-        }
+        $vs = !empty($v['multi'])
+            ? (is_array($i[$k]) ? $i[$k] : explode(',', $i[$k]))
+            : [$i[$k]];
         $new_v = [];
         foreach ($vs as $opt_id) {
             $_v = $options[$opt_id]['name'] ?? $options[$opt_id]['title'] ?? '(unknown)';
@@ -65,12 +63,13 @@ foreach ($meta['fields'] as $k => $v) {
     }
 }
 
+
 // store data and fields and render the page
 load_library("set");
-set_variable('_order', $meta['order'] ?? false);	
+set_variable('_order', $meta['order'] ?? false);
 set_variable("data.resource", $resource);
 set_variable("data.records", $items);
-set_variable('action_url', $meta['actions']['url'] ?? ''); 
+set_variable('action_url', $meta['actions']['url'] ?? '');
 $meta['fields'] = data_exclude($meta['fields'], 'admin_col', false);
 unset($meta['fields']['_created_by']);
 unset($meta['fields']['_created']);
@@ -79,7 +78,7 @@ set_variable("data.fields", $meta['fields']);
 load_library("access", "user");
 load_library("get-user-resources", "admin");
 if (access_by_feature('manage-content') && get_user_resources_access($resource)) {
-	$_SESSION['features']['manage-' . $resource] = true;
+    $_SESSION['features']['manage-' . $resource] = true;
 }
 
 load_module("admin");
