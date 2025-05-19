@@ -51,7 +51,7 @@ function data_sort_meta($data, $meta) {
     if (empty($data)) {
         return $data;
     }
-    switch (trim(strtolower($meta['flags']))) {
+    switch (trim(strtolower($meta['flags'] ?? 'text'))) {
         case 'num':
         case 'int':
         case 'numeric':
