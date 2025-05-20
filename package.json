@@ -12,7 +12,7 @@
     "css-build": "cp ./node_modules/medium-editor/dist/css/medium-editor.min.css ./css/medium-editor.min.css && esbuild css/index.css --bundle --minify --external:img/* --external:font/* --outfile=ext/static/app.css",
     "tw-build": "tailwindcss -i ./css/tw/in.css -o ./css/tw/out.css",
     "text-build": "find -name text.po | xargs msgcat > ext/data/.i18n/text.base.po",
-    "tw": "npx tailwindcss -i ./css/tw/in.css -o ./css/tw/out.css --watch",
+    "tw": "tailwindcss -i ./css/tw/in.css -o ./css/tw/out.css --watch",
     "build": "npm run tw-build && npm run css-build && npm run js-build && npm run text-build",
     "up": "cd docker && docker compose down && docker compose up -d nimbly && cd ..",
     "up-os": "cd docker && docker compose down && docker compose build --no-cache nimbly-openshift && docker compose up --force-recreate nimbly-openshift && cd ..",
@@ -34,6 +34,7 @@
     "tw-elements": "^1.0.0"
   },
   "devDependencies": {
+    "@tailwindcss/cli": "^4.1.7",
     "@tailwindcss/typography": "^0.5.9",
     "esbuild": "^0.25.4",
     "tailwindcss": "^4.1.7"
