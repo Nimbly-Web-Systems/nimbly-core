@@ -1,4 +1,3 @@
-// tailwind.config.js
 import theme from './ext/tailwind.theme.js';
 import typography from '@tailwindcss/typography';
 import twElements from 'tw-elements/dist/plugin.js';
@@ -18,5 +17,5 @@ export default {
     './node_modules/tw-elements/dist/js/**/*.js',
   ],
   theme,
-  plugins: [typography, twElements],
+  plugins: [typography, twElements]
 };
