@@ -1,6 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 
-let theme = require("./ext/tailwind.theme.js");
+const theme = require('./ext/tailwind.theme.js'); 
 
 module.exports = {
   darkMode: 'class',
