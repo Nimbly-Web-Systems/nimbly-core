@@ -227,6 +227,13 @@ function _data_write_cache($op, $resource, $setting, $content) {
     return $result;
 }
 
+function _data_clear_cache($op, $resource, $options = null) {
+    $cache_file = _data_cache_file($op, $resource, $options);
+    if (file_exists($cache_file)) {
+        unlink($cache_file);
+    }
+}
+
 function data_indexed($resource, $index_name, $index_uuid) {
     return file_exists($GLOBALS['SYSTEM']['data_base'] . '/' . $resource . '/' . $index_name . '/' . $index_uuid);
 }
