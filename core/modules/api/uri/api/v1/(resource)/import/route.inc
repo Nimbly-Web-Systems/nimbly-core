@@ -21,4 +21,3 @@ if ($method !== 'POST') {
 load_library('api_import_resource', 'api');
 
 return api_import_resource($resource);
-
