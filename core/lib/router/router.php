@@ -23,7 +23,7 @@ function router_match($path) {
     $parts = $GLOBALS['SYSTEM']['uri_parts'];
     $path_parts = explode(DIRECTORY_SEPARATOR . "uri" . DIRECTORY_SEPARATOR, dirname($path));
     $file_parts = explode(DIRECTORY_SEPARATOR, $path_parts[1]);
-    if (count($file_parts) < count($parts)) {
+    if (count($file_parts) !== count($parts)) {
         router_deny();
         return false;
     }
