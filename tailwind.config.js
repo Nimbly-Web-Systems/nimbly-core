@@ -1,6 +1,6 @@
 import theme from './ext/tailwind.theme.js';
 import typography from '@tailwindcss/typography';
-import twElements from 'tw-elements/dist/plugin.js';
+import twElements from 'tw-elements/dist/plugin.cjs';
 
 /** @type {import('tailwindcss').Config} */
 export default {
