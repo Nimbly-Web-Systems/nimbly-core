@@ -1,6 +1,7 @@
 import theme from './ext/tailwind.theme.js';
 import typography from '@tailwindcss/typography';
 import twElements from 'tw-elements/dist/plugin.cjs';
+import daisyui from 'daisyui';
 
 /** @type {import('tailwindcss').Config} */
 export default {
@@ -17,5 +18,5 @@ export default {
     './node_modules/tw-elements/dist/js/**/*.js',
   ],
   theme,
-  plugins: [typography, twElements]
+  plugins: [typography, twElements, daisyui]
 };
