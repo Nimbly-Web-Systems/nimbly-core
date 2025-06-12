@@ -1,22 +1,25 @@
-import theme from './ext/tailwind.theme.js';
-import typography from '@tailwindcss/typography';
-import twElements from 'tw-elements/dist/plugin.cjs';
-import daisyui from 'daisyui';
+import theme from "./ext/tailwind.theme.js";
+import typography from "@tailwindcss/typography";
+import twElements from "tw-elements/dist/plugin.cjs";
+import daisyui from "daisyui";
 
 /** @type {import('tailwindcss').Config} */
 export default {
-  darkMode: 'class',
+  darkMode: "class",
   content: [
-    './core/uri/**/*.tpl',
-    './core/uri/.modal/**/*.tpl',
-    './core/tpl/**/*.tpl',
-    './core/modules/**/*.tpl',
-    './ext/uri/**/*.tpl',
-    './ext/uri/.modal/**/*.tpl',
-    './ext/tpl/**/*.tpl',
-    './ext/modules/**/*.tpl',
-    './node_modules/tw-elements/dist/js/**/*.js',
+    "./core/uri/**/*.tpl",
+    "./core/uri/.modal/**/*.tpl",
+    "./core/tpl/**/*.tpl",
+    "./core/modules/**/*.tpl",
+    "./ext/uri/**/*.tpl",
+    "./ext/uri/.modal/**/*.tpl",
+    "./ext/tpl/**/*.tpl",
+    "./ext/modules/**/*.tpl",
+    "./node_modules/tw-elements/dist/js/**/*.js",
   ],
   theme,
-  plugins: [typography, twElements, daisyui]
+  daisyui: {
+    darkTheme: "light", // force dark mode to fall back to light (temporary fix)
+  },
+  plugins: [typography, twElements, daisyui],
 };
