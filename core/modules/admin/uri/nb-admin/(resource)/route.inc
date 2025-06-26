@@ -22,11 +22,6 @@ if (!empty($items) && isset($meta['sort'])) {
     $items = data_sort_meta($items, $meta['sort']);
 }
 
-if (empty($items) && isset($meta['subkey'])) {
-    $items = data_read_subkeys($resource, $meta['subkey']);
-    set_variable('subkey', $meta['subkey']);
-}
-
 load_library('detect-language');
 $lang = detect_language_sc();
 

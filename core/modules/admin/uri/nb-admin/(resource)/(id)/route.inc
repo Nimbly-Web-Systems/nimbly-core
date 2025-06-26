@@ -18,14 +18,6 @@ load_library("set");
 set_variable("data.uuid", $uuid);
 set_variable("data.resource", $resource);
 $meta = data_meta($resource);
-if (!empty($meta['subkey'])) {
-	$resource .= '/' . $uuid;
-	$uuid = null;
-	set_variable('subkey', $meta['subkey']);
-	router_accept();
-	return;
-}
-
 $record = data_read($resource, $uuid);
 
 // decrypt 2-way encrypted fields
