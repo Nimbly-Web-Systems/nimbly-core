@@ -6,7 +6,7 @@
         [#record.env#]
     </td>
     <td>
-        <div class="flex items-center [#if subkey=(not-empty) echo=hidden#]">
+        <div class="flex items-center">
             <form action="[#url#]" method="post" accept-charset="utf-8">
                 [#form-key install_module#]
                 <input type="hidden" name="module_name" value="[#record.name#]">

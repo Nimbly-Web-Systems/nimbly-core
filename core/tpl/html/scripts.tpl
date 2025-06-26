@@ -18,7 +18,7 @@ window.nb = {
 
 [#feature-cond manage-content echo="<script src='[#base-url#]/medium-editor.min.js'></script>"#]
 
-<script src="[#base-url#]/app.js"></script>
+<script src="[#base-url#]/app.js?v=[#app-modified#]"></script>
 
 <script>
 [#include [#uri-path#]/index.js#]

@@ -23,24 +23,6 @@ function api_method_switch($func_prefix, $resource = null, $uuid = null) {
     return json_result(array('message' => 'METHOD_NOT_ALLOWED'), 405);
 }
 
-function api_method_switch_with_subkey($func_prefix, $resource, $subkey, $uuid) {
-    $method = strtolower($_SERVER['REQUEST_METHOD']);
-    $perm = $resource ?? $func_prefix;
-    $access_feature = _api_access_str($method, $perm, $uuid);
-    if (!api_access($access_feature, $perm)) {
-        return json_result(array('message' => 'ACCESS_DENIED', 'needs' => $access_feature), 403);
-    }
-    $func_name = "{$func_prefix}_{$method}";
-    if (function_exists($func_name)) {
-        if (empty($uuid)) {
-            return call_user_func($func_name, $resource . '/' . $subkey);
-        } else {
-            return call_user_func($func_name, $resource . '/' . $subkey, $uuid);
-        }
-    }
-    return json_result(array('message' => 'METHOD_NOT_ALLOWED'), 405);
-}
-
 function _api_access_str($method, $perm, $uuid) {
     return sprintf('api_%1$s_%2$s_%3$s,api_%1$s_%2$s,api_(any)_%2$s,api_%1$s_(any),api_(any)', strtolower($method), $perm, $uuid);
 }
@@ -201,9 +183,6 @@ function resource_post($resource) { // create new
     $uuid = $data['uuid'];
     if (data_exists($resource, $uuid)) {
         return json_result(array('message' => 'RESOURCE_EXISTS'), 409);
-    }
-    if (!_data_validate($resource, $uuid, $data)) {
-        return json_result(array('message' => 'INVALID_DATA'), 400);  
     }
     if (data_create($resource, $uuid, $data)) {
         return json_result(array(
