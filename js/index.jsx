@@ -1,17 +1,18 @@
+import Alpine from 'alpinejs';
 import nb_api from './nb_api.jsx';
 import nb_edit from './nb_edit.jsx';
 import nb_upload from './nb_upload.jsx';
 import nb_forms from './nb_forms.jsx';
 import nb_media_library from './nb_media_library.jsx';
-import Alpine from 'alpinejs';
+import nb_breakpoints from './nb_breakpoints.jsx';
 
+window.Alpine = Alpine;
 window.nb.api = nb_api;
 window.nb.edit = nb_edit;
 window.nb.upload = nb_upload;
 window.nb.forms = nb_forms;
 window.nb.media_library = nb_media_library;
 window.nb.media_modal = window.nb.media_modal || {};
-window.Alpine = Alpine;
 
 window.nb.edit.init();
 window.nb.upload.init();
@@ -61,3 +62,5 @@ window.nb.tw_breakpoints = {
     xl: 1280,
     xxl: 1536
 };
+
+nb_breakpoints.init();
