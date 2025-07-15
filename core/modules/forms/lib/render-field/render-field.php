@@ -108,6 +108,6 @@ function render_field($def, $field = '', $value = null) {
     run_single_sc('field-' . $def['type']);
 }
 
-function _get_field_Value($var_name) {
+function _get_field_value($var_name) {
     return "todo " . $var_name;
 }

@@ -12,7 +12,9 @@ function if_sc($params) {
     $or = false;
     $action = array();
     foreach ($params as $key => $value) {
-        if ($key === "tpl" || $key === "tpl_else" || $key === "echo" || $key === "redirect")  {
+        if ($key === "tpl" || $key === "tpl_else" 
+            || $key === "echo" || $key === "echo_else" 
+            || $key === "redirect")  {
             $action[$key] = $value;
         } else if ($key === "not") {
             $negate = true;
@@ -46,6 +48,8 @@ function if_sc($params) {
         if_action($action);
     } else if (isset($action['tpl_else'])) {
         run_single_sc($action['tpl_else']);
+    } else if (isset($action['echo_else'])) {
+        echo $action['echo_else'];
     }
 }
 

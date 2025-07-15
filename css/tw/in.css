@@ -18,6 +18,10 @@
   .prose a:hover {
     @apply underline;
   }
+
+  #page {
+    @apply duration-200 ease-in-out;
+  }
 }
 
 @layer components {
