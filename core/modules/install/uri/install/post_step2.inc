@@ -125,6 +125,7 @@ $routes = [
   ['route' => 'nb-admin/(resource)', 'order' => 400],
   ['route' => 'nb-admin/(resource)/(id)', 'order' => 500],
   ['route' => 'nb-admin/(resource)/add', 'order' => 300],
+  ['route' => 'nb-admin/(resource)/import', 'order' => 300],
   ['route' => 'nb-admin/pages/(id)', 'order' => 200],
   ['route' => 'nb-admin/files/(id)', 'order' => 200],
   ['route' => 'img/(id)', 'order' => 500],

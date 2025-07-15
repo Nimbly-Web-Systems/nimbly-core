@@ -1,0 +1,14 @@
+msgid "btn_txt_add_clients"
+msgstr "Voeg een klant toe"
+
+msgid "btn_txt_edit_clients"
+msgstr "Klant bewerken"
+
+msgid "btn_txt_import_clients"
+msgstr "Importeer klanten"
+
+msgid "No records yet"
+msgstr "Nog geen gegevens"
+
+msgid "No search results"
+msgstr "Geen zoekresultaten"
