@@ -1,6 +1,6 @@
 [#module downloads#]
 [#module user#]
-[#data .config uuid=site#]
+[#data .config.site#]
 [#set site-name="[#get-key data.config.site name#]"#]
 [#set app-name="Nimbly Framework"#]
 [#set language=[#detect-language#]#]

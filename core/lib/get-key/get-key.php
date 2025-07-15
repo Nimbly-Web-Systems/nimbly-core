@@ -5,10 +5,33 @@
  */
 function get_key_sc($params, $default = null) {
     load_library('get');
-    $var = get_variable(current($params));
+
+    $varname = current($params);
     $key = next($params);
-    if (empty($var[$key])) {
-        return get_param_value($params, 'default', $default ?? '');
+
+    $data = get_variable($varname);
+    $default = get_param_value($params, 'default', $default ?? '');
+
+    if (!is_array($data)) {
+        return $default;
     }
-    return $var[$key];
+
+    if (isset($data[$key]) && is_scalar($data[$key])) {
+        return $data[$key];
+    }
+
+    if (strpos($key, '.') !== false) {
+        $parts = explode('.', $key);
+        foreach ($parts as $k) {
+            if (!array_key_exists($k, $data)) {
+                return $default;
+            }
+            $data = $data[$k];
+        }
+        if (is_scalar($data)) {
+            return $data;
+        }           
+    }
+
+    return $default;
 }
