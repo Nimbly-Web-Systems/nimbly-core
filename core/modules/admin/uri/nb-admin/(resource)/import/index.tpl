@@ -1,0 +1,6 @@
+[#module user forms#]
+[#access feature=import-[#resource#],manage-content,manage-[#resource#],(any)_[#resource#]#]
+[#set resource-name=[#resource#]#]
+[#set _resource_url="[#base-url#]/nb-admin/[#resource#]"#]
+[#set page-title="[#text btn_txt_import_[#resource-name#]#]"#]
+[#html#]
