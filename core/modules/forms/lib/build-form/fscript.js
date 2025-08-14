@@ -37,6 +37,13 @@ Alpine.data("[#_bf_name#]_form", (resource_id = "(empty)") => ({
         [#if _bf_upload_field=(not-empty) echo=this.submit_with_upload(e);#]
         [#if _bf_upload_field=(empty) echo=this.submit_without_upload(e);#]
     },
+    submit_without_upload(e) {
+      this.form_elem = e.target;
+      this.form_key = this.form_elem.querySelectorAll(
+        "input[type=hidden][name=form_key]"
+      )[0].value;
+      this.post_entry();
+    },
     submit_with_upload(e) {
       this.uploading = true;
       this.form_elem = e.target;

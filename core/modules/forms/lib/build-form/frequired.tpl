@@ -1,1 +1,1 @@
-<div class="text-sm -mt-6 text-black/50"><span class="text-red-800">*</span> [#text verplicht veld#]</div>
+<div class="text-sm -mt-6 text-black/50"><span class="text-red-800">*</span> [#text required#]</div>
