@@ -1,7 +1,6 @@
 <div class="relative my-6" data-te-input-wrapper-init>
     [#if _fai=(not-empty) tpl=ai-btn#]
-    <input type="[#_ftype#]" value="[#_fvalue#]" name="[#_fname#]" placeholder="" 
-        x-init="[#_fmodel#]=`[#_fvalue#]`"
+    <input type="[#_ftype#]" value="[#_fvalue#]" name="[#_fname#]" placeholder=""        
         x-model="[#_fmodel#]"
         [#if item.required=(not-empty) or _frequired=(not-empty) echo=required#]
         class="

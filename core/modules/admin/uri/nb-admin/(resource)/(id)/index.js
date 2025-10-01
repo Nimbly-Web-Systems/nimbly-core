@@ -4,6 +4,9 @@ Alpine.data("form_edit", (resource_id, record_id) => ({
   lang: _initial_lang,
   redirect_on_submit: true,
   busy: false,
+  init() {
+    this.form_data = window._frecord || {};
+  },
   submit() {
     this.busy = true;
     if (this.form_data.hasOwnProperty("keep_password")) {
@@ -15,6 +18,7 @@ Alpine.data("form_edit", (resource_id, record_id) => ({
       }
       delete this.form_data.keep_password;
     }
+    console.log('form_edit submit', this.form_data);
     nb.api
       .put(nb.base_url + "/api/v1/" + resource_id + "/" + record_id, {
         ...this.form_data,

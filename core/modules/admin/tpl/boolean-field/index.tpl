@@ -22,9 +22,9 @@
             checked:focus:after:rounded-none checked:focus:after:border-[0.125rem] checked:focus:after:border-l-0 
             checked:focus:after:border-t-0 checked:focus:after:border-solid checked:focus:after:border-white 
             checked:focus:after:bg-transparent"
-        type="checkbox" value="" name="[#_fname#]" x-init="[#_fmodel#]=`[#_ftest-checked#]`"
+        type="checkbox" value="" name="[#_fname#]" 
         x-model="[#_fmodel#]" />
     <label class="inline-block pl-[0.15rem] hover:cursor-pointer" for="[#_fname#]">
-        [#_ftitle#]
+        [#_ftitle#] 
     </label>
 </div>

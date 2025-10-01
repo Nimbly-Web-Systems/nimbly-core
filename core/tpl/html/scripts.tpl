@@ -20,6 +20,8 @@ window.nb = {
 
 <script src="[#base-url#]/app.js"></script>
 
+[#collect-script#]
+
 <script>
 [#include [#uri-path#]/index.js#]
 Alpine.start();

@@ -94,6 +94,7 @@ if (isset($meta['translations'])) { //deprecated way
 } 
 
 set_variable_dot('record', $record);
+set_variable('_frecord', $record); //maybe strip _modified etc from this
 set_variable_dot('translations', $record['translations'] ?? '');
 load_library("access", "user");
 load_library("get-user-resources", "admin");

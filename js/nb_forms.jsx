@@ -34,7 +34,7 @@ var nb_forms = {
         } else {
             nb.media_modal.me.form_data[field_name] = field_data.uuid;
         }
-        nb.media_modal.me.file_info[field_data.uuid] = field_data;        
+        nb.media_modal.me.file_info[field_data.uuid] = field_data;
     },
     move_item(field_name, old_ix, new_ix) {
         if (old_ix === new_ix || new_ix < 0 || new_ix >= this.form_data[field_name].length) {
@@ -72,6 +72,65 @@ var nb_forms = {
             }
         });
         return result;
+    },
+    _resolve_path_ix(path) {
+        if (this.ix !== undefined) {
+            return path.replace(/(\[)ix(\])/g, `$1${this.ix}$2`);
+
+        }
+        return path;
+    },
+    _get_obj_val(path) {
+        path = this._resolve_path_ix(path);
+        return path
+            .replace(/\[(\w+)\]/g, '.$1')
+            .split('.')
+            .reduce((o, k) => (o ? o[k] : undefined), this);
+    },
+
+    _set_obj_val(path, value) {
+        var target = this._get_obj_val(path);
+        if (target && typeof target === "object") {
+            Object.assign(target, value);
+        }
+    },
+    _ensure_obj_val(path, value) {
+        path = this._resolve_path_ix(path);
+        const tokens = path.replace(/\[(\w+)\]/g, '.$1').split('.');
+        let o = this;
+
+        for (let i = 0; i < tokens.length; i++) {
+            const key = tokens[i];
+            const next_key = tokens[i + 1];
+            const is_last = i === tokens.length - 1;
+
+            if (/^\d+$/.test(key)) {
+                const index = parseInt(key);
+
+                if (!Array.isArray(o)) {
+                    console.warn("Expected array at", tokens.slice(0, i).join('.'), "but found", o);
+                    return;
+                }
+
+                if (!o[index] || typeof o[index] !== "object" || Array.isArray(o[index])) {
+                    o[index] = is_last ? value : {};
+                }
+
+                o = o[index];
+            } else {
+                if (o[key] === undefined) {
+                    if (/^\d+$/.test(next_key)) {
+                        o[key] = [];
+                    } else if (is_last) {
+                        o[key] = value;
+                    } else {
+                        o[key] = {};
+                    }
+                }
+
+                o = o[key];
+            }
+        }
     }
 };
 
