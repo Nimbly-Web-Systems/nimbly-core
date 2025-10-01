@@ -7,7 +7,7 @@
       motion-reduce:transition-none 
       [&:not([data-te-input-placeholder-active])]:placeholder:opacity-0"
     name="[#_fname#]" id="[#_fname#]" placeholder="[#get item.placeholder default=#]"
-    x-init="[#_fmodel#]=`[#_fvalue#]`" x-model="[#_fmodel#]" rows="[#get item.rows default=3#]">
+    x-model="[#_fmodel#]" rows="[#get item.rows default=3#]">
       [#_fvalue#]
     </textarea>
   <label for="[#_fname#]" class="pointer-events-none absolute left-3 top-0 mb-0 z-10

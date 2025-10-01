@@ -40,37 +40,8 @@ function build_form($form_def)
             echo run_buffered(dirname(__FILE__) . '/fgroup.start.tpl');
             continue;
         }
-        if ($type === 'select') {
-            echo '<div class="p-1"></div>';
-            set_variable('item.key', $key);
-            set_variable('item.name', $def['name']);
-            foreach ($def['options'] as $k => $v) {
-                set_variable('_fkey', $k);
-                set_variable('_fval', $v);
-                set_variable('_foptions', run_buffered(dirname(__FILE__) . '/fselect.option.tpl'), '\n ');
-            }
-        } else if ($type === 'upload') {
-            set_variable('_faccept', $def['accept'] ?? '');
-        }
 
-        
-        set_variable('_ftype', $type);
-        set_variable('_fname', $key);
-        set_variable('_fvalue', '');
-        set_variable('_fmodel', 'form_data.' . $key);
-        set_variable('_frequired', $def['required'] ?? false);
-        set_variable('_fattr', $def['attr'] ?? '');
-        run_single_sc($type . '-field');
-        if ($type === 'select') {
-            echo '<div class="p-2"></div>';
-        }
-        if (isset($def['help'])) {
-            set_variable('_fhelp', $def['help']);
-            echo run_buffered(dirname(__FILE__) . '/fhelp.tpl');
-        }
-        if (!empty($def['required'])) {
-            echo run_buffered(dirname(__FILE__) . '/frequired.tpl');
-        }
+        _bf_render_field($key, $def);
     }
     $buttons = $form_def['buttons'];
     foreach ($buttons as $button) {
@@ -78,4 +49,46 @@ function build_form($form_def)
         echo run_buffered(dirname(__FILE__) . '/fbutton-' . $button['type'] . '.tpl');
     }
     echo run_buffered(dirname(__FILE__) . '/ffooter.tpl');
+}
+
+function _bf_render_field($key, $def, $group = null, $ix = null)
+{
+    echo '<div>';
+    $type = $def['type'] ?? 'text';
+    if ($type === 'select') {
+        echo '<div class="p-1"></div>';
+        set_variable('item.key', $key);
+        set_variable('item.name', $def['name']);
+        set_variable('_foptions', '');
+        foreach ($def['options'] as $k => $v) {
+            set_variable('_fkey', $k);
+            set_variable('_fval', $v);
+            set_variable('_foptions', run_buffered(dirname(__FILE__) . '/fselect.option.tpl'), '\n ');
+        }
+    } else if ($type === 'upload') {
+        set_variable('_faccept', $def['accept'] ?? '');
+    }
+
+    
+    $model_prefix = ($group && $ix)? $group . '[' . $ix . '].' : '';
+
+    set_variable('_ftitle', $def['name']);
+    set_variable('_ftype', $type);
+    set_variable('_fname', $key);
+    set_variable('_fmodel', "form_data." . $model_prefix . $key);
+    set_variable('_fid', str_replace(['.', '[', ']'], '_', get_variable('_fmodel')));
+    set_variable('_frequired', $def['required'] ?? false);
+    set_variable('_fattr', $def['attr'] ?? '');
+    run_single_sc($type . '-field');
+    if ($type === 'select') {
+        echo '<div class="p-2"></div>';
+    }
+    if (isset($def['help'])) {
+        set_variable('_fhelp', $def['help']);
+        echo run_buffered(dirname(__FILE__) . '/fhelp.tpl');
+    }
+    if (!empty($def['required'])) {
+        echo run_buffered(dirname(__FILE__) . '/frequired.tpl');
+    }
+    echo '</div>';
 }
