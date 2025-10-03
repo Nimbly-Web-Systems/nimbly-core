@@ -43,7 +43,7 @@ function build_form($form_def)
 
         _bf_render_field($key, $def);
     }
-    $buttons = $form_def['buttons'];
+    $buttons = $form_def['buttons'] ?? [];
     foreach ($buttons as $button) {
         set_variable("_ftitle", $button['title'] ?? 'Send');
         echo run_buffered(dirname(__FILE__) . '/fbutton-' . $button['type'] . '.tpl');
