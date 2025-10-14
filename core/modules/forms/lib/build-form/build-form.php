@@ -54,9 +54,11 @@ function build_form($form_def)
 function _bf_render_field($key, $def, $group = null, $ix = null)
 {
     echo '<div>';
+    $initial_multi = get_variable('item.multi');
     $type = $def['type'] ?? 'text';
     if ($type === 'select') {
         echo '<div class="p-1"></div>';
+        set_variable('item.multi', $def['multi'] || false);
         set_variable('item.key', $key);
         set_variable('item.name', $def['name']);
         set_variable('_foptions', '');
@@ -90,5 +92,6 @@ function _bf_render_field($key, $def, $group = null, $ix = null)
     if (!empty($def['required'])) {
         echo run_buffered(dirname(__FILE__) . '/frequired.tpl');
     }
+    set_variable('item.multi', $initial_multi);
     echo '</div>';
 }
