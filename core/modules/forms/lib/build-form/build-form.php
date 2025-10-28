@@ -89,9 +89,6 @@ function _bf_render_field($key, $def, $group = null, $ix = null)
         set_variable('_fhelp', $def['help']);
         echo run_buffered(dirname(__FILE__) . '/fhelp.tpl');
     }
-    if (!empty($def['required'])) {
-        echo run_buffered(dirname(__FILE__) . '/frequired.tpl');
-    }
     set_variable('item.multi', $initial_multi);
     echo '</div>';
 }
