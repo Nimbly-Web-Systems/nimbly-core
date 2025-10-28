@@ -4,7 +4,7 @@
         x-model="[#_fmodel#]"
         [#if item.required=(not-empty) or _frequired=(not-empty) echo=required#]
         class="
-            peer block min-h-[auto] w-full rounded border-0 bg-transparent px-2 py-[0.2rem] 
+            peer block min-h-[auto] w-full rounded border-0 [#get _inputbg default=bg-transparent#] px-2 py-[0.2rem] 
             leading-[2.15] outline-none transition-all duration-200 ease-linear 
             focus:placeholder:opacity-100 
             motion-reduce:transition-none
@@ -20,5 +20,6 @@
             peer-data-[te-input-state-active]:scale-[0.8] 
             motion-reduce:transition-none">
             [#_ftitle#]
+            [#if _frequired=(not-empty) echo=" *"#]
     </label>
 </div>
