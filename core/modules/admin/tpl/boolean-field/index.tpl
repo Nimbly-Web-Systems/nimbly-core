@@ -1,5 +1,5 @@
 <div class="mb-[0.125rem] block min-h-[1.5rem] pl-[1.5rem]" [#_fattr#]>
-    [#set _ftest-checked="[#_fvalue#]" overwrite#]
+    [#set _ftest-checked="[#get _fvalue default=0#]" overwrite#]
     <input [#if not _ftest-checked=(empty) echo=checked#]
         class="relative float-left -ml-[1.5rem] mr-[6px] mt-[0.15rem] h-[1.125rem] w-[1.125rem] 
             appearance-none rounded-[0.25rem] border-[0.125rem] border-solid border-neutral-300 
