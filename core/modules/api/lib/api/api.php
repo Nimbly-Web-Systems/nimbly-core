@@ -157,7 +157,29 @@ function api_json_input($resource) {
     return $data;
 }
 
+/***
+ * the honeypot anti-spam field, if it is there, should be empty.
+ * only bots are tricked to fill it in.
+ */
+function api_honeypot_check(array &$data): bool {
+    $field = get_variable('honeypot.field', 'company_adress__2');
+    if (!isset($data[$field])) {
+        return false;
+    }
+    if (!empty($data[$field])) {
+        return true;
+    }
+    unset($data[$field]);
+    return false;
+}
+
+/***
+ * csrf check: if form_key is set, it should match the one in cookie or session.
+ */
 function api_check_csrf(&$data) {
+    if (api_honeypot_check($data)) { 
+        return false;
+    }
     if (!isset($data['form_key'])) {
         return null;
     }
@@ -181,8 +203,8 @@ function api_check_csrf(&$data) {
     return true;
 }
 
-/*
- * Basic implementation on resource:
+/***
+ * Default implementations on resource get, post, put, delete:
  */
 
 function resource_get($resource) { // get all
@@ -241,8 +263,8 @@ function resource_delete($resource) { // delete all
     return json_result(array('message' => 'RESOURCE_DELETE_FAILED'), 500);
 }
 
-/*
- * Basic implementation on resource item:
+/***
+ * Default implementations on resource item get, post, put, delete:
  */
 
 function resource_id_get($resource, $uuid) { // read one
