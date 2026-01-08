@@ -41,12 +41,6 @@
   display: none !important;
 }
 
-form #anti-spam-field {
-  position: absolute;
-  left: -9999px;
-  opacity: 0;
-}
-
 /* medium editor */
 
 [contenteditable="true"] {
