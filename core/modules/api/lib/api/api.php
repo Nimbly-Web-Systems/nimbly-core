@@ -162,7 +162,8 @@ function api_json_input($resource) {
  * only bots are tricked to fill it in.
  */
 function api_honeypot_check(array &$data): bool {
-    $field = get_variable('honeypot.field', 'company_adress__2');
+    load_library('honeypot-field', 'forms');
+    $field = honeypot_field_name();
     if (!isset($data[$field])) {
         return false;
     }
