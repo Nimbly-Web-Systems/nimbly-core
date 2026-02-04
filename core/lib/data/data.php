@@ -12,7 +12,8 @@ $GLOBALS['SYSTEM']['data_base'] = $GLOBALS['SYSTEM']['file_base'] . 'ext/data';
  * @doc * `[data blog-items search=nimbly]` filters data with any field matching the search term (in this example: nimbly)
  * @doc * `[data users uuid=20345]` loads one single user with id 20345 in variable _data.users.20345_
  */
-function data_sc($params) {
+function data_sc($params)
+{
     if (empty($params)) {
         return;
     }
@@ -22,7 +23,7 @@ function data_sc($params) {
         $set[0] = '.' . $set[0];
     }
     $resource = $set[0];
-    $uuid = count($set) > 1? $set[1] : get_param_value($params, 'uuid', null);
+    $uuid = count($set) > 1 ? $set[1] : get_param_value($params, 'uuid', null);
     $op = get_param_value($params, "op", "read");
     $var_id = get_param_value($params, "var", null);
     $function_name = sprintf("data_%s", $op);
@@ -52,8 +53,9 @@ function data_sc($params) {
     }
 }
 
-function data_var($resource, $uuid = "", $op = "read") {
-    return sprintf("data.%s%s%s", trim($resource, '.'), empty($uuid)? "" : '.' . $uuid, ($op === "read")? "" : '.' . $op);
+function data_var($resource, $uuid = "", $op = "read")
+{
+    return sprintf("data.%s%s%s", trim($resource, '.'), empty($uuid) ? "" : '.' . $uuid, ($op === "read") ? "" : '.' . $op);
 }
 
 /**
@@ -61,12 +63,14 @@ function data_var($resource, $uuid = "", $op = "read") {
  * Example: data_exists('users') or data_exists('users', 1)
  * @return boolean
  */
-function data_exists($resource, $uuid = "") {
+function data_exists($resource, $uuid = "")
+{
     $path = $GLOBALS['SYSTEM']['data_base'] . '/' . $resource . '/';
     return file_exists($path . $uuid);
 }
 
-function data_is_subkey($resource, $uuid) {
+function data_is_subkey($resource, $uuid)
+{
     $path = $GLOBALS['SYSTEM']['data_base'] . '/' . $resource . '/' . $uuid;
     if (!file_exists($path)) {
         return false;
@@ -83,9 +87,10 @@ function data_is_subkey($resource, $uuid) {
  * Example: data_list('users') returns an array of all user id's
  * @return array or null
  */
-function data_list($resource, $uuid = null) {
+function data_list($resource, $uuid = null)
+{
     if (!empty($uuid)) {
-        return data_exists($resource, $uuid)? [$uuid] : [];
+        return data_exists($resource, $uuid) ? [$uuid] : [];
     }
     $path = $GLOBALS['SYSTEM']['data_base'] . '/' . $resource;
     $all = @scandir($path);
@@ -110,7 +115,8 @@ function data_list($resource, $uuid = null) {
  * Example: data_read('users', 1) returns data for user 1
  * @return array or null
  */
-function data_read($resource, $uuid = null, $field = null) {
+function data_read($resource, $uuid = null, $field = null)
+{
     if (empty($uuid)) {
         return _data_read_all($resource, $field);
     }
@@ -142,7 +148,8 @@ function data_read($resource, $uuid = null, $field = null) {
     return $result;
 }
 
-function data_read_subkeys($resource, $parent) {
+function data_read_subkeys($resource, $parent)
+{
     $result = array();
     $path = $GLOBALS['SYSTEM']['data_base'] . '/' . $resource;
     if (!file_exists($path)) {
@@ -167,16 +174,17 @@ function data_read_subkeys($resource, $parent) {
  * Returns a list of all data object with data
  * Example: _data_read_all('users') returns an array of all users and their data
  */
-function _data_read_all($resource, $setting = null) {
+function _data_read_all($resource, $setting = null)
+{
     $result = [];
     $path = $GLOBALS['SYSTEM']['data_base'] . '/' . $resource;
     if (!file_exists($path)) {
         return $result;
     }
-    
+
     $cache = _data_read_cache('_data_read_all', $resource, $setting);
     if ($cache === false) {
-       $all = scandir($path);
+        $all = scandir($path);
         if (is_array($all)) {
             foreach ($all as $uuid) {
                 if ($uuid[0] === '.') {
@@ -196,7 +204,8 @@ function _data_read_all($resource, $setting = null) {
     return $result;
 }
 
-function _data_cache_file($op, $resource, $options) {
+function _data_cache_file($op, $resource, $options)
+{
     $cache_key = md5($op . $resource . serialize($options));
     $cache_dir = $GLOBALS['SYSTEM']['file_base'] . 'ext/data/.tmp/cache/_data';
     if (!file_exists($cache_dir)) {
@@ -205,7 +214,8 @@ function _data_cache_file($op, $resource, $options) {
     return $cache_dir . '/' . $cache_key;
 }
 
-function _data_read_cache($op, $resource, $setting) {
+function _data_read_cache($op, $resource, $setting)
+{
     $modified = data_modified($resource);
     $cache_file = _data_cache_file($op, $resource, $setting);
     if (!file_exists($cache_file)) {
@@ -220,25 +230,29 @@ function _data_read_cache($op, $resource, $setting) {
     return json_decode($contents, true);
 }
 
-function _data_write_cache($op, $resource, $setting, $content) {
+function _data_write_cache($op, $resource, $setting, $content)
+{
     $cache_file = _data_cache_file($op, $resource, $setting);
     $json_data = json_encode($content, JSON_UNESCAPED_UNICODE);
     $result = file_put_contents($cache_file, $json_data);
     return $result;
 }
 
-function _data_clear_cache($op, $resource, $options = null) {
+function _data_clear_cache($op, $resource, $options = null)
+{
     $cache_file = _data_cache_file($op, $resource, $options);
     if (file_exists($cache_file)) {
         unlink($cache_file);
     }
 }
 
-function data_indexed($resource, $index_name, $index_uuid) {
+function data_indexed($resource, $index_name, $index_uuid)
+{
     return file_exists($GLOBALS['SYSTEM']['data_base'] . '/' . $resource . '/' . $index_name . '/' . $index_uuid);
 }
 
-function data_read_index($resource, $index_name, $index_uuid) {
+function data_read_index($resource, $index_name, $index_uuid)
+{
     $result = array();
     $path = $GLOBALS['SYSTEM']['data_base'] . '/' . $resource;
     $ix_path = $path . '/' . $index_name . '/' . $index_uuid;
@@ -260,17 +274,18 @@ function data_read_index($resource, $index_name, $index_uuid) {
         $item = data_read($resource, $ix);
         if (isset($item[$index_name]) && md5_uuid($item[$index_name]) === $index_uuid) {
             $result[$ix] = $item;
-        } else { 
+        } else {
             //remove index, it's not valid anymore.
             load_library('log');
             log_system('removed index ' . $ix_path . '/' . $ix . ': not matching ' . $index_name);
             unlink($ix_path . '/' . $ix);
-        } 
+        }
     }
     return $result;
 }
 
-function array_merge_recursive_distinct(array &$array1, array &$array2) {
+function array_merge_recursive_distinct(array &$array1, array &$array2)
+{
     $merged = $array1;
     foreach ($array2 as $key => &$value) {
         if (
@@ -290,14 +305,15 @@ function array_merge_recursive_distinct(array &$array1, array &$array2) {
 /**
  * Updates a specific data object file
  */
-function data_update($resource, $uuid, $data_update_ls) {
+function data_update($resource, $uuid, $data_update_ls)
+{
     if (empty($data_update_ls) || !data_exists($resource, $uuid)) {
         return false;
     }
     if (empty($uuid)) { // update multiple
         $result = array();
         foreach ($data_update_ls as $pk => $updates) {
-            $id = empty($pk)? $updates['uuid'] : $pk;
+            $id = empty($pk) ? $updates['uuid'] : $pk;
             if (empty($id)) {
                 continue;
             }
@@ -342,7 +358,8 @@ function data_update($resource, $uuid, $data_update_ls) {
     return false;
 }
 
-function data_update_pk($resource, $uuid, $pk_value) {
+function data_update_pk($resource, $uuid, $pk_value)
+{
     if (empty($pk_value)) {
         return $uuid;
     }
@@ -367,11 +384,12 @@ function data_update_pk($resource, $uuid, $pk_value) {
     return false;
 }
 
-function data_update_fk($parent, $child_name, $old_uuid, $new_uuid) {
+function data_update_fk($parent, $child_name, $old_uuid, $new_uuid)
+{
     $meta = data_meta($child_name);
     if (!isset($meta['parent']['resource']) || $meta['parent']['resource'] !== $parent) {
         return;
-    } 
+    }
     $field = $meta['parent']['field'];
     $children = data_filter(data_read($child_name), $field . ':' . $old_uuid);
     foreach (array_keys($children) as $child_id) {
@@ -382,7 +400,8 @@ function data_update_fk($parent, $child_name, $old_uuid, $new_uuid) {
 /**
  * Creates or rewrites a data object file
  */
-function data_create($resource, $uuid, $data_ls) {
+function data_create($resource, $uuid, $data_ls)
+{
     $dir = $GLOBALS['SYSTEM']['data_base'] . '/' . $resource . '/';
     if (!file_exists($dir)) {
         @mkdir($dir, 0750, true);
@@ -411,10 +430,10 @@ function data_create($resource, $uuid, $data_ls) {
     $json_data = json_encode($data_ls, JSON_UNESCAPED_UNICODE);
     if (@file_put_contents($file, $json_data) !== false) {
         touch($dir);
-        $meta = data_meta($resource); 
+        $meta = data_meta($resource);
         if (isset($meta['index']) && is_array($meta['index'])) {
             load_library('md5');
-            foreach($meta['index'] as $index_name) {
+            foreach ($meta['index'] as $index_name) {
                 if (empty($data_ls[$index_name])) {
                     continue;
                 }
@@ -432,7 +451,8 @@ function data_create($resource, $uuid, $data_ls) {
     return false;
 }
 
-function _data_create_index($file, $index_name, $index_uuid) {
+function _data_create_index($file, $index_name, $index_uuid)
+{
     $path = dirname($file) . '/' . $index_name . '/' . $index_uuid . '/';
     if (!file_exists($path)) {
         @mkdir($path, 0750, true);
@@ -440,7 +460,8 @@ function _data_create_index($file, $index_name, $index_uuid) {
     touch($path . basename($file)); //better than symlink (?) because original file should be opened with data_read 
 }
 
-function _data_delete_index($file, $index_name, $index_uuid) {
+function _data_delete_index($file, $index_name, $index_uuid)
+{
     $path = dirname($file) . '/' . $index_name . '/' . $index_uuid . '/' . basename($file);
     if (!file_exists($path)) {
         return 0;
@@ -451,7 +472,8 @@ function _data_delete_index($file, $index_name, $index_uuid) {
 /**
  * Deletes resource/id or resource/*
  */
-function data_delete($resource, $uuid = null) {
+function data_delete($resource, $uuid = null)
+{
     $result = 0;
     $dir = $GLOBALS['SYSTEM']['data_base'] . '/' . $resource . '/';
     if (!file_exists($dir)) {
@@ -467,32 +489,32 @@ function data_delete($resource, $uuid = null) {
             $data_ls = data_read($resource, $uuid);
             if (isset($meta['index']) && is_array($meta['index'])) {
                 load_library('md5');
-                foreach($meta['index'] as $index_name) {
+                foreach ($meta['index'] as $index_name) {
                     if (empty($data_ls[$index_name])) {
                         continue;
                     }
                     $index_uuid = md5_uuid($data_ls[$index_name]);
                     $result += _data_delete_index($file, $index_name, $index_uuid);
                 }
-            }   
+            }
             if (isset($meta['children']) && is_array($meta['children'])) {
-                foreach($meta['children'] as $child_name) {
+                foreach ($meta['children'] as $child_name) {
                     $result += _data_delete_children($resource, $uuid, $child_name);
-                }        
+                }
             }
             if (isset($data_ls['children']) && is_array($data_ls['children'])) {
                 load_library('util');
-                foreach($data_ls['children'] as $child_name) {
+                foreach ($data_ls['children'] as $child_name) {
                     if (strpos($child_name, '/') === false) {
                         continue;
                     }
                     $child_dir = $GLOBALS['SYSTEM']['data_base'] . '/' . $child_name;
-                    $result ++;
+                    $result++;
                     @rrmdir($child_dir);
-                }        
+                }
             }
             if (isset($data_ls['translations']) && is_array($data_ls['translations'])) {
-                foreach($data_ls['translations'] as $id) {
+                foreach ($data_ls['translations'] as $id) {
                     $r = data_read($resource, $id);
                     if (isset($r['translations'][$data_ls['lang']])) {
                         unset($r['translations'][$data_ls['lang']]);
@@ -505,7 +527,7 @@ function data_delete($resource, $uuid = null) {
         return $result;
     }
     $files = @scandir($dir);
-    foreach($files as $file) {
+    foreach ($files as $file) {
         if ($file[0] === '.' && $file !== ".meta") {
             continue;
         }
@@ -520,14 +542,15 @@ function data_delete($resource, $uuid = null) {
 }
 
 /* deletes all items, but leaves data structure and directory intact */
-function data_empty($resource) {
+function data_empty($resource)
+{
     $result = 0;
     $dir = $GLOBALS['SYSTEM']['data_base'] . '/' . $resource . '/';
     if (!file_exists($dir)) {
         return $result;
     }
     $files = @scandir($dir);
-    foreach($files as $file) {
+    foreach ($files as $file) {
         if ($file[0] === '.') {
             continue;
         }
@@ -540,7 +563,8 @@ function data_empty($resource) {
     return $result;
 }
 
-function _data_delete_children($resource, $uuid, $child_name) {
+function _data_delete_children($resource, $uuid, $child_name)
+{
     $result = 0;
     $meta = data_meta($child_name);
     if (!isset($meta['parent']['resource'])) {
@@ -564,7 +588,8 @@ function _data_delete_children($resource, $uuid, $child_name) {
 /*
  * Simple search on all fields, given a search term
  */
-function data_search($data, $term, $level = 0) {
+function data_search($data, $term, $level = 0)
+{
     if ($level === 0) {
         $result = array();
     }
@@ -584,7 +609,7 @@ function data_search($data, $term, $level = 0) {
                 } else {
                     $score += 1;
                 }
-            } else if (is_array($field_value)){
+            } else if (is_array($field_value)) {
                 $score += data_search($field_value, $term, $level + 1);
             }
             if ($score > 0 && $level === 0) {
@@ -606,7 +631,8 @@ function data_search($data, $term, $level = 0) {
 /*
  * Simple field filter e.g. permission:yes, status:new||todo
  */
-function data_filter($data, $filter_str) {
+function data_filter($data, $filter_str)
+{
 
     if (empty($data)) {
         return;
@@ -660,7 +686,8 @@ function data_filter($data, $filter_str) {
     return $data;
 }
 
-function data_get($resource, $uuid, $index=false, $filter=false) {
+function data_get($resource, $uuid, $index = false, $filter = false)
+{
     load_library('md5');
     $uuid = md5_uuid($uuid);
     if (data_exists($resource, $uuid)) {
@@ -686,7 +713,8 @@ function data_get($resource, $uuid, $index=false, $filter=false) {
 /*
  * Get all resource types
  */
-function data_resources_list() {
+function data_resources_list()
+{
     $rs = @scandir($GLOBALS['SYSTEM']['data_base']);
     $result = array();
     if (is_array($rs)) {
@@ -711,7 +739,8 @@ function data_resources_list() {
 /*
  * Get meta data about a resource
  */
-function data_meta($resource) {
+function data_meta($resource)
+{
     static $meta_result = [];
     if (!empty($meta_result[$resource])) {
         return $meta_result[$resource];
@@ -726,7 +755,8 @@ function data_meta($resource) {
     return $meta;
 }
 
-function data_modified($resource, $uuid = false) {
+function data_modified($resource, $uuid = false)
+{
     $dir = $GLOBALS['SYSTEM']['data_base'] . '/' . $resource . '/';
     if ($uuid !== false) {
         $dir .= $uuid;
@@ -740,21 +770,24 @@ function data_modified($resource, $uuid = false) {
 /*
  * Create a new resource 
  */
-function data_create_resource($resource, $meta) {
+function data_create_resource($resource, $meta)
+{
     return data_exists($resource, ".meta") || data_create($resource, ".meta", $meta);
 }
 
 /*
  * Build meta data by inspecting the entities (not ideal)
  */
-function _data_meta_build($resource) {
+function _data_meta_build($resource)
+{
     return ['fields' => false];
 }
 
 /*
  * Exclude records based on field value
  */
-function data_exclude($records, $key, $value) {
+function data_exclude($records, $key, $value)
+{
     if (!empty($records)) {
         foreach ($records as $i => $r) {
             if (isset($r[$key]) && $r[$key] === $value) {
@@ -768,14 +801,41 @@ function data_exclude($records, $key, $value) {
 /*
  * Replace special / invalid characters
  */
-function data_sanitize_key($key, $repl = '^') {
-    $special_chars = array("?", "[", "]", "/", "\\", "=", "<", ">", ":", ";",
-        ",", "'", "\"", "&", "$", "#", "*", "(", ")", "|", "~", "`", "!", "{", "}");
+function data_sanitize_key($key, $repl = '^')
+{
+    $special_chars = array(
+        "?",
+        "[",
+        "]",
+        "/",
+        "\\",
+        "=",
+        "<",
+        ">",
+        ":",
+        ";",
+        ",",
+        "'",
+        "\"",
+        "&",
+        "$",
+        "#",
+        "*",
+        "(",
+        ")",
+        "|",
+        "~",
+        "`",
+        "!",
+        "{",
+        "}"
+    );
     $result = str_replace($special_chars, $repl, $key);
     return $result;
 }
 
-function data_field_contains($object, $field_name, $val) {
+function data_field_contains($object, $field_name, $val)
+{
     if (empty($object[$field_name])) {
         return false;
     }
@@ -789,7 +849,8 @@ function data_field_contains($object, $field_name, $val) {
     return false;
 }
 
-function _data_validate($resource, $uuid, &$data_ls) {
+function _data_validate($resource, $uuid, &$data_ls)
+{
     if ($uuid === '.meta') {
         return true;
     }
@@ -800,8 +861,8 @@ function _data_validate($resource, $uuid, &$data_ls) {
     $validation_rules = $meta['validate'];
     foreach ($validation_rules as $rule => $fields) {
         foreach ($fields as $field) {
-            if ($rule === 'index-auto-suffix') {
-                if (_data_index_auto_suffix($resource, $uuid, $data_ls, $field) !== true) {
+            if ($rule === 'natural-short-text') {
+                if (_validate_natural_short_text($data_ls[$field] ?? '') !== true) {
                     return false;
                 }
             }
@@ -810,25 +871,59 @@ function _data_validate($resource, $uuid, &$data_ls) {
     return true;
 }
 
-function _data_index_auto_suffix($resource, $uuid, &$data_ls, $field) {
-    if (empty($data_ls[$field])) {
+function _validate_natural_short_text($val)
+{
+    if (!is_string($val)) {
         return true;
     }
-    $field_value = $data_ls[$field];
-    $x = 0;
-    load_library('md5');
-    do {
-        $items = data_read_index($resource, $field, md5_uuid($data_ls[$field]));
-        if (empty($items)) {
-            return true;
-        }
 
-        if (count($items) === 1 && key($items) === $uuid) {
-            return true; // that's us!
-        }
+    $raw = trim($val);
+    if ($raw === '') {
+        return true;
+    }
 
-        // create a new value for this field and try again
-        $x++;
-        $data_ls[$field] = $field_value . '-' . $x;
-    } while (true);
+    // Hard limit (avoid regex on huge payloads)
+    if (strlen($raw) > 255) {
+        return false;
+    }
+
+    // Normalize for analysis: keep letters only, Unicode-safe
+    $s = mb_strtolower($raw, 'UTF-8');
+    $s = preg_replace('/[^\p{L}]/u', '', $s);
+
+    $len = mb_strlen($s, 'UTF-8');
+
+    // If after stripping it's empty, don't block (let other validation handle)
+    if ($len === 0) {
+        return true;
+    }
+
+    // Allow very short (avoid blocking e.g. "Ng", "TNO")
+    if ($len < 4) {
+        return true;
+    }
+
+    // Count vowels 
+    preg_match_all('/[aeiouyàáâãäåèéêëìíîïòóôõöùúûü]/u', $s, $m);
+    $vowel_count = count($m[0]);
+
+    if ($vowel_count === 0) {
+        return false;
+    }
+
+    // Consonant run (do this on normalized letters-only string)
+    // Consider 7+ to be extra safe for Dutch compounds
+    if (preg_match('/[bcdfghjklmnpqrstvwxz]{7,}/u', $s)) {
+        return false;
+    }
+
+    // Low vowel ratio for long single-token strings
+    if ($len >= 12) {
+        $ratio = $vowel_count / $len;
+        if ($ratio < 0.20) { // 0.15 is a bit too lenient against your spam; 0.20 catches more
+            return false;
+        }
+    }
+
+    return true;
 }
