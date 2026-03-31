@@ -6,18 +6,21 @@
  * @doc * condition compares a variable with a value, x=3, x=(empty), x=(not-empty)
  * @doc * `[if user=(empty) redirect=login]` redirects to login if variable user is empty
  */
-function if_sc($params) {
+function if_sc($params)
+{
     $condition = array();
     $negate = false;
     $or = false;
     $action = array();
     foreach ($params as $key => $value) {
-        if ($key === "tpl" || $key === "tpl_else" || $key === "echo" || $key === "redirect")  {
+        if ($key === "tpl" || $key === "tpl_else" || $key === "echo" || $key === "redirect") {
             $action[$key] = $value;
         } else if ($key === "not") {
             $negate = true;
         } else if ($key === "or") {
             $or = true;
+        } else if ($key === "and") {
+            $or = false;
         } else {
             $condition[] = [$key => $value];
             if ($or) {
@@ -30,6 +33,7 @@ function if_sc($params) {
     }
     $pass = !$or;
     load_library("get");
+
     foreach ($condition as $kv) {
         //loop through and test all conditions
         $b = if_condition(key($kv), current($kv), $negate);
@@ -49,7 +53,8 @@ function if_sc($params) {
     }
 }
 
-function if_action($action) {
+function if_action($action)
+{
     foreach ($action as $key => $value) {
         switch ($key) {
             case 'tpl': //run a template
@@ -66,7 +71,8 @@ function if_action($action) {
     }
 }
 
-function if_condition($key, $value, $negate = false) {
+function if_condition($key, $value, $negate = false)
+{
     $result = null;
     $eval = get_sc($key);
     if ($value === "(not-empty)") {
@@ -76,5 +82,5 @@ function if_condition($key, $value, $negate = false) {
     } else {
         $result = $eval == $value;
     }
-    return $negate? !$result : $result;
+    return $negate ? !$result : $result;
 }

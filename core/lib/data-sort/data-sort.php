@@ -113,12 +113,12 @@ function data_sort_string($data, $key, $sort_order = SORT_ASC) {
 
 function _get_key($record, $field) {
     static $cached_result = [];
-    $hash = md5($record['uuid'] . $field .  $record[$field]);
+    $v = $record[$field] ?? '-';
+    $hash = md5($record['uuid'] . $field .  $v);
     if (isset($cached_result[$hash])) {
         return $cached_result[$hash];
     }
     
-    $v = $record[$field];
     if (is_array($v)) {
         $lang = detect_language_sc();
         if (isset($v[$lang]) && is_scalar($v[$lang])) {
