@@ -69,20 +69,24 @@ if (isset($meta['languages']) && !isset($meta['translations'])) {
 				$record[$fk] = [
 					$lang => $record[$fk] ?? ''
 				];
-				if ($field['type'] === 'name' || !empty($field['slug'])) {
-					$record[$fk . '_slug'] = [
-					$lang => $record[$fk. '_slug'] ?? ''
-				];
+			}
+
+			if ($field['type'] === 'name' || !empty($field['slug'])) {
+				$fk_slug = $fk . '_slug';
+				if (!is_array($record[$fk_slug])) {
+					$record[$fk_slug] = [
+						$lang => $record[$fk_slug] ?? ''
+					];
 				}
-				continue;
-			} 
+			}
+
 
 			if (!isset($record[$fk][$lang])) {
 				$record[$fk][$lang] = '';
 			} else {
 				$record['translations'][$lang] = true;
 			}
-		}		
+		}
 	}
 	set_variable('translation_mode', 'field');
 } else {
@@ -99,7 +103,7 @@ if (isset($meta['translations'])) { //deprecated way
 	}
 	set_variable('languages', $languages);
 	set_variable('has_translations', true);
-} 
+}
 
 set_variable_dot('record', $record);
 set_variable('_frecord', $record); //maybe strip _modified etc from this

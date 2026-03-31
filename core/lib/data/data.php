@@ -363,10 +363,10 @@ function data_update_pk($resource, $uuid, $pk_value)
     if (empty($pk_value)) {
         return $uuid;
     }
-    load_library('md5');
-    while (is_array($pk_value)) {
-        $pk_value = current($pk_value);
+    if (is_array($pk_value)) {
+        return $uuid;
     }
+    load_library('md5');
     $new_uuid = md5_uuid($pk_value);
     if ($new_uuid === $uuid) {
         return $uuid;
