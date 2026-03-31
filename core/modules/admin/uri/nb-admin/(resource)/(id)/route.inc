@@ -59,6 +59,7 @@ set_variables("data.field.", $meta['fields']);
 if (isset($meta['languages']) && !isset($meta['translations'])) {
 	$meta['translations'] = ['languages' => $meta['languages']];
 	$record['lang'] = $record['lang'] ?? current($meta['languages']);
+	set_variable('lang', $record['lang']);
 	foreach ($meta['languages'] as $lang) {
 		foreach ($meta['fields'] as $fk => $field) {
 			if (empty($field['i18n'])) {
@@ -68,8 +69,14 @@ if (isset($meta['languages']) && !isset($meta['translations'])) {
 				$record[$fk] = [
 					$lang => $record[$fk] ?? ''
 				];
+				if ($field['type'] === 'name' || !empty($field['slug'])) {
+					$record[$fk . '_slug'] = [
+					$lang => $record[$fk. '_slug'] ?? ''
+				];
+				}
 				continue;
 			} 
+
 			if (!isset($record[$fk][$lang])) {
 				$record[$fk][$lang] = '';
 			} else {
@@ -81,6 +88,7 @@ if (isset($meta['languages']) && !isset($meta['translations'])) {
 } else {
 	set_variable('translation_mode', 'record');
 }
+
 
 if (isset($meta['translations'])) { //deprecated way
 	$languages = $meta['translations']['languages'];
