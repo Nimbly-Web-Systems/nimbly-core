@@ -102,6 +102,12 @@ php_value memory_limit 2048M
 php_value post_max_size 12M
 php_value upload_max_filesize 10M
 
+# block direct .php requests
+RewriteCond %{THE_REQUEST} \s/+.*\.php[?\s] [NC]
+RewriteCond %{REQUEST_URI} !^/index\.php$
+RewriteCond %{REQUEST_URI} !^/install\.php$
+RewriteRule ^ - [F]
+
 # rewrite: redirect anything that is not a file to index.php
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteRule ^ index.php [END]
