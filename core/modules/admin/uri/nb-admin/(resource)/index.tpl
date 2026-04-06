@@ -1,3 +1,3 @@
 [#module user#]
-[#access feature=[#resource#],manage-content,manage-[#resource#],get_[#resource#],(any)_[#resource#]#]
+[#access feature=[#resource-id#],manage-content,manage-[#resource-id#],get_[#resource-id#],(any)_[#resource-id#]#]
 [#html#]

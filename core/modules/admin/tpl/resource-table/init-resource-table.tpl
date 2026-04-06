@@ -1,6 +1,6 @@
-[#get-resource-records resource=[#resource-name#] role=table#]
+[#get-resource-records resource=[#resource-id#] role=table#]
 <script>
-    var _resource_id="[#resource-name#]";
+    var _resource_id="[#resource-id#]";
     var _records=[#fmt var=data.records empty={} json#];
     var _fields=[#fmt var=data.fields json#];
     var _page_size=[#get api_datatable.entries default=50#];

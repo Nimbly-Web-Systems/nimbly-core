@@ -14,7 +14,7 @@ if (!data_exists($resource)) {
     return;
 }
 
-set_variable('resource', $parts[0]);
+set_variable('resource-id', $parts[0]);
 load_module('admin');
 
 router_accept();
