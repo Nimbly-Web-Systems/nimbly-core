@@ -6,6 +6,49 @@ This document is the authoritative reference for implementing features in Nimbly
 
 ## 1. Project Structure
 
+### Two repositories, one runtime
+
+Nimbly splits every project into two separate git repositories that live nested on disk:
+
+| Repository | What it is | Who owns it |
+|---|---|---|
+| **core** | The Nimbly framework — routing, template engine, shortcodes, admin, API | Nimbly (never modified per project) |
+| **ext** | Your application — routes, templates, data, custom shortcodes | You (every project has its own ext repo) |
+
+On disk they combine into one directory tree:
+
+```
+my-project/          ← core repo root
+  core/              # Framework internals
+  ext/               ← ext repo root (nested inside core)
+  css/               # CSS source (shared build)
+  js/                # JS source (shared build)
+```
+
+This means `git status` at the project root reflects core changes; `git status` inside `ext/` reflects application changes. They are independent repos with independent histories, branches, and remotes.
+
+### Setting up a new project
+
+```bash
+# 1. Clone core
+git clone git@gitlab.com:volst-firma/nimbly.git my-project
+cd my-project
+
+# 2. Clone your application into ext/
+git clone git@github.com:your-org/your-app.git ext
+
+# 3. Install dependencies and build
+bash -i -c "nvm use --lts && npm install && npm run build"
+```
+
+After this, the project is fully operational. Core and ext evolve independently.
+
+### Updating core or ext from the admin
+
+Both repos can be updated without touching the terminal. In the admin (`/nb-admin/`), navigate to **Settings** — there are separate **Update Core** and **Update Ext** buttons that run `git pull` on the respective repository. This is the standard way to deploy updates in production.
+
+### Directory layout
+
 ```
 core/          # Framework — never modify
   lib/         # Core shortcode implementations
