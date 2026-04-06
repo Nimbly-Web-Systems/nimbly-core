@@ -53,7 +53,7 @@
                         </td>
                     </template>
                     <td class="text-neutral-600 py-3 border-b border-neutral-200">
-                        <div class="flex items-center#]">
+                        <div class="flex items-center">
                             [#actions#]
                         </div>
                     </td>
