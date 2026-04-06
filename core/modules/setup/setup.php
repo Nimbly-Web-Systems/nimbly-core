@@ -1,0 +1,336 @@
+<?php
+
+/**
+ * Nimbly CLI Setup Script
+ *
+ * Called from the root setup.php wrapper. Do not run directly.
+ * Usage: php setup.php
+ *
+ * Safe to re-run — existing records and files are never overwritten.
+ */
+
+if (php_sapi_name() !== 'cli') {
+    die("setup.php must be run from the command line.\n");
+}
+
+define('BASE_DIR', realpath(__DIR__ . '/../../..') . '/');
+define('SETUP_DIR', __DIR__ . '/');
+
+// -----------------------------------------------------------------------
+// Bootstrap Nimbly minimally (no HTTP context)
+// -----------------------------------------------------------------------
+
+$GLOBALS['SYSTEM'] = [
+    'file_base'  => BASE_DIR,
+    'env_paths'  => ['ext', 'core'],
+    'modules'    => ['root' => '/'],
+    'variables'  => [],
+    'uri'        => '',
+];
+
+require_once BASE_DIR . 'core/lib/find/find.php';
+load_library('salt');
+
+// -----------------------------------------------------------------------
+// Load / create .env
+// -----------------------------------------------------------------------
+
+$env_file = BASE_DIR . '.env';
+$env = [];
+
+if (file_exists($env_file)) {
+    foreach (file($env_file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) as $line) {
+        if (str_starts_with(trim($line), '#')) continue;
+        [$key, $val] = array_map('trim', explode('=', $line, 2) + [1 => '']);
+        $env[$key] = $val;
+    }
+}
+
+// Resolve BASE_PATH
+$base_path = $env['BASE_PATH'] ?? '/';
+if (empty($base_path)) $base_path = '/';
+if ($base_path[0] !== '/') $base_path = '/' . $base_path;
+if (substr($base_path, -1) !== '/') $base_path .= '/';
+
+// RewriteBase path without leading slash, used in RewriteCond patterns
+// e.g. "" for root install, "mysite/" for subdirectory install
+$rewrite_base_path = ltrim($base_path, '/');
+
+// Pepper
+$pepper = $env['PEPPER'] ?? '';
+if (empty($pepper)) {
+    $pepper = salt_sc();
+    echo "Generated new PEPPER: $pepper\n";
+}
+
+// Write .env
+$env_content = "# Nimbly site configuration\n\nBASE_PATH=$base_path\nPEPPER=$pepper\n";
+file_put_contents($env_file, $env_content);
+echo "Written: .env\n";
+
+// Make PEPPER available to encrypt library
+$_SERVER['PEPPER'] = $pepper;
+
+// Load data/encrypt now that PEPPER is set
+load_library('data');
+load_library('encrypt');
+
+// -----------------------------------------------------------------------
+// Generate .htaccess
+// -----------------------------------------------------------------------
+
+$htaccess_file = BASE_DIR . '.htaccess';
+
+if (!file_exists($htaccess_file)) {
+    $content = file_get_contents(SETUP_DIR . 'htaccess.tpl');
+    $content = str_replace('%%PEPPER%%', $pepper, $content);
+    $content = str_replace('%%REWRITE_BASE%%', $base_path, $content);
+    $content = str_replace('%%REWRITE_BASE_PATH%%', $rewrite_base_path, $content);
+    file_put_contents($htaccess_file, $content);
+    chmod($htaccess_file, 0640);
+    echo "Written: .htaccess\n";
+} else {
+    echo "Skipped: .htaccess (already exists)\n";
+}
+
+// -----------------------------------------------------------------------
+// Create directory structure and htaccess guards
+// -----------------------------------------------------------------------
+
+$dirs_deny  = ['ext', 'core'];
+$dirs_allow = ['ext/data/.tmp/cache', 'ext/static', 'core/static'];
+$dirs_create = [
+    'ext', 'ext/data', 'ext/static', 'ext/lib', 'ext/modules',
+    'ext/tpl', 'ext/uri', 'ext/data/.tmp', 'ext/data/.tmp/cache',
+    'ext/data/.tmp/logs', 'ext/data/.tmp/sessions', 'ext/data/.config',
+    'ext/data/.i18n',
+];
+
+foreach ($dirs_create as $dir) {
+    $path = BASE_DIR . $dir;
+    if (!is_dir($path)) {
+        mkdir($path, 0750, true);
+        echo "Created dir: $dir\n";
+    }
+}
+
+foreach ($dirs_deny as $dir) {
+    $dst = BASE_DIR . $dir . '/.htaccess';
+    if (!file_exists($dst)) {
+        copy(SETUP_DIR . 'deny.htaccess', $dst);
+    }
+}
+
+foreach ($dirs_allow as $dir) {
+    $dst = BASE_DIR . $dir . '/.htaccess';
+    if (!file_exists($dst)) {
+        copy(SETUP_DIR . 'allow.htaccess', $dst);
+    }
+}
+
+// -----------------------------------------------------------------------
+// Copy theme scaffold
+// -----------------------------------------------------------------------
+
+$theme_dst = BASE_DIR . 'ext/tailwind.theme.js';
+if (!file_exists($theme_dst)) {
+    copy(SETUP_DIR . 'tailwind.theme.js', $theme_dst);
+    echo "Copied: ext/tailwind.theme.js\n";
+}
+if (!file_exists(BASE_DIR . 'ext/theme.css')) {
+    touch(BASE_DIR . 'ext/theme.css');
+    echo "Created: ext/theme.css\n";
+}
+
+// Create ext/.gitignore from template
+$gitignore_dst = BASE_DIR . 'ext/.gitignore';
+if (!file_exists($gitignore_dst)) {
+    copy(SETUP_DIR . '.gitignore.tpl', $gitignore_dst);
+    chmod($gitignore_dst, 0640);
+    echo "Created: ext/.gitignore\n";
+}
+
+// -----------------------------------------------------------------------
+// Prompt for site info
+// -----------------------------------------------------------------------
+
+function nb_prompt(string $question, string $default = ''): string {
+    $hint = $default !== '' ? " [$default]" : '';
+    echo $question . $hint . ': ';
+    $value = trim(fgets(STDIN));
+    return $value !== '' ? $value : $default;
+}
+
+function nb_prompt_password(string $question): string {
+    echo $question . ': ';
+    if (strtoupper(substr(PHP_OS, 0, 3)) !== 'WIN') {
+        system('stty -echo');
+    }
+    $value = trim(fgets(STDIN));
+    if (strtoupper(substr(PHP_OS, 0, 3)) !== 'WIN') {
+        system('stty echo');
+    }
+    echo "\n";
+    return $value;
+}
+
+echo "\n--- Nimbly Setup ---\n\n";
+
+$sitename = nb_prompt('Site name', 'My Nimbly Site');
+$email    = nb_prompt('Admin email');
+while (empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+    echo "Please enter a valid email address.\n";
+    $email = nb_prompt('Admin email');
+}
+$password = nb_prompt_password('Admin password');
+while (strlen($password) < 8) {
+    echo "Password must be at least 8 characters.\n";
+    $password = nb_prompt_password('Admin password');
+}
+
+// -----------------------------------------------------------------------
+// Create .config/site
+// -----------------------------------------------------------------------
+
+if (!data_exists('.config', 'site')) {
+    data_create('.config', 'site', [
+        'name'        => $sitename,
+        'description' => $sitename . ': a Nimbly site',
+    ]);
+    echo "Created: .config/site\n";
+} else {
+    echo "Skipped: .config/site (already exists)\n";
+}
+
+// -----------------------------------------------------------------------
+// Create .content resource
+// -----------------------------------------------------------------------
+
+if (!data_exists('.content', '.meta')) {
+    data_create_resource('.content', ['fields' => false]);
+    echo "Created: .content resource\n";
+} else {
+    echo "Skipped: .content resource (already exists)\n";
+}
+
+// -----------------------------------------------------------------------
+// Create core routes
+// -----------------------------------------------------------------------
+
+$routes = [
+    ['route' => 'api',                                 'order' => 900],
+    ['route' => 'api/v1/(resource)',                   'order' => 500],
+    ['route' => 'api/v1/(resource)/(id)',              'order' => 200],
+    ['route' => 'api/v1/(resource)/(id)/(id)',         'order' => 200],
+    ['route' => 'api/v1/.pages/(id)',                  'order' => 200],
+    ['route' => 'api/v1/.files/(id)',                  'order' => 200],
+    ['route' => 'nb-admin/(resource)',                 'order' => 400],
+    ['route' => 'nb-admin/(resource)/(id)',            'order' => 500],
+    ['route' => 'nb-admin/(resource)/add',            'order' => 300],
+    ['route' => 'nb-admin/(resource)/import',         'order' => 300],
+    ['route' => 'nb-admin/pages/(id)',                 'order' => 200],
+    ['route' => 'nb-admin/files/(id)',                 'order' => 200],
+    ['route' => 'img/(id)',                            'order' => 500],
+    ['route' => 'download/(id)',                       'order' => 500],
+    ['route' => 'video/(id)',                          'order' => 500],
+    ['route' => 'password-reset/(uuid)/(key)',         'order' => 200],
+    ['route' => 'change-email/(uuid)/(newuuid)/(key)', 'order' => 200],
+];
+
+$routes_created = 0;
+foreach ($routes as $route) {
+    $uuid = md5($route['route']);
+    if (!data_exists('.routes', $uuid)) {
+        data_create('.routes', $uuid, $route);
+        $routes_created++;
+    }
+}
+echo $routes_created > 0
+    ? "Created: $routes_created route(s)\n"
+    : "Skipped: all routes already exist\n";
+
+// -----------------------------------------------------------------------
+// Create roles
+// -----------------------------------------------------------------------
+
+if (!data_exists('roles', 'admin')) {
+    data_create('roles', 'admin', [
+        'name'        => 'Admin',
+        'description' => 'Technical system administration',
+        'features'    => '(all)',
+    ]);
+    echo "Created: roles/admin\n";
+}
+
+if (!data_exists('roles', 'editor')) {
+    data_create('roles', 'editor', [
+        'name'        => 'Editor',
+        'description' => 'Content writers, site maintainers',
+        'features'    => 'manage-content',
+    ]);
+    echo "Created: roles/editor\n";
+}
+
+// -----------------------------------------------------------------------
+// Create users resource
+// -----------------------------------------------------------------------
+
+if (!data_exists('users', '.meta')) {
+    data_create('users', '.meta', [
+        'fields' => [
+            'email'    => ['type' => 'text',     'required' => true,  'name' => 'email'],
+            'password' => ['type' => 'password', 'required' => true,  'name' => 'password', 'admin_col' => false],
+            'roles'    => ['type' => 'select',   'multi'    => true,  'name' => 'roles', 'resource' => 'roles'],
+            'name'     => ['type' => 'text',                          'name' => 'name'],
+        ],
+        'pk'      => 'email',
+        'encrypt' => 'password',
+    ]);
+    echo "Created: users/.meta\n";
+}
+
+// -----------------------------------------------------------------------
+// Create admin user
+// -----------------------------------------------------------------------
+
+$user_uuid = md5($email);
+if (!data_exists('users', $user_uuid)) {
+    $salt = salt_sc();
+    data_create('users', $user_uuid, [
+        'email'    => $email,
+        'roles'    => 'admin,user',
+        'salt'     => $salt,
+        'password' => encrypt($password, $salt),
+    ]);
+    echo "Created: admin user ($email)\n";
+} else {
+    echo "Skipped: admin user ($email) already exists\n";
+}
+
+// -----------------------------------------------------------------------
+// Run module .install.inc files
+// -----------------------------------------------------------------------
+
+$install_count = 0;
+foreach ($GLOBALS['SYSTEM']['env_paths'] as $env_path) {
+    $modules_path = BASE_DIR . $env_path . '/modules';
+    if (!is_dir($modules_path)) continue;
+    foreach (scandir($modules_path) as $module) {
+        if ($module === '.' || $module === '..') continue;
+        $install_file = $modules_path . '/' . $module . '/.install.inc';
+        if (file_exists($install_file)) {
+            $ok = require_once($install_file);
+            echo ($ok ? "Installed" : "Failed") . ": $env_path/modules/$module\n";
+            $install_count++;
+        }
+    }
+}
+if ($install_count === 0) {
+    echo "No module .install.inc files found\n";
+}
+
+// -----------------------------------------------------------------------
+// Done
+// -----------------------------------------------------------------------
+
+echo "\nSetup complete. Run 'npm run build' to compile assets.\n";
