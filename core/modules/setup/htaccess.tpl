@@ -8,11 +8,6 @@
     allow from all
 </Files>
 
-# install.php redirects to index.php
-<Files install.php>
-    allow from all
-</Files>
-
 # never show directory listings for URLs which map to a directory.
 Options -Indexes
 
@@ -32,7 +27,7 @@ AddDefaultCharset utf-8
 DefaultLanguage en-US
 
 # set the security pepper hash code (unique per installation)
-SetEnv PEPPER [#get sticky.pepper#]
+SetEnv PEPPER %%PEPPER%%
 
 # compress text, html, javascript, css, xml:
 AddOutputFilterByType DEFLATE text/plain
@@ -59,25 +54,25 @@ AddOutputFilterByType DEFLATE application/x-javascript
 
 # rewrite: initialize
 RewriteEngine on
-RewriteBase /[#get sticky.rewritebase#]
+RewriteBase %%REWRITE_BASE%%
 
 # rewrite: use EXT static/_thumb_  if available for requested img file
-RewriteCond %{REQUEST_URI} ^/[#get rewritebase-slash#]img/.*
+RewriteCond %{REQUEST_URI} ^/%%REWRITE_BASE_PATH%%img/.*
 RewriteCond %{QUERY_STRING} ^ratio=(.*)$
 RewriteRule ^ - [E=IMG_RATIO:_r%1]
 
-RewriteCond %{REQUEST_URI} ^/[#get rewritebase-slash#]img/(.*)
+RewriteCond %{REQUEST_URI} ^/%%REWRITE_BASE_PATH%%img/(.*)
 RewriteCond ext/static/_thumb_/img/%1%{ENV:IMG_RATIO} -F
 Header set Content-Type "image/webp" "expr=-z %{CONTENT_TYPE}"
 RewriteRule ^ ext/static/_thumb_/img/%1%{ENV:IMG_RATIO} [END]
 
 # rewrite: use EXT static if available for the requested file
-RewriteCond %{REQUEST_URI} ^/[#get rewritebase-slash#](.*)
+RewriteCond %{REQUEST_URI} ^/%%REWRITE_BASE_PATH%%(.*)
 RewriteCond ext/static/%1 -F
 RewriteRule ^ ext/static/%1 [END]
 
 # rewrite: use CORE static if availble for the requested file
-RewriteCond %{REQUEST_URI} ^/[#get rewritebase-slash#](.*)
+RewriteCond %{REQUEST_URI} ^/%%REWRITE_BASE_PATH%%(.*)
 RewriteCond core/static/%1 -F
 RewriteRule ^ core/static/%1 [END]
 
@@ -101,12 +96,6 @@ php_value memory_limit 2048M
 # file upload size
 php_value post_max_size 12M
 php_value upload_max_filesize 10M
-
-# block direct .php requests
-RewriteCond %{THE_REQUEST} \s/+.*\.php[?\s] [NC]
-RewriteCond %{REQUEST_URI} !^/index\.php$
-RewriteCond %{REQUEST_URI} !^/install\.php$
-RewriteRule ^ - [F]
 
 # rewrite: redirect anything that is not a file to index.php
 RewriteCond %{REQUEST_FILENAME} !-f

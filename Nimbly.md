@@ -31,7 +31,7 @@ This means `git status` at the project root reflects core changes; `git status` 
 
 ```bash
 # 1. Clone core
-git clone git@gitlab.com:volst-firma/nimbly.git my-project
+git clone git@github.com:Nimbly-Web-Systems/nimbly-core.git my-project
 cd my-project
 
 # 2. Clone your application into ext/
@@ -1108,4 +1108,10 @@ The following areas are under active development and will be updated here as the
 
 - **Indexes** — slugs as primary keys (`pk: title_slug`) are being replaced by an index system. Do not design new resources around slug-based primary keys. This section will be updated when the new approach is settled.
 - **DaisyUI migration** — Tailwind Elements is being phased out. The admin is already on DaisyUI v3. Frontend templates that still use Tailwind Elements components (modals, dropdowns, etc.) are being migrated. Do not introduce new Tailwind Elements usage; use DaisyUI equivalents instead. Frontend DaisyUI component patterns will be documented here once the migration is complete.
+- **Resource display names** — the `resource-name` shortcode currently derives singular/plural from the slug (strips trailing `s`, handles `ies→y`). Plan: allow `.meta` to define `name_singular` and `name_plural` with optional i18n:
+  ```json
+  "name_singular": { "en": "Client", "nl": "Klant" },
+  "name_plural":   { "en": "Clients", "nl": "Klanten" }
+  ```
+  `resource-name` would use these when present and fall back to slug-based logic otherwise.
 - **Shortcode single-file format** — currently every shortcode requires a directory (`lib/my-shortcode/my-shortcode.php`). A planned improvement is to allow a single-file fallback (`lib/my-shortcode.php`) for simple shortcodes that don't need a template. Until then, always use the directory format.

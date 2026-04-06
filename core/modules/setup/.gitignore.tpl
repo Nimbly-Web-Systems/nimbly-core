@@ -6,4 +6,3 @@
 /static/_thumb_/
 /data/.log-entries/
 /node_modules/
-
