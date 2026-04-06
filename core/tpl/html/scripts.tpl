@@ -1,6 +1,7 @@
 <script>
 window.nb = {
     base_url: "[#base-url#]",
+    lang: "[#language#]",
     max_upload_size: "[#max-upload-size bytes#]",
     text: {
         record_deleted: "[#text Record deleted#]",
@@ -19,6 +20,8 @@ window.nb = {
 [#feature-cond manage-content echo="<script src='[#base-url#]/medium-editor.min.js'></script>"#]
 
 <script src="[#base-url#]/app.js?v=[#app-modified#]"></script>
+
+[#collect-script#]
 
 <script>
 [#include [#uri-path#]/index.js#]

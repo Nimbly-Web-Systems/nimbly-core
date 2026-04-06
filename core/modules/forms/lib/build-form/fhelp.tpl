@@ -1,1 +1,1 @@
-<div class="text-sm -mt-5 mb-7 text-black/80">[#text [#_fhelp#]#]</div>
+<div class="text-sm mb-4 text-black/80">[#text [#_fhelp#]#]</div>

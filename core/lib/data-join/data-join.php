@@ -14,7 +14,7 @@ function data_join_sc($params) {
     foreach ($params as $p) {
         $d = get_variable("data.{$p}");
         if (!is_array($d)) {
-            return;
+            continue;
         }
         array_walk($d, 'data_join_set_resource_type', $p);
         $join = array_merge($join, $d);

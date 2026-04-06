@@ -110,3 +110,21 @@ function _parse_size($size)
     $size = preg_replace('/[^0-9\.]/', '', $size);
     return $unit ? round($size * pow(1024, stripos('bkmgtpezy', $unit[0]))) : round($size);
 }
+
+function resolve_i18n($val, $lang)
+{
+    if (!is_array($val)) {
+        return $val;
+    } else if (isset($val[$lang])) {
+        return $val[$lang];
+    } else if ($lang === 'auto') {
+        load_library('detect-language');
+        $detected = detect_language_sc();
+        if (!empty($val[$detected])) {
+            return $val[$detected];
+        }
+        return current(array_filter($val)) ?: '';
+    } else {
+        return '';
+    }
+}

@@ -49,6 +49,11 @@ function data_sc($params)
         $result = data_sort_param($result, $sort);
     }
 
+    $search = get_param_value($params, "search", false);
+    if ($search !== false) {
+        $result = data_search($result, $search);
+    }
+
     $filter = get_param_value($params, "filter", false);
     if ($filter !== false) {
         $result = data_filter($result, $filter);
@@ -539,6 +544,7 @@ function data_update($resource, $uuid, $data_update_ls)
     load_library('username', 'user');
     $data_merged_ls['_modified_by'] = md5_uuid(username_get());
     $data_merged_ls['_modified'] = time();
+    _data_validate($resource, $uuid, $data_merged_ls);
 
     if (data_create($resource, $uuid, $data_merged_ls)) {
         return $data_merged_ls;
@@ -566,6 +572,9 @@ function data_update($resource, $uuid, $data_update_ls)
 function data_update_pk($resource, $uuid, $pk_value)
 {
     if (empty($pk_value)) {
+        return $uuid;
+    }
+    if (is_array($pk_value)) {
         return $uuid;
     }
     load_library('md5');
@@ -613,6 +622,10 @@ function data_create($resource, $uuid, $data_ls)
     }
 
     $file = $path;
+
+    if (_data_validate($resource, $uuid, $data_ls) !== true) {
+        return false;
+    }
 
     if (isset($data_ls['form-key'])) {
         unset($data_ls['form-key']);
@@ -969,4 +982,122 @@ function data_exclude($records, $key, $value)
         }
     }
     return $records;
+}
+
+function data_search($data, $term, $level = 0)
+{
+    if ($level === 0) {
+        $result = array();
+    }
+    if (empty($term) || strlen($term) < 2) {
+        return $result;
+    }
+    foreach ($data as $key => $record) {
+        $score = 0;
+        foreach ($record as $field_name => $field_value) {
+            if (is_scalar($field_value)) {
+                $v = trim($field_value);
+                $p = stripos($v, $term);
+                if ($p === false) {
+                    // nothing
+                } else if ($p === 0) {
+                    $score += 2;
+                } else {
+                    $score += 1;
+                }
+            } else if (is_array($field_value)) {
+                $score += data_search($field_value, $term, $level + 1);
+            }
+            if ($score > 0 && $level === 0) {
+                $result[$key] = $record;
+                $result[$key]['search_score'] = $score;
+            } else if ($score > 0 && $level > 0) {
+                return $score;
+            }
+        }
+    }
+    if ($level === 0) {
+        load_library('data-sort');
+        $result = data_sort_numeric($result, 'search_score', SORT_DESC);
+        return $result;
+    }
+    return 0;
+}
+
+function _data_validate($resource, $uuid, &$data_ls)
+{
+    if ($uuid === '.meta') {
+        return true;
+    }
+    $meta = data_meta($resource);
+    if (empty($meta['validate'])) {
+        return true;
+    }
+    $validation_rules = $meta['validate'];
+    foreach ($validation_rules as $rule => $fields) {
+        foreach ($fields as $field) {
+            if ($rule === 'natural-short-text') {
+                if (_validate_natural_short_text($data_ls[$field] ?? '') !== true) {
+                    return false;
+                }
+            }
+        }
+    }
+    return true;
+}
+
+function _validate_natural_short_text($val)
+{
+    if (!is_string($val)) {
+        return true;
+    }
+
+    $raw = trim($val);
+    if ($raw === '') {
+        return true;
+    }
+
+    // Hard limit (avoid regex on huge payloads)
+    if (strlen($raw) > 255) {
+        return false;
+    }
+
+    // Normalize for analysis: keep letters only, Unicode-safe
+    $s = mb_strtolower($raw, 'UTF-8');
+    $s = preg_replace('/[^\p{L}]/u', '', $s);
+
+    $len = mb_strlen($s, 'UTF-8');
+
+    // If after stripping it's empty, don't block (let other validation handle)
+    if ($len === 0) {
+        return true;
+    }
+
+    // Allow very short (avoid blocking e.g. "Ng", "TNO")
+    if ($len < 4) {
+        return true;
+    }
+
+    // Count vowels
+    preg_match_all('/[aeiouyàáâãäåèéêëìíîïòóôõöùúûü]/u', $s, $m);
+    $vowel_count = count($m[0]);
+
+    if ($vowel_count === 0) {
+        return false;
+    }
+
+    // Consonant run — 7+ to be safe for Dutch compounds
+    if (preg_match('/[bcdfghjklmnpqrstvwxz]{7,}/u', $s)) {
+        return false;
+    }
+
+    // Low vowel ratio for long single-token strings
+    if ($len >= 12) {
+        $ratio = $vowel_count / $len;
+        if ($ratio < 0.20) {
+            return false;
+        }
+    }
+
+    return true;
 }

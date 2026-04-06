@@ -173,22 +173,42 @@ nb_edit.disable_img = function (eimg) {
 
 nb_edit.get_field_values = function (el) {
     var result = {};
-    const fields = el.querySelectorAll('[data-nb-edit');
+    const fields = el.querySelectorAll('[data-nb-edit]');
+
     fields.forEach(f => {
         const key = f.dataset.nbEdit;
-        if (key) {
-            nb_edit.make_links_target_blank(f);
-            result[key] = f.innerHTML;
+        if (!key) return;
+
+        nb_edit.make_links_target_blank(f);
+
+        const parts = key.split('.');
+        const last = parts[parts.length - 1];
+
+        // detect language (2-char, matches known languages if available)
+        const is_lang = last.length === 2;
+
+        if (is_lang) {
+            const lang = last;
+            const field = parts.slice(0, -1).join('.');
+
+            if (!result[field] || typeof result[field] !== 'object') {
+                result[field] = {};
+            }
+
+            result[field][lang] = f.innerHTML.trim();
+        } else {
+            result[key] = f.innerHTML.trim();
         }
     });
-    const imgs = el.querySelectorAll('[data-nb-edit-img');
+
+    const imgs = el.querySelectorAll('[data-nb-edit-img]');
     imgs.forEach(eimg => {
         const key = eimg.dataset.nbEditImg;
         if (key) {
-            eimg.dataset.nbEditImgValue;
             result[key] = eimg.dataset.nbEditImgValue;
         }
     });
+
     return result;
 }
 

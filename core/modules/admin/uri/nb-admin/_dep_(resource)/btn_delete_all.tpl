@@ -13,7 +13,6 @@
 			return;
 		}
 		nb.api.get("[#base_url#]/api/v1/empty-resource?resource=[#data.resource#]").then((data) => {
-			console.log('here');
 			if (data.success) {
 				nb.api.post('[#base_url#]/api/v1/.system-messages', { message: "[#text Deleted all records#]"}).then((data) =>
 				{ window.location.reload(); });

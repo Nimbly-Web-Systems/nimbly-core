@@ -4,6 +4,9 @@
         <h3 class="text-sm md:text-base pt-1 pb-2 text-neutral-700 font-medium">[#text help_edit_resource#]</h3>
     </div>
 </section>
+<script>
+    _frecord=[#fmt var=_frecord json#];
+</script>
 <section class="bg-neutral-100 px-2 sm:px-4 md:px-6 lg:px-8 pb-10">
     <form autocomplete="false" x-ref="edit_resource_form" x-data="form_edit('[#data.resource#]', '[#data.uuid#]')" @submit.prevent="submit"
         class="bg-neutral-50 rounded-2xl p-2 sm:p-4 md:p-6 lg:p-8 xl:p-10 shadow-md">
