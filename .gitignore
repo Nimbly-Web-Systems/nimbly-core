@@ -1,5 +1,6 @@
 /ext/
 /contrib/
+.env
 /node_modules/
 .sass-cache/
 .htaccess
