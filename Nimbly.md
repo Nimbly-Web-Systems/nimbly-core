@@ -50,9 +50,9 @@ Templates are plain files in the target output format (HTML, JSON, CSS, etc.). T
 Every URL maps to a file in `ext/uri/`:
 
 ```
-ext/uri/index.tpl          → /
-ext/uri/about/index.tpl    → /about/
-ext/uri/blog/(slug)/index.tpl → /blog/<anything>/
+ext/uri/index.tpl              → /
+ext/uri/about/index.tpl        → /about/
+ext/uri/blog/(slug)/index.tpl  → /blog/<anything>/
 ```
 
 A route template typically loads modules and renders the page:
@@ -62,6 +62,8 @@ A route template typically loads modules and renders the page:
 [#html#]
 ```
 
+The `main.tpl` in the same folder contains the page body, rendered inside the HTML shell.
+
 ### Reusable templates
 
 Stored in `ext/tpl/<name>/index.tpl`. Called with their name as a shortcode:
@@ -69,6 +71,22 @@ Stored in `ext/tpl/<name>/index.tpl`. Called with their name as a shortcode:
 ```
 [#hero-section#]
 [#card title="Hello" image="img/photo.jpg"#]
+```
+
+### route.inc
+
+For routes that need PHP logic (loading data, access control, dynamic routing), add a `route.inc` alongside `index.tpl`:
+
+```php
+<?php
+router_deny();
+$parts = router_match(__FILE__);
+if ($parts === false) return;
+$slug = $parts[0];
+load_library('data');
+if (!data_exists('articles', $slug)) return;
+set_variable('slug', $slug);
+router_accept();
 ```
 
 ---
@@ -178,12 +196,12 @@ Returns a value from an array variable by key.
 Formats a variable for output.
 
 ```
-[#fmt var=data.records json#]           → JSON encode
-[#fmt var=myvar empty={}  json#]        → JSON with fallback
+[#fmt var=data.records json#]              → JSON encode
+[#fmt var=myvar empty={} json#]            → JSON with fallback
 [#fmt val=item.date type=date fmt="d-m-Y"#]
-[#fmt val=item.body type=html#]         → strips tags
-[#fmt val=item.size type=bytes#]        → human-readable bytes
-[#fmt val=item.created type=ago#]       → "3 days ago"
+[#fmt val=item.body type=html#]            → strips tags
+[#fmt val=item.size type=bytes#]           → human-readable bytes
+[#fmt val=item.created type=ago#]          → "3 days ago"
 ```
 
 Types: `text`, `html`, `date`, `ago`, `json`, `bytes`, `boolean`, `image`, `password`
@@ -280,7 +298,7 @@ Returns the translated value of an i18n field for the given language. Defaults t
 ```
 
 #### `[#text Label_key#]`
-Outputs a translated UI label from `.po` files.
+Outputs a translated UI label from `.po` files. Use underscores for spaces in the key.
 
 ```
 [#text Search#]
@@ -289,16 +307,6 @@ Outputs a translated UI label from `.po` files.
 ```
 
 Translations live in `ext/data/.i18n/text.<lang>.po`.
-
-#### `[#slug value#]`
-Converts a string to a URL-safe slug.
-
-```
-[#slug [#get item.title#]#]
-```
-
-#### `[#fmt val=timestamp type=date fmt="d-m-Y"#]`
-Formats a date. Accepts timestamp or date string.
 
 #### `[#markdown#]`
 Renders Markdown content.
@@ -314,8 +322,8 @@ Renders the full HTML page shell (doctype, head, body). Place at the end of rout
 Loads one or more modules. Common usage:
 
 ```
-[#module user#]          → loads user authentication
-[#module user forms#]    → user + form handling
+[#module user#]              → loads user authentication
+[#module user forms#]        → user + form handling
 [#module user admin forms#]
 ```
 
@@ -347,10 +355,15 @@ Returns `"logged-in"` if a user session is active.
 ```
 
 #### `[#detect-language#]`
-Returns the active language code using URL, preference, TLD, browser, and fallback detection.
+Returns the active language code. Detection order:
+1. URL prefix (`/en/`, `/nl/`)
+2. User preference (`?lang=en`)
+3. Domain TLD (`.en`, `.nl`)
+4. Browser language header
+5. Fallback — first language defined in site config
 
 #### `[#language#]`
-Returns the currently active language code.
+Returns the currently active language code. Automatically set in the HTML template.
 
 #### `[#debug#]`
 Outputs debug information. Use during development only.
@@ -380,7 +393,18 @@ ext/data/<resource>/
   <uuid>         → one record per file (JSON, no extension)
 ```
 
+Example:
+
+```
+ext/data/articles/
+  ├── .meta
+  ├── a1b2c3d4e5f6g7h8
+  └── z9y8x7w6v5u4t3s2
+```
+
 ### .meta file
+
+Defines the structure and behavior of a resource. All fields must be explicitly configured.
 
 ```json
 {
@@ -388,7 +412,6 @@ ext/data/<resource>/
     "title": {
       "name": "Title",
       "type": "name",
-      "slug": true,
       "required": true
     },
     "published": {
@@ -398,7 +421,7 @@ ext/data/<resource>/
     "body": {
       "name": "Body",
       "type": "html",
-      "buttons": "h2,h3,bold,italic,orderedlist,unorderedlist,quote,anchor",
+      "buttons": "h2,h3,h4,bold,italic,orderedlist,unorderedlist,quote,anchor",
       "media": true,
       "media_sizes": "sm-90,md-70,lg-60,xl-50,xxl-40",
       "admin_col": false
@@ -409,7 +432,6 @@ ext/data/<resource>/
       "admin_col": false
     }
   },
-  "pk": "title_slug",
   "sort": {
     "field": "sort_order",
     "flags": "numeric",
@@ -438,6 +460,8 @@ ext/data/<resource>/
 | `select` | Dropdown — fixed options or from resource |
 | `color` | Color picker |
 
+Field type names must match exactly.
+
 ### Field configuration
 
 Common options per field:
@@ -445,28 +469,29 @@ Common options per field:
 | Key | Type | Description |
 |---|---|---|
 | `name` | string | Display label in admin |
-| `required` | boolean | Validation |
-| `admin_col` | boolean | Show in admin table (default: true) |
-| `slug` | boolean | Generate `<field>_slug` (name type only) |
+| `required` | boolean | Validation — must be set on all title/name fields |
+| `admin_col` | boolean | Show in admin overview table (default: true) |
 | `multi` | boolean | Allow multiple values |
 | `i18n` | boolean | Translate per language |
-| `accept` | string | File type restriction for image/file |
+| `accept` | string | File type restriction for image/file fields |
 
-**HTML fields** must be configured as one of:
+**HTML fields** must explicitly use one of two configurations:
 
-Simple (short text):
+Simple (short text blocks, e.g. intro):
 ```json
 "buttons": "bold,italic",
 "admin_col": false
 ```
 
-Rich (full content):
+Rich (full content, e.g. body):
 ```json
 "buttons": "h2,h3,h4,bold,italic,orderedlist,unorderedlist,quote,anchor",
 "media": true,
 "media_sizes": "sm-90,md-70,lg-60,xl-50,xxl-40",
 "admin_col": false
 ```
+
+Never define an `html` field without choosing one of these. `media_sizes` is required when `media: true`.
 
 **Select fields:**
 
@@ -486,13 +511,15 @@ Options from another resource:
 "resource": "categories"
 ```
 
-### Resource conventions (required)
+### Root-level .meta configuration
 
-- All `name`/`title` fields must have `"required": true`
-- List resources (partners, logos, cards) must include `sort_order` + `sort` config
-- Fields not shown in overview must have `"admin_col": false`
-- HTML fields must have explicit `buttons` config
-- When using `slug: true` on a name field, set `"pk": "<field>_slug"`
+| Key | Description |
+|---|---|
+| `pk` | Primary key field name |
+| `sort` | Default sort (`field`, `flags`: `string`/`numeric`, `order`: `asc`/`desc`) |
+| `validate` | Validation rules (e.g. `natural-short-text`) |
+| `languages` | Enabled languages for this resource |
+| `ai_prompts` | Per-field AI translation instructions |
 
 ### System fields (auto-managed)
 
@@ -500,9 +527,136 @@ Every record automatically has: `uuid`, `_created`, `_modified`, `_created_by`, 
 
 ---
 
+### Resource conventions (required)
+
+These rules are mandatory for all resources unless explicitly stated otherwise.
+
+**Always include:**
+- `"required": true` on all name/title fields
+- `published` boolean field on content resources
+- `sort_order` field + `sort` config on list resources (partners, logos, cards, team members, etc.)
+- `"admin_col": false` on images, html, urls, large text, and technical fields like sort_order
+
+**Always consider:**
+- Does this resource need a `published` field?
+- Does ordering matter? Add `sort_order` + `sort`
+- Is this linked from a URL? It needs a primary key
+- Does content need to be translated? Add `languages` and `i18n` per field
+
+**Admin visibility — fields to hide by default:**
+- images
+- html content
+- urls
+- large text fields
+- sort_order and other technical fields
+
+### Production-ready .meta examples
+
+#### Example A: Partners (list with sorting)
+
+```json
+{
+  "fields": {
+    "title": {
+      "name": "Partner name",
+      "type": "text",
+      "required": true
+    },
+    "published": {
+      "name": "Published",
+      "type": "boolean"
+    },
+    "logo": {
+      "name": "Logo",
+      "type": "image",
+      "admin_col": false
+    },
+    "website": {
+      "name": "Website",
+      "type": "url",
+      "admin_col": false
+    },
+    "sort_order": {
+      "name": "Sort order",
+      "type": "text",
+      "admin_col": false
+    }
+  },
+  "sort": {
+    "field": "sort_order",
+    "flags": "numeric",
+    "order": "asc"
+  }
+}
+```
+
+#### Example B: Articles (content with date sorting)
+
+```json
+{
+  "fields": {
+    "title": {
+      "name": "Title",
+      "type": "text",
+      "required": true
+    },
+    "published": {
+      "name": "Published",
+      "type": "boolean"
+    },
+    "featured": {
+      "name": "Featured",
+      "type": "boolean"
+    },
+    "date": {
+      "name": "Date",
+      "type": "date"
+    },
+    "main_img": {
+      "name": "Image",
+      "type": "image",
+      "admin_col": false
+    },
+    "intro": {
+      "name": "Intro",
+      "type": "html",
+      "buttons": "bold,italic",
+      "admin_col": false
+    },
+    "main_text": {
+      "name": "Main text",
+      "type": "html",
+      "buttons": "h2,h3,h4,bold,italic,orderedlist,unorderedlist,quote,anchor",
+      "media": true,
+      "media_sizes": "sm-90,md-70,lg-60,xl-50,xxl-40",
+      "admin_col": false
+    }
+  },
+  "sort": {
+    "field": "date",
+    "flags": "string",
+    "order": "desc"
+  }
+}
+```
+
+### Validation checklist before outputting a resource schema
+
+- [ ] All name/title fields have `"required": true`
+- [ ] HTML fields have `buttons` configured (simple or rich)
+- [ ] HTML fields with `media: true` have `media_sizes`
+- [ ] `admin_col: false` is set on images, html, urls, large text, sort_order
+- [ ] List resources have `sort_order` field and `sort` config
+- [ ] Content resources have a `published` boolean
+- [ ] No system fields defined (`uuid`, `_created`, etc.)
+
+---
+
 ## 5. Multi-language (i18n)
 
-### Site config
+Nimbly supports multi-language systems out of the box. Languages are handled at three levels: site configuration, routing, and data.
+
+### Step 1 — Define site languages
 
 `ext/data/.config/site`:
 ```json
@@ -511,69 +665,148 @@ Every record automatically has: `uuid`, `_created`, `_modified`, `_created_by`, 
 }
 ```
 
-First language is the fallback.
+Rules:
+- Required for all multi-language setups
+- Only 2-letter language codes
+- First language is the fallback
 
-### Routing
+### Step 2 — Set up language routing
 
-Each language has its own URL prefix: `/en/`, `/nl/`
+Each language gets its own URL prefix: `/en/`, `/nl/`
 
-Redirect root to detected language:
-
-`ext/uri/index.tpl`:
+Redirect root to the detected language in `ext/uri/index.tpl`:
 ```
 [#redirect [#detect-language#]#]
 ```
 
-### Resource translation
+Language detection order:
+1. URL prefix (`/en/`, `/nl/`)
+2. User preference (`?lang=en`)
+3. Domain TLD (`.en`, `.nl`)
+4. Browser language header
+5. Fallback — first language in site config
 
-In `.meta`:
+Once a user is inside a language scope, it persists automatically across navigation.
+
+### Step 3 — Configure resources for translation
+
+Add `languages` to every resource `.meta` that has translated content:
+
 ```json
 "languages": ["en", "nl"]
 ```
 
-Per field:
+Mark translatable fields with `i18n: true`:
+
 ```json
 "title": {
   "type": "text",
   "required": true,
   "i18n": true
+},
+"intro": {
+  "type": "html",
+  "buttons": "bold,italic",
+  "admin_col": false,
+  "i18n": true
 }
 ```
 
-Fields without `i18n: true` are shared across all languages.
+Fields without `i18n: true` are shared across all languages (images, booleans, sort_order, etc.).
 
-### Static text
+### Step 4 — Add static text translations
 
-Use `[#text Key#]` in templates. Translation files:
+Use `[#text Key#]` for UI labels in templates. Keys use underscores for spaces.
 
+Create translation files per language:
+
+`ext/data/.i18n/text.en.po`:
+```po
+msgid "Search"
+msgstr "Search"
+
+msgid "Read_more"
+msgstr "Read more"
 ```
-ext/data/.i18n/text.en.po
-ext/data/.i18n/text.nl.po
-ext/data/.i18n/text.base.po   (merged, generated by build)
-```
 
-Format:
+`ext/data/.i18n/text.nl.po`:
 ```po
 msgid "Search"
 msgstr "Zoeken"
+
+msgid "Read_more"
+msgstr "Lees meer"
 ```
 
-Build:
+Build the merged base file after changes:
 ```bash
 npm run text-build
 ```
 
-### AI-assisted translation for HTML fields
+### Step 5 — Templates per language
+
+Languages are not just translations of the same site — each language can have its own templates, routing, and structure. They are effectively separate sites under `/en/`, `/nl/`, etc.
+
+```
+ext/uri/en/index.tpl      → /en/
+ext/uri/en/about/index.tpl → /en/about/
+ext/uri/nl/index.tpl      → /nl/
+ext/uri/nl/about/index.tpl → /nl/about/
+```
+
+When structure is shared across languages, extract it into a reusable template:
+
+`ext/uri/nl/about/main.tpl`:
+```
+[#about-main#]
+```
+
+`ext/tpl/about-main/index.tpl`:
+```html
+<h1>[#text About#]</h1>
+<p>[#text About_intro#]</p>
+```
+
+### AI-assisted translation
+
+Fields can define translation instructions using `ai_prompts`. The admin uses these to guide AI translation.
+
+Structure:
+```json
+"ai_prompts": {
+  "_all": [...],   → shared context for all languages
+  "en": [...],     → English-specific instructions
+  "nl": [...]      → Dutch-specific instructions
+}
+```
+
+**For text fields:**
+```json
+"title": {
+  "type": "text",
+  "i18n": true,
+  "ai_prompts": {
+    "_all": ["Your style is accurate and professional."],
+    "en": ["You translate to English."],
+    "nl": ["You translate to Dutch."]
+  }
+}
+```
+
+**For HTML fields — strict rules apply:**
+
+HTML fields require explicit instructions to preserve structure. Always include all of the following in `_all`:
 
 ```json
-"body": {
+"main_text": {
   "type": "html",
   "i18n": true,
   "ai_prompts": {
     "_all": [
       "The input and output are in HTML, properly escaped for safe use in an HTML editor.",
-      "You preserve existing HTML structures including images, lists, links and other tags.",
-      "You do not introduce raw < or > characters, use &lt; and &gt; instead."
+      "You preserve existing HTML structures including images, lists, links and other tags as much as possible.",
+      "You do not introduce raw < or > characters in your output, but use &lt; and &gt;.",
+      "Your style is accurate and professional."
     ],
     "en": ["You translate to English."],
     "nl": ["You translate to Dutch."]
@@ -581,42 +814,32 @@ npm run text-build
 }
 ```
 
+Rules for HTML translation:
+- Always include the HTML safety instructions in `_all`
+- Always preserve images, links, lists, and formatting tags
+- Never allow the model to simplify or restructure the HTML
+
+### i18n rules for AI agents
+
+- Always define `languages` in both site config and resource `.meta`
+- Always use 2-letter language codes, consistently everywhere
+- Only add `"i18n": true` to content fields — not images, booleans, sort_order, dates
+- Never translate slugs or primary key fields
+- Keep resource structure identical across languages
+- Use `[#text#]` for UI labels; use `i18n` fields for structured content
+- Always include HTML safety instructions in `ai_prompts._all` for html fields
+
 ---
 
 ## 6. Routing
 
-Routes are `.tpl` files in `ext/uri/`. The filename/folder structure maps directly to the URL.
+Routes are `.tpl` files in `ext/uri/`. The folder structure maps directly to the URL.
 
-Dynamic segments use parentheses:
+Dynamic URL segments use parentheses:
 
 ```
 ext/uri/blog/(slug)/index.tpl     → /blog/<anything>/
 ext/uri/user/(id)/index.tpl       → /user/<anything>/
-```
-
-A route template sets up the page context:
-
-```
-[#module user#]
-[#access feature=manage-content#]
-[#set page-title="Blog"#]
-[#html#]
-```
-
-The `main.tpl` in the same folder contains the page body rendered inside the HTML shell.
-
-For routes with a `route.inc` (PHP logic):
-
-```php
-<?php
-router_deny();
-$parts = router_match(__FILE__);
-if ($parts === false) return;
-$slug = $parts[0];
-load_library('data');
-if (!data_exists('articles', $slug)) return;
-set_variable('slug', $slug);
-router_accept();
 ```
 
 ---
@@ -642,13 +865,13 @@ Built files go to `ext/static/`. Always run build after changing CSS, JS, or Tai
 
 The built-in admin is available at `/nb-admin/`.
 
-The new admin (1.1+) uses DaisyUI components and these shortcodes from `core/modules/admin/lib/`:
+The admin (1.1+) uses DaisyUI components. The following shortcodes from `core/modules/admin/lib/` handle data loading for admin views:
 
-- `[#get-resource-records resource=users role=table#]` — loads all records + filtered fields into `data.records` and `data.fields`
-- `[#get-resource-record resource=users uuid=abc123#]` — loads a single record for editing with full i18n and encryption handling
+- `[#get-resource-records resource=users role=table#]` — loads all records + table-filtered fields into `data.records` and `data.fields`
+- `[#get-resource-record resource=users uuid=abc123#]` — loads a single record for editing, with i18n and encryption handling
 - `[#get-resource-meta resource=users#]` — loads only field definitions into `data.fields`
 
-The old admin templates are in `_dep_` folders and remain functional during the transition.
+The old admin templates are in `_dep_` folders and remain functional during the transition to the new UI.
 
 ---
 
@@ -659,5 +882,15 @@ The old admin templates are in `_dep_` folders and remain functional during the 
 - Do not define system fields (`uuid`, `_created`, etc.) in `.meta`
 - Do not create HTML fields without explicit `buttons` config
 - Do not create resources without considering `admin_col`, sorting, and required fields
-- Do not translate slugs
-- Do not add `i18n: true` to non-content fields (images, booleans, sort_order)
+- Do not add `i18n: true` to non-content fields (images, booleans, sort_order, dates)
+- Do not define `languages` on a resource without also defining it in site config
+- Do not create incomplete or minimal resource schemas — always production-ready
+
+---
+
+## 10. Pending changes
+
+The following areas are under active development and will be updated here as they are finalized:
+
+- **Indexes** — slugs as primary keys (`pk: title_slug`) are being replaced by an index system. Do not design new resources around slug-based primary keys. This section will be updated when the new approach is settled.
+- **DaisyUI** — the admin UI uses DaisyUI v3. Frontend usage conventions and component patterns will be documented here.
