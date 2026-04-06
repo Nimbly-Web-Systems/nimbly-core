@@ -904,7 +904,178 @@ Built files go to `ext/static/`. Always run build after changing CSS, JS, or Tai
 
 ---
 
-## 8. Admin
+## 8. Forms
+
+The forms module handles front-end form submissions with CSRF protection, honeypot spam filtering, validation, and Alpine.js-powered submission via the REST API.
+
+### Loading the module
+
+Always load the forms module in the route template:
+
+```
+[#module user forms#]
+[#html#]
+```
+
+### Rendering a form — `[#build-form name#]`
+
+`[#build-form contact#]` reads `contact.json` from the same directory as the current route and renders a complete form. The form submits via Alpine.js to the API — no page reload.
+
+Form definition file (`ext/uri/contact/contact.json`):
+
+```json
+{
+  "name": "contact",
+  "resource": "leads",
+  "success_message": "Thank you, we will be in touch.",
+  "fields": {
+    "name": {
+      "type": "text",
+      "name": "Your name",
+      "required": true
+    },
+    "email": {
+      "type": "email",
+      "name": "Email address",
+      "required": true
+    },
+    "message": {
+      "type": "textarea",
+      "name": "Message"
+    }
+  },
+  "buttons": [
+    { "type": "submit", "title": "Send" }
+  ]
+}
+```
+
+The `resource` field is the target resource that will receive the new record via the API. Make sure that resource exists in `ext/data/` with a matching `.meta`.
+
+### Field types in forms
+
+Same type names as resource fields: `text`, `textarea`, `email`, `url`, `select`, `upload`. Add `"help": "Hint text"` to any field for a help label below the input.
+
+**Select field:**
+```json
+"status": {
+  "type": "select",
+  "name": "Type",
+  "options": {
+    "general": "General question",
+    "support": "Support request"
+  }
+}
+```
+
+**Upload field:**
+```json
+"attachment": {
+  "type": "upload",
+  "name": "Attachment",
+  "accept": ".pdf,.doc"
+}
+```
+
+For forms with file upload, also set `"upload_field": "attachment"` at the root of the form definition.
+
+### Grouping fields
+
+Use `group_start` / `group_end` to visually group fields side by side:
+
+```json
+"fields": {
+  "_g1": { "type": "group_start", "name": "Name" },
+  "first_name": { "type": "text", "name": "First name" },
+  "last_name":  { "type": "text", "name": "Last name" },
+  "_g1e": { "type": "group_end" }
+}
+```
+
+### CSRF and honeypot
+
+Both are handled automatically by `[#build-form#]`. The form includes a hidden `form_key` (session-matched token) and a honeypot field. No extra configuration needed.
+
+---
+
+## 9. Rich content fields — end-to-end
+
+This section shows the full flow for an editable HTML field: resource definition → template output → inline admin editing.
+
+### Step 1 — Define the field in `.meta`
+
+```json
+"intro": {
+  "name": "Intro",
+  "type": "html",
+  "buttons": "bold,italic",
+  "admin_col": false,
+  "i18n": true
+},
+"body": {
+  "name": "Body",
+  "type": "html",
+  "buttons": "h2,h3,h4,bold,italic,orderedlist,unorderedlist,quote,anchor",
+  "media": true,
+  "media_sizes": "sm-90,md-70,lg-60,xl-50,xxl-40",
+  "admin_col": false,
+  "i18n": true
+}
+```
+
+- `buttons` is mandatory — always specify the exact toolbar buttons needed
+- `media: true` enables the media browser; requires `media_sizes`
+- `admin_col: false` is mandatory for html fields (too large for table view)
+- Add `i18n: true` if the site is multi-language
+
+### Step 2 — Load the record in route.inc
+
+```php
+<?php
+router_deny();
+$parts = router_match(__FILE__);
+if ($parts === false) return;
+load_library('data');
+$record = data_read('articles', $parts[0]);
+if (!$record) return;
+set_variable('article', $record);
+router_accept();
+```
+
+### Step 3 — Output in the template
+
+Use `[#get-html#]` to output an editable html field. When a logged-in admin views the page, the field becomes inline-editable directly in the frontend.
+
+```html
+<div class="prose">
+  [#get-html article.intro#]
+</div>
+
+<div class="prose prose-lg">
+  [#get-html article.body#]
+</div>
+```
+
+For multi-language content, wrap with `[#get-i18n#]` to get the active-language value before passing to `get-html`:
+
+```
+[#get-html [#get-i18n article.body#]#]
+```
+
+### Step 4 — Load the user module
+
+The inline editor is activated by the user module. Always load it:
+
+```
+[#module user#]
+[#html#]
+```
+
+Without `[#module user#]`, logged-in users will see raw HTML instead of the editor.
+
+---
+
+## 10. Admin
 
 The built-in admin is available at `/nb-admin/`.
 
@@ -918,7 +1089,7 @@ The old admin templates are in `_dep_` folders and remain functional during the 
 
 ---
 
-## 9. Anti-patterns
+## 11. Anti-patterns
 
 - Do not modify `core/`
 - Do not add database concepts (tables, joins, foreign keys) — use resources
@@ -931,9 +1102,10 @@ The old admin templates are in `_dep_` folders and remain functional during the 
 
 ---
 
-## 10. Pending changes
+## 12. Pending changes
 
 The following areas are under active development and will be updated here as they are finalized:
 
 - **Indexes** — slugs as primary keys (`pk: title_slug`) are being replaced by an index system. Do not design new resources around slug-based primary keys. This section will be updated when the new approach is settled.
-- **DaisyUI** — the admin UI uses DaisyUI v3. Frontend usage conventions and component patterns will be documented here.
+- **DaisyUI migration** — Tailwind Elements is being phased out. The admin is already on DaisyUI v3. Frontend templates that still use Tailwind Elements components (modals, dropdowns, etc.) are being migrated. Do not introduce new Tailwind Elements usage; use DaisyUI equivalents instead. Frontend DaisyUI component patterns will be documented here once the migration is complete.
+- **Shortcode single-file format** — currently every shortcode requires a directory (`lib/my-shortcode/my-shortcode.php`). A planned improvement is to allow a single-file fallback (`lib/my-shortcode.php`) for simple shortcodes that don't need a template. Until then, always use the directory format.
