@@ -2,19 +2,48 @@
 
 load_library('lookup');
 load_library('util');
+
 function get_html_sc($params)
 {
-    $var = current($params);
+    $var = $base_var = current($params);
+
+    $html = null;
+    $lang = null;
+
+    /**
+     * 1) VARIABLE RESOLUTION
+     */
+
+    // 1a. exact match
     if (isset($GLOBALS['SYSTEM']['variables'][$var])) {
         $html = $GLOBALS['SYSTEM']['variables'][$var];
     } else {
-        $resource_set = dot2rs(current($params));
+
+        // 1b. strip .xx language suffix
+        $parts = explode('.', $var);
+
+        if (count($parts) > 1 && strlen(end($parts)) === 2) {
+            $lang = array_pop($parts);
+            $base_var = implode('.', $parts);
+
+            if (isset($GLOBALS['SYSTEM']['variables'][$base_var])) {
+                $html = $GLOBALS['SYSTEM']['variables'][$base_var];
+            }
+        }
+    }
+
+    /**
+     * 2) FALLBACK TO LOOKUP
+     */
+
+    if ($html === null) {
+
+        $resource_set = dot2rs($base_var ?? $var);
         if (!$resource_set) {
             return;
         }
-        $resource = $resource_set[0];
-        $uuid = $resource_set[1];
-        $field = $resource_set[2];
+
+        [$resource, $uuid, $field] = $resource_set;
 
         if (!data_exists($resource)) {
             data_create_resource($resource, ['fields' => false]);
@@ -22,21 +51,21 @@ function get_html_sc($params)
 
         if (!data_exists($resource, $uuid)) {
             data_create($resource, $uuid, []);
-            $default = get_param_value($params, 'default', '');
-            echo $default;
+            echo get_param_value($params, 'default', '');
             return;
         }
+
         $html = lookup_data($resource, $uuid, $field, get_param_value('default', ''));
     }
 
+    /**
+     * 3) LANGUAGE RESOLUTION
+     */
+
     if (is_array($html)) {
-        load_library('detect-language');
-        $language = detect_language_sc();
-        if (isset($html[$language])) {
-            $html = $html[$language];
-        } else {
-            $html = '';
-        }
+        $lang = $lang ?? 'auto';
+        load_library('util');
+        $html = resolve_i18n($html, $lang);
     }
 
     // remove any base_url like src="/(base-url)/img/(uuid)

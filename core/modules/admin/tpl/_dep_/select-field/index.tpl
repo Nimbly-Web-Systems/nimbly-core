@@ -1,8 +1,7 @@
 <select data-te-select-init name="[#item.key#]" data-te-select-size="lg" [#if item.multi=(not-empty) echo=multiple#]
-    class="[#if item.hidden=(not-empty) echo=hidden#]" 
+    class="[#if item.hidden=(not-empty) echo=hidden#] [#get _inputbg default=bg-transparent#]" 
     [#if item.required=(not-empty) or _frequired=(not-empty) echo=required#]
-    x-init='form_data.[#item.key#]=[#get record.[#item.key#] default={} empty={} json#]'
-    x-model="form_data.[#item.key#]">
+    x-model='[#_fmodel#]'>
     <option value="(empty)">[#text None#]</option>
     [#repeat item.options tpl=option_item var=option#]
     [#data [#get item.resource#]#]
@@ -10,6 +9,9 @@
     [#get _foptions default=""#]
     
 </select>
-<label data-te-select-label-ref class="[#_fbg#] z-10">[#field-name name="[#item.name#]"#]</label>
+<label data-te-select-label-ref class="[#_fbg#] z-10">
+[#field-name name="[#item.name#]"#]
+ [#if _frequired=(not-empty) echo=" *"#]
+</label>
 <div class="h-4"></div>
 

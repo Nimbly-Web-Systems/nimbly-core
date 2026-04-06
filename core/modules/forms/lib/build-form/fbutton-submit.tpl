@@ -1,4 +1,4 @@
-<div class="flex flex-row align-middle">
+<div class="flex flex-row align-middle justify-center items-center">
     <button type="submit" class="[#btn-class-primary#] mb-4 flex flex-row align-middle" disabled="true"
         x-bind:disabled="uploading">
         <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="animate-spin w-5 h-5" x-cloak

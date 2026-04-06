@@ -13,3 +13,6 @@ msgstr "English"
 
 msgid "ua"
 msgstr "Українська"
+
+msgid "fr"
+msgstr "Français"

@@ -1,5 +1,5 @@
-<div class="mb-[0.125rem] block min-h-[1.5rem] pl-[1.5rem]">
-    [#set _ftest-checked="[#_fvalue#]" overwrite#]
+<div class="mb-[0.125rem] block min-h-[1.5rem] pl-[1.5rem]" [#_fattr#]>
+    [#set _ftest-checked="[#get _fvalue default=0#]" overwrite#]
     <input [#if not _ftest-checked=(empty) echo=checked#]
         class="relative float-left -ml-[1.5rem] mr-[6px] mt-[0.15rem] h-[1.125rem] w-[1.125rem] 
             appearance-none rounded-[0.25rem] border-[0.125rem] border-solid border-neutral-300 
@@ -22,9 +22,9 @@
             checked:focus:after:rounded-none checked:focus:after:border-[0.125rem] checked:focus:after:border-l-0 
             checked:focus:after:border-t-0 checked:focus:after:border-solid checked:focus:after:border-white 
             checked:focus:after:bg-transparent"
-        type="checkbox" value="" name="[#_fname#]" x-init="[#_fmodel#]=`[#_ftest-checked#]`"
+        type="checkbox" value="" name="[#_fname#]" 
         x-model="[#_fmodel#]" />
     <label class="inline-block pl-[0.15rem] hover:cursor-pointer" for="[#_fname#]">
-        [#_ftitle#]
+        [#_ftitle#] 
     </label>
 </div>
