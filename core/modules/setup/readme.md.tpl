@@ -3,7 +3,7 @@ Getting started
 
 **Requirements**
 
-- [Docker Desktop](https://www.docker.com/products/docker-desktop/)
+- [Docker](https://docs.docker.com/get-docker/)
 - [VS Code](https://code.visualstudio.com/) with the [Dev Containers extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers)
 
 **Clone both repos**
