@@ -87,6 +87,7 @@ document.addEventListener("alpine:init", () => {
       const first_val = val(entries[0]);
       const all_equal = entries.every((e) => val(e) === first_val);
       if (all_equal) {
+        this.set_page_records();
         return;
       }
 
