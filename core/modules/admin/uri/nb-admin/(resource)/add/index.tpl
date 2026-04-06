@@ -2,5 +2,5 @@
 [#access feature=add-[#resource#],manage-content,manage-[#resource#],(any)_[#resource#]#]
 [#set resource-name=[#resource#]#]
 [#set _resource_url=[#base-url#]/nb-admin/[#resource#]#]
-[#set page-title="[#text btn_txt_add_[#resource-name#]#]"#]
+[#set page-title="[#text Add [#resource-name#]#]"#]
 [#html#]
