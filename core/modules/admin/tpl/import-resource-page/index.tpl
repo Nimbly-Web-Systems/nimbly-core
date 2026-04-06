@@ -6,7 +6,7 @@
 
     <h1 class="text-2xl md:text-3xl font-semibold text-neutral-800 mb-8" data-nb-edit="[#cfield title#]"
         data-nb-edit-options='{"buttons":""}'>
-        [#text btn_txt_import_[#resource-name#]#]
+        [#text Import [#resource-name#]#]
     </h1>
 
     [#import-resource-form#]

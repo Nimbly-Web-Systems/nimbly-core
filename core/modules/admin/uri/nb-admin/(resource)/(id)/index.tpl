@@ -2,5 +2,5 @@
 [#access feature=edit-[#resource#]#]
 [#set resource-name=[#resource#]#]
 [#set _resource_url=[#base-url#]/nb-admin/[#resource#]#]
-[#set page-title="[#text btn_txt_edit_[#resource-name#]#]"#]
+[#set page-title="[#text Edit [#resource-name#]#]"#]
 [#html#]
