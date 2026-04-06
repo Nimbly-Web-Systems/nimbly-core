@@ -154,11 +154,10 @@ if (!file_exists($gitignore_dst)) {
 $readme_dst = BASE_DIR . 'ext/readme.md';
 if (!file_exists($readme_dst)) {
     $core_repo = trim(shell_exec('git remote get-url origin 2>/dev/null') ?? '');
-    $ext_repo  = trim(shell_exec('git -C ' . escapeshellarg(BASE_DIR . 'ext') . ' remote get-url origin 2>/dev/null') ?? '');
     $site_slug = basename(BASE_DIR);
     $readme = file_get_contents(SETUP_DIR . 'readme.md.tpl');
     $readme = str_replace('%%CORE_REPO%%', $core_repo ?: 'git@github.com:your-org/nimbly-core.git', $readme);
-    $readme = str_replace('%%EXT_REPO%%',  $ext_repo  ?: 'git@github.com:your-org/your-project.git', $readme);
+    $readme = str_replace('%%EXT_REPO%%',  $ext_repo ?: 'git@github.com:your-org/your-project.git', $readme);
     $readme = str_replace('%%SITE_NAME%%', $site_slug ?: 'myproject', $readme);
     file_put_contents($readme_dst, $readme);
     chmod($readme_dst, 0640);
@@ -191,6 +190,7 @@ function nb_prompt_password(string $question): string {
 
 echo "\n--- Nimbly Setup ---\n\n";
 
+$ext_repo = nb_prompt('Project repo URL (ext)');
 $sitename = nb_prompt('Site name', 'My Nimbly Site');
 $email    = nb_prompt('Admin email');
 while (empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
