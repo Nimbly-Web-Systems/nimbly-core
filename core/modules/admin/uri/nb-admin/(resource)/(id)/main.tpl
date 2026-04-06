@@ -2,7 +2,7 @@
 
     <h1 class="text-2xl md:text-3xl font-semibold text-neutral-800 mb-8" data-nb-edit="[#cfield title#]"
         data-nb-edit-options='{"buttons":""}'>
-        [#text Edit [#resource-name#]#]
+        [#text Edit [#resource-name [#resource-id#]#]#]
     </h1>
 
     [#edit-resource-form#]

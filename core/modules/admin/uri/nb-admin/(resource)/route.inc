@@ -11,6 +11,6 @@ load_library("data");
 if (!data_exists($resource)) {
     return;
 }
-set_variable('resource', $resource);
+set_variable('resource-id', $resource);
 load_module("admin");
 router_accept();

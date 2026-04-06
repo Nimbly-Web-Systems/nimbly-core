@@ -39,7 +39,7 @@
                     </td>
                     <td class="text-neutral-600 py-3 border-b border-neutral-200">
                         <template x-if="Object.keys(_records).length < 1">
-                            [#feature-cond add-[#resource-name#] tpl=action_add#]
+                            [#feature-cond add-[#resource-id#] tpl=action_add#]
                         </template>
                     </td>
                 </tr>
