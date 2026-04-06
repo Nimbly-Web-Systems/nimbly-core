@@ -4,7 +4,7 @@
     <div class="flex flex-row items-center">
         <h1 class="text-2xl md:text-3xl font-semibold text-neutral-800"
             data-nb-edit-options='{"buttons":""}'>
-            [#text [#resource-name [#resource-id#]#]#]
+            [#text [#resource-name [#resource-id#] plural#]#]
         </h1>
         <input type="search" class="ml-auto mr-6 py-1.5 px-4 focus:outline-2 focus:outline-cnormal"
             placeholder="[#text Search#]"
