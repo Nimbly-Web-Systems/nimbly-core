@@ -354,12 +354,37 @@ Translations live in `ext/data/.i18n/text.<lang>.po`.
 #### `[#markdown#]`
 Renders Markdown content.
 
+#### `[#get-img-html image sizes="...#]`
+Renders a responsive `<img>` tag with `srcset` and `sizes`. Requires the `images` module to be loaded first.
+
+```
+[#module images#]
+[#get-img-html [#record.main_img#] sizes="xs-50,sm-33,lg-25"#]
+```
+
+Size tokens use breakpoint-percentage pairs (`lg-50` = 50% of viewport width at lg breakpoint). The module generates appropriately sized variants for all specified breakpoints.
+
 ---
 
 ### HTML page
 
 #### `[#html#]`
 Renders the full HTML page shell (doctype, head, body). Place at the end of route templates.
+
+The following variables influence the HTML shell when set before `[#html#]`:
+
+| Variable | Description |
+|---|---|
+| `page-title` | Sets the `<title>` tag |
+| `body-classes` | Adds CSS classes to the `<body>` tag |
+| `page-settings-link` | Adds a shortcut link in the Nimbly admin bar pointing to the admin edit page for the current record. Use this on detail pages to allow quick admin access from the frontend. Example: `[#base-url#]/nb-admin/articles/[#record.uuid#]` |
+
+```
+[#set page-title="[#get record.title#]"#]
+[#set page-settings-link="[#base-url#]/nb-admin/event/[#record.uuid#]"#]
+[#set body-classes=site-body#]
+[#html#]
+```
 
 #### `[#module name1 name2#]`
 Loads one or more modules. Common usage:
@@ -517,6 +542,7 @@ Common options per field:
 | `multi` | boolean | Allow multiple values |
 | `i18n` | boolean | Translate per language |
 | `accept` | string | File type restriction for image/file fields |
+| `slug` | boolean | Auto-generates a URL-safe slug from this field's value. Used on `name` fields that serve as routing keys. |
 
 **HTML fields** must explicitly use one of two configurations:
 
@@ -563,6 +589,7 @@ Options from another resource:
 | `validate` | Validation rules (e.g. `natural-short-text`) |
 | `languages` | Enabled languages for this resource |
 | `ai_prompts` | Per-field AI translation instructions |
+| `actions` | Object with a `url` key — adds a "View" button in the admin record list pointing to the frontend URL of the record. Shortcodes are evaluated in the URL value. Example: `{"url": "[#base-url#]/articles/[#record.title_slug#]"}` |
 
 ### System fields (auto-managed)
 
@@ -1073,6 +1100,30 @@ The inline editor is activated by the user module. Always load it:
 
 Without `[#module user#]`, logged-in users will see raw HTML instead of the editor.
 
+### Inline editing attributes
+
+For finer control over the inline editor (e.g. different toolbar than the `.meta` default, or to enable media on a field that doesn't have it in `.meta`), add `data-nb-edit` directly to a wrapper element:
+
+```html
+<div data-nb-edit="event.[#record.uuid#].main_text" data-nb-edit-options='{
+    "buttons":"h2,h3,bold,italic,anchor",
+    "media": true,
+    "media_sizes":"md-70,lg-60"}'>
+  [#get-html record.main_text#]
+</div>
+```
+
+For inline image replacement, use `data-nb-edit-img` on the image wrapper:
+
+```html
+<div data-nb-edit-img="event.[#record.uuid#].main_img">
+  [#module images#]
+  [#get-img-html [#record.main_img#] sizes="xs-100,md-50"#]
+</div>
+```
+
+Both attributes only activate for logged-in admins. The value format is `resource.uuid.field`.
+
 ---
 
 ## 10. Admin
@@ -1089,7 +1140,150 @@ The old admin templates are in `_dep_` folders and remain functional during the 
 
 ---
 
-## 11. Anti-patterns
+## 11. Custom Shortcode Libraries
+
+Custom shortcodes live in `ext/lib/<name>/` as a PHP file with the same name:
+
+```
+ext/lib/prepare-events/prepare-events.php
+```
+
+The function must be named `<name>_sc($params)` with hyphens converted to underscores:
+
+```php
+<?php
+
+function prepare_events_sc($params)
+{
+    // Read a variable set by [#data#] or [#set#]
+    $events = get_variable('data.event');
+
+    $result = [];
+    $today = date('Y-m-d');
+    foreach ($events as $event) {
+        if ($event['date'] >= $today) {
+            $result[] = $event;
+        }
+    }
+
+    // Write back — [#repeat data.event#] will now only see future events
+    set_variable('data.event', $result);
+}
+```
+
+Called in templates exactly like any other shortcode:
+
+```
+[#data event filter=published:yes sort=date|string|asc#]
+[#prepare-events#]
+[#repeat data.event#]
+```
+
+### PHP variable API
+
+| Function | Description |
+|---|---|
+| `get_variable('data.event')` | Reads any template variable by dot-notation path |
+| `set_variable('data.event', $value)` | Writes a variable at the given path |
+| `set_variable_dot('record', $array)` | Writes an associative array as a dot-notation variable (`record.field`, `record.uuid`, etc.) |
+
+---
+
+## 12. Modules
+
+A module is a self-contained feature that bundles its own routes, templates, libraries, and install logic. Use a module when a feature ships as a reusable unit — e.g. an event system, a shop, a blog — rather than as a loose set of pages.
+
+### Module directory structure
+
+```
+ext/modules/<name>/
+  .install.inc     # Install script — runs once when the module is installed
+  lib/             # Shortcode libraries scoped to this module
+  tpl/             # Templates scoped to this module
+  uri/             # Routes scoped to this module (merged into the URL space)
+```
+
+Routes inside `modules/<name>/uri/` are served at the same paths as if they were in `ext/uri/`. A route at `ext/modules/event/uri/event/(slug)/index.tpl` is accessible at `/event/<slug>/`.
+
+### Loading a module
+
+```
+[#module event#]
+```
+
+Placing this in any template loads the module's libraries and routes. The module is only initialised once per request.
+
+### `.install.inc`
+
+The install script runs when `php nimbly.php install-module <name>` (or the admin install button) is executed. Use it to create the resource(s) and register any dynamic routes the module needs.
+
+```php
+<?php
+
+load_library("data");
+
+// Create the resource if it doesn't exist yet
+$result = data_create_resource("events", [
+    "fields" => [
+        "title"     => ["name" => "Title", "type" => "name", "required" => true, "slug" => true],
+        "published" => ["name" => "Published", "type" => "boolean"],
+        "date"      => ["name" => "Date", "type" => "date"],
+        "body"      => ["name" => "Body", "type" => "html",
+                        "buttons" => "h2,h3,bold,italic,anchor",
+                        "media" => true, "media_sizes" => "sm-90,md-70,lg-60",
+                        "admin_col" => false],
+        "sort_order" => ["name" => "Sort order", "type" => "text", "admin_col" => false]
+    ],
+    "sort" => ["field" => "sort_order", "flags" => "numeric", "order" => "asc"]
+]);
+
+// Register any dynamic routes this module needs
+$route = 'events/(slug)';
+$result &= data_exists(".routes", md5($route))
+    || data_create(".routes", md5($route), ["route" => $route, "order" => 200]);
+
+return $result;
+```
+
+### PHP data API (available in `.install.inc` and `route.inc`)
+
+| Function | Description |
+|---|---|
+| `data_create_resource($name, $meta)` | Creates a new resource with the given `.meta` definition |
+| `data_create($resource, $uuid, $data)` | Creates a new record |
+| `data_read($resource, $uuid)` | Reads a single record by UUID |
+| `data_exists($resource, $uuid)` | Returns true if a record exists |
+| `load_library($name)` | Loads a shortcode library so its PHP functions are available |
+
+### Slug-to-UUID routing (current pattern)
+
+When a resource uses a slug as its primary key (`"pk": "title_slug"`), the slug stored in the URL is a human-readable string, but records are keyed by its MD5 hash. Use `md5_uuid()` in `route.inc` to resolve the slug back to the record:
+
+```php
+<?php
+
+$parts = router_match(__FILE__);
+if ($parts === false || count($parts) !== 1) return;
+
+$slug = $parts[0];
+load_library('md5');
+$uuid = md5_uuid($slug);
+
+load_library('data');
+if (!data_exists('events', $uuid)) return;
+
+$record = data_read('events', $uuid);
+load_library('set');
+set_variable_dot('record', $record);
+
+router_accept();
+```
+
+> **Note:** MD5-based slug routing is a transitional pattern. The pending index system (see §14 Pending changes) will replace this. Do not design new resources around `pk: title_slug`; this pattern documents how existing modules work.
+
+---
+
+## 13. Anti-patterns
 
 - Do not modify `core/`
 - Do not add database concepts (tables, joins, foreign keys) — use resources
@@ -1102,7 +1296,7 @@ The old admin templates are in `_dep_` folders and remain functional during the 
 
 ---
 
-## 12. Pending changes
+## 14. Pending changes
 
 The following areas are under active development and will be updated here as they are finalized:
 
