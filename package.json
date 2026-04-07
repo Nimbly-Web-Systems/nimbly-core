@@ -1,20 +1,22 @@
 {
   "name": "nimbly",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Nimbly Web App Framework",
   "main": "index.php",
   "directories": {
     "lib": "lib"
   },
   "scripts": {
-    "js-build": "cp ./node_modules/medium-editor/dist/js/medium-editor.min.js ext/static/medium-editor.min.js && cp ./node_modules/tw-elements/dist/js/tw-elements.umd.min.js ext/static/tw-elements.umd.min.js && esbuild js/index.jsx --bundle --minify --outfile=ext/static/app.js",
-    "css-build": "cp ./node_modules/medium-editor/dist/css/medium-editor.min.css ./css/medium-editor.min.css && esbuild css/index.css --bundle --minify --external:img/* --external:font/* --outfile=ext/static/app.css",
-    "tw-build": "npx tailwindcss -i ./css/tw/in.css -o ./css/tw/out.css",
-    "text-build": "find -name text.po | xargs msgcat > ext/data/.i18n/text.base.po",
-    "tw": "npx tailwindcss -i ./css/tw/in.css -o ./css/tw/out.css --watch",
-    "build": "npm run tw-build && npm run css-build && npm run js-build && npm run text-build && date +%s > ext/static/app.version",
+    "build-js": "cp ./node_modules/medium-editor/dist/js/medium-editor.min.js ext/static/medium-editor.min.js && cp ./node_modules/tw-elements/dist/js/tw-elements.umd.min.js ext/static/tw-elements.umd.min.js && esbuild js/index.jsx --bundle --minify --outfile=ext/static/app.js",
+    "build-css": "cp ./node_modules/medium-editor/dist/css/medium-editor.min.css ./css/medium-editor.min.css && esbuild css/index.css --bundle --minify --external:img/* --external:font/* --outfile=ext/static/app.css",
+    "build-tw": "npx tailwindcss -i ./css/tw/in.css -o ./css/tw/out.css",
+    "build-text": "find -name text.po | xargs msgcat > ext/data/.i18n/text.base.po",
+    "watch-tw": "npx tailwindcss -i ./css/tw/in.css -o ./css/tw/out.css --watch",
+    "build": "npm run build-tw && npm run build-css && npm run build-js && npm run build-text && date +%s > ext/static/app.version",
     "up": "cd docker && docker compose down && docker compose up -d nimbly && cd ..",
-    "setup": "php core/modules/setup/setup.php"
+    "setup": "php core/cli/nimbly.php setup",
+    "create-user": "php core/cli/nimbly.php create-user",
+    "install-module": "php core/cli/nimbly.php install-module"
   },
   "repository": {
     "type": "git",
