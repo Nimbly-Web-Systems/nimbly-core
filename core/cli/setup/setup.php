@@ -34,14 +34,22 @@ load_library('salt');
 // Prompt helpers
 // -----------------------------------------------------------------------
 
-function nb_prompt(string $question, string $default = ''): string {
+function nb_prompt(string $question, string $default = '', string $env_var = ''): string {
+    if ($env_var !== '' && ($env_val = getenv($env_var)) !== false && $env_val !== '') {
+        echo $question . ': ' . $env_val . " [from \$$env_var]\n";
+        return $env_val;
+    }
     $hint = $default !== '' ? " [$default]" : '';
     echo $question . $hint . ': ';
     $value = trim(fgets(STDIN));
     return $value !== '' ? $value : $default;
 }
 
-function nb_prompt_password(string $question): string {
+function nb_prompt_password(string $question, string $env_var = ''): string {
+    if ($env_var !== '' && ($env_val = getenv($env_var)) !== false && $env_val !== '') {
+        echo $question . ': [from $' . $env_var . "]\n";
+        return $env_val;
+    }
     echo $question . ': ';
     if (strtoupper(substr(PHP_OS, 0, 3)) !== 'WIN') {
         system('stty -echo');
@@ -69,8 +77,8 @@ if (file_exists($env_file)) {
     }
 }
 
-// Resolve BASE_PATH
-$base_path = $env['BASE_PATH'] ?? '/';
+// Resolve BASE_PATH (env var overrides .env)
+$base_path = getenv('BASE_PATH') ?: ($env['BASE_PATH'] ?? '/');
 if (empty($base_path)) $base_path = '/';
 if ($base_path[0] !== '/') $base_path = '/' . $base_path;
 if (substr($base_path, -1) !== '/') $base_path .= '/';
@@ -79,8 +87,8 @@ if (substr($base_path, -1) !== '/') $base_path .= '/';
 // e.g. "" for root install, "mysite/" for subdirectory install
 $rewrite_base_path = ltrim($base_path, '/');
 
-// Pepper
-$pepper = $env['PEPPER'] ?? '';
+// Pepper (env var overrides .env; generate if neither exists)
+$pepper = getenv('PEPPER') ?: ($env['PEPPER'] ?? '');
 if (empty($pepper)) {
     $pepper = salt_sc();
     echo "Generated new PEPPER: $pepper\n";
@@ -229,23 +237,25 @@ if ($need_repo || $need_site || $need_user) {
     echo "\n--- Nimbly Setup ---\n\n";
 
     if ($need_repo) {
-        $ext_repo = nb_prompt('Project repo URL (ext)');
+        $ext_repo = nb_prompt('Project repo URL (ext)', '', 'EXT_REPO');
     }
 
     if ($need_site) {
-        $sitename = nb_prompt('Site name', 'My Nimbly Site');
+        $sitename = nb_prompt('Site name', 'My Nimbly Site', 'SITE_NAME');
     }
 
     if ($need_user) {
-        $email = nb_prompt('Admin email');
+        $email = nb_prompt('Admin email', '', 'ADMIN_EMAIL');
         while (empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            if (!empty(getenv('ADMIN_EMAIL'))) die("Error: ADMIN_EMAIL env var is not a valid email address.\n");
             echo "Please enter a valid email address.\n";
-            $email = nb_prompt('Admin email');
+            $email = nb_prompt('Admin email', '', 'ADMIN_EMAIL');
         }
-        $password = nb_prompt_password('Admin password');
+        $password = nb_prompt_password('Admin password', 'ADMIN_PASSWORD');
         while (strlen($password) < 8) {
+            if (!empty(getenv('ADMIN_PASSWORD'))) die("Error: ADMIN_PASSWORD env var must be at least 8 characters.\n");
             echo "Password must be at least 8 characters.\n";
-            $password = nb_prompt_password('Admin password');
+            $password = nb_prompt_password('Admin password', 'ADMIN_PASSWORD');
         }
     }
 }
