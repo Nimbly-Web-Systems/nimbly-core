@@ -116,6 +116,18 @@ Stored in `ext/tpl/<name>/index.tpl`. Called with their name as a shortcode:
 [#card title="Hello" image="img/photo.jpg"#]
 ```
 
+### URI-scoped templates
+
+Templates can also live flat inside a URI folder (not in a subfolder). These are not routes — they are partial templates included from within that route's `index.tpl` or `main.tpl`.
+
+```
+ext/uri/new/page-settings-fields.tpl   ← partial, not a route
+ext/uri/new/index.tpl                  ← route
+ext/uri/new/main.tpl                   ← route body
+```
+
+Important: a subfolder inside `ext/uri/` **always** creates a new route. A flat `.tpl` file in a URI folder is a partial template scoped to that route.
+
 ### route.inc
 
 For routes that need PHP logic (loading data, access control, dynamic routing), add a `route.inc` alongside `index.tpl`:
