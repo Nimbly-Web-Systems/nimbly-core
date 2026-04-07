@@ -914,7 +914,67 @@ ext/uri/user/(id)/index.tpl       → /user/<anything>/
 
 ---
 
-## 7. Build
+## 7. CLI
+
+Nimbly ships a CLI at `core/cli/nimbly.php`. The npm scripts are the preferred way to invoke it:
+
+```bash
+npm run setup
+npm run create-user
+npm run install-module <name>
+```
+
+Equivalent direct invocations:
+
+```bash
+php core/cli/nimbly.php setup
+php core/cli/nimbly.php create-user
+php core/cli/nimbly.php install-module <name>
+php core/cli/nimbly.php help
+```
+
+### Commands
+
+#### `setup`
+First-time site initialisation. Safe to re-run — existing files and records are never overwritten.
+
+What it does:
+- Creates `.env` with `BASE_PATH` and a generated `PEPPER`
+- Generates `.htaccess` from template
+- Creates the `ext/` directory scaffold (`data/`, `static/`, `lib/`, `modules/`, `tpl/`, `uri/`, temp dirs)
+- Creates `.config/site`, the `.content` resource, core `.routes` records, and default roles (`admin`, `editor`)
+- Creates the `users` resource and an initial admin user
+
+Prompts: **Site name**, **Admin email**, **Admin password**. Steps that are already complete are skipped silently.
+
+**Non-interactive (CI/CD):** Set environment variables to skip all prompts:
+
+| Variable | Description |
+|---|---|
+| `BASE_PATH` | URL base path (default `/`) |
+| `PEPPER` | Encryption pepper — set to reuse an existing value; omit to auto-generate |
+| `EXT_REPO` | Git remote URL for the ext repo (written to `ext/readme.md`) |
+| `SITE_NAME` | Site name written to `.config/site` |
+| `ADMIN_EMAIL` | Initial admin user email |
+| `ADMIN_PASSWORD` | Initial admin user password (min 8 chars) |
+
+```bash
+SITE_NAME="My Site" ADMIN_EMAIL=admin@example.com ADMIN_PASSWORD=secret123 npm run setup
+```
+
+#### `create-user`
+Creates an additional user account. Prompts for email, role, and password interactively. Available roles are read from `ext/data/roles/`. The user is always also assigned the `user` role. Requires setup to have been run first.
+
+#### `install-module`
+Runs a module's `.install.inc` script. Looks in `ext/modules/` first, then `core/modules/` as fallback. Requires setup to have been run first.
+
+```bash
+npm run install-module event
+```
+
+---
+
+## 8. Build
 
 ```bash
 npm run build       # full build: Tailwind + CSS + JS + i18n
@@ -931,7 +991,7 @@ Built files go to `ext/static/`. Always run build after changing CSS, JS, or Tai
 
 ---
 
-## 8. Forms
+## 9. Forms
 
 The forms module handles front-end form submissions with CSRF protection, honeypot spam filtering, validation, and Alpine.js-powered submission via the REST API.
 
@@ -1025,7 +1085,7 @@ Both are handled automatically by `[#build-form#]`. The form includes a hidden `
 
 ---
 
-## 9. Rich content fields — end-to-end
+## 10. Rich content fields — end-to-end
 
 This section shows the full flow for an editable HTML field: resource definition → template output → inline admin editing.
 
@@ -1126,7 +1186,7 @@ Both attributes only activate for logged-in admins. The value format is `resourc
 
 ---
 
-## 10. Admin
+## 11. Admin
 
 The built-in admin is available at `/nb-admin/`.
 
@@ -1140,7 +1200,7 @@ The old admin templates are in `_dep_` folders and remain functional during the 
 
 ---
 
-## 11. Custom Shortcode Libraries
+## 12. Custom Shortcode Libraries
 
 Custom shortcodes live in `ext/lib/<name>/` as a PHP file with the same name:
 
@@ -1189,7 +1249,7 @@ Called in templates exactly like any other shortcode:
 
 ---
 
-## 12. Modules
+## 13. Modules
 
 A module is a self-contained feature that bundles its own routes, templates, libraries, and install logic. Use a module when a feature ships as a reusable unit — e.g. an event system, a shop, a blog — rather than as a loose set of pages.
 
@@ -1279,11 +1339,11 @@ set_variable_dot('record', $record);
 router_accept();
 ```
 
-> **Note:** MD5-based slug routing is a transitional pattern. The pending index system (see §14 Pending changes) will replace this. Do not design new resources around `pk: title_slug`; this pattern documents how existing modules work.
+> **Note:** MD5-based slug routing is a transitional pattern. The pending index system (see §15 Pending changes) will replace this. Do not design new resources around `pk: title_slug`; this pattern documents how existing modules work.
 
 ---
 
-## 13. Anti-patterns
+## 14. Anti-patterns
 
 - Do not modify `core/`
 - Do not add database concepts (tables, joins, foreign keys) — use resources
@@ -1296,7 +1356,7 @@ router_accept();
 
 ---
 
-## 14. Pending changes
+## 15. Pending changes
 
 The following areas are under active development and will be updated here as they are finalized:
 
