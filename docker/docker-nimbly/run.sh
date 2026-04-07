@@ -1,6 +1,6 @@
 #!/bin/bash
 
-echo Starting Nimbly Development Server v0.01
+echo Starting Nimbly Development Server v1.1
 a2dissite 000-default > dev/null
 a2ensite nimbly > dev/null
 a2enmod rewrite expires headers > dev/null

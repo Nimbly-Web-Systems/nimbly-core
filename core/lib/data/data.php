@@ -106,6 +106,10 @@ function data_path($resource, $uuid = '')
         return $flat_path;
     }
 
+    if (!file_exists("$base/.meta")) {
+        return $flat_path;
+    }
+
     $meta = data_meta($resource);
 
     if (empty($meta['splitdir']) || strlen($uuid) < 4) {

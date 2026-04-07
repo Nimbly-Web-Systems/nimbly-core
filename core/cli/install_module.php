@@ -74,6 +74,12 @@ if ($install_file === false) {
 echo "Installing module: $module\n";
 echo "From: $install_file\n\n";
 
-require $install_file;
+$ok = require_once $install_file;
+
+if ($ok) {
+	echo 'Module `' . $module . '` installed succesfully';
+} else {
+	echo 'Could not install module `' . $module . '`';
+}
 
 echo "\nDone.\n";
