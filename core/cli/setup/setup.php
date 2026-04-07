@@ -1,19 +1,18 @@
 <?php
 
 /**
- * Nimbly CLI Setup Script
+ * Nimbly CLI — setup command
  *
- * Called from the root setup.php wrapper. Do not run directly.
- * Usage: php setup.php
+ * Usage: php core/cli/nimbly.php setup
  *
  * Safe to re-run — existing records and files are never overwritten.
  */
 
 if (php_sapi_name() !== 'cli') {
-    die("setup.php must be run from the command line.\n");
+    die("nimbly.php must be run from the command line.\n");
 }
 
-define('BASE_DIR', realpath(__DIR__ . '/../../..') . '/');
+if (!defined('BASE_DIR')) define('BASE_DIR', realpath(__DIR__ . '/../../..') . '/');
 define('SETUP_DIR', __DIR__ . '/');
 
 // -----------------------------------------------------------------------
@@ -30,6 +29,30 @@ $GLOBALS['SYSTEM'] = [
 
 require_once BASE_DIR . 'core/lib/find/find.php';
 load_library('salt');
+
+// -----------------------------------------------------------------------
+// Prompt helpers
+// -----------------------------------------------------------------------
+
+function nb_prompt(string $question, string $default = ''): string {
+    $hint = $default !== '' ? " [$default]" : '';
+    echo $question . $hint . ': ';
+    $value = trim(fgets(STDIN));
+    return $value !== '' ? $value : $default;
+}
+
+function nb_prompt_password(string $question): string {
+    echo $question . ': ';
+    if (strtoupper(substr(PHP_OS, 0, 3)) !== 'WIN') {
+        system('stty -echo');
+    }
+    $value = trim(fgets(STDIN));
+    if (strtoupper(substr(PHP_OS, 0, 3)) !== 'WIN') {
+        system('stty echo');
+    }
+    echo "\n";
+    return $value;
+}
 
 // -----------------------------------------------------------------------
 // Load / create .env
@@ -64,9 +87,13 @@ if (empty($pepper)) {
 }
 
 // Write .env
-$env_content = "# Nimbly site configuration\n\nBASE_PATH=$base_path\nPEPPER=$pepper\n";
-file_put_contents($env_file, $env_content);
-echo "Written: .env\n";
+if (!file_exists($env_file)) {
+    $env_content = "# Nimbly site configuration\n\nBASE_PATH=$base_path\nPEPPER=$pepper\n";
+    file_put_contents($env_file, $env_content);
+    echo "Written: .env\n";
+} else {
+     echo "Skipped: .env (already exists)\n";
+}
 
 // Make PEPPER available to encrypt library
 $_SERVER['PEPPER'] = $pepper;
@@ -76,7 +103,7 @@ load_library('data');
 load_library('encrypt');
 
 // -----------------------------------------------------------------------
-// Generate .htaccess
+// Check / generate .htaccess
 // -----------------------------------------------------------------------
 
 $htaccess_file = BASE_DIR . '.htaccess';
@@ -90,7 +117,29 @@ if (!file_exists($htaccess_file)) {
     chmod($htaccess_file, 0640);
     echo "Written: .htaccess\n";
 } else {
-    echo "Skipped: .htaccess (already exists)\n";
+    // Verify RewriteBase matches BASE_PATH
+    $htaccess_content = file_get_contents($htaccess_file);
+    $existing_base = null;
+    if (preg_match('/^RewriteBase\s+(.+)$/m', $htaccess_content, $m)) {
+        $existing_base = trim($m[1]);
+    }
+    if ($existing_base !== null && $existing_base !== $base_path) {
+        echo "Warning: .htaccess has RewriteBase '$existing_base' but BASE_PATH is '$base_path'.\n";
+        $choice = nb_prompt('How to proceed? [leave/recreate]', 'leave');
+        if (strtolower(trim($choice)) === 'recreate') {
+            $content = file_get_contents(SETUP_DIR . 'htaccess.tpl');
+            $content = str_replace('%%PEPPER%%', $pepper, $content);
+            $content = str_replace('%%REWRITE_BASE%%', $base_path, $content);
+            $content = str_replace('%%REWRITE_BASE_PATH%%', $rewrite_base_path, $content);
+            file_put_contents($htaccess_file, $content);
+            chmod($htaccess_file, 0640);
+            echo "Recreated: .htaccess\n";
+        } else {
+            echo "Skipped: .htaccess (left as-is)\n";
+        }
+    } else {
+        echo "Skipped: .htaccess (already exists)\n";
+    }
 }
 
 // -----------------------------------------------------------------------
@@ -150,14 +199,68 @@ if (!file_exists($gitignore_dst)) {
     echo "Created: ext/.gitignore\n";
 }
 
-// Create ext/readme.md from template
+// -----------------------------------------------------------------------
+// Determine what still needs to be set up
+// -----------------------------------------------------------------------
+
+$need_repo = !is_dir(BASE_DIR . 'ext/.git');
+$need_site = !data_exists('.config', 'site');
+
+$users_dir  = BASE_DIR . 'ext/data/users/';
+$need_user  = true;
+if (is_dir($users_dir)) {
+    $user_files = array_filter(
+        glob($users_dir . '*') ?: [],
+        fn($f) => basename($f) !== '.meta'
+    );
+    $need_user = empty($user_files);
+}
+
+// -----------------------------------------------------------------------
+// Prompt only for what is missing
+// -----------------------------------------------------------------------
+
+$ext_repo = '';
+$sitename = '';
+$email    = '';
+$password = '';
+
+if ($need_repo || $need_site || $need_user) {
+    echo "\n--- Nimbly Setup ---\n\n";
+
+    if ($need_repo) {
+        $ext_repo = nb_prompt('Project repo URL (ext)');
+    }
+
+    if ($need_site) {
+        $sitename = nb_prompt('Site name', 'My Nimbly Site');
+    }
+
+    if ($need_user) {
+        $email = nb_prompt('Admin email');
+        while (empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            echo "Please enter a valid email address.\n";
+            $email = nb_prompt('Admin email');
+        }
+        $password = nb_prompt_password('Admin password');
+        while (strlen($password) < 8) {
+            echo "Password must be at least 8 characters.\n";
+            $password = nb_prompt_password('Admin password');
+        }
+    }
+}
+
+// -----------------------------------------------------------------------
+// Create ext/readme.md from template (needs $ext_repo)
+// -----------------------------------------------------------------------
+
 $readme_dst = BASE_DIR . 'ext/readme.md';
 if (!file_exists($readme_dst)) {
     $core_repo = trim(shell_exec('git remote get-url origin 2>/dev/null') ?? '');
     $site_slug = basename(BASE_DIR);
     $readme = file_get_contents(SETUP_DIR . 'readme.md.tpl');
     $readme = str_replace('%%CORE_REPO%%', $core_repo ?: 'git@github.com:your-org/nimbly-core.git', $readme);
-    $readme = str_replace('%%EXT_REPO%%',  $ext_repo ?: 'git@github.com:your-org/your-project.git', $readme);
+    $readme = str_replace('%%EXT_REPO%%',  $ext_repo  ?: 'git@github.com:your-org/your-project.git', $readme);
     $readme = str_replace('%%SITE_NAME%%', $site_slug ?: 'myproject', $readme);
     file_put_contents($readme_dst, $readme);
     chmod($readme_dst, 0640);
@@ -165,49 +268,10 @@ if (!file_exists($readme_dst)) {
 }
 
 // -----------------------------------------------------------------------
-// Prompt for site info
-// -----------------------------------------------------------------------
-
-function nb_prompt(string $question, string $default = ''): string {
-    $hint = $default !== '' ? " [$default]" : '';
-    echo $question . $hint . ': ';
-    $value = trim(fgets(STDIN));
-    return $value !== '' ? $value : $default;
-}
-
-function nb_prompt_password(string $question): string {
-    echo $question . ': ';
-    if (strtoupper(substr(PHP_OS, 0, 3)) !== 'WIN') {
-        system('stty -echo');
-    }
-    $value = trim(fgets(STDIN));
-    if (strtoupper(substr(PHP_OS, 0, 3)) !== 'WIN') {
-        system('stty echo');
-    }
-    echo "\n";
-    return $value;
-}
-
-echo "\n--- Nimbly Setup ---\n\n";
-
-$ext_repo = nb_prompt('Project repo URL (ext)');
-$sitename = nb_prompt('Site name', 'My Nimbly Site');
-$email    = nb_prompt('Admin email');
-while (empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
-    echo "Please enter a valid email address.\n";
-    $email = nb_prompt('Admin email');
-}
-$password = nb_prompt_password('Admin password');
-while (strlen($password) < 8) {
-    echo "Password must be at least 8 characters.\n";
-    $password = nb_prompt_password('Admin password');
-}
-
-// -----------------------------------------------------------------------
 // Create .config/site
 // -----------------------------------------------------------------------
 
-if (!data_exists('.config', 'site')) {
+if ($need_site) {
     data_create('.config', 'site', [
         'name'        => $sitename,
         'description' => $sitename . ': a Nimbly site',
@@ -262,7 +326,7 @@ foreach ($routes as $route) {
 }
 echo $routes_created > 0
     ? "Created: $routes_created route(s)\n"
-    : "Skipped: all routes already exist\n";
+    : "Skipped: all routes (already exist)\n";
 
 // -----------------------------------------------------------------------
 // Create roles
@@ -308,40 +372,22 @@ if (!data_exists('users', '.meta')) {
 // Create admin user
 // -----------------------------------------------------------------------
 
-$user_uuid = md5($email);
-if (!data_exists('users', $user_uuid)) {
-    $salt = salt_sc();
-    data_create('users', $user_uuid, [
-        'email'    => $email,
-        'roles'    => 'admin,user',
-        'salt'     => $salt,
-        'password' => encrypt($password, $salt),
-    ]);
-    echo "Created: admin user ($email)\n";
-} else {
-    echo "Skipped: admin user ($email) already exists\n";
-}
-
-// -----------------------------------------------------------------------
-// Run module .install.inc files
-// -----------------------------------------------------------------------
-
-$install_count = 0;
-foreach ($GLOBALS['SYSTEM']['env_paths'] as $env_path) {
-    $modules_path = BASE_DIR . $env_path . '/modules';
-    if (!is_dir($modules_path)) continue;
-    foreach (scandir($modules_path) as $module) {
-        if ($module === '.' || $module === '..') continue;
-        $install_file = $modules_path . '/' . $module . '/.install.inc';
-        if (file_exists($install_file)) {
-            $ok = require_once($install_file);
-            echo ($ok ? "Installed" : "Failed") . ": $env_path/modules/$module\n";
-            $install_count++;
-        }
+if ($need_user) {
+    $user_uuid = md5($email);
+    if (!data_exists('users', $user_uuid)) {
+        $salt = salt_sc();
+        data_create('users', $user_uuid, [
+            'email'    => $email,
+            'roles'    => 'admin,user',
+            'salt'     => $salt,
+            'password' => encrypt($password, $salt),
+        ]);
+        echo "Created: admin user ($email)\n";
+    } else {
+        echo "Skipped: admin user ($email) already exists\n";
     }
-}
-if ($install_count === 0) {
-    echo "No module .install.inc files found\n";
+} else {
+    echo "Skipped: users already exist\n";
 }
 
 // -----------------------------------------------------------------------
