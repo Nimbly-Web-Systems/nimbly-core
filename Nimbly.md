@@ -122,7 +122,6 @@ For routes that need PHP logic (loading data, access control, dynamic routing), 
 
 ```php
 <?php
-router_deny();
 $parts = router_match(__FILE__);
 if ($parts === false) return;
 $slug = $parts[0];
@@ -131,6 +130,16 @@ if (!data_exists('articles', $slug)) return;
 set_variable('slug', $slug);
 router_accept();
 ```
+
+#### Router functions
+
+| Function | Description |
+|---|---|
+| `router_match(__FILE__)` | Matches the current URL against this route's dynamic segments. Returns an array of captured values (one per `(param)` in the path), or `false` if the URL does not match. Always call first. |
+| `router_accept()` | Signals that this route.inc accepts the request. The template engine proceeds to render `index.tpl`. |
+| `router_deny()` | Signals rejection — the router continues looking for another matching route. Calling `return` without `router_accept()` has the same effect. |
+
+The standard pattern: call `router_match()`, validate the result, load and validate any data, then call `router_accept()` only when everything checks out. If anything fails, just `return` — the request falls through to the next route or a 404.
 
 ---
 
@@ -354,6 +363,25 @@ Translations live in `ext/data/.i18n/text.<lang>.po`.
 #### `[#markdown#]`
 Renders Markdown content.
 
+#### `[#cfield field#]`
+Resolves the fully-qualified dot-path of a content field in the current template context. Used with `[#get-html#]` for static, inline-editable page content stored in the `.content` resource.
+
+The `.content` resource is a key-value store for editable HTML blocks that are not tied to any data record. Each block is identified by `content.<page>.<field>`. When `[#get-html#]` targets a `.content` path that does not exist yet, it auto-creates the record and outputs the `default` value.
+
+```html
+<!-- In ext/tpl/about-intro/index.tpl -->
+[#get-html content.about.intro default="<p>Edit this text</p>"#]
+[#get-html content.about.body default="<p>Body text here</p>"#]
+```
+
+`[#cfield field#]` resolves the field path from the current template context, useful when the same template is used in multiple places:
+
+```html
+[#get-html [#cfield intro#] default="<p>Edit this</p>"#]
+```
+
+This pattern requires `[#module user#]` to enable inline admin editing.
+
 #### `[#get-img-html image sizes="...#]`
 Renders a responsive `<img>` tag with `srcset` and `sizes`. Requires the `images` module to be loaded first.
 
@@ -421,6 +449,189 @@ Returns `"logged-in"` if a user session is active.
 ```
 [#if logged-in=(empty) redirect=login#]
 ```
+
+#### `[#feature-cond features=name#]`
+Conditionally renders content based on whether the current user has a specific feature/permission. Requires `[#module user#]`.
+
+```
+[#feature-cond features=manage-content tpl=edit-button#]
+[#feature-cond features=manage-content echo="<a href='/admin'>Admin</a>"#]
+[#feature-cond features=manage-content tpl=admin-panel tpl_else=access-denied#]
+[#feature-cond features=manage-content,view-reports tpl=dashboard#]
+```
+
+Parameters:
+- `features` — comma-separated list of feature names; access is granted if the user has **any** of them, or has `(all)` (admin)
+- `tpl` — template to render if access is granted
+- `tpl_else` — template to render if access is denied
+- `echo` — string to output if access is granted
+- `echo_else` — string to output if access is denied
+
+Features are assigned to roles in `/nb-admin/roles/`. The admin role always has `(all)` which bypasses all feature checks.
+
+#### `[#date input fmt=Y-m-d#]`
+Formats a date value. Input can be a Unix timestamp, a date string, or omitted (defaults to today).
+
+```
+[#date fmt=d-m-Y#]                        → today in d-m-Y format
+[#date item.date fmt="j F Y"#]            → formats item.date
+[#date 1741265734 fmt=Y-m-d#]             → formats Unix timestamp
+```
+
+Uses PHP date format strings.
+
+#### `[#slug value#]`
+Converts a string to a URL-safe slug (lowercase, Unicode-aware, hyphens for non-alphanumeric).
+
+```
+[#slug item.title#]
+[#slug "Hello World!"#]   → hello-world
+```
+
+#### `[#strip value#]`
+Strips all HTML tags from a value.
+
+```
+[#strip item.body#]
+```
+
+#### `[#int varname#]`
+Returns the integer value of a variable.
+
+```
+[#int item.count#]
+[#int var=score#]
+```
+
+#### `[#get-first dataset#]`
+Stores the first item of a dataset into `first` (or a custom variable).
+
+```
+[#get-first data.articles#]
+[#get first.title#]
+
+[#get-first data.articles var=latest#]
+[#get latest.date#]
+```
+
+#### `[#implode varname#]`
+Joins an array variable into a string. For flat arrays returns a quoted, comma-separated list; for arrays of objects returns JSON.
+
+```
+[#implode item.tags sep=", "#]
+```
+
+#### `[#reverse-lookup resource value key#]`
+Looks up a record in a loaded resource by field value and returns a different field. Useful for resolving labels from stored IDs.
+
+```
+[#reverse-lookup categories [#get item.category_id#] title#]
+```
+
+#### `[#rkey value#]`
+Normalizes a string to a lowercase resource key (trims whitespace, lowercases).
+
+```
+[#rkey item.type#]
+```
+
+#### `[#last-update#]`
+Returns a Unix timestamp of the most recently modified source file across `ext/` and `core/`. Useful with `[#fmt type=ago#]` to display when the site was last updated.
+
+```
+[#fmt val=[#last-update#] type=ago#]   → "3 days ago"
+[#fmt val=[#last-update#] type=date fmt=d-m-Y#]
+```
+
+#### `[#obfuscate text#]`
+Renders text using invisible Unicode characters and Alpine.js so it's invisible to bots/scrapers but readable by users. Use for email addresses and phone numbers.
+
+```
+[#obfuscate info@example.com#]
+```
+
+#### `[#host#]`
+Returns the HTTP host name.
+
+```
+[#host#]   → example.com
+```
+
+#### `[#get-ip#]`
+Returns the client IP address (respects `X-Forwarded-For` for proxied setups).
+
+```
+[#get-ip#]
+```
+
+#### `[#uri-path#]`
+Returns the filesystem path of the current route's directory.
+
+#### `[#url-key#]`
+Returns a normalized string key for the current URL, useful for body classes or JS page detection.
+
+```
+[#set body-classes=[#url-key#]#]
+```
+
+`/admin/users/` → `admin_users`, homepage → `_home`.
+
+#### `[#http-header type#]`
+Outputs a response Content-Type header. Use at the top of non-HTML routes.
+
+```
+[#http-header json#]
+[#http-header css#]
+[#http-header csv#]
+```
+
+Types: `css`, `js`, `json`, `woff`, `csv`, `403`, `404`, `500`.
+
+#### `[#system-messages#]`
+Renders any queued system messages (set server-side via the session). Use in the HTML template or layout to display flash messages.
+
+#### `[#empty-img#]`
+Outputs a 1×1 transparent GIF as a data URI. Use as a placeholder `src` before a real image is set.
+
+#### `[#max-upload-size#]`
+Outputs the PHP `upload_max_filesize` value in human-readable form. Useful in upload form hints.
+
+#### `[#json2post#]`
+Parses a raw JSON request body into `$_POST`. Place at the top of API route templates that receive JSON payloads.
+
+#### `[#unquote varname#]`
+Outputs a variable's value with quotes HTML-escaped (`"` → `&quot;`, `'` → `&apos;`). Safe for embedding variable values inside HTML attribute strings.
+
+```html
+<div x-data='{"title": "[#unquote item.title#]"}'></div>
+```
+
+#### `[#collect-script path#]`
+Defers a script include to be rendered together at the end of the page, avoiding duplicates. Call without arguments to render all collected scripts.
+
+```
+[#collect-script [#base-url#]/ext/static/chart.js#]
+...
+[#collect-script#]   ← renders all collected scripts here
+```
+
+#### `[#is-dev-env#]`
+Outputs `DEV` or `PROD`. Useful for conditional debug output or environment-specific behaviour.
+
+```
+[#if [#is-dev-env#]=DEV tpl=debug-panel#]
+```
+
+#### `[#ipsum words=200#]`
+Generates Lorem Ipsum placeholder text. For prototyping only.
+
+```
+[#ipsum words=100#]
+[#ipsum words=50 format=html#]
+```
+
+#### `[#email config_id#]`
+Sends an email using a template and a service config stored in `.services`. See the email module documentation for setup.
 
 #### `[#detect-language#]`
 Returns the active language code. Detection order:
