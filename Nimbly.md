@@ -590,10 +590,23 @@ Options from another resource:
 | `languages` | Enabled languages for this resource |
 | `ai_prompts` | Per-field AI translation instructions |
 | `actions` | Object with a `url` key — adds a "View" button in the admin record list pointing to the frontend URL of the record. Shortcodes are evaluated in the URL value. Example: `{"url": "[#base-url#]/articles/[#record.title_slug#]"}` |
+| `splitdir` | Boolean. When `true`, records are stored in a two-level subdirectory tree by UUID prefix for filesystem performance at scale (> ~10,000 records). See §12 API — Scalability. |
 
 ### System fields (auto-managed)
 
 Every record automatically has: `uuid`, `_created`, `_modified`, `_created_by`, `_modified_by`. Never define these in `.meta`.
+
+### Hidden resources
+
+Resources whose names begin with `.` are hidden from the admin data management UI by default (Unix hidden-file convention). They remain fully accessible via the data library and API.
+
+Built-in hidden resources: `.config`, `.content`, `.routes`, `.i18n`.
+
+Custom hidden resources follow the same convention — name them with a leading dot to keep them out of the admin overview.
+
+### Data caching
+
+The data library automatically caches all query results in `ext/data/.tmp/cache/`. The cache is invalidated when any record in the queried resource is modified. No manual cache management is needed — it is fully automatic.
 
 ---
 
@@ -912,6 +925,15 @@ ext/uri/blog/(slug)/index.tpl     → /blog/<anything>/
 ext/uri/user/(id)/index.tpl       → /user/<anything>/
 ```
 
+### Route-scoped JavaScript
+
+If a route folder contains an `index.js` file, it is automatically loaded by the HTML template for that route only. Use this for JavaScript that is specific to a single page and should not be part of the global bundle.
+
+```
+ext/uri/dashboard/index.tpl
+ext/uri/dashboard/index.js     ← auto-loaded on /dashboard/ only
+```
+
 ---
 
 ## 7. CLI
@@ -1083,6 +1105,18 @@ Use `group_start` / `group_end` to visually group fields side by side:
 
 Both are handled automatically by `[#build-form#]`. The form includes a hidden `form_key` (session-matched token) and a honeypot field. No extra configuration needed.
 
+### Custom form handlers
+
+For forms that need server-side processing beyond writing to a resource (e.g. file imports, sending email), add handler files alongside the route:
+
+```
+ext/uri/contact/contact.json       ← form definition
+ext/uri/contact/post_contact.inc   ← runs on submission
+ext/uri/contact/validate_contact.inc  ← runs before post, return false to abort
+```
+
+The files are named `post_{name}.inc` and `validate_{name}.inc`, where `{name}` matches the form's `name` field. Both are optional — use one or both as needed.
+
 ---
 
 ## 10. Rich content fields — end-to-end
@@ -1200,7 +1234,196 @@ The old admin templates are in `_dep_` folders and remain functional during the 
 
 ---
 
-## 12. Custom Shortcode Libraries
+## 12. API
+
+The Nimbly API is automatically available for every resource — no configuration required. Create a resource and the REST API is live.
+
+### Endpoints
+
+```
+GET    /api/v1/{resource}          → list all records
+POST   /api/v1/{resource}          → create a new record
+GET    /api/v1/{resource}/{uuid}   → get a single record
+PUT    /api/v1/{resource}/{uuid}   → update a record (partial update — only supplied fields are changed)
+DELETE /api/v1/{resource}/{uuid}   → delete a record
+DELETE /api/v1/{resource}          → delete all records
+```
+
+### Authentication
+
+Obtain a Bearer token by posting credentials:
+
+```bash
+curl -X POST "/api/v1/auth/token" \
+  -H "Content-Type: application/json" \
+  -d '{"email": "admin@example.com", "password": "yourpassword"}'
+```
+
+Response:
+```json
+{
+  "token": "anSojGGKOveDuIypVGbx...",
+  "token_created": 1741265734,
+  "token_expires": 1741308617,
+  "code": 200,
+  "success": true,
+  "status": "ok"
+}
+```
+
+Tokens expire after **10 minutes**. Refresh before expiry with a GET to the same endpoint:
+
+```bash
+curl -X GET "/api/v1/auth/token" \
+  -H "Authorization: Bearer YOUR_VALID_TOKEN"
+```
+
+Include the token in every API request:
+
+```
+Authorization: Bearer YOUR_TOKEN
+Content-Type: application/json
+```
+
+### Response format
+
+All successful responses return `success: true` and `status: ok`:
+
+```json
+{
+  "articles": {
+    "abc123": {
+      "uuid": "abc123",
+      "title": "Hello world",
+      "published": "1"
+    }
+  },
+  "count": 1,
+  "message": "RESOURCE_CREATED",
+  "code": 201,
+  "success": true,
+  "status": "ok",
+  "memory_usage": "403Kb",
+  "execution_time": "0.010s"
+}
+```
+
+| Field | Description |
+|---|---|
+| `count` | Number of records returned or affected |
+| `message` | `RESOURCE_CREATED` (201), `RESOURCE_UPDATED` (200), `RESOURCE_DELETED` (200) |
+| `code` | HTTP status code |
+| `success` | `true` on success, `false` on error |
+| `execution_time` | Server processing time |
+
+### Error responses
+
+```json
+{
+  "message": "ACCESS_DENIED",
+  "needs": "api_delete_users,api_delete_(any),api_(any)",
+  "code": 403,
+  "success": false,
+  "status": "error"
+}
+```
+
+Common error codes:
+
+| Code | Message | Description |
+|---|---|---|
+| 400 | `INVALID_DATA` | Missing required fields or invalid data |
+| 401 | `UNAUTHORIZED` | Missing or invalid token |
+| 403 | `ACCESS_DENIED` | Role lacks the required permission |
+| 404 | `RESOURCE_NOT_FOUND` | Record or resource does not exist |
+| 409 | `CONFLICT` | Record already exists |
+| 500 | `INTERNAL_ERROR` | Server-side failure |
+
+### Authorization
+
+Access is role-based. When a request is denied, the `needs` field lists the permission patterns that would grant access:
+
+```json
+"needs": "api_delete_users,api_delete_(any),api_(any)"
+```
+
+Patterns follow the format `api_{method}_{resource}`. Roles and their permissions are managed in the admin under `/nb-admin/roles/`.
+
+### Custom UUID
+
+Supply a `uuid` field in the POST body to use a specific identifier instead of an auto-generated one:
+
+```bash
+curl -X POST "/api/v1/profiles" \
+  -H "Authorization: Bearer TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"uuid": "my-id", "name": "Test User"}'
+```
+
+Useful when the caller already has a meaningful identifier (e.g. an external system ID) to use as the record key.
+
+### File upload
+
+Files are uploaded to the special `.files` resource as `multipart/form-data`:
+
+```bash
+curl -X POST "/api/v1/.files" \
+  -H "Authorization: Bearer TOKEN" \
+  -F "file=@photo.jpg"
+```
+
+Response includes the file UUID, which is the **MD5 checksum** of the file content:
+
+```json
+{
+  "files": {
+    "uuid": "44556fd2a0d9463b6506e6e101e20bfe",
+    "name": "photo.jpg",
+    "type": "image/jpeg",
+    "size": 2048
+  },
+  "message": "RESOURCE_CREATED",
+  "code": 201
+}
+```
+
+Re-uploading an identical file returns `RESOURCE_CREATED` with the same UUID — the upload is idempotent by checksum.
+
+### Image serving
+
+Uploaded images are served at `/img/{uuid}/{spec}`:
+
+| Spec | Example | Description |
+|---|---|---|
+| `{W}x{H}f` | `300x300f` | Fit into box, aspect ratio preserved |
+| `{W}x{H}c` | `300x200c` | Crop from center to exact dimensions |
+| `{W}w` | `300w` | Resize to width |
+| `{H}h` | `300h` | Resize to height |
+
+```
+/img/44556fd2a0d9463b6506e6e101e20bfe/500x500c
+```
+
+Images are served as **WebP**. Upscaling is not allowed.
+
+### Scalability
+
+Nimbly loads resources into memory for fast access. By default, all records live in one flat directory. Above ~10,000 records filesystem performance starts to degrade.
+
+For high-volume resources, enable `splitdir` in `.meta`:
+
+```json
+{
+  "fields": { ... },
+  "splitdir": true
+}
+```
+
+With `splitdir` enabled, records are stored in a two-level directory tree based on the first characters of their UUID (e.g. `ab/cd/<uuid>`). This keeps directory sizes small and maintains performance at large scale. The data library handles the path transparently — no changes needed in templates or code.
+
+---
+
+## 13. Custom Shortcode Libraries
 
 Custom shortcodes live in `ext/lib/<name>/` as a PHP file with the same name:
 
@@ -1249,7 +1472,7 @@ Called in templates exactly like any other shortcode:
 
 ---
 
-## 13. Modules
+## 14. Modules
 
 A module is a self-contained feature that bundles its own routes, templates, libraries, and install logic. Use a module when a feature ships as a reusable unit — e.g. an event system, a shop, a blog — rather than as a loose set of pages.
 
@@ -1339,11 +1562,11 @@ set_variable_dot('record', $record);
 router_accept();
 ```
 
-> **Note:** MD5-based slug routing is a transitional pattern. The pending index system (see §15 Pending changes) will replace this. Do not design new resources around `pk: title_slug`; this pattern documents how existing modules work.
+> **Note:** MD5-based slug routing is a transitional pattern. The pending index system (see §16 Pending changes) will replace this. Do not design new resources around `pk: title_slug`; this pattern documents how existing modules work.
 
 ---
 
-## 14. Anti-patterns
+## 15. Anti-patterns
 
 - Do not modify `core/`
 - Do not add database concepts (tables, joins, foreign keys) — use resources
@@ -1356,7 +1579,7 @@ router_accept();
 
 ---
 
-## 15. Pending changes
+## 16. Pending changes
 
 The following areas are under active development and will be updated here as they are finalized:
 
