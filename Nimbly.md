@@ -1807,6 +1807,25 @@ router_accept();
 The following areas are under active development and will be updated here as they are finalized:
 
 - **Indexes** — slugs as primary keys (`pk: title_slug`) are being replaced by an index system. Do not design new resources around slug-based primary keys. This section will be updated when the new approach is settled.
+## PHP coding standards
+
+- **snake_case everywhere** — functions, variables, parameters, file names. No camelCase or PascalCase in PHP.
+- **Always use braces** — every `if`, `else`, `foreach`, `while` must have `{` and `}`, even for single-line bodies. No braceless shorthand. This is non-negotiable for defensive programming.
+
+```php
+// correct
+if ($value) {
+    do_something();
+}
+
+// wrong
+if ($value) do_something();
+if ($value)
+    do_something();
+```
+
+---
+
 - **DaisyUI migration** — Tailwind Elements is being phased out. The admin is already on DaisyUI v3. Frontend templates that still use Tailwind Elements components (modals, dropdowns, etc.) are being migrated. Do not introduce new Tailwind Elements usage; use DaisyUI equivalents instead. Frontend DaisyUI component patterns will be documented here once the migration is complete.
 - **Resource display names** — the `resource-name` shortcode currently derives singular/plural from the slug (strips trailing `s`, handles `ies→y`). Plan: allow `.meta` to define `name_singular` and `name_plural` with optional i18n:
   ```json

@@ -15,13 +15,20 @@ function feature_cond_sc($params) {
     $echo = get_param_value($params, "echo", null);
     $echo_else = get_param_value($params, "echo_else", null);
 
-    if (empty($features) || (empty($tpl) && empty($echo) && empty($echo_else) && empty($tpl_else)) || !session_resume()) {
+    if (empty($features) || (empty($tpl) && empty($echo) && empty($echo_else) && empty($tpl_else))) {
         return;
     }
 
     $features_ls = explode(',', $features);
 
-    if (!isset($_SESSION['features'])) {
+    if (!session_resume() || !isset($_SESSION['features'])) {
+        // no session = anonymous user, never has access
+        if ($tpl_else) {
+            run_single_sc($tpl_else);
+        }
+        if ($echo_else) {
+            echo $echo_else;
+        }
         return;
     }
 
