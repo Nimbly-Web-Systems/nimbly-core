@@ -39,23 +39,23 @@ function render_field_sc($params) {
     }
     
     $field_name = get_param_value($params, 'name', count($params) > 1? next($params) : '') ?? '';
-    
+    $store  = get_param_value($params, 'store',  'form_data');
+    $source = get_param_value($params, 'source', null);
 
     // 1: JSON field definition
     $def = trim($def);
     if (strpos($def, '{') === 0 || strpos(trim($def), '[') === 0) {
         $json = str_replace("'", '"', $def);
         $def = json_decode($json, true) ?: [];
-        return render_field($def, $field_name, $field_val);
-
+        return render_field($def, $field_name, $field_val, $store, $source);
     }
-    
+
     // 2: read from (local scope) json file
     $file = $GLOBALS['SYSTEM']['uri_path'] . '/' . $def . '.json';
     if (file_exists($file)) {
         $contents = file_get_contents($file);
         $def = json_decode($contents, true);
-        return render_field($def, $field_name, $field_val);
+        return render_field($def, $field_name, $field_val, $store, $source);
     }
 
     // 3: get field def from resource meta
@@ -83,7 +83,7 @@ function render_field_sc($params) {
         return;
     }
 
-    return render_field($meta['fields'], $field_name, $field_val);    
+    return render_field($meta['fields'], $field_name, $field_val, $store, $source);
 }
 
 /**
@@ -94,7 +94,7 @@ function render_field_sc($params) {
  * @param string $value Optional ...
  * @return string HTML output
  */
-function render_field($def, $field = '', $value = null) {
+function render_field($def, $field = '', $value = null, $store = 'form_data', $source = null) {
     if (!empty($field) && isset($def[$field])) {
         $def = $def[$field];
     }
@@ -103,8 +103,11 @@ function render_field($def, $field = '', $value = null) {
     set_variable('_f.title', $def['name'] ?? ucfirst($field));
     set_variable('_f.key', $field);
     set_variable('_f.value', $value === null? $def['default'] ?? '' : $value);
-    set_variable('_f.model',     "form_data.{$field}");
-    set_variable('_f.required',  !empty($def['required']));
+    set_variable('_f.model', "{$store}.{$field}");
+    set_variable('_f.required', !empty($def['required']));
+    if ($source !== null) {
+        set_variable('_f.source', $source);
+    }
     run_single_sc('field-' . $def['type']);
 }
 
