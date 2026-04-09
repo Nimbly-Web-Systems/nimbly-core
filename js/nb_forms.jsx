@@ -1,32 +1,11 @@
 var nb_forms = {
     form_data: {},
     file_info: {},
-    update_slug(e) {
-        const slug_child_name = e.currentTarget.getAttribute("name") + "_slug";
-        const slug_child = document.querySelector(
-            'input[name="' + slug_child_name + '"]'
-        );
-
-        if (!slug_child) {
-            return;
-        }
-
-        const clean_val = e.currentTarget.value
-            .toLowerCase()
-            .trim()
-            .replace(/[^0-9a-zA-Z-]/g, "-");
-
-        // ensure object for i18n case
-        if (this.form_data[slug_child_name] === undefined) {
-            this.form_data[slug_child_name] = clean_val;
-            return;
-        }
-
-        if (typeof this.form_data[slug_child_name] === "object") {
-            this.form_data[slug_child_name][this.lang] = clean_val;
-        } else {
-            this.form_data[slug_child_name] = clean_val;
-        }
+    slugify(val) {
+        return String(val).toLowerCase().trim()
+            .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+            .replace(/[^0-9a-z]+/g, '-')
+            .replace(/^-+|-+$/g, '');
     },
     select_image(field_name, field_ix = undefined) {
         this.select_media(field_name, field_ix, ['img', 'svg']);
