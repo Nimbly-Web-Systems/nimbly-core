@@ -48,7 +48,11 @@ function _prep_record($record, $fields)
 {
     $result = [];
     foreach ($fields as $k => $v) {
-        $result[$k] = fmt_sc(['val' => $record[$k] ?? '', 'type' => $v['type'], 'max_length' => 32]);
+        $val = $record[$k] ?? '';
+        if (is_array($val)) {
+            $val = implode(', ', $val);
+        }
+        $result[$k] = fmt_sc(['val' => $val, 'type' => $v['type'], 'max_length' => 32]);
     }
     return $result;
 }
