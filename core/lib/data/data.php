@@ -399,7 +399,7 @@ function _data_clear_cache($op, $resource, $options = null)
  */
 function data_indexed($resource, $index_name, $index_uuid)
 {
-    $path = data_path($resource) . '/' . $index_name . '/' . $index_uuid;
+    $path = _data_index_path($resource, $index_name, $index_uuid);
     return file_exists($path);
 }
 
@@ -419,7 +419,7 @@ function data_read_index($resource, $index_name, $index_uuid)
 {
     $result = [];
     $base_path = data_path($resource);
-    $index_path = $base_path . '/' . $index_name . '/' . $index_uuid;
+    $index_path = _data_index_path($resource, $index_name, $index_uuid);
 
     if (!is_dir($index_path)) {
         return $result;
@@ -663,7 +663,7 @@ function data_create($resource, $uuid, $data_ls)
                 if ($index_uuid === $uuid) {
                     continue; // no need to index self
                 }
-                _data_create_index($file, $index_name, $index_uuid);
+                _data_create_index($resource, $file, $index_name, $index_uuid);
             }
         }
 
@@ -687,9 +687,20 @@ function data_create($resource, $uuid, $data_ls)
  * @param string $index_uuid UUID derived from the index field value.
  * @return void
  */
-function _data_create_index($file, $index_name, $index_uuid)
+function _data_index_path($resource, $index_name, $index_uuid)
 {
-    $path = dirname($file) . '/' . $index_name . '/' . $index_uuid . '/';
+    $base = data_path($resource) . '/' . $index_name . '/';
+    $meta = data_meta($resource);
+    if (!empty($meta['splitdir']) && strlen($index_uuid) >= 4) {
+        $id = strtolower($index_uuid);
+        $base .= substr($id, 0, 2) . '/' . substr($id, 2, 2) . '/';
+    }
+    return $base . $index_uuid . '/';
+}
+
+function _data_create_index($resource, $file, $index_name, $index_uuid)
+{
+    $path = _data_index_path($resource, $index_name, $index_uuid);
     if (!file_exists($path)) {
         @mkdir($path, 0750, true);
     }
@@ -701,16 +712,17 @@ function _data_create_index($file, $index_name, $index_uuid)
  * Deletes an index entry file linking a data record to an index.
  *
  * The index is represented as a file inside:
- * (resource directory)/(index name)/(index uuid)/(record filename)
+ * (resource directory)/(index name)/[(splitdir)/](index uuid)/(record filename)
  *
+ * @param string $resource Resource name.
  * @param string $file Full path to the original data file.
  * @param string $index_name Name of the index field.
  * @param string $index_uuid UUID of the index value.
  * @return int Returns 1 if the index file was deleted, 0 if it did not exist.
  */
-function _data_delete_index($file, $index_name, $index_uuid)
+function _data_delete_index($resource, $file, $index_name, $index_uuid)
 {
-    $path = dirname($file) . '/' . $index_name . '/' . $index_uuid . '/' . basename($file);
+    $path = _data_index_path($resource, $index_name, $index_uuid) . basename($file);
     if (!file_exists($path)) {
         return 0;
     }
@@ -751,7 +763,7 @@ function data_delete($resource, $uuid = null)
                     continue;
                 }
                 $index_uuid = md5_uuid($data_ls[$index_name]);
-                $result += _data_delete_index($file, $index_name, $index_uuid);
+                $result += _data_delete_index($resource, $file, $index_name, $index_uuid);
             }
         }
         $result += (int)unlink($file);
