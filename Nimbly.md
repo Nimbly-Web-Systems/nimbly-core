@@ -891,23 +891,23 @@ Every time a record is written (`data_create` / `data_update`), the index is upd
 For each indexed field, Nimbly creates an empty file at:
 
 ```
-ext/data/<resource>/<field_name>/<md5(field_value)>/<record_uuid>
+ext/data/<resource>/.index/<field_name>/<md5(field_value)>/<record_uuid>
 ```
 
 For example, an article with `title_slug = "my-article"` and `uuid = "abc123"` would create:
 
 ```
-ext/data/articles/title_slug/1a79a4d60de6718e8e5b326e338ae533/abc123
+ext/data/articles/.index/title_slug/1a79a4d60de6718e8e5b326e338ae533/abc123
 ```
 
-The file is empty — its presence is the index entry. This makes index lookups a single `is_dir()` check and a `scandir()`.
+The file is empty — its presence is the index entry. Storing under `.index/` keeps indexes separate from record files and ensures they are naturally skipped by directory scans (which skip dot-prefixed entries).
 
 #### With splitdir
 
 When `splitdir: true` is also set, index directories follow the same two-level split:
 
 ```
-ext/data/<resource>/<field_name>/<aa>/<bb>/<md5(value)>/<record_uuid>
+ext/data/<resource>/.index/<field_name>/<aa>/<bb>/<md5(value)>/<record_uuid>
 ```
 
 The data library handles this transparently — same API regardless of whether `splitdir` is set.

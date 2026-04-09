@@ -531,6 +531,23 @@ function data_update($resource, $uuid, $data_update_ls)
         $data_merged_ls = array_merge_recursive_distinct($data_ls, $data_update_ls);
     }
 
+    // Remove stale index entries for fields whose values changed
+    $meta = data_meta($resource);
+    if (!empty($data_ls) && isset($meta['index']) && is_array($meta['index'])) {
+        load_library('md5');
+        $file = data_path($resource, $uuid);
+        foreach ($meta['index'] as $index_name) {
+            if (empty($data_ls[$index_name])) {
+                continue;
+            }
+            $old_index_uuid = md5_uuid($data_ls[$index_name]);
+            $new_index_uuid = md5_uuid($data_merged_ls[$index_name] ?? '');
+            if ($old_index_uuid !== $new_index_uuid) {
+                _data_delete_index($resource, $file, $index_name, $old_index_uuid);
+            }
+        }
+    }
+
     // Update modification metadata
     load_library('md5');
     load_library('username', 'user');
@@ -639,7 +656,7 @@ function data_create($resource, $uuid, $data_ls)
  */
 function _data_index_path($resource, $index_name, $index_uuid)
 {
-    $base = data_path($resource) . '/' . $index_name . '/';
+    $base = data_path($resource) . '/.index/' . $index_name . '/';
     $meta = data_meta($resource);
     if (!empty($meta['splitdir']) && strlen($index_uuid) >= 4) {
         $id = strtolower($index_uuid);

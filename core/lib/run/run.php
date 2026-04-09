@@ -262,7 +262,11 @@ function run_single_sc($sc_call) {
         }
 
         if (isset($SYSTEM['variables'][$function_id])) {
-            run_template($SYSTEM['variables'][$function_id]);
+            $_var = $SYSTEM['variables'][$function_id];
+            if (is_array($_var)) {
+                $_var = implode(', ', $_var);
+            }
+            run_template($_var);
             return;
         }
     }

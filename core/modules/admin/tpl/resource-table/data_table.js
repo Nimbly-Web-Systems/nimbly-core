@@ -140,18 +140,17 @@ document.addEventListener("alpine:init", () => {
       this.set_page_records();
     },
     highlight(txt) {
+      if (Array.isArray(txt)) {
+        txt = txt.join(', ');
+      }
+      const s = txt != null ? String(txt) : '';
       if (!this.search_regex) {
-        return txt;
+        return s;
       }
-
-      if (!txt.toLowerCase().includes(this.search_term)) {
-        return txt; //should not happen but it does
+      if (!s.toLowerCase().includes(this.search_term)) {
+        return s;
       }
-
-      return txt.replace(
-        this.search_regex,
-        '<span class="bg-yellow-200">$1</span>'
-      );
+      return s.replace(this.search_regex, '<span class="bg-yellow-200">$1</span>');
     },
     init() {
       this.filtered_records = { ..._records };

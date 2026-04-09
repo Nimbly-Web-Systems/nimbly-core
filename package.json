@@ -14,9 +14,7 @@
     "watch-tw": "npx tailwindcss -i ./css/tw/in.css -o ./css/tw/out.css --watch",
     "build": "npm run build-tw && npm run build-css && npm run build-js && npm run build-text && date +%s > ext/static/app.version",
     "up": "cd docker && docker compose down && docker compose up -d nimbly && cd ..",
-    "setup": "php core/cli/nimbly.php setup",
-    "create-user": "php core/cli/nimbly.php create-user",
-    "install-module": "php core/cli/nimbly.php install-module"
+    "nimbly": "php core/cli/nimbly.php"
   },
   "repository": {
     "type": "git",
