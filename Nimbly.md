@@ -751,7 +751,7 @@ Defines the structure and behavior of a resource. All fields must be explicitly 
 | `text` | Single-line text |
 | `textarea` | Multi-line plain text |
 | `html` | Rich text (medium-editor) |
-| `name` | Text with optional slug generation |
+| `slug` | URL-safe slug — auto-computed from source fields, manually overridable |
 | `boolean` | True/false toggle |
 | `date` | Date picker |
 | `email` | Email address |
@@ -797,6 +797,32 @@ Rich (full content, e.g. body):
 ```
 
 Never define an `html` field without choosing one of these. `media_sizes` is required when `media: true`.
+
+**Slug fields:**
+
+Auto-computed from one or more source fields. The user can override the value manually. Clearing the field re-enables auto-computation.
+
+```json
+"url_slug": {
+  "name": "URL slug",
+  "type": "slug",
+  "source": "title",
+  "admin_col": false
+}
+```
+
+Multiple sources are comma-separated — values are joined with a space before slugifying:
+
+```json
+"url_slug": {
+  "name": "URL slug",
+  "type": "slug",
+  "source": "title,date",
+  "admin_col": false
+}
+```
+
+With `"source": "title,date"` and title `"Jazz Night"`, date `"2026-04-09"`, the slug becomes `jazz-night-2026-04-09`. Always add `url_slug` to the resource `index` array so it can be looked up in `route.inc`.
 
 **Select fields:**
 
