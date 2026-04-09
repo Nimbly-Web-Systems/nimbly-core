@@ -531,18 +531,6 @@ function data_update($resource, $uuid, $data_update_ls)
         $data_merged_ls = array_merge_recursive_distinct($data_ls, $data_update_ls);
     }
 
-    // Handle primary key changes
-    $meta = data_meta($resource);
-    $pk_field = $data_update_ls['pk-field-name'] ?? ($meta['pk'] ?? false);
-    if ($pk_field) {
-        $pk_value = $data_update_ls[$pk_field] ?? false;
-        $uuid = data_update_pk($resource, $uuid, $pk_value);
-        if ((string)$uuid === '') {
-            return false;
-        }
-        $data_merged_ls['uuid'] = $uuid;
-    }
-
     // Update modification metadata
     load_library('md5');
     load_library('username', 'user');
@@ -557,44 +545,6 @@ function data_update($resource, $uuid, $data_update_ls)
     return false;
 }
 
-/**
- * Updates the primary key (UUID) of a resource by renaming its data file.
- *
- * Generates a new UUID from the given primary key value,
- * and if different from the current UUID, renames the data file accordingly.
- *
- * **Deprecated:** Updating the primary key is discouraged and will be phased out.
- * It is recommended to use stable UUIDs as immutable primary keys and manage
- * alternate keys or slugs via indexing instead.
- *
- * @param string $resource Resource name.
- * @param string $uuid Current UUID of the record.
- * @param string $pk_value New primary key value used to generate new UUID.
- * @return string|false New UUID if renamed successfully, original UUID if no change,
- *                      or false if renaming failed or new UUID already exists.
- */
-function data_update_pk($resource, $uuid, $pk_value)
-{
-    if (empty($pk_value)) {
-        return $uuid;
-    }
-    if (is_array($pk_value)) {
-        return $uuid;
-    }
-    load_library('md5');
-    $new_uuid = md5_uuid($pk_value);
-    if ($new_uuid === $uuid) {
-        return $uuid;
-    }
-    if (data_exists($resource, $new_uuid)) {
-        return false;
-    }
-    $path = data_path($resource) . '/';
-    if (rename($path . $uuid, $path . $new_uuid) === true) {
-        return $new_uuid;
-    }
-    return false;
-}
 
 /**
  * Creates or rewrites a data object file.

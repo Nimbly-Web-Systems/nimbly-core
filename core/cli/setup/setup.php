@@ -372,7 +372,6 @@ if (!data_exists('users', '.meta')) {
             'roles'    => ['type' => 'select',   'multi'    => true,  'name' => 'roles', 'resource' => 'roles'],
             'name'     => ['type' => 'text',                          'name' => 'name'],
         ],
-        'pk'      => 'email',
         'encrypt' => 'password',
     ]);
     echo "Created: users/.meta\n";
