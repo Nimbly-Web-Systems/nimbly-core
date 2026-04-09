@@ -100,16 +100,11 @@ function api_token_access($feature, $resource = false) {
 
 /*
  * Creates data array from json input
- * + Resolves primary key field
  * + Encrypts fields
  */
 function api_json_input($resource) {
     $meta = data_meta($resource);
-    if (isset($meta['pk'])) {
-        $data = json_input(true, $meta['pk']);
-    } else {
-        $data = json_input();
-    }
+    $data = json_input();
     if (isset($meta['encrypt'])) {
         load_library('salt');
         load_library('encrypt');

@@ -64,10 +64,11 @@ function openai_translate_post()
             $translated_record[$field . '_slug'] = slug_sc($translated_record[$field]);
         }
     }
-    $pk_field = $meta['pk'];
-    $pk_value = $translated_record[$pk_field];
-    load_library('md5');
-    $uuid = md5_uuid($pk_value);
+    $uuid = $record['translations'][$data['lang']] ?? null;
+    if (empty($uuid)) {
+        load_library('uuid');
+        $uuid = uuid_sc();
+    }
 
     // update orignal record
     if (!isset($record['translations'])) {
