@@ -310,6 +310,8 @@ Conditions: `key=value`, `key=(empty)`, `key=(not-empty)`
 Actions: `tpl=`, `tpl_else=`, `echo=`, `echo_else=`, `redirect=`
 Modifiers: `not`, `or`, `and`
 
+`[#if#]` is always a single self-closing tag — there is no block form (`[#if#]...[#/if#]`). Conditional content lives in a separate template referenced by `tpl=`.
+
 #### `[#redirect url#]`
 Redirects immediately.
 
