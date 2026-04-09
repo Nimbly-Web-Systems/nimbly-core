@@ -10,7 +10,7 @@
 
     <div class="grid grid-cols-3 sm:grid-cols-4 gap-3 mt-2"
          x-data="{ drag_ix: null, drop_ix: null }"
-         @dragleave="drop_ix = null">
+         @dragleave="if (!$el.contains($event.relatedTarget)) drop_ix = null">
 
         <template x-for="(uuid, ix) in [#_f.model#]" :key="uuid + ix">
             <div class="flex flex-col rounded overflow-hidden border bg-white transition-all"

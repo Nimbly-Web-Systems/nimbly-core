@@ -70,6 +70,19 @@ js/            # JS source (JSX/Alpine)
 
 ---
 
+## Frontend Stack
+
+The frontend (both admin and public) uses **Tailwind CSS**, **DaisyUI**, and **Alpine.js** exclusively.
+
+- **Do not use jQuery** or any other JavaScript library/framework.
+- **Do not use Tailwind Elements** — it is being phased out. Use DaisyUI equivalents.
+- Interactivity is handled with Alpine.js (`x-data`, `x-bind`, `@event`, etc.).
+- CSS is written with Tailwind utility classes. Component styles use DaisyUI.
+
+This constraint applies to all templates in `core/` and `ext/`.
+
+---
+
 ## 2. Template Syntax
 
 Templates use shortcodes enclosed in `[#` and `#]`.

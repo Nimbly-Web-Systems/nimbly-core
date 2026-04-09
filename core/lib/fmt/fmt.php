@@ -15,7 +15,7 @@ function fmt_sc($params)
     }
     $type = get_param_value($params, 'type', end($params)) ?? 'text';
 
-    if (empty($val) && $type !== 'boolean') {
+    if (empty($val) && $type !== 'boolean' && $type !== 'pad') {
         return get_param_value($params, 'empty', '(empty)');
     }
 
@@ -52,6 +52,8 @@ function fmt_sc($params)
             set_variable('_file_uuid', is_array($val) ? current($val) : $val, true);
             return run_buffered(dirname(__FILE__) . '/file.tpl');
             break;
+        case 'pad':
+            return str_pad(strval(intval($val)), intval(get_param_value($params, 'length', 3)), '0', STR_PAD_LEFT);
         default:
             if (is_array($val)) {
                 $val = resolve_i18n($val, $lang);
