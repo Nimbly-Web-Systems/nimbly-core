@@ -1,5 +1,5 @@
 <div class="relative my-6 border border-neutral-300 rounded bg-neutral-50 p-4" data-nb-edit-image="[#_f.key#]"
-    x-init="[#_f.model#]='[#_f.value#]'">
+    x-init="[#_f.model#]='[#get [#get _f.source default=record#].[#_f.key#]#]'">
 
     <!-- image set -->
     <template x-if="[#_f.model#]">
