@@ -68,6 +68,20 @@ function thumbnail_create($uuid, $size, $ratio = 0, $mode = 'h')
         return $result;
     }
 
+    if ($org_type === IMAGETYPE_JPEG && function_exists('exif_read_data')) {
+        $exif = @exif_read_data($org_path);
+        $orientation = $exif['Orientation'] ?? 1;
+        if ($orientation === 3) {
+            $org_img = imagerotate($org_img, 180, 0);
+        } else if ($orientation === 6) {
+            $org_img = imagerotate($org_img, -90, 0);
+            [$org_w, $org_h] = [$org_h, $org_w];
+        } else if ($orientation === 8) {
+            $org_img = imagerotate($org_img, 90, 0);
+            [$org_w, $org_h] = [$org_h, $org_w];
+        }
+    }
+
     $asp = $org_w / $org_h;
     $org_x = 0;
     $org_y = 0;
