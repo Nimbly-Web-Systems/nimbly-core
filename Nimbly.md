@@ -820,13 +820,13 @@ Options from another resource:
 
 | Key | Description |
 |---|---|
-| `pk` | Primary key field name |
 | `sort` | Default sort (`field`, `flags`: `string`/`numeric`, `order`: `asc`/`desc`) |
 | `validate` | Validation rules (e.g. `natural-short-text`) |
 | `languages` | Enabled languages for this resource |
 | `ai_prompts` | Per-field AI translation instructions |
 | `actions` | Object with a `url` key — adds a "View" button in the admin record list pointing to the frontend URL of the record. Shortcodes are evaluated in the URL value. Example: `{"url": "[#base-url#]/articles/[#record.title_slug#]"}` |
 | `splitdir` | Boolean. When `true`, records are stored in a two-level subdirectory tree by UUID prefix for filesystem performance at scale (> ~10,000 records). See §12 API — Scalability. |
+| `index` | Array of field names to index. Creates fast lookup paths for those fields. See §4 Indexes below. |
 
 ### System fields (auto-managed)
 
@@ -839,6 +839,88 @@ Resources whose names begin with `.` are hidden from the admin data management U
 Built-in hidden resources: `.config`, `.content`, `.routes`, `.i18n`.
 
 Custom hidden resources follow the same convention — name them with a leading dot to keep them out of the admin overview.
+
+### Indexes
+
+Indexes allow fast lookup of records by a field value without scanning the entire resource. This is the standard way to resolve a slug from a URL to a record UUID.
+
+#### Enabling indexes
+
+Add an `index` array to `.meta` listing the field names to index:
+
+```json
+{
+  "fields": {
+    "title": { "name": "Title", "type": "name", "required": true, "slug": true },
+    "title_slug": { "name": "Slug", "type": "text" }
+  },
+  "index": ["title_slug"]
+}
+```
+
+Every time a record is written (`data_create` / `data_update`), the index is updated automatically.
+
+#### How indexes are stored
+
+For each indexed field, Nimbly creates an empty file at:
+
+```
+ext/data/<resource>/<field_name>/<md5(field_value)>/<record_uuid>
+```
+
+For example, an article with `title_slug = "my-article"` and `uuid = "abc123"` would create:
+
+```
+ext/data/articles/title_slug/1a79a4d60de6718e8e5b326e338ae533/abc123
+```
+
+The file is empty — its presence is the index entry. This makes index lookups a single `is_dir()` check and a `scandir()`.
+
+#### With splitdir
+
+When `splitdir: true` is also set, index directories follow the same two-level split:
+
+```
+ext/data/<resource>/<field_name>/<aa>/<bb>/<md5(value)>/<record_uuid>
+```
+
+The data library handles this transparently — same API regardless of whether `splitdir` is set.
+
+#### Looking up a record by slug (route.inc pattern)
+
+```php
+<?php
+
+$parts = router_match(__FILE__);
+if ($parts === false || count($parts) !== 1) return;
+
+$slug = $parts[0];
+load_library('data');
+load_library('md5');
+
+$records = data_read_index('articles', 'title_slug', md5_uuid($slug));
+if (empty($records)) return;
+
+$record = reset($records);
+set_variable_dot('record', $record);
+router_accept();
+```
+
+`data_read_index($resource, $index_name, $index_uuid)` returns an associative array of `uuid => record` for all records matching the indexed value. For slug lookups this is always one record.
+
+#### Rebuilding indexes (reindex CLI)
+
+If you add `index` to an existing resource's `.meta`, existing records won't have index entries yet. Rebuild them with:
+
+```bash
+php core/cli/nimbly.php reindex
+# prompts — lists all indexed resources and asks you to choose
+
+php core/cli/nimbly.php reindex articles
+# direct — reindexes the 'articles' resource immediately
+```
+
+The reindex command is idempotent — safe to run multiple times.
 
 ### Data caching
 
@@ -1188,6 +1270,7 @@ Equivalent direct invocations:
 php core/cli/nimbly.php setup
 php core/cli/nimbly.php create-user
 php core/cli/nimbly.php install-module <name>
+php core/cli/nimbly.php reindex [resource]
 php core/cli/nimbly.php help
 ```
 
@@ -1229,6 +1312,16 @@ Runs a module's `.install.inc` script. Looks in `ext/modules/` first, then `core
 ```bash
 npm run install-module event
 ```
+
+#### `reindex`
+Rebuilds index entries for an indexed resource. Use this after adding `index` to an existing resource's `.meta`, or after importing records outside of the normal API flow.
+
+```bash
+php core/cli/nimbly.php reindex             # interactive: lists indexed resources, prompts for choice
+php core/cli/nimbly.php reindex articles    # direct: reindex the 'articles' resource
+```
+
+The command scans all records in the resource and creates any missing index files. It is idempotent — existing entries are left untouched.
 
 ---
 
@@ -1774,9 +1867,9 @@ return $result;
 | `data_exists($resource, $uuid)` | Returns true if a record exists |
 | `load_library($name)` | Loads a shortcode library so its PHP functions are available |
 
-### Slug-to-UUID routing (current pattern)
+### Slug-to-UUID routing
 
-When a resource uses a slug as its primary key (`"pk": "title_slug"`), the slug stored in the URL is a human-readable string, but records are keyed by its MD5 hash. Use `md5_uuid()` in `route.inc` to resolve the slug back to the record:
+Use the index system to resolve a slug from the URL to a record. Add `title_slug` to the `index` array in `.meta`, then look it up in `route.inc`:
 
 ```php
 <?php
@@ -1785,20 +1878,19 @@ $parts = router_match(__FILE__);
 if ($parts === false || count($parts) !== 1) return;
 
 $slug = $parts[0];
-load_library('md5');
-$uuid = md5_uuid($slug);
-
 load_library('data');
-if (!data_exists('events', $uuid)) return;
+load_library('md5');
 
-$record = data_read('events', $uuid);
-load_library('set');
+$records = data_read_index('events', 'title_slug', md5_uuid($slug));
+if (empty($records)) return;
+
+$record = reset($records);
 set_variable_dot('record', $record);
 
 router_accept();
 ```
 
-> **Note:** MD5-based slug routing is a transitional pattern. The pending index system (see §16 Pending changes) will replace this. Do not design new resources around `pk: title_slug`; this pattern documents how existing modules work.
+The record UUID is stable and random — slugs are stored as regular fields and indexed for fast lookup. If the slug field changes, the index updates automatically on next save.
 
 ---
 
@@ -1818,8 +1910,6 @@ router_accept();
 ## 16. Pending changes
 
 The following areas are under active development and will be updated here as they are finalized:
-
-- **Indexes** — slugs as primary keys (`pk: title_slug`) are being replaced by an index system. Do not design new resources around slug-based primary keys. This section will be updated when the new approach is settled.
 ## PHP coding standards
 
 - **snake_case everywhere** — functions, variables, parameters, file names. No camelCase or PascalCase in PHP.
