@@ -19,6 +19,7 @@ $commands = [
     'setup'          => ['core/cli/setup/setup.php',     'First-time site setup'],
     'create-user'    => ['core/cli/create_user.php',     'Create a new user account'],
     'install-module' => ['core/cli/install_module.php',  'Install a module (runs its .install.inc)'],
+    'reindex'        => ['core/cli/reindex.php',         'Rebuild index entries for a resource'],
 ];
 
 if (!$command || $command === 'help' || !isset($commands[$command])) {
