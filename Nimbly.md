@@ -1965,3 +1965,114 @@ if ($value)
   ```
   `resource-name` would use these when present and fall back to slug-based logic otherwise.
 - **Shortcode single-file format** — currently every shortcode requires a directory (`lib/my-shortcode/my-shortcode.php`). A planned improvement is to allow a single-file fallback (`lib/my-shortcode.php`) for simple shortcodes that don't need a template. Until then, always use the directory format.
+
+---
+
+## 17. Upgrading from core 1.0 to core 1.1
+
+### What changed
+
+| Area | 1.0 | 1.1 |
+|---|---|---|
+| UUID | Could be derived from a field value via `md5_uuid(pk_value)` | Always a stable random identifier — never derived |
+| `.meta` `pk` key | Defined which field drove the UUID | Removed entirely |
+| Slug routing | Routes did `data_exists($resource, md5_uuid($slug))` | Routes use `data_read_index($resource, 'slug_field', md5_uuid($slug))` |
+| Index storage | `.index/` subdir (also 1.0 late) | Same, fully automatic |
+| `data_update_pk()` | Existed — renamed data files on pk change | Removed |
+
+**Core rule in 1.1:** the UUID is the primary key and it never changes. Slugs are stored as normal fields and looked up via indexes.
+
+### Migration steps
+
+#### 1. Update core
+
+Pull the latest core via the admin (**Settings → Update Core**) or:
+
+```bash
+git pull   # run from the project root (core repo)
+```
+
+#### 2. Run the migration command
+
+The `migrate-10` CLI command handles the mechanical work automatically:
+
+```bash
+php core/cli/nimbly.php migrate-10
+```
+
+For each resource whose `.meta` still has a `pk` key it will:
+
+1. Add the pk field to the `index` array in `.meta` (if not already there)
+2. Create index entries for all records — including the **self-referential** entries (`index_uuid === record_uuid`) that exist because 1.0 records had `uuid = md5_uuid(pk_field_value)`. The standard `reindex` command skips these; `migrate-10` creates them explicitly so that `data_read_index` can find them.
+3. Remove `pk` from `.meta` and save the file
+
+The command is interactive and asks for confirmation before making any changes.
+
+#### 3. Update route.inc files
+
+Any route that used the old `data_exists` + `md5_uuid` lookup must be updated to use `data_read_index`.
+
+**Old pattern (1.0):**
+
+```php
+$slug = $parts[0];
+load_library('data');
+load_library('md5');
+
+if (!data_exists('articles', md5_uuid($slug))) return;
+set_variable('slug', $slug);
+
+router_accept();
+```
+
+**New pattern (1.1):**
+
+```php
+$slug = $parts[0];
+load_library('data');
+load_library('md5');
+
+$records = data_read_index('articles', 'url_slug', md5_uuid($slug));
+if (empty($records)) return;
+
+$record = reset($records);
+set_variable_dot('record', $record);
+
+router_accept();
+```
+
+The slug field name (`url_slug` in the example) must match what is defined in `.meta` and listed in its `index` array.
+
+#### 4. Verify `.meta` fields
+
+After migration, each previously pk-driven resource should look like this:
+
+```json
+{
+  "fields": {
+    "title":    { "name": "Title", "type": "name", "required": true, "slug": true },
+    "url_slug": { "name": "URL slug", "type": "slug", "source": "title" }
+  },
+  "index": ["url_slug"]
+}
+```
+
+- No `pk` key
+- A `slug` type field for the URL slug (auto-computed, manually overridable)
+- The slug field listed in `index`
+
+If you already had a plain `text` field acting as the slug, change its `type` to `slug` and add `"source": "source_field"` so the admin auto-computes it. Then re-run reindex:
+
+```bash
+php core/cli/nimbly.php reindex articles
+```
+
+#### 5. Remove any direct calls to `data_update_pk()`
+
+The function no longer exists. If any custom shortcode or module called it, remove that code. The UUID is immutable — use a slug field + index instead.
+
+### What you do NOT need to do
+
+- **Rename existing record files.** UUIDs on existing records stay as they are (even the md5-derived ones from 1.0). They are just UUIDs now — their origin no longer matters.
+- **Rewrite all templates.** Only `route.inc` files that resolved slugs to records need updating.
+- **Re-import data.** The existing JSON record files are fully compatible.
