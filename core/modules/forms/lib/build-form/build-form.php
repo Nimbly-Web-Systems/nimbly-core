@@ -28,7 +28,7 @@ function build_form($form_def)
     echo run_buffered(dirname(__FILE__) . '/fbody.tpl');
     $fields = $form_def['fields'];
     set_variable('_fbg', $form_def['bg_color'] ?? 'bg-neutral-50');
-    load_module('admin');
+    load_library('render-field');
     foreach ($fields as $key => $def) {
         $type = $def['type'] ?? 'text';
         if ($type === 'group_end') {
@@ -53,42 +53,19 @@ function build_form($form_def)
 
 function _bf_render_field($key, $def, $group = null, $ix = null)
 {
+    $type  = $def['type'] ?? 'text';
+    $model = ($group && $ix) ? "form_data.{$group}[{$ix}].{$key}" : null;
+
     echo '<div>';
-    $initial_multi = get_variable('item.multi');
-    $type = $def['type'] ?? 'text';
     if ($type === 'select') {
         echo '<div class="p-1"></div>';
-        set_variable('item.multi', $def['multi'] || false);
-        set_variable('item.key', $key);
-        set_variable('item.name', $def['name']);
-        set_variable('_foptions', '');
-        foreach ($def['options'] as $k => $v) {
-            set_variable('_fkey', $k);
-            set_variable('_fval', $v);
-            set_variable('_foptions', run_buffered(dirname(__FILE__) . '/fselect.option.tpl'), '\n ');
-        }
-    } else if ($type === 'upload') {
-        set_variable('_faccept', $def['accept'] ?? '');
     }
-
-    
-    $model_prefix = ($group && $ix)? $group . '[' . $ix . '].' : '';
-
-    set_variable('_ftitle', $def['name']);
-    set_variable('_ftype', $type);
-    set_variable('_fname', $key);
-    set_variable('_fmodel', "form_data." . $model_prefix . $key);
-    set_variable('_fid', str_replace(['.', '[', ']'], '_', get_variable('_fmodel')));
-    set_variable('_frequired', $def['required'] ?? false);
-    set_variable('_fattr', $def['attr'] ?? '');
-    run_single_sc($type . '-field');
+    render_field($def, $key, null, 'form_data', null, $model);
     if ($type === 'select') {
         echo '<div class="p-2"></div>';
     }
     if (isset($def['help'])) {
-        set_variable('_fhelp', $def['help']);
         echo run_buffered(dirname(__FILE__) . '/fhelp.tpl');
     }
-    set_variable('item.multi', $initial_multi);
     echo '</div>';
 }

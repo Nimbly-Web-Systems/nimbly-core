@@ -1,116 +1,150 @@
 <?php
 
 /**
+ * [#render-field#] — render a single form field from a field definition.
  *
- * Shortcode implementation for [#render-field ...#] for rendering a dynamic form field based 
- * on field definitions
+ * Resolves the field definition from one of three sources (in order):
  *
- * @doc **Parameters:**
- * @doc - `def`: Required.The field definition or reference (JSON string, resource.field, or field name)
- * @doc - `name`: Optional.The field name (used for lookup in local files or meta).
+ *   1. Inline JSON   def="{'type':'text','name':'Title'}"
+ *   2. Local file    def="form_fields" name="title"   → {uri_path}/form_fields.json
+ *   3. Resource meta def="articles.title"             → articles/.meta fields.title
  *
- * @doc **Resolution order:**
- * @doc 1. **User-provided JSON:** If the `def` param is a JSON string, it is parsed and used directly.
- * @doc 2. **Local file:** If a file named `{def}.json` exists in the current directory (`uri_path`), it is loaded and used.
- * @doc 3. **Resource meta:** If no local file exists, the resource's meta (e.g., `proposals/.meta`) is loaded and the field definition is taken from there using `name`.
+ * Sets all _f.* template variables and dispatches to [#field-{type}#].
  *
- * @doc **Usage examples:**
- * @doc - `[\#render-field def="{ 'key':'title','name':'Title','type':'text' }" name="title" \#]`   // User JSON
- * @doc - `[\#render-field def="form_fields" name="title"\#]`   // Local file form_fields.json or resource form_fields(/.meta)
- 
+ * Parameters:
+ *   def    Required. Field source: inline JSON, local filename, or resource.field
+ *   name   Field key — used as HTML name and Alpine model segment
+ *   val    Literal value to pre-populate the field
+ *   var    Variable path to read value from (e.g. "record.email")
+ *   store  Alpine data store prefix (default: "form_data")
+ *   source Image/file base path (for image and gallery fields)
  */
-function render_field_sc($params) {
+function render_field_sc($params)
+{
     $def = get_param_value($params, 'def', current($params));
-    
+
     if (!is_string($def)) {
         return;
     }
 
-    // Get field value (if any)
     $field_val = get_param_value($params, 'val');
     if ($field_val === null) {
         $field_var = get_param_value($params, 'var');
         if ($field_var !== null) {
             $field_val = _get_field_value($field_var);
-            unset($params['var']);
         }
-    } else {
-        unset($params['val']);
     }
-    
-    $field_name = get_param_value($params, 'name', count($params) > 1? next($params) : '') ?? '';
-    $store  = get_param_value($params, 'store',  'form_data');
-    $source = get_param_value($params, 'source', null);
 
-    // 1: JSON field definition
+    $field_name = get_param_value($params, 'name') ?? '';
+    $store      = get_param_value($params, 'store', 'form_data');
+    $source     = get_param_value($params, 'source', null);
+
     $def = trim($def);
-    if (strpos($def, '{') === 0 || strpos(trim($def), '[') === 0) {
+
+    // 1: inline JSON
+    if ($def[0] === '{' || $def[0] === '[') {
         $json = str_replace("'", '"', $def);
-        $def = json_decode($json, true) ?: [];
-        return render_field($def, $field_name, $field_val, $store, $source);
+        render_field(json_decode($json, true) ?: [], $field_name, $field_val, $store, $source);
+        return;
     }
 
-    // 2: read from (local scope) json file
+    // 2: local JSON file in current URI scope
     $file = $GLOBALS['SYSTEM']['uri_path'] . '/' . $def . '.json';
     if (file_exists($file)) {
-        $contents = file_get_contents($file);
-        $def = json_decode($contents, true);
-        return render_field($def, $field_name, $field_val, $store, $source);
+        render_field(json_decode(file_get_contents($file), true) ?: [], $field_name, $field_val, $store, $source);
+        return;
     }
 
-    // 3: get field def from resource meta
+    // 3: resource meta — supports "resource.field" and ".system-resource.field"
     $resource = $def;
-    if (strpos($def, '.') !== false) {
-        if (substr($def, 0, 1) === '.') {
-            // system resource (leading dot)
-            $parts = explode('.', ltrim($def, '.'));
+    if (str_contains($def, '.')) {
+        if ($def[0] === '.') {
+            $parts    = explode('.', ltrim($def, '.'));
             $resource = '.' . array_shift($parts);
         } else {
-            $parts = explode('.', $def);
+            $parts    = explode('.', $def);
             $resource = array_shift($parts);
         }
-        
-        $field_name = empty($field_name)? implode('.', $parts) : $field_name;
+        if (!$field_name) {
+            $field_name = implode('.', $parts);
+        }
     }
 
-    if (empty($resource) || empty($field_name)) {
+    if (!$resource || !$field_name) {
         return;
     }
 
     $meta = data_meta($resource);
-    
     if (empty($meta['fields'][$field_name])) {
         return;
     }
 
-    return render_field($meta['fields'], $field_name, $field_val, $store, $source);
+    render_field($meta['fields'], $field_name, $field_val, $store, $source);
 }
 
 /**
- * Render a single form field using the forms module templates
+ * Prepare and render a single form field.
  *
- * @param array  $def Field definition (from meta or JSON)
- * @param string $field Optional Field name used for element names/IDs
- * @param string $value Optional ...
- * @return string HTML output
+ * Sets all _f.* template variables then dispatches to [#field-{type}#].
+ *
+ * The entire field definition is spread into _f.* so templates can access
+ * any custom attribute (resource, options, buttons, media, ai_prompts, etc.)
+ * without this function needing to enumerate them.
+ *
+ * @param array       $def    Fields hash (keyed by name) or a single field definition
+ * @param string      $field  Key within $def — omit when $def is already one field
+ * @param mixed       $value  Pre-populated value; null falls back to $def['default']
+ * @param string      $store  Alpine data store name (default: "form_data")
+ * @param string|null $source Image/file base path (for image/gallery fields)
+ * @param string|null $model  Override the computed Alpine x-model expression
  */
-function render_field($def, $field = '', $value = null, $store = 'form_data', $source = null) {
-    if (!empty($field) && isset($def[$field])) {
+function render_field(array $def, string $field = '', $value = null, string $store = 'form_data', ?string $source = null, ?string $model = null): void
+{
+    if ($field && isset($def[$field])) {
         $def = $def[$field];
     }
+
+    $type = $def['type'] ?? 'text';
+
+    // Spread entire definition into _f.* so templates have access to all
+    // field attributes without this function needing to enumerate them.
     set_variable_dot('_f', $def);
-    set_variable('_f.name', $field);
-    set_variable('_f.title', $def['name'] ?? ucfirst($field));
-    set_variable('_f.key', $field);
-    set_variable('_f.value', $value === null? $def['default'] ?? '' : $value);
-    set_variable('_f.model', "{$store}.{$field}");
+
+    set_variable('_f.key',      $field);
+    set_variable('_f.name',     $field);
+    set_variable('_f.title',    $def['name'] ?? ucfirst(str_replace(['-', '_'], ' ', $field)));
+    set_variable('_f.bg',       'bg-white');
     set_variable('_f.required', !empty($def['required']));
+    set_variable('_f.ai',       !empty($def['ai_prompts']));
+    set_variable('_f.value',    $value ?? $def['default'] ?? '');
+
+    if ($model === null) {
+        $model = "{$store}.{$field}";
+        if (!empty($def['i18n'])) {
+            $lang = get_variable('lang') ?? get_variable('record.lang') ?? '';
+            if ($lang) {
+                $model .= "[{$lang}]";
+            }
+        }
+    }
+    set_variable('_f.model', $model);
+
+    // i18n html fields: seed the full language map into the Alpine store so the
+    // inline editor can switch languages client-side without a round-trip.
+    if (!empty($def['i18n']) && $type === 'html') {
+        $json = json_encode($value ?? '', JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        echo "<div x-init='if (!{$store}.{$field}) { {$store}.{$field} = {$json}; }'></div>\n";
+    }
+
     if ($source !== null) {
         set_variable('_f.source', $source);
     }
-    run_single_sc('field-' . $def['type']);
+
+    run_single_sc('field-' . $type);
 }
 
-function _get_field_value($var_name) {
-    return "todo " . $var_name;
+function _get_field_value(string $var_name)
+{
+    load_library('get');
+    return get_variable($var_name);
 }
