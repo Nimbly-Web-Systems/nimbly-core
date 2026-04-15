@@ -24,3 +24,49 @@ function get_user($uuid=false) {
 	$users[$uuid] = data_read("users", $uuid);
 	return $users[$uuid];
 }
+
+function get_user_by_email($email) {
+	return find_user_by_email($email);
+}
+
+function find_user_by_email($email) {
+	static $users_by_email = [];
+
+	$email = trim((string)$email);
+	if ($email === '') {
+		return false;
+	}
+
+	$cache_key = strtolower($email);
+	if (array_key_exists($cache_key, $users_by_email)) {
+		return $users_by_email[$cache_key];
+	}
+
+	load_library('data');
+
+	foreach (array_unique([$email, strtolower($email)]) as $candidate) {
+		$uuid = md5($candidate);
+		if (!data_exists('users', $uuid)) {
+			continue;
+		}
+
+		$user = data_read('users', $uuid);
+		if (!empty($user['email']) && strcasecmp(trim((string)$user['email']), $email) === 0) {
+			$users_by_email[$cache_key] = $user;
+			return $user;
+		}
+	}
+
+	foreach (data_read('users') as $user) {
+		if (empty($user['email'])) {
+			continue;
+		}
+		if (strcasecmp(trim((string)$user['email']), $email) === 0) {
+			$users_by_email[$cache_key] = $user;
+			return $user;
+		}
+	}
+
+	$users_by_email[$cache_key] = false;
+	return false;
+}

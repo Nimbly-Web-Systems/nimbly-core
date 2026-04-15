@@ -15,8 +15,6 @@ function email_sc($params)
 
 function email($email_data)
 {
-
-
 	if (empty($email_data['recipient'])) {
 		throw new Exception('Email field "recipient" not set');
 		return false;

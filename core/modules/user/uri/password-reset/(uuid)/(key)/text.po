@@ -1,2 +1,17 @@
+msgid "Choose a new password to complete your password reset."
+msgstr "Choose a new password to complete your password reset."
+
+msgid "Password"
+msgstr "Password"
+
+msgid "New password"
+msgstr "New password"
+
+msgid "Create new password"
+msgstr "Create new password"
+
+msgid "Back to login"
+msgstr "Back to login"
+
 msgid "validate_invalid_password"
 msgstr "Invalid password. Please try again."

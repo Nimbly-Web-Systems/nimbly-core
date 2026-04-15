@@ -3,6 +3,7 @@
 load_library("session");
 load_library('data');
 load_library("redirect");
+load_library('get-user', 'user');
 
 function access_sc($params) {
 
@@ -75,7 +76,11 @@ function access_by_key($key) {
 
 
 function load_user_roles($name) {
-    $roles = data_read('users', md5($name), 'roles');
+    $user = find_user_by_email($name);
+    if (empty($user)) {
+        return array();
+    }
+    $roles = $user['roles'] ?? '';
     if (!empty($roles)) {
         if (is_array($roles)) {
             return $roles;
@@ -88,8 +93,12 @@ function load_user_roles($name) {
 }
 
 function load_user_features($name) {
-   
-    $features = data_read('users', md5($name), 'features');
+    $user = find_user_by_email($name);
+    if (empty($user)) {
+        return array();
+    }
+
+    $features = $user['features'] ?? '';
     if (!empty($features)) {
         $result = array_map('trim', explode(',', $features));
         return $result;
@@ -118,11 +127,10 @@ function persist_login_error() {
 
 function persist_login($email, $password) {
     run_library('session');
-    $uuid = md5($email);
-    if (!data_exists('users', $uuid)) {
+    $user_data = find_user_by_email($email);
+    if (empty($user_data) || empty($user_data['uuid'])) {
         return persist_login_error();
     }
-    $user_data = data_read('users', $uuid);
     if (empty($user_data['salt']) || empty($user_data['password'])) {
         return persist_login_error();
     }
@@ -133,10 +141,10 @@ function persist_login($email, $password) {
     if (hash_equals($pw_stored, $pw_typed) !== true) { 
         //password fail
         return persist_login_error();
-    } else if (_persist_user_roles($email)) {
+    } else if (_persist_user_roles($user_data['email'])) {
         //login success
-        _persist_user_features($email);
-        $_SESSION['username'] = $email;
+        _persist_user_features($user_data['email']);
+        $_SESSION['username'] = $user_data['email'];
         return true;
     }
     return persist_login_error();

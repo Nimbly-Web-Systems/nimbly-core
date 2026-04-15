@@ -12,6 +12,6 @@ $user['password'] = encrypt($password, $user['salt']);
 $user['password_reset_token'] = uuid_sc();
 data_update('users', $user_uuid, $user);
 load_library('system-messages');
-system_message('New password created successfully!');
+system_message('Your password has been reset. Please log in with ' . $user['email'] . ' and your new password.');
 load_library('redirect');
 redirect('login');

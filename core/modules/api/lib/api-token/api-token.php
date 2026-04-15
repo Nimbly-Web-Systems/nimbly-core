@@ -10,6 +10,7 @@ function api_token_sc() {
 
 function api_token_post() {
     load_library('set');
+    load_library('get-user', 'user');
     $data = json_input(false);
 
     // 1. validate request
@@ -18,14 +19,12 @@ function api_token_post() {
     }
 
     // 2. lookup user 
-    $email = trim(strtolower($data['email']));
-    load_library('data');
+    $email = trim((string)$data['email']);
     run_library('session');
-    $uuid = md5($email);
-    if (!data_exists('users', $uuid)) {
+    $user_data = find_user_by_email($email);
+    if (empty($user_data) || empty($user_data['uuid'])) {
         return json_result(['message' => 'ACCESS_DENIED'], 403);
     }
-    $user_data = data_read('users', $uuid);
     if (!isset($user_data['api']) || empty($user_data['api']['access'])) {
         return json_result(['message' => 'ACCESS_DENIED'], 403);
     }
@@ -41,7 +40,7 @@ function api_token_post() {
         return json_result(['message' => 'INVALID_CREDENTIALS'], 401);
     } 
     run_library('session');
-    if (!_persist_user_roles($email)) {
+    if (!_persist_user_roles($user_data['email'])) {
         return json_result(['message' => 'INVALID_CREDENTIALS'], 401);
     }
 
@@ -59,7 +58,7 @@ function api_token_post() {
      $_SESSION['token'] = $token;
      $_SESSION['token_created'] = $created;
      $_SESSION['token_expires'] = $expires;  
-     data_update('users', $uuid, ['api' => 
+     data_update('users', $user_data['uuid'], ['api' => 
         ['access' => true, 'token' => $token, 'created' => $created, 'expires' => $expires]
     ]);   
      return json_result([
