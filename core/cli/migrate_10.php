@@ -102,6 +102,7 @@ echo "\nThis migration will:\n";
 echo "  1. Add the pk field to 'index' in .meta (if not already there)\n";
 echo "  2. Create index entries for all records (including 1.0 self-referential ones)\n";
 echo "  3. Remove 'pk' from .meta\n";
+echo "  4. Convert 'name' fields with slug:true to 'text', and add a 'slug' field definition\n";
 echo "\nProceed? [y/N] ";
 $confirm = trim(fgets(STDIN));
 if (strtolower($confirm) !== 'y') {
@@ -145,6 +146,31 @@ foreach ($pk_resources as $resource => $info) {
     }
 
     echo "  Indexed: $indexed record(s), skipped (no value): $skipped record(s).\n";
+
+    // Convert 'name' field with slug:true to 'text', add slug field definition
+    $slug_field_added = false;
+    if (!empty($meta['fields']) && is_array($meta['fields'])) {
+        foreach ($meta['fields'] as $fname => &$fdef) {
+            if (($fdef['type'] ?? '') === 'name' && !empty($fdef['slug'])) {
+                $fdef['type'] = 'text';
+                unset($fdef['slug']);
+                echo "  Converted field '$fname': type name+slug → text.\n";
+
+                if (!isset($meta['fields'][$pk_field])) {
+                    $meta['fields'][$pk_field] = [
+                        'name'      => 'URL slug',
+                        'type'      => 'slug',
+                        'source'    => $fname,
+                        'admin_col' => false,
+                    ];
+                    echo "  Added field '$pk_field': type slug, source=$fname.\n";
+                    $slug_field_added = true;
+                }
+                break;
+            }
+        }
+        unset($fdef);
+    }
 
     // Remove pk from meta and write it back
     unset($meta['pk']);

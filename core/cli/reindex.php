@@ -107,28 +107,40 @@ echo "\nReindexing '$target' (indexes: " . implode(', ', $indexes) . ")...\n\n";
 // -----------------------------------------------------------------------
 
 $records = data_read($target);
-$count = 0;
-$skipped = 0;
+$count      = 0;
+$self_ref   = 0;
+$skipped    = 0;
 
 foreach ($records as $uuid => $record) {
-    $file = data_path($target, $uuid);
-    $indexed = false;
+    $file         = data_path($target, $uuid);
+    $indexed      = false;
+    $is_self_ref  = false;
     foreach ($indexes as $index_name) {
         if (empty($record[$index_name])) {
             continue;
         }
         $index_uuid = md5_uuid($record[$index_name]);
         if ($index_uuid === $uuid) {
-            continue; // skip self-references
+            $is_self_ref = true;
+            continue;
         }
         _data_create_index($target, $file, $index_name, $index_uuid);
         $indexed = true;
     }
     if ($indexed) {
         $count++;
+    } elseif ($is_self_ref) {
+        $self_ref++;
     } else {
         $skipped++;
     }
 }
 
-echo "Done. Indexed: $count record(s), skipped (no index value): $skipped record(s).\n\n";
+echo "Done. Indexed: $count record(s)";
+if ($self_ref > 0) {
+    echo ", self-referential (already indexed): $self_ref record(s)";
+}
+if ($skipped > 0) {
+    echo ", skipped (no index value): $skipped record(s)";
+}
+echo ".\n\n";
