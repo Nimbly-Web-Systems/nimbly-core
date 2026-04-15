@@ -1,0 +1,17 @@
+msgid "Forgot password?"
+msgstr "Forgot password?"
+
+msgid "Enter your email address and we'll send you a link to create a new password."
+msgstr "Enter your email address and we'll send you a link to create a new password."
+
+msgid "Back to login"
+msgstr "Back to login"
+
+msgid "Check your email!"
+msgstr "Check your email!"
+
+msgid "Instructions to reset your password have been sent to your email address."
+msgstr "Instructions to reset your password have been sent to your email address."
+
+msgid "validate_invalid_email"
+msgstr "Please enter a valid email address."

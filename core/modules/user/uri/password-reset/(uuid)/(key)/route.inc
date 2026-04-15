@@ -13,7 +13,7 @@ if (!(data_exists("users", $uuid))) {
 
 $user = data_read("users", $uuid);
 $key = $parts[1];
-if ($user['password_reset_token'] !== $key) {
+if (empty($user['password_reset_token']) || !hash_equals((string)$user['password_reset_token'], (string)$key)) {
 	return;
 }
 
