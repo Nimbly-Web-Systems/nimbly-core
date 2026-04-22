@@ -1,5 +1,6 @@
 /ext/
 /contrib/
+/.context/
 .env
 /node_modules/
 .sass-cache/
