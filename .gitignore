@@ -1,6 +1,8 @@
 /ext/
 /contrib/
-/.context/
+/.context/*
+!/.context/.gitignore
+!/.context/readme.md
 .env
 /node_modules/
 .sass-cache/
