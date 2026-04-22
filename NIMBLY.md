@@ -68,6 +68,17 @@ js/            # JS source (JSX/Alpine)
 
 **Rule:** Never modify `core/`. All customization lives in `ext/`.
 
+### Project context
+
+Nimbly projects may include project-specific context for developers and AI agents.
+
+| Path | Purpose | Git behavior |
+|---|---|---|
+| `.context/` | Local/private checkout context: requirements notes, design PDFs, screenshots, research, meeting notes, client material, and other background used while working locally. | Belongs to the core checkout but is local-only by default. Only housekeeping files such as `.context/readme.md` and `.context/.gitignore` should be committed. |
+| `ext/.context/` | Shared application context: requirements, design notes, implementation decisions, or project references that should deliberately travel with the application repo. | Belongs to the nested ext repo and may be committed when the information is safe and useful for everyone working on that application. |
+
+Use `.context/` for private/operator/client-specific material. Use `ext/.context/` only for shared project knowledge that should be part of the application history.
+
 ---
 
 ## Frontend Stack

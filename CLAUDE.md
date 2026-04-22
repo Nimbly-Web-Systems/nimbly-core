@@ -1,1 +1,1 @@
-See [Nimbly.md](Nimbly.md) for the complete Nimbly implementation reference.
+See [NIMBLY.md](NIMBLY.md) for the complete Nimbly implementation reference.
