@@ -92,6 +92,14 @@ The frontend (both admin and public) uses **Tailwind CSS**, **DaisyUI**, and **A
 
 This constraint applies to all templates in `core/` and `ext/`.
 
+### Theme colors
+
+Project-specific Nimbly theme colors and DaisyUI theme values are defined in `ext/tailwind.theme.js`.
+
+This file exports the default Tailwind theme extension and a named `daisyuiThemes` export. Together they control the project color tokens used by Nimbly UI surfaces such as the Nimbly bar, admin controls, buttons, links, and related DaisyUI/Tailwind styling. Update colors there when matching a project design.
+
+Use `ext/theme.css` for project-specific public-site CSS and component overrides. Do not use `ext/theme.css` as the primary place to redefine Nimbly/admin theme colors unless a narrow component override is required.
+
 ---
 
 ## 2. Template Syntax
