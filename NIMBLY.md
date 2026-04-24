@@ -68,6 +68,8 @@ js/            # JS source (JSX/Alpine)
 
 **Rule:** Never modify `core/`. All customization lives in `ext/`.
 
+**Rule:** All text in `core/` must be in **English**. Use `[#text Key#]` for every user-facing string so projects can supply translations via `ext/data/.i18n/text.<lang>.po`. Never hard-code Dutch or any other language in core templates.
+
 ### Project context
 
 Nimbly projects may include project-specific context for developers and AI agents.
@@ -1764,6 +1766,22 @@ Response includes the file UUID, which is the **MD5 checksum** of the file conte
 ```
 
 Re-uploading an identical file returns `RESOURCE_CREATED` with the same UUID — the upload is idempotent by checksum.
+
+### File metadata — `.files_meta`
+
+Every uploaded file has a corresponding metadata record in `.files_meta/{uuid}`. This is a separate resource from `.files` (which stores the raw binary). The metadata record contains:
+
+| Field | Description |
+|---|---|
+| `uuid` | File UUID — MD5 checksum of the file content |
+| `name` | Original filename (e.g. `KH-Menukaart.pdf`) |
+| `title` | Admin-set display title (e.g. `KetelHuis Menukaart`) — may be empty |
+| `type` | MIME type (e.g. `application/pdf`, `image/jpeg`) |
+| `size` | File size in bytes |
+
+When displaying a file reference stored as a UUID (e.g. in page settings or a resource field), always read the display name and type from `.files_meta`, not from the UUID itself. In templates, `nb.media_library.unfiltered` contains the full `.files_meta` records loaded at page init — use this for client-side display without extra API calls.
+
+Prefer `title` over `name` as the user-facing display label; fall back to `name` when `title` is empty.
 
 ### Image serving
 
