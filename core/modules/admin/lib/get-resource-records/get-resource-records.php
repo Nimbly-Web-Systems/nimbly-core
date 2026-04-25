@@ -50,7 +50,12 @@ function _prep_record($record, $fields)
     foreach ($fields as $k => $v) {
         $val = $record[$k] ?? '';
         if (is_array($val)) {
-            $val = implode(', ', $val);
+            $val = implode(', ', array_filter(array_map(function($item) {
+                if (is_array($item)) {
+                    return $item['date'] ?? $item['name'] ?? $item['title'] ?? '';
+                }
+                return (string)$item;
+            }, $val), fn($v) => $v !== ''));
         }
         $result[$k] = fmt_sc(['val' => $val, 'type' => $v['type'], 'max_length' => 32]);
     }
