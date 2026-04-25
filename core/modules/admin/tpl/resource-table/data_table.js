@@ -141,7 +141,11 @@ document.addEventListener("alpine:init", () => {
     },
     highlight(txt) {
       if (Array.isArray(txt)) {
-        txt = txt.join(', ');
+        txt = txt.map(item =>
+          item !== null && typeof item === 'object'
+            ? (item.date || item.name || item.title || '')
+            : item
+        ).filter(Boolean).join(', ');
       }
       const s = txt != null ? String(txt) : '';
       if (!this.search_regex) {
