@@ -2186,7 +2186,7 @@ Rules for components:
 - **No side effects** — a component should not assume what page it is on, what other components are present, or what CSS classes the parent defines.
 - **Portable** — a well-built component can be copied to another `ext/` repo and used immediately without modification.
 
-If a component grows complex enough to need its own data loading, PHP logic, or multiple templates, promote it to a module (§14).
+For most UI components a template is sufficient. Promote to a module (§14) only when you need to install a resource (e.g. an event system that creates an `events` resource on install) or register dedicated routes (e.g. `/event/(slug)/`). A photo collage, an interactive map, a countdown timer, a newsletter block — none of these need a module.
 
 ### Commit messages
 
