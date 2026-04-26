@@ -2160,6 +2160,34 @@ Always solve the underlying problem. If the right fix requires a refactor, do th
 
 A proper solution is always preferable to a hack, even when it takes more effort.
 
+### Component architecture
+
+When adding a self-contained feature to a project — a photo collage, an interactive map, a newsletter signup block, a countdown timer — build it as a component, not as inline code on a page.
+
+In Nimbly, a component is a reusable template in `ext/tpl/<name>/`:
+
+```
+ext/tpl/photo-collage/index.tpl    ← template
+ext/tpl/photo-collage/style.css    ← scoped styles (optional, collected via [#collect-script#])
+ext/tpl/interactive-map/index.tpl
+```
+
+Called from any page template with its shortcode name:
+
+```
+[#photo-collage#]
+[#interactive-map location="Amsterdam"#]
+```
+
+Rules for components:
+
+- **Self-contained** — all markup, logic, and scoped styles live inside the component directory. The page template only calls the shortcode.
+- **Configurable via parameters** — use shortcode params for anything that varies per use (`[#map location="..." zoom="12"#]`). Do not hardcode values that belong to the caller.
+- **No side effects** — a component should not assume what page it is on, what other components are present, or what CSS classes the parent defines.
+- **Portable** — a well-built component can be copied to another `ext/` repo and used immediately without modification.
+
+If a component grows complex enough to need its own data loading, PHP logic, or multiple templates, promote it to a module (§14).
+
 ### Commit messages
 
 Keep commit messages short, specific, and professional. One line is almost always enough. No "Co-authored-by", no generated noise, no trailing metadata.
