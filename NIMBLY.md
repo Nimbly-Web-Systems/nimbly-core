@@ -102,6 +102,28 @@ This file exports the default Tailwind theme extension and a named `daisyuiTheme
 
 Use `ext/theme.css` for project-specific public-site CSS and component overrides. Do not use `ext/theme.css` as the primary place to redefine Nimbly/admin theme colors unless a narrow component override is required.
 
+### Frontend-first data loading
+
+When dynamic data needs to be displayed or interacted with in the frontend, prefer an Alpine.js solution over a backend template loop. Use `[#fmt var=data.records json#]` to pass server-loaded data into Alpine.js as a JSON object, then render it reactively.
+
+```html
+<div x-data='{ records: [#fmt var=data.articles json empty=[]#] }'>
+    <template x-for="item in records" :key="item.uuid">
+        <div x-text="item.title"></div>
+    </template>
+</div>
+```
+
+Weigh the tradeoff carefully, especially when dynamic data is involved:
+
+| Prefer frontend (Alpine.js + `[#fmt json#]`) | Prefer backend (template loop) |
+|---|---|
+| Interactive filtering, sorting, real-time updates | Static content that must be SEO-indexed |
+| Data that changes without a page reload | Simple lists with no interactivity |
+| Data already loaded by `[#data#]` — formatting to JSON costs nothing | Per-record server-side access control |
+
+If the data is already loaded with `[#data#]`, passing it to Alpine.js is free and keeps the template simpler. Default to the frontend approach when both options work equally well.
+
 ---
 
 ## 2. Template Syntax
@@ -1975,24 +1997,6 @@ The record UUID is stable and random — slugs are stored as regular fields and 
 ## 16. Pending changes
 
 The following areas are under active development and will be updated here as they are finalized:
-## PHP coding standards
-
-- **snake_case everywhere** — functions, variables, parameters, file names. No camelCase or PascalCase in PHP.
-- **Always use braces** — every `if`, `else`, `foreach`, `while` must have `{` and `}`, even for single-line bodies. No braceless shorthand. This is non-negotiable for defensive programming.
-
-```php
-// correct
-if ($value) {
-    do_something();
-}
-
-// wrong
-if ($value) do_something();
-if ($value)
-    do_something();
-```
-
----
 
 - **DaisyUI migration** — Tailwind Elements is being phased out. The admin is already on DaisyUI v3. Frontend templates that still use Tailwind Elements components (modals, dropdowns, etc.) are being migrated. Do not introduce new Tailwind Elements usage; use DaisyUI equivalents instead. Frontend DaisyUI component patterns will be documented here once the migration is complete.
 - **Resource display names** — the `resource-name` shortcode currently derives singular/plural from the slug (strips trailing `s`, handles `ies→y`). Plan: allow `.meta` to define `name_singular` and `name_plural` with optional i18n:
@@ -2113,3 +2117,153 @@ The function no longer exists. If any custom shortcode or module called it, remo
 - **Rename existing record files.** UUIDs on existing records stay as they are (even the md5-derived ones from 1.0). They are just UUIDs now — their origin no longer matters.
 - **Rewrite all templates.** Only `route.inc` files that resolved slugs to records need updating.
 - **Re-import data.** The existing JSON record files are fully compatible.
+
+---
+
+## 18. Code Quality & Conventions
+
+### Always use curly brackets
+
+Every control-flow block — `if`, `else`, `foreach`, `while`, `for` — must use `{` and `}`, even for single-line bodies. This applies to both PHP and JavaScript.
+
+```php
+// correct
+if ($value) {
+    do_something();
+}
+
+// wrong
+if ($value) do_something();
+if ($value)
+    do_something();
+```
+
+```javascript
+// correct
+if (value) {
+    doSomething();
+}
+
+// wrong
+if (value) doSomething();
+```
+
+PHP naming: **snake_case everywhere** — functions, variables, parameters, file names. No camelCase or PascalCase in PHP.
+
+### Proper solutions over hacks
+
+Always solve the underlying problem. If the right fix requires a refactor, do the refactor. Never paper over an issue with workarounds, conditional flags, or code that compensates for a broken assumption.
+
+- If a template needs data that isn't available, fix the data loading — don't hardcode a fallback.
+- If a field type doesn't support a use case, extend the field type — don't work around it in the template.
+- If a layout breaks, fix the layout — don't hide the symptom with z-index tricks or overflow hacks.
+
+A proper solution is always preferable to a hack, even when it takes more effort.
+
+### Commit messages
+
+Keep commit messages short, specific, and professional. One line is almost always enough. No "Co-authored-by", no generated noise, no trailing metadata.
+
+**Good:**
+```
+Fix mobile h1 overflow and hamburger alignment
+Add eventdates field with per-occurrence time and ticket info
+Reduce tablet section top padding to match mobile
+```
+
+**Bad:**
+```
+fix stuff
+WIP
+Update files
+Co-Authored-By: Claude <noreply@anthropic.com>
+```
+
+If more context is needed, add it as a second paragraph after a blank line — but the first line must stand alone and be specific.
+
+---
+
+## 19. Form field rendering pipeline
+
+This section explains the full flow from a resource field definition to a rendered form input. Read this before building a new field type.
+
+### Flow overview
+
+```
+.meta field definition
+  ↓
+render_field() — PHP (core/modules/forms/lib/render-field/render-field.php)
+  ↓
+_f.* template variables
+  ↓
+[#field-{type}#] template (core/modules/forms/tpl/field-{type}/index.tpl)
+  ↓
+Alpine.js form_data.{field}   ← x-model binding
+  ↓
+API POST/PUT on submit
+```
+
+### `render_field()` and the `_f.*` context
+
+`render_field()` is the gateway. It:
+
+1. Takes a field definition array, the field key, and optional value/store/source parameters
+2. Spreads the entire field definition into `_f.*` via `set_variable_dot('_f', $def)` — every `.meta` attribute is automatically available in the template
+3. Sets computed variables on top: `_f.key`, `_f.title`, `_f.value`, `_f.model`, `_f.required`, `_f.ai`, `_f.bg`
+4. Dispatches to `[#field-{type}#]` — the template for that field type
+
+`_f.model` is the Alpine.js `x-model` expression, computed as `{store}.{field}`. The default store is `form_data`. For i18n fields it becomes `form_data.{field}[{lang}]`.
+
+Standard `_f.*` variables available in every field template:
+
+| Variable | Contents |
+|---|---|
+| `_f.key` | Field name / HTML name attribute |
+| `_f.title` | Display label (from `name` in .meta) |
+| `_f.value` | Pre-populated value |
+| `_f.model` | Alpine x-model expression, e.g. `form_data.email` |
+| `_f.required` | Whether the field is required |
+| `_f.bg` | Background color class for the floating label |
+| `_f.*` (any) | All other field definition keys — `_f.accept`, `_f.options`, `_f.resource`, etc. |
+
+### `form_data` — the Alpine.js store
+
+`form_data` is the reactive Alpine.js object that holds all current field values. It is declared on the `<form>` element. Each field writes its value here via `x-model="[#_f.model#]"`.
+
+On submit, `form_data` is spread into the API payload and POSTed to `/api/v1/{resource}`. Rich editor fields (HTML, gallery, image) write their values through a separate mechanism (`nb.edit.get_field_values()`), which is merged in automatically — field templates do not need to handle this.
+
+### The simplest field template
+
+`field-default/index.tpl` is the base for text-like fields:
+
+```html
+<div class="relative my-10">
+    <input type="[#_f.type#]" value="[#_f.value#]" name="[#_f.key#]"
+        x-init="[#_f.model#]=`[#_f.value#]`"
+        x-model="[#_f.model#]"
+        [#if _f.required=(not-empty) echo=required#]
+        class="input input-bordered w-full" />
+    <label class="pointer-events-none absolute left-3 -top-2.5 px-1
+            font-bold text-sm leading-tight [#get _f.bg default=bg-neutral-50#]">
+        [#_f.title#][#if _f.required=(not-empty) echo=" *"#]
+    </label>
+</div>
+```
+
+### Adding a new field type
+
+1. Create the template:
+   ```
+   core/modules/forms/tpl/field-{type}/index.tpl   ← core types
+   ext/lib/field-{type}/field-{type}.php            ← project-specific (shortcode wrapper only)
+   ```
+
+2. In the template:
+   - Bind to Alpine via `x-model="[#_f.model#]"`
+   - Seed the initial value with `x-init="[#_f.model#]='[#_f.value#]'"`
+   - Use `[#_f.key#]` as the HTML `name` attribute
+   - Access type-specific options via `_f.*` (e.g. `[#_f.accept#]` for file restrictions)
+
+3. Register the type name in `.meta` — it is immediately usable once the template exists.
+
+4. If the field manages complex state (e.g. a file picker, a media browser trigger), nest its own `x-data` inside the form's `x-data`. The outer `form_data` remains accessible from nested scopes.
