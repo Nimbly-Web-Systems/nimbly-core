@@ -796,6 +796,7 @@ Defines the structure and behavior of a resource. All fields must be explicitly 
 | `upload` | Generic upload |
 | `gallery` | Multiple image upload |
 | `select` | Dropdown — fixed options or from resource |
+| `number` | Numeric input — supports optional `min` and `max` |
 | `color` | Color picker |
 
 Field type names must match exactly.
