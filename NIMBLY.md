@@ -168,8 +168,16 @@ Stored in `ext/tpl/<name>/index.tpl`. Called with their name as a shortcode:
 
 ```
 [#hero-section#]
-[#card title="Hello" image="img/photo.jpg"#]
 ```
+
+Template components do **not** receive parameters directly. To pass data to a template, use `[#set ... overwrite#]` before calling it:
+
+```
+[#set back_url=/agenda overwrite#]
+[#back-button#]
+```
+
+Inside the template, read the variable with `[#get back_url default=/#]`. Lib shortcodes (`ext/lib/<name>/`) are different — they receive `$params` and can be called with inline parameters.
 
 ### URI-scoped templates
 
