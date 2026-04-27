@@ -1,7 +1,7 @@
 <?php
 
 function api_token_sc() {
-	load_library('api', 'api');
+	load_library('api');
     load_library('set');
     set_variable('key', $_SERVER['PEPPER']);
     set_variable('api.allow', 'api_post_api_token');
@@ -10,7 +10,7 @@ function api_token_sc() {
 
 function api_token_post() {
     load_library('set');
-    load_library('get-user', 'user');
+    load_library('get-user');
     $data = json_input(false);
 
     // 1. validate request

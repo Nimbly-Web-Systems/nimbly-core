@@ -17,7 +17,7 @@ if (empty($user['password_reset_token']) || !hash_equals((string)$user['password
 	return;
 }
 
-load_library('get-user', 'user');
+load_library('get-user');
 $loggedin_user = get_user();
 if (!empty($loggedin_user['email'])) {
 	return; //user already logged in

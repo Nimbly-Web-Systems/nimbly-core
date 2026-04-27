@@ -98,13 +98,10 @@ function find_all_modules($sub = '') {
     }
 }
 
-function load_library($name, $mod = null) {
+function load_library($name) {
     static $loaded = [];
     if (!empty($loaded[$name])) {
         return;
-    }
-    if (!empty($mod)) {
-        load_module($mod);
     }
     $path = find_library($name);
     if ($path !== false) {
@@ -119,17 +116,15 @@ function load_libraries($libs) {
         return load_library($libs);
     }
     foreach ($libs as $lib) {
-
         if (is_string($lib)) {
             load_library($lib);
-        } else if (is_array($lib) && isset($lib['name']) && isset($lib['mod'])) {
-            load_library($lib['name'], $lib['mod']);
         }
     }
 }
 
 function load_module($name) {
-    $GLOBALS['SYSTEM']['modules'][$name] = '/modules/' . $name . '/';
+    // No-op — all modules are auto-discovered by find_path().
+    // Kept for backward compatibility with [#module name#] shortcode usage.
 }
 
 function find_sc($params) {

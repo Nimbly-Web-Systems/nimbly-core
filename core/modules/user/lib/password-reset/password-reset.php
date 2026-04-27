@@ -26,7 +26,7 @@ function password_reset_service_config() {
 
 function password_reset_request($email) {
 	load_libraries(['url', 'email', 'log', 'uuid', 'set']);
-	load_library('get-user', 'user');
+	load_library('get-user');
 
 	$email = trim((string)$email);
 	$message = password_reset_public_message();

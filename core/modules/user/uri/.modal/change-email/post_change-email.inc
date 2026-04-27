@@ -1,8 +1,8 @@
 <?php
 
 run_single_sc('init-email');
-load_library("json", "api");
-load_library("get-user", "user");
+load_library("json");
+load_library("get-user");
 load_libraries(["salt", "encrypt"]);
 load_libraries(['url', 'email', 'log', 'uuid']);
 $user = get_user();

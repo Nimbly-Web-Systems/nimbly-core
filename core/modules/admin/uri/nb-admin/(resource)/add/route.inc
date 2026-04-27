@@ -15,6 +15,5 @@ if (!data_exists($resource)) {
 }
 
 set_variable('resource-id', $parts[0]);
-load_module('admin');
 
 router_accept();

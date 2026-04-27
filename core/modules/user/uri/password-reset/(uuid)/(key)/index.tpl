@@ -1,4 +1,3 @@
-[#module user forms#]
 [#set page-title="Reset password"#]
 [#set login-url="(empty)"#]
 [#post#]

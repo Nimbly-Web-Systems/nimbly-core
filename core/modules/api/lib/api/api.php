@@ -1,8 +1,8 @@
 <?php
 
-load_library("json", "api");
+load_library("json");
 load_library("data");
-load_library("access", "user");
+load_library("access");
 load_library("get");
 
 function api_method_switch($func_prefix, $resource = null, $uuid = null) {
@@ -37,7 +37,7 @@ function api_public_access($feature) {
         return false;
     }
     if ($key !== $_SERVER['PEPPER']) {
-        load_library('form-key', 'forms');
+        load_library('form-key');
         if ($key !== form_key_get()) {
             return false;
         }
@@ -139,7 +139,7 @@ function api_json_input($resource) {
  * only bots are tricked to fill it in.
  */
 function api_honeypot_check(array &$data): bool {
-    load_library('honeypot-field', 'forms');
+    load_library('honeypot-field');
     $field = honeypot_field_name();
     if (!isset($data[$field])) {
         return false;

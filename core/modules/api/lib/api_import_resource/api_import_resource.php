@@ -1,8 +1,8 @@
 <?php
 
-load_library("json", "api");
+load_library("json");
 load_library("data");
-load_library("access", "user");
+load_library("access");
 load_library("get");
 load_library('uuid');
 

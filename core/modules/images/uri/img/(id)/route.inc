@@ -76,7 +76,7 @@ if ($size > $max_h && ($mode === 'h' || ($ratio > 0 && $ratio < 1))) {
 	$size = $max_w;
 }
 
-load_library("thumbnail", "images");
+load_library("thumbnail");
 $file = thumbnail_create($uuid, $size, $ratio, $mode);
 if (empty($file)) {
     return;

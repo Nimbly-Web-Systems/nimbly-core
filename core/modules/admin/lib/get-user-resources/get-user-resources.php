@@ -2,7 +2,7 @@
 
 load_library("set");
 load_library("data");
-load_library("access", "user");
+load_library("access");
 
 function get_user_resources_sc($params) {
 	$result = array();

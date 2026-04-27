@@ -1,4 +1,3 @@
-[#module user forms#]
 [#access feature=edit-[#resource-id#]#]
 [#set _resource_url=[#base-url#]/nb-admin/[#resource-id#]#]
 [#set page-title="[#text Edit [#resource-name [#resource-id#]#]#]"#]

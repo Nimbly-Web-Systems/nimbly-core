@@ -1,6 +1,6 @@
 <?php
 
-load_library('api', 'api');
+load_library('api');
 load_library('get');
 load_library('set');
 

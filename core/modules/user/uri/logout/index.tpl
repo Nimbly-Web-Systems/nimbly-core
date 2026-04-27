@@ -1,2 +1,1 @@
-[#module user#]
 [#logout redirect=""#]

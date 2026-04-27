@@ -550,7 +550,7 @@ function data_update($resource, $uuid, $data_update_ls)
 
     // Update modification metadata
     load_library('md5');
-    load_library('username', 'user');
+    load_library('username');
     $data_merged_ls['_modified_by'] = md5_uuid(username_get());
     $data_merged_ls['_modified'] = time();
     _data_validate($resource, $uuid, $data_merged_ls);
@@ -604,7 +604,7 @@ function data_create($resource, $uuid, $data_ls)
 
     if (!isset($data_ls['_created_by'])) {
         load_library('md5');
-        load_library('username', 'user');
+        load_library('username');
         $data_ls['_created_by'] = md5_uuid(username_get());
     }
 

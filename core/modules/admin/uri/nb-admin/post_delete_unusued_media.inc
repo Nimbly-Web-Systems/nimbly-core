@@ -1,6 +1,6 @@
 <?php
 
-load_library('files-unused', 'api');
+load_library('files-unused');
 load_libraries(['data', 'system-messages']);
 
 set_time_limit(0);
