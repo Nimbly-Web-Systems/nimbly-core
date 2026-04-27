@@ -193,7 +193,9 @@ Important: a subfolder inside `ext/uri/` **always** creates a new route. A flat 
 
 ### route.inc
 
-For routes that need PHP logic (loading data, access control, dynamic routing), add a `route.inc` alongside `index.tpl`:
+`route.inc` is only used for **dynamic routes** — routes with `(param)` segments in the URL that need to be matched, validated, and accepted or rejected. Static routes (plain URL paths with no parameters) do not use `route.inc`; their `index.tpl` is loaded directly.
+
+A `route.inc` sits alongside `index.tpl` and decides whether this route owns the request:
 
 ```php
 <?php
@@ -215,6 +217,8 @@ router_accept();
 | `router_deny()` | Signals rejection — the router continues looking for another matching route. Calling `return` without `router_accept()` has the same effect. |
 
 The standard pattern: call `router_match()`, validate the result, load and validate any data, then call `router_accept()` only when everything checks out. If anything fails, just `return` — the request falls through to the next route or a 404.
+
+Keep `route.inc` focused on routing logic only — match, validate, set a variable or two, accept or deny. Business logic belongs in a library loaded from `index.tpl` via a shortcode.
 
 ---
 
@@ -1871,7 +1875,14 @@ Called in templates exactly like any other shortcode:
 
 ## 14. Modules
 
-A module is a self-contained feature that bundles its own routes, templates, libraries, and install logic. Use a module when a feature ships as a reusable unit — e.g. an event system, a shop, a blog — rather than as a loose set of pages.
+A module is a self-contained feature that bundles its own routes, templates, libraries, and install logic.
+
+Use a module when:
+- A feature has **both a library (shortcode) and a dedicated route** that belong together — e.g. a Stripe integration with a webhook endpoint and a `stripe-webhook` shortcode.
+- A feature ships as a **reusable unit** — e.g. an event system, a shop, a blog — rather than a loose set of pages.
+- A feature needs an **install script** to create resources or register routes.
+
+Use `ext/lib/` and `ext/uri/` directly (without a module) for things that don't naturally group together — a standalone utility shortcode, or a one-off page with no associated library.
 
 ### Module directory structure
 
