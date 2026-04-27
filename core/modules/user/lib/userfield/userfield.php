@@ -1,6 +1,6 @@
 <?php
 
-load_library('get-user', 'user');
+load_library('get-user');
 
 function userfield_sc($params) {
 	$field = get_param_value($params, 'field', current($params));

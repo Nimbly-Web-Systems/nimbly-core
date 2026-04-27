@@ -1,7 +1,7 @@
 <?php
 
 function pages_sc($params) {
-    load_library("api", "api");
+    load_library("api");
     api_method_switch("pages");
 }
 

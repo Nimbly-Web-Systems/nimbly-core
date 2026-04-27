@@ -3,7 +3,6 @@
     @submit.prevent="submit" 
     [#if _bf_upload=(not-empty) echo="@nb_upload_ready.document='handle_upload_ready'"#]
 >
-    [#module forms api admin#]
     [#form-key [#_bf_name#]#]
     [#honeypot-field#]
 

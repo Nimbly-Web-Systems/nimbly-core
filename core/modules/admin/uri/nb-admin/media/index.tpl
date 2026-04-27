@@ -1,4 +1,3 @@
-[#module user admin#]
 [#access feature=manage-content,manage-.files,get_.files,(any)_.files#]
 [#set page-title="[#text Media Library#]"#]
 [#set nb-skip-insert-media=true#]

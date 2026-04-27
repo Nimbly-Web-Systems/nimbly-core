@@ -19,6 +19,6 @@ if ($method !== 'POST' && $method !== 'DELETE' && !data_exists($resource, $uuid)
     return;
 }
 
-load_library('api', 'api');
+load_library('api');
 
 return api_method_switch("resource_id", $resource, $uuid);

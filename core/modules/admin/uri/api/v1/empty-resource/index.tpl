@@ -1,5 +1,4 @@
 [#http-header json#]
-[#module admin user forms data api#]
 [#access feature=api_delete_all_records#]
 [#json2post#]
 [#empty-resource#]

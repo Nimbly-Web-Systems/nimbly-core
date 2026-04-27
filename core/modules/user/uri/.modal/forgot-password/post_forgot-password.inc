@@ -2,8 +2,8 @@
 
 run_single_sc('init-email');
 
-load_library("json", "api");
-load_library('password-reset', 'user');
+load_library("json");
+load_library('password-reset');
 
 $email = filter_input(INPUT_POST, 'email');
 $result = password_reset_request($email);

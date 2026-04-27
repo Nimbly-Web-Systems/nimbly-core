@@ -1,6 +1,6 @@
 <?php
 
-load_library('api', 'api');
+load_library('api');
 load_libraries(['get', 'set', 'data', 'encrypt', 'curl']);
 
 function openai_translate_sc()

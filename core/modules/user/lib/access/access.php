@@ -3,7 +3,7 @@
 load_library("session");
 load_library('data');
 load_library("redirect");
-load_library('get-user', 'user');
+load_library('get-user');
 
 function access_sc($params) {
 

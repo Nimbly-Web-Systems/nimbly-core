@@ -21,7 +21,6 @@
                     </h6>
 
                 </div>
-                [#module admin#]
                 [#media-pagination#]
 
                 <!-- Close button -->

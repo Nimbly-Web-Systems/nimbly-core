@@ -81,7 +81,7 @@ function get_html_sc($params)
     // replace legacy lazy loading images
     $legacy_img_sizes = get_param_value($params, 'legacy-img-sizes');
     if (!empty($legacy_img_sizes)) {
-        load_library('get-img-html', 'images');
+        load_library('get-img-html');
         $html = preg_replace_callback(
             '/<img src="data:image\/gif;base64,R0lGODl[^=]+==" data-img-uuid="([0-9a-f]+)"[^>]+>/i',
             function ($matches) use ($legacy_img_sizes) {

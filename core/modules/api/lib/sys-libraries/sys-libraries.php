@@ -3,7 +3,7 @@
 load_library("find");
 
 function sys_libraries_sc($params) {
-    load_library("api", "api");
+    load_library("api");
     api_method_switch("sys_libraries");
 }
 

@@ -18,6 +18,6 @@ if ($method !== 'POST') {
     return;
 }
 
-load_library('api_import_resource', 'api');
+load_library('api_import_resource');
 
 return api_import_resource($resource);

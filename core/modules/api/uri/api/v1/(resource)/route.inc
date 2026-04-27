@@ -12,5 +12,5 @@ if (!data_exists($resource)) {
     return;
 }
 
-load_library('api', 'api');
+load_library('api');
 return api_method_switch("resource", $resource);

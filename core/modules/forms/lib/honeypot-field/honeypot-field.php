@@ -1,7 +1,6 @@
 <?php
 
 function honeypot_field_sc($params) {
-    load_module('admin');
     set_variable('honeypot.field_name', honeypot_field_name());
     run_single_sc('honeypot-input');
 }

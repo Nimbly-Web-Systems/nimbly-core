@@ -1,4 +1,3 @@
-[#module user admin forms#]
 [#access feature=system-maintenance#]
 [#set page-title="[#text System log#]"#]
 [#set nb-skip-insert-media=true#]

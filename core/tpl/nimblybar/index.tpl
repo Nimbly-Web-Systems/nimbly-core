@@ -1,5 +1,4 @@
 <!-- Sidenav -->
-[#module admin user#]
 <nav id="nb-bar" class="group fixed right-0 top-0 z-[1035] font-primary text-white
         h-screen w-60 -translate-x-full overflow-hidden bg-cbar
         shadow-[0_4px_12px_0_rgba(0,0,0,0.07),_0_2px_4px_rgba(0,0,0,0.05)] 

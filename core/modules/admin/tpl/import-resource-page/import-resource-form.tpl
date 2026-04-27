@@ -1,4 +1,3 @@
-[#module forms#]
 <form autocomplete="false" x-data="form_import('[#resource-id#]')" @submit.prevent="submit"
     class="bg-neutral-50 rounded-2xl p-2 sm:p-4 md:p-6 lg:p-8 xl:p-10 shadow-md mx-auto">
     [#set nb_form_edit=false overwrite#]

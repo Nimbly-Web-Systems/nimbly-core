@@ -1,7 +1,7 @@
 <?php
 
-load_library("json", "api");
-load_library("get-user", "user");
+load_library("json");
+load_library("get-user");
 load_libraries(["salt", "encrypt"]);
 $user = get_user();
 $new_pw = filter_input(INPUT_POST, 'newpw1');

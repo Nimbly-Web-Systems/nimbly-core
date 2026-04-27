@@ -2,7 +2,7 @@
 
 function files_sc($params)
 {
-    load_library("api", "api");
+    load_library("api");
     api_method_switch("files");
 }
 
@@ -44,7 +44,7 @@ function files_post()
         "_uploaded" => $now
     );
     if (exif_imagetype($from) === IMAGETYPE_JPEG) {
-        load_library("exif", "images");
+        load_library("exif");
         $exif_data = exif_get($from);
         $meta = array_merge($meta, $exif_data);
     }

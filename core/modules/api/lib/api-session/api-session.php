@@ -3,7 +3,7 @@
 load_library('set');
 
 function api_session_sc() {
-	load_library('api', 'api');
+	load_library('api');
 	api_method_switch('api_session');
 }
 
