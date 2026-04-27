@@ -160,7 +160,7 @@ A route template renders the page:
 [#html#]
 ```
 
-The `main.tpl` in the same folder contains the page body, rendered inside the HTML shell.
+The `main.tpl` in the same folder contains the page body, rendered inside the HTML shell. It is always scoped to that route — even `ext/uri/main.tpl` is only the body for the home page (`/`), not a global layout.
 
 ### Reusable templates
 
