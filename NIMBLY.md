@@ -154,10 +154,9 @@ ext/uri/about/index.tpl        → /about/
 ext/uri/blog/(slug)/index.tpl  → /blog/<anything>/
 ```
 
-A route template typically loads modules and renders the page:
+A route template renders the page:
 
 ```
-[#module user#]
 [#html#]
 ```
 
@@ -450,13 +449,12 @@ The `.content` resource is a key-value store for editable HTML blocks that are n
 [#get-html [#cfield intro#] default="<p>Edit this</p>"#]
 ```
 
-This pattern requires `[#module user#]` to enable inline admin editing.
+This pattern requires the user module to be active (loaded automatically).
 
 #### `[#get-img-html image sizes="...#]`
-Renders a responsive `<img>` tag with `srcset` and `sizes`. Requires the `images` module to be loaded first.
+Renders a responsive `<img>` tag with `srcset` and `sizes`.
 
 ```
-[#module images#]
 [#get-img-html [#record.main_img#] sizes="xs-50,sm-33,lg-25"#]
 ```
 
@@ -482,15 +480,6 @@ The following variables influence the HTML shell when set before `[#html#]`:
 [#set page-settings-link="[#base-url#]/nb-admin/event/[#record.uuid#]"#]
 [#set body-classes=site-body#]
 [#html#]
-```
-
-#### `[#module name1 name2#]`
-Loads one or more modules. Common usage:
-
-```
-[#module user#]              → loads user authentication
-[#module user forms#]        → user + form handling
-[#module user admin forms#]
 ```
 
 ---
@@ -1417,15 +1406,6 @@ Built files go to `ext/static/`. Always run build after changing CSS, JS, or Tai
 
 The forms module handles front-end form submissions with CSRF protection, honeypot spam filtering, validation, and Alpine.js-powered submission via the REST API.
 
-### Loading the module
-
-Always load the forms module in the route template:
-
-```
-[#module user forms#]
-[#html#]
-```
-
 ### Rendering a form — `[#build-form name#]`
 
 `[#build-form contact#]` reads `contact.json` from the same directory as the current route and renders a complete form. The form submits via Alpine.js to the API — no page reload.
@@ -1583,16 +1563,9 @@ For multi-language content, wrap with `[#get-i18n#]` to get the active-language 
 [#get-html [#get-i18n article.body#]#]
 ```
 
-### Step 4 — Load the user module
+### Step 4 — Enable inline editing
 
-The inline editor is activated by the user module. Always load it:
-
-```
-[#module user#]
-[#html#]
-```
-
-Without `[#module user#]`, logged-in users will see raw HTML instead of the editor.
+Add `[#html#]` to the route and ensure the user module is active (auto-loaded). Logged-in admins will then see the inline editor on `[#get-html#]` fields.
 
 ### Inline editing attributes
 
@@ -1611,7 +1584,6 @@ For inline image replacement, use `data-nb-edit-img` on the image wrapper:
 
 ```html
 <div data-nb-edit-img="event.[#record.uuid#].main_img">
-  [#module images#]
   [#get-img-html [#record.main_img#] sizes="xs-100,md-50"#]
 </div>
 ```
@@ -1904,13 +1876,11 @@ ext/modules/<name>/
 
 Routes inside `modules/<name>/uri/` are served at the same paths as if they were in `ext/uri/`. A route at `ext/modules/event/uri/event/(slug)/index.tpl` is accessible at `/event/<slug>/`.
 
-### Loading a module
+### Module auto-discovery
 
-```
-[#module event#]
-```
+All modules in `ext/modules/` and `core/modules/` are discovered automatically on the first template lookup of any request. There is no need to declare or load a module explicitly — its templates, libraries, and routes are always available.
 
-Placing this in any template loads the module's libraries and routes. The module is only initialised once per request.
+The `[#module name#]` shortcode is a no-op and should not be used. Use `[#nop module event#]` or a comment if you want to document a dependency inline.
 
 ### `.install.inc`
 
