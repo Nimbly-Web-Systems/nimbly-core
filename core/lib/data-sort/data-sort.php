@@ -120,7 +120,8 @@ function _get_key($record, $field) {
         if (isset($v[$lang]) && is_scalar($v[$lang])) {
             $v = $v[$lang];
         } else {
-            $v = (string)current($v);
+            $cur = current($v);
+            $v = is_scalar($cur) ? (string)$cur : '';
         }
     }
 
