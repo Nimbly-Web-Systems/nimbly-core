@@ -6,6 +6,8 @@ var nb_media_library = {
     last: 0,
     _in_use_tolerance: new Date() - 4 * 60 * 60 * 1000, //now minus four hours
     file_info: null,
+    _original_title: null,
+    _original_description: null,
     embed_info: {
         active: 'vimeo',
         vimeo: {
@@ -199,12 +201,20 @@ var nb_media_library = {
         if (typeof e.detail !== "undefined" && e.detail.success) {
             e.detail.files.size = e.detail.files.size || 0;
             this.file_info = e.detail.files;
+            this._original_title = this.file_info.title;
+            this._original_description = this.file_info.description;
             this.files.unshift(this.file_info);
             this.set_page(this.current_page);
         }
     },
     select_media(ix) {
         this.file_info = this.page[ix];
+        this._original_title = this.file_info.title;
+        this._original_description = this.file_info.description;
+    },
+    _file_info_changed() {
+        return this.file_info.title !== this._original_title ||
+            this.file_info.description !== this._original_description;
     },
     can_embed() {
         if (this.embed_info.active) {

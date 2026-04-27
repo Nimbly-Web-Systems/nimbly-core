@@ -154,10 +154,12 @@ const alpine_media_insert = function () {
     },
     set_media() {
       //used for form image fields and inline image editing
-      nb.api.put(nb.base_url + "/api/v1/.files_meta/" + this.file_info.uuid, {
-        title: this.file_info.title,
-        description: this.file_info.description,
-      });
+      if (this._file_info_changed()) {
+        nb.api.put(nb.base_url + "/api/v1/.files_meta/" + this.file_info.uuid, {
+          title: this.file_info.title,
+          description: this.file_info.description,
+        });
+      }
 
       const m = te.Modal.getInstance(nb_modal_insert_media);
       m.hide();
@@ -165,10 +167,12 @@ const alpine_media_insert = function () {
     },
     insert_media() {
       //used for medium editor
-      nb.api.put(nb.base_url + "/api/v1/.files_meta/" + this.file_info.uuid, {
-        title: this.file_info.title,
-        description: this.file_info.description,
-      });
+      if (this._file_info_changed()) {
+        nb.api.put(nb.base_url + "/api/v1/.files_meta/" + this.file_info.uuid, {
+          title: this.file_info.title,
+          description: this.file_info.description,
+        });
+      }
 
       const m = te.Modal.getInstance(nb_modal_insert_media);
       if (!nb.edit.active_editor) {
