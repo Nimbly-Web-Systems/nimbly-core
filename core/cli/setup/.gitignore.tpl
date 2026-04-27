@@ -2,7 +2,8 @@
 .htaccess
 .DS_Store
 /data/.tmp/
-/data/users/
+/data/users/*
+!/data/users/.meta
 /static/_thumb_/
 /data/.log-entries/
 /node_modules/
