@@ -2169,13 +2169,13 @@ For most UI components a template is sufficient. Promote to a module (§14) only
 
 ### Commit messages
 
-Keep commit messages short, specific, and professional. One line is almost always enough. No "Co-authored-by", no generated noise, no trailing metadata.
+Use the [Conventional Commits](https://www.conventionalcommits.org/) standard for commit messages. Keep messages short, specific, and professional. One line is almost always enough. No "Co-authored-by", no generated noise, no trailing metadata.
 
 **Good:**
 ```
-Fix mobile h1 overflow and hamburger alignment
-Add eventdates field with per-occurrence time and ticket info
-Reduce tablet section top padding to match mobile
+fix: prevent mobile h1 overflow and align hamburger
+feat: add eventdates field with per-occurrence time and ticket info
+style: reduce tablet section top padding to match mobile
 ```
 
 **Bad:**
@@ -2183,6 +2183,7 @@ Reduce tablet section top padding to match mobile
 fix stuff
 WIP
 Update files
+Fix mobile h1 overflow and hamburger alignment
 Co-Authored-By: Claude <noreply@anthropic.com>
 ```
 
