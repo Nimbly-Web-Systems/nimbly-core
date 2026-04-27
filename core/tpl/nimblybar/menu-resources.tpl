@@ -49,7 +49,7 @@
                 [#text Media Library#]
             </a>
         </li>
-        [#feature-cond manage-content tpl=menu-site-config-item#]
+        [#feature-cond features="manage-system,manage-.config,edit-.config,(any)_.config" tpl=menu-site-config-item#]
         [#feature-cond list_shortcodes tpl=menu-shortcodes-item#]
         [#get-user-resources#]
         [#repeat data.user-resources tpl=menu-resource-item#]
