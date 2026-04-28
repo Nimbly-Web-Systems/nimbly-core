@@ -102,6 +102,8 @@ This file exports the default Tailwind theme extension and a named `daisyuiTheme
 
 Use `ext/theme.css` for project-specific public-site CSS and component overrides. Do not use `ext/theme.css` as the primary place to redefine Nimbly/admin theme colors unless a narrow component override is required.
 
+**Always use theme colors instead of inventing colors.** Reach for the project's named tokens first — `primary`, `cnormal`, `clight`, `cdark`, `cdarkest`, `cbar`, `clink`, `secondary` — before using any Tailwind palette color (`red-700`, `blue-500`, etc.). Hard-coded palette colors bypass the theme and make redesigns harder. Only use a raw palette color when no theme token fits semantically and adding one to `ext/tailwind.theme.js` is not warranted.
+
 ### Frontend-first data loading
 
 When dynamic data needs to be displayed or interacted with in the frontend, prefer an Alpine.js solution over a backend template loop. Use `[#fmt var=data.records json#]` to pass server-loaded data into Alpine.js as a JSON object, then render it reactively.
@@ -1871,6 +1873,30 @@ Called in templates exactly like any other shortcode:
 | `set_variable('data.event', $value)` | Writes a variable at the given path |
 | `set_variable_dot('record', $array)` | Writes an associative array as a dot-notation variable (`record.field`, `record.uuid`, etc.) |
 
+### Libraries must never contain HTML
+
+A library's only job is to prepare data and set template variables. HTML belongs exclusively in `.tpl` files — never in PHP strings returned from a library function.
+
+The pattern: set variables with `set_variable()`, then delegate rendering to a template via `run_buffered()`.
+
+```php
+// correct
+function membership_status_switch_sc($_params)
+{
+    set_variable('member-expires-date', date('M j, Y', strtotime($expires)));
+    set_variable('member-link-annual', htmlspecialchars($link_annual));
+    return run_buffered(dirname(__FILE__) . '/../../tpl/member-status/active.tpl');
+}
+
+// wrong — never do this
+function membership_status_switch_sc($_params)
+{
+    return '<section class="mb-10"><div class="bg-cnormal ...">Active Member</div></section>';
+}
+```
+
+Use `run_buffered($path_to_tpl_file)` to render a template from inside a library. The path is a filesystem path — use `dirname(__FILE__)` to anchor it relative to the library file. Templates for a module live in `ext/modules/<name>/tpl/`.
+
 ---
 
 ## 14. Modules
@@ -1893,6 +1919,8 @@ ext/modules/<name>/
   tpl/             # Templates scoped to this module
   uri/             # Routes scoped to this module (merged into the URL space)
 ```
+
+Module templates follow the same `index.tpl` convention as `ext/tpl/`. A template at `ext/modules/member/tpl/member-status/index.tpl` is callable as `[#member-status#]`. Flat `.tpl` files inside the folder are partials — only `index.tpl` is the public shortcode entry point.
 
 Routes inside `modules/<name>/uri/` are served at the same paths as if they were in `ext/uri/`. A route at `ext/modules/event/uri/event/(slug)/index.tpl` is accessible at `/event/<slug>/`.
 
@@ -1971,7 +1999,21 @@ The record UUID is stable and random — slugs are stored as regular fields and 
 
 ---
 
-## 15. Anti-patterns
+## 15. UX principles
+
+Before deciding what to put on a page, reason through these questions:
+
+- **Does the user know what this is?** Only show data the user can interpret and act on. Internal IDs, legacy reference numbers, and system fields have no place on a user-facing page — keep them in the data layer.
+- **Does it help the user right now?** Every element must earn its place. If it does not reduce confusion, enable an action, or communicate something the user needs, leave it out.
+- **Does it match the user's mental model?** (Nielsen heuristic #2 — match between system and real world.) Show concepts in the user's language, not the system's. A membership number from an old platform is meaningless to someone who never knew it existed.
+- **Is the hierarchy clear?** The most important information should be most prominent. Supporting details are secondary. Technical details are hidden or absent.
+- **Is there friction?** Every extra field, label, or link adds cognitive load. Default to less. Add only when there is a clear user need.
+
+Apply this reasoning before adding any field, section, or link to a template.
+
+---
+
+## 16. Anti-patterns
 
 - Do not modify `core/`
 - Do not add database concepts (tables, joins, foreign keys) — use resources
@@ -1981,6 +2023,7 @@ The record UUID is stable and random — slugs are stored as regular fields and 
 - Do not add `i18n: true` to non-content fields (images, booleans, sort_order, dates)
 - Do not define `languages` on a resource without also defining it in site config
 - Do not create incomplete or minimal resource schemas — always production-ready
+- **Do not put HTML in library PHP files** — libraries set variables and call `run_buffered()`, templates render HTML
 
 ---
 
