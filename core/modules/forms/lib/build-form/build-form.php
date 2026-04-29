@@ -57,13 +57,7 @@ function _bf_render_field($key, $def, $group = null, $ix = null)
     $model = ($group && $ix) ? "form_data.{$group}[{$ix}].{$key}" : null;
 
     echo '<div>';
-    if ($type === 'select') {
-        echo '<div class="p-1"></div>';
-    }
     render_field($def, $key, null, 'form_data', null, $model);
-    if ($type === 'select') {
-        echo '<div class="p-2"></div>';
-    }
     if (isset($def['help'])) {
         echo run_buffered(dirname(__FILE__) . '/fhelp.tpl');
     }
