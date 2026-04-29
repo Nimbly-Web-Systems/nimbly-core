@@ -23,6 +23,7 @@ function build_form($form_def)
     set_variable('_bf_resource', $form_def['resource']);
     set_variable('_bf_upload_field', $form_def['upload_field'] ?? false);
     set_variable('_bf_success_message', $form_def['success_message'] ?? '[#text Send#]');
+    set_variable('_bf_status', $form_def['status'] ?? 'new');
     echo '<script>' . run_buffered(dirname(__FILE__) . '/fscript.js') . '</script>';
     echo run_buffered(dirname(__FILE__) . '/fheader.tpl');
     echo run_buffered(dirname(__FILE__) . '/fbody.tpl');
