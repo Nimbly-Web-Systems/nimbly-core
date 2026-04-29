@@ -1061,6 +1061,11 @@ function _validate_natural_short_text($val)
         return true;
     }
 
+    // Common keyboard-mash repeats that still contain vowels, e.g. ASDFASDF.
+    if (preg_match('/(asdf|qwer|zxcv|hjkl){2,}/u', $s)) {
+        return false;
+    }
+
     // Count vowels
     preg_match_all('/[aeiouyàáâãäåèéêëìíîïòóôõöùúûü]/u', $s, $m);
     $vowel_count = count($m[0]);

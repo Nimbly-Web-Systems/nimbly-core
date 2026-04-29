@@ -15,7 +15,7 @@ Alpine.data("[#_bf_name#]_form", (resource_id = "(empty)") => ({
       var d = new Date();
       nb.api
         .post(nb.base_url + "/api/v1/" + resource_id + "?key=" + this.form_key, {
-          status: "new",
+          status: "[#_bf_status#]",
           [#if _bf_upload_field=(not-empty) echo="[#_bf_upload_field#]: this.file_uuid,"#]
           entry_date: d.toISOString().split("T")[0],
           ...this.form_data,
