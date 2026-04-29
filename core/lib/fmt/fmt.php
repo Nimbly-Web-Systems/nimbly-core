@@ -41,6 +41,27 @@ function fmt_sc($params)
         case 'bytes':
             $result = fmt_bytes($val, 1);
             break;
+        case 'number':
+            $decimals = intval(get_param_value($params, 'decimals', 0));
+            $round = get_param_value($params, 'round');
+            if ($round !== null) {
+                $precision = intval($round);
+                $factor = pow(10, abs($precision));
+                if ($precision < 0) {
+                    $round_mode = get_param_value($params, 'round_mode', 'round');
+                    if ($round_mode === 'floor') {
+                        $val = floor(((float)$val) / $factor) * $factor;
+                    } else if ($round_mode === 'ceil') {
+                        $val = ceil(((float)$val) / $factor) * $factor;
+                    } else {
+                        $val = round((float)$val, $precision);
+                    }
+                } else {
+                    $val = round((float)$val, $precision);
+                }
+            }
+            $result = number_format((float)$val, $decimals);
+            break;
         case 'boolean':
             $bools = explode('|', (string)get_param_value($params, 'boolean', 'yes|no'), 2);
             $result = empty($val) ? $bools[1] : $bools[0];
