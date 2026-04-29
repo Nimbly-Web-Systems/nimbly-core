@@ -1873,21 +1873,52 @@ Called in templates exactly like any other shortcode:
 | `set_variable('data.event', $value)` | Writes a variable at the given path |
 | `set_variable_dot('record', $array)` | Writes an associative array as a dot-notation variable (`record.field`, `record.uuid`, etc.) |
 
-### Libraries must never contain HTML
+### Libraries are for business logic, not simple value lookup
 
-A library's only job is to prepare data and set template variables. HTML belongs exclusively in `.tpl` files — never in PHP strings returned from a library function.
+Use a library only when the work involves real business logic or data preparation that cannot be expressed cleanly with existing shortcodes. Simple value lookup, conditionals, date formatting, and direct field output belong in templates using `[#get#]`, `[#if#]`, `[#fmt#]`, `[#date#]`, `[#data#]`, and similar existing shortcodes.
 
-The pattern: set variables with `set_variable()`, then delegate rendering to a template via `run_buffered()`.
+Do not create a library just to copy flat fields into new variables, rename values for display, or wrap a template call. That adds indirection without adding behavior.
+
+Keep library responsibilities narrow. A library named for one concept must not quietly take ownership of unrelated concerns such as rendering decisions, payment links, session banners, analytics, or layout state. Split those concerns into the template, existing shortcodes, configuration data, or a separate purpose-built library. This is normal software design: cohesive modules stay understandable, testable, and replaceable; mixed-purpose modules turn into hidden dependency knots.
+
+When a library is justified, it should prepare data and set template variables. HTML belongs exclusively in `.tpl` files — never in PHP strings returned from a library function.
+
+Prefer returning a small value when the logic is just classification, then let the template choose what to render:
 
 ```php
 // correct
-function membership_status_switch_sc($_params)
+function membership_status_sc($_params)
+{
+    if ($expires === '2037-12-31') {
+        return 'lifetime';
+    }
+    if ($expires <= date('Y-m-d')) {
+        return 'expired';
+    }
+    return 'active';
+}
+```
+
+```html
+[#member-status-[#membership-status#]#]
+```
+
+Use prepare-then-render when the logic genuinely needs to compute multiple values for a template:
+
+```php
+function prepare_membership_status_sc($_params)
 {
     set_variable('member-expires-date', date('M j, Y', strtotime($expires)));
     set_variable('member-link-annual', htmlspecialchars($link_annual));
-    return run_buffered(dirname(__FILE__) . '/../../tpl/member-status/active.tpl');
 }
+```
 
+```html
+[#prepare-membership-status#]
+[#membership-status#]
+```
+
+```php
 // wrong — never do this
 function membership_status_switch_sc($_params)
 {

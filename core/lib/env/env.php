@@ -1,5 +1,12 @@
 <?php
 
+function env_sc($params)
+{
+    $key = get_param_value($params, 'key', current($params));
+    $default = get_param_value($params, 'default', '');
+    return env($key, $default);
+}
+
 function env($key, $default = '')
 {
     static $env = null;
