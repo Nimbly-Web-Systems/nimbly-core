@@ -203,10 +203,15 @@ A `route.inc` sits alongside `index.tpl` and decides whether this route owns the
 <?php
 $parts = router_match(__FILE__);
 if ($parts === false) return;
+
 $slug = $parts[0];
 load_library('data');
-if (!data_exists('articles', $slug)) return;
-set_variable('slug', $slug);
+load_library('md5');
+
+$records = data_read_index('articles', 'title_slug', md5_uuid($slug));
+if (empty($records)) return;
+
+set_variable_dot('record', reset($records));
 router_accept();
 ```
 
@@ -335,9 +340,10 @@ Formats a variable for output.
 [#fmt val=item.body type=html#]            → strips tags
 [#fmt val=item.size type=bytes#]           → human-readable bytes
 [#fmt val=item.created type=ago#]          → "3 days ago"
+[#fmt val=[#data-count users#] type=number round=-2 round_mode=floor#]
 ```
 
-Types: `text`, `html`, `date`, `ago`, `json`, `bytes`, `boolean`, `image`, `password`
+Types: `text`, `html`, `date`, `ago`, `json`, `bytes`, `number`, `boolean`, `image`, `password`
 
 #### `[#count varname#]`
 Outputs the number of items in an array variable.
@@ -516,6 +522,14 @@ Generates a random salt string.
 #### `[#md5 value#]`
 Returns MD5 hash of a value.
 
+#### `[#env KEY default=value#]`
+Returns a value from `.env`, falling back to `default` when the key is missing.
+
+```
+[#env STRIPE_LINK_ANNUAL#]
+[#env MAIL_DRIVER default=smtp#]
+```
+
 #### `[#logged-in#]`
 Returns `"logged-in"` if a user session is active.
 
@@ -524,7 +538,7 @@ Returns `"logged-in"` if a user session is active.
 ```
 
 #### `[#feature-cond features=name#]`
-Conditionally renders content based on whether the current user has a specific feature/permission. Requires `[#module user#]`.
+Conditionally renders content based on whether the current user has a specific feature/permission.
 
 ```
 [#feature-cond features=manage-content tpl=edit-button#]
@@ -704,7 +718,7 @@ Generates Lorem Ipsum placeholder text. For prototyping only.
 ```
 
 #### `[#email config_id#]`
-Sends an email using a template and a service config stored in `.services`. See the email module documentation for setup.
+Legacy email helper. Existing projects may still use `.services`-based email configuration, but new work should avoid direct email sending inside HTTP requests. Prefer an env-backed mail transport and enqueue email jobs for background processing when the jobs runner is available.
 
 #### `[#detect-language#]`
 Returns the active language code. Detection order:
@@ -1016,7 +1030,7 @@ These rules are mandatory for all resources unless explicitly stated otherwise.
 **Always consider:**
 - Does this resource need a `published` field?
 - Does ordering matter? Add `sort_order` + `sort`
-- Is this linked from a URL? It needs a primary key
+- Is this linked from a URL? Add a slug field and list it in `index`
 - Does content need to be translated? Add `languages` and `i18n` per field
 
 **Admin visibility — fields to hide by default:**
@@ -1300,7 +1314,7 @@ Rules for HTML translation:
 - Always define `languages` in both site config and resource `.meta`
 - Always use 2-letter language codes, consistently everywhere
 - Only add `"i18n": true` to content fields — not images, booleans, sort_order, dates
-- Never translate slugs or primary key fields
+- Never translate slug fields or UUIDs
 - Keep resource structure identical across languages
 - Use `[#text#]` for UI labels; use `i18n` fields for structured content
 - Always include HTML safety instructions in `ai_prompts._all` for html fields
@@ -1456,6 +1470,18 @@ Form definition file (`ext/uri/contact/contact.json`):
 
 The `resource` field is the target resource that will receive the new record via the API. Make sure that resource exists in `ext/data/` with a matching `.meta`.
 
+For a public form, explicitly allow the API POST with a route such as:
+
+```
+ext/uri/api/v1/leads/index.tpl
+```
+
+```html
+[#api-allow post leads#]
+```
+
+This allows anonymous submissions for that one method/resource pair while keeping the rest of the API protected.
+
 ### Field types in forms
 
 Same type names as resource fields: `text`, `textarea`, `email`, `url`, `select`, `upload`. Add `"help": "Hint text"` to any field for a help label below the input.
@@ -1502,7 +1528,7 @@ Both are handled automatically by `[#build-form#]`. The form includes a hidden `
 
 ### Custom form handlers
 
-For forms that need server-side processing beyond writing to a resource (e.g. file imports, sending email), add handler files alongside the route:
+For forms that need server-side processing beyond writing to a resource (e.g. file imports or enqueueing a background job), add handler files alongside the route:
 
 ```
 ext/uri/contact/contact.json       ← form definition
@@ -1623,7 +1649,7 @@ The old admin templates are in `_dep_` folders and remain functional during the 
 
 ## 12. API
 
-The Nimbly API is automatically available for every resource — no configuration required. Create a resource and the REST API is live.
+The Nimbly API has routes for every resource. Access is still controlled by role permissions, bearer tokens, or an explicit public `[#api-allow#]` route for narrow cases such as public forms.
 
 ### Endpoints
 
@@ -1875,20 +1901,21 @@ Called in templates exactly like any other shortcode:
 
 ### Libraries are for business logic, not simple value lookup
 
-Use a library only when the work involves real business logic or data preparation that cannot be expressed cleanly with existing shortcodes. Simple value lookup, conditionals, date formatting, and direct field output belong in templates using `[#get#]`, `[#if#]`, `[#fmt#]`, `[#date#]`, `[#data#]`, and similar existing shortcodes.
+Use a library only when the work involves real business logic or data preparation that cannot be expressed cleanly with existing shortcodes. Simple lookup, conditionals, date formatting, and direct field output belong in templates using `[#get#]`, `[#if#]`, `[#fmt#]`, `[#date#]`, `[#data#]`, and similar shortcodes.
 
-Do not create a library just to copy flat fields into new variables, rename values for display, or wrap a template call. That adds indirection without adding behavior.
+Do not create a library just to copy fields into new variables, rename values for display, or wrap a template call. That adds indirection without behavior.
 
-Keep library responsibilities narrow. A library named for one concept must not quietly take ownership of unrelated concerns such as rendering decisions, payment links, session banners, analytics, or layout state. Split those concerns into the template, existing shortcodes, configuration data, or a separate purpose-built library. This is normal software design: cohesive modules stay understandable, testable, and replaceable; mixed-purpose modules turn into hidden dependency knots.
+Keep responsibilities narrow. A library named for one concept must not quietly take ownership of unrelated concerns such as rendering decisions, payment links, session banners, analytics, or layout state. Split those concerns into templates, existing shortcodes, configuration data, or separate purpose-built libraries.
 
 When a library is justified, it should prepare data and set template variables. HTML belongs exclusively in `.tpl` files — never in PHP strings returned from a library function.
 
-Prefer returning a small value when the logic is just classification, then let the template choose what to render:
+Prefer returning a small value when the logic is just classification:
 
 ```php
 // correct
 function membership_status_sc($_params)
 {
+    $expires = get_variable('user.membership_expires');
     if ($expires === '2037-12-31') {
         return 'lifetime';
     }
@@ -1903,11 +1930,14 @@ function membership_status_sc($_params)
 [#member-status-[#membership-status#]#]
 ```
 
-Use prepare-then-render when the logic genuinely needs to compute multiple values for a template:
+Use prepare-then-render when logic needs to compute multiple values for a template:
 
 ```php
 function prepare_membership_status_sc($_params)
 {
+    load_library('env');
+    $expires = get_variable('user.membership_expires');
+    $link_annual = env('STRIPE_LINK_ANNUAL');
     set_variable('member-expires-date', date('M j, Y', strtotime($expires)));
     set_variable('member-link-annual', htmlspecialchars($link_annual));
 }
@@ -1926,7 +1956,7 @@ function membership_status_switch_sc($_params)
 }
 ```
 
-Use `run_buffered($path_to_tpl_file)` to render a template from inside a library. The path is a filesystem path — use `dirname(__FILE__)` to anchor it relative to the library file. Templates for a module live in `ext/modules/<name>/tpl/`.
+If a library must render a template, use `run_buffered($path_to_tpl_file)`. The path is a filesystem path; anchor it with `dirname(__FILE__)`. Templates for a module live in `ext/modules/<name>/tpl/`.
 
 ---
 
@@ -2058,7 +2088,7 @@ Apply this reasoning before adding any field, section, or link to a template.
 
 ---
 
-## 16. Pending changes
+## 17. Pending changes
 
 The following areas are under active development and will be updated here as they are finalized:
 
@@ -2073,7 +2103,7 @@ The following areas are under active development and will be updated here as the
 
 ---
 
-## 17. Upgrading from core 1.0 to core 1.1
+## 18. Upgrading from core 1.0 to core 1.1
 
 ### What changed
 
@@ -2184,7 +2214,7 @@ The function no longer exists. If any custom shortcode or module called it, remo
 
 ---
 
-## 18. Code Quality & Conventions
+## 19. Code Quality & Conventions
 
 ### Always use curly brackets
 
@@ -2232,7 +2262,7 @@ In Nimbly, a component is a reusable template in `ext/tpl/<name>/`:
 
 ```
 ext/tpl/photo-collage/index.tpl    ← template
-ext/tpl/photo-collage/style.css    ← scoped styles (optional, collected via [#collect-script#])
+ext/tpl/photo-collage/style.css    ← optional component CSS; import it from ext/theme.css
 ext/tpl/interactive-map/index.tpl
 ```
 
@@ -2276,7 +2306,7 @@ If more context is needed, add it as a second paragraph after a blank line — b
 
 ---
 
-## 19. Form field rendering pipeline
+## 20. Form field rendering pipeline
 
 This section explains the full flow from a resource field definition to a rendered form input. Read this before building a new field type.
 
