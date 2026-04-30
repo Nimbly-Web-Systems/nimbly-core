@@ -78,6 +78,11 @@ function job_resource_meta()
                 'type' => 'number',
                 'admin_col' => false,
             ],
+            'execution_ms' => [
+                'name' => 'Execution (ms)',
+                'type' => 'number',
+                'admin_col' => false,
+            ],
         ],
         'index' => [
             'status',
@@ -122,14 +127,16 @@ function job_run_queued($limit = 1)
 
         try {
             $current = data_read('.jobs', $uuid);
+            $start = microtime(true);
             $result = job_dispatch($current);
             if ($result === false) {
                 throw new Exception('Job handler returned false');
             }
             data_update('.jobs', $uuid, [
-                'status' => 'done',
-                'completed_at' => time(),
-                'last_error' => '',
+                'status'         => 'done',
+                'completed_at'   => time(),
+                'execution_ms'   => (int) round((microtime(true) - $start) * 1000),
+                'last_error'     => '',
             ]);
             $done++;
         } catch (Throwable $e) {
@@ -156,9 +163,6 @@ function job_dispatch($job)
 
     global $SYSTEM;
     foreach ($SYSTEM['env_paths'] as $env_path) {
-        if ($env_path === 'core') {
-            continue;
-        }
         $base_path = $SYSTEM['file_base'] . $env_path . '/modules/';
         if (!file_exists($base_path)) {
             continue;

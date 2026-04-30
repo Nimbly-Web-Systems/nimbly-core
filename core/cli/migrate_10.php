@@ -92,8 +92,9 @@ foreach (glob($data_dir . '*/.meta') as $meta_file) {
 }
 
 $legacy_handlers = migrate_10_find_legacy_trigger_handlers(BASE_DIR . 'ext/modules/');
+$email_services   = migrate_10_find_email_services($data_dir);
 
-if (empty($pk_resources) && empty($legacy_handlers)) {
+if (empty($pk_resources) && empty($legacy_handlers) && empty($email_services)) {
     echo "No resources with 'pk' and no legacy trigger handlers found — nothing to migrate.\n";
     exit(0);
 }
@@ -108,6 +109,20 @@ if (!empty($legacy_handlers)) {
     echo "  \"events\": {\n";
     echo "      \"create\": [\"job:example-created\"]\n";
     echo "  }\n\n";
+}
+
+if (!empty($email_services)) {
+    echo "\nEmail service records found in .services:\n\n";
+    foreach ($email_services as $s) {
+        printf("  %-40s  service=%-12s  tpl=%s\n", $s['uuid'], $s['service'], $s['tpl']);
+    }
+    echo "\nCore 1.1 sends email via .env configuration instead of .services records.\n";
+    echo "Add the following to your .env and remove these .services records when done:\n\n";
+    echo "  MAIL_SERVICE=resend          # or: phpmailer, mailgun, system\n";
+    echo "  MAIL_FROM=no-reply@yourdomain.com\n";
+    echo "  MAIL_FROM_NAME=Your Site Name\n";
+    echo "  RESEND_API_KEY=re_xxxxxxxxxxxx\n\n";
+    echo "See §18 step 7 of NIMBLY.md for details.\n\n";
 }
 
 if (!empty($pk_resources)) {
@@ -226,6 +241,32 @@ function migrate_10_find_legacy_trigger_handlers($modules_dir)
     $result = [];
     foreach (glob($modules_dir . '*/lib/*-on-data-create/*-on-data-create.php') ?: [] as $file) {
         $result[] = str_replace(BASE_DIR, '', $file);
+    }
+    return $result;
+}
+
+function migrate_10_find_email_services($data_dir)
+{
+    $services_dir = $data_dir . '.services/';
+    if (!is_dir($services_dir)) {
+        return [];
+    }
+
+    $result = [];
+    foreach (glob($services_dir . '*') ?: [] as $file) {
+        $basename = basename($file);
+        if ($basename === '.meta' || is_dir($file)) {
+            continue;
+        }
+        $record = json_decode(file_get_contents($file), true) ?? [];
+        $service = $record['service'] ?? '';
+        if (in_array($service, ['phpmailer', 'mailgun', 'system', 'resend'], true)) {
+            $result[] = [
+                'uuid'    => $basename,
+                'service' => $service,
+                'tpl'     => $record['tpl'] ?? '(no tpl)',
+            ];
+        }
     }
     return $result;
 }

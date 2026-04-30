@@ -1,7 +1,7 @@
 <?php
 
 load_library('api');
-load_libraries(['get', 'set', 'data', 'encrypt', 'curl']);
+load_libraries(['get', 'set', 'data', 'curl', 'env']);
 
 function openai_translate_sc()
 {
@@ -16,8 +16,8 @@ function openai_translate_post()
         return json_result(['message' => 'INVALID_DATA'], 400);
     }
 
-    $service = data_read('.services', md5('openai-api'));
-    if (empty($service)) {
+    $api_key = env('OPENAI_API_KEY');
+    if (empty($api_key)) {
         return json_result(['message' => 'SERVICE_UNAVAILABLE'], 503);
     }
 
@@ -44,7 +44,6 @@ function openai_translate_post()
     }
     $translated_record['translations'][$record['lang']] = $record['uuid'];
     
-    $api_key = decrypt_2way($service['pw'], $service['salt']);
 
     foreach ($translations['rules'] as $field => $recipe) {
         if (is_scalar($recipe)) {

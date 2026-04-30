@@ -227,6 +227,8 @@ The standard pattern: call `router_match()`, validate the result, load and valid
 
 Keep `route.inc` focused on routing logic only — match, validate, set a variable or two, accept or deny. Business logic belongs in a library loaded from `index.tpl` via a shortcode.
 
+> **Never add `route.inc` to a static route.** A static route (e.g. `login/`, `about/`) has no `(param)` segments and is always accepted — adding `route.inc` without calling `router_accept()` causes a 404. If you need to run logic on a static page, put it in a shortcode called from `index.tpl`, not in `route.inc`.
+
 ---
 
 ## 3. Core Shortcode Reference
@@ -2193,6 +2195,8 @@ The following areas are under active development and will be updated here as the
 | Index storage | `.index/` subdir (also 1.0 late) | Same, fully automatic |
 | `data_update_pk()` | Existed — renamed data files on pk change | Removed |
 | Resource side effects | Automatic global `data-create` trigger handlers such as `member-on-data-create` | Explicit resource `.meta` `events`, optionally using `job:<type>` |
+| Email delivery | Configured in `.services` resource (SMTP credentials stored encrypted) | Configured via `.env`: `MAIL_SERVICE`, `MAIL_FROM`, `MAIL_FROM_NAME`, provider key (e.g. `RESEND_API_KEY`) |
+| Password reset email | Sent synchronously over SMTP during the web request | Enqueued as a `password-reset` job; processed by the job runner |
 
 **Core rule in 1.1:** the UUID is the primary key and it never changes. Slugs are stored as normal fields and looked up via indexes.
 
@@ -2339,6 +2343,23 @@ php core/cli/nimbly.php reindex articles
 #### 6. Remove any direct calls to `data_update_pk()`
 
 The function no longer exists. If any custom shortcode or module called it, remove that code. The UUID is immutable — use a slug field + index instead.
+
+#### 7. Migrate email service config from `.services` to `.env`
+
+Core 1.1 drops SMTP-via-`.services` for core-managed emails. Email delivery is now configured in `.env` and sent via a provider API (Resend by default). The password reset email is no longer sent inline — it is enqueued as a job and dispatched by the job runner.
+
+Add the following to your `.env`:
+
+```
+MAIL_SERVICE=resend
+MAIL_FROM=no-reply@yourdomain.com
+MAIL_FROM_NAME=Your Site Name
+RESEND_API_KEY=re_xxxxxxxxxxxx
+```
+
+If your project had a `.services` record with `tpl: email-password-reset`, it is no longer used. The `migrate-10` command will warn you if such records are found.
+
+Projects with no `.services` records need no action here.
 
 ### What you do NOT need to do
 

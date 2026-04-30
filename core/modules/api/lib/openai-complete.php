@@ -1,7 +1,7 @@
 <?php
 
 load_library('api');
-load_libraries(['get', 'set', 'data', 'encrypt', 'curl']);
+load_libraries(['get', 'set', 'data', 'curl', 'env']);
 
 function openai_complete_sc()
 {
@@ -16,8 +16,8 @@ function openai_complete_post()
         return json_result(['message' => 'INVALID_DATA'], 400);
     }
 
-    $service = data_read('.services', md5('openai-api'));
-    if (empty($service)) {
+    $api_key = env('OPENAI_API_KEY');
+    if (empty($api_key)) {
         return json_result(['message' => 'SERVICE_UNAVAILABLE'], 503);
     }
 
@@ -36,7 +36,6 @@ function openai_complete_post()
         return json_result(['message' => 'LANGUAGE_NOT_SUPPORTED'], 403);
     }
 
-    $api_key = decrypt_2way($service['pw'], $service['salt']);
 
     $prompts = openai_get_system_instructions($meta['fields'][$fn]['ai_prompts'], $data['lang']);
     $src_content = '';

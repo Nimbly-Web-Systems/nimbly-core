@@ -15,6 +15,9 @@ At a glance:
   or focused custom shortcodes in `ext/lib/<name>/`, not as inline page code.
 - Keep shortcode functions short. They should coordinate data and rendering,
   with logic and layout separated into libraries/templates where possible.
+- Never add `route.inc` to a static route (one with no `(param)` URL segments).
+  `route.inc` exists only for dynamic routes that need to call `router_accept()`
+  or `router_deny()`. Adding it to a static route causes a 404.
 
 Commit messages must follow the Conventional Commits style documented in
 `NIMBLY.md`: short, specific, professional, and usually one line.
