@@ -92,9 +92,9 @@ foreach (glob($data_dir . '*/.meta') as $meta_file) {
 }
 
 $legacy_handlers = migrate_10_find_legacy_trigger_handlers(BASE_DIR . 'ext/modules/');
-$email_services   = migrate_10_find_email_services($data_dir);
+$services   = migrate_10_find_services($data_dir);
 
-if (empty($pk_resources) && empty($legacy_handlers) && empty($email_services)) {
+if (empty($pk_resources) && empty($legacy_handlers) && empty($services)) {
     echo "No resources with 'pk' and no legacy trigger handlers found — nothing to migrate.\n";
     exit(0);
 }
@@ -111,17 +111,20 @@ if (!empty($legacy_handlers)) {
     echo "  }\n\n";
 }
 
-if (!empty($email_services)) {
-    echo "\nEmail service records found in .services:\n\n";
-    foreach ($email_services as $s) {
-        printf("  %-40s  service=%-12s  tpl=%s\n", $s['uuid'], $s['service'], $s['tpl']);
+if (!empty($services)) {
+    echo "\n.services records found — this resource is removed in core 1.1:\n\n";
+    foreach ($services as $s) {
+        printf("  %-40s  service=%-16s  tpl=%s\n", $s['uuid'], $s['service'], $s['tpl']);
     }
-    echo "\nCore 1.1 sends email via .env configuration instead of .services records.\n";
-    echo "Add the following to your .env and remove these .services records when done:\n\n";
+    echo "\nAll service configuration now lives in .env.\n";
+    echo "Move any credentials or API keys to .env and delete these records.\n\n";
+    echo "For email services, add:\n";
     echo "  MAIL_SERVICE=resend          # or: phpmailer, mailgun, system\n";
     echo "  MAIL_FROM=no-reply@yourdomain.com\n";
     echo "  MAIL_FROM_NAME=Your Site Name\n";
     echo "  RESEND_API_KEY=re_xxxxxxxxxxxx\n\n";
+    echo "For OpenAI:\n";
+    echo "  OPENAI_API_KEY=sk-xxxxxxxxxxxx\n\n";
     echo "See §18 step 7 of NIMBLY.md for details.\n\n";
 }
 
@@ -245,7 +248,7 @@ function migrate_10_find_legacy_trigger_handlers($modules_dir)
     return $result;
 }
 
-function migrate_10_find_email_services($data_dir)
+function migrate_10_find_services($data_dir)
 {
     $services_dir = $data_dir . '.services/';
     if (!is_dir($services_dir)) {
@@ -259,14 +262,11 @@ function migrate_10_find_email_services($data_dir)
             continue;
         }
         $record = json_decode(file_get_contents($file), true) ?? [];
-        $service = $record['service'] ?? '';
-        if (in_array($service, ['phpmailer', 'mailgun', 'system', 'resend'], true)) {
-            $result[] = [
-                'uuid'    => $basename,
-                'service' => $service,
-                'tpl'     => $record['tpl'] ?? '(no tpl)',
-            ];
-        }
+        $result[] = [
+            'uuid'    => $basename,
+            'service' => $record['service'] ?? '(unknown)',
+            'tpl'     => $record['tpl'] ?? '(no tpl)',
+        ];
     }
     return $result;
 }
