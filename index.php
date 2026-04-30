@@ -28,7 +28,10 @@ if (!empty($_SERVER['QUERY_STRING'])) {
 
 $SYSTEM['env_paths'] = array('ext', 'core');
 foreach ($SYSTEM['env_paths'] as $env_path) {
-    $path = $SYSTEM['file_base'] . $env_path . '/lib/find/find.php';
+    $path = $SYSTEM['file_base'] . $env_path . '/lib/find.php';
+    if (!file_exists($path)) {
+        $path = $SYSTEM['file_base'] . $env_path . '/lib/find/find.php';
+    }
     if (file_exists($path)) {
         require($path);
         break;

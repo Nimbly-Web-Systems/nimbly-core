@@ -46,6 +46,22 @@ function find_template($name, $dir = null) {
 }
 
 function find_library($name) {
+    global $SYSTEM;
+    static $modules_discovered = false;
+    if (!$modules_discovered) {
+        find_all_modules();
+        $modules_discovered = true;
+    }
+
+    foreach ($SYSTEM['env_paths'] as $env_path) {
+        foreach ($SYSTEM['modules'] as $module_path) {
+            $result = $SYSTEM['file_base'] . $env_path . $module_path . 'lib/' . $name . ".php";
+            if (file_exists($result) && !infinite_loop($result)) {
+                return $result;
+            }
+        }
+    }
+
     return find_path($name, 'lib', $name . ".php");
 }
 

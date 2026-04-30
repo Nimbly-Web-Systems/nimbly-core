@@ -51,13 +51,13 @@ Both repos can be updated without touching the terminal. In the admin (`/nb-admi
 
 ```
 core/          # Framework — never modify
-  lib/         # Core shortcode implementations
+  lib/         # Core libraries and shortcode implementations
   modules/     # Core modules (admin, forms, api, install, user)
   tpl/         # Core templates (html wrapper, etc.)
   uri/         # Core routes
 ext/           # Your application — all custom work goes here
   data/        # Resources (.meta + JSON records)
-  lib/         # Custom shortcodes
+  lib/         # Custom libraries and shortcode implementations
   modules/     # Custom modules
   tpl/         # Reusable templates
   uri/         # Route templates
@@ -914,8 +914,72 @@ Options from another resource:
 | `languages` | Enabled languages for this resource |
 | `ai_prompts` | Per-field AI translation instructions |
 | `actions` | Object with a `url` key — adds a "View" button in the admin record list pointing to the frontend URL of the record. Shortcodes are evaluated in the URL value. Example: `{"url": "[#base-url#]/articles/[#record.title_slug#]"}` |
+| `events` | Resource lifecycle event declarations. Supported keys: `create`, `update`, `delete`. Values are arrays of named events or `job:<type>` queue entries. See below. |
 | `splitdir` | Boolean. When `true`, records are stored in a two-level subdirectory tree by UUID prefix for filesystem performance at scale (> ~10,000 records). See §12 API — Scalability. |
 | `index` | Array of field names to index. Creates fast lookup paths for those fields. See §4 Indexes below. |
+
+### Resource lifecycle events
+
+Nimbly 1.1 uses `.meta` event declarations for resource lifecycle side effects. A resource can declare what should happen after a record is created, updated, or deleted:
+
+```json
+{
+  "events": {
+    "create": ["job:application-email-created"],
+    "update": ["application-updated"],
+    "delete": ["application-deleted"]
+  }
+}
+```
+
+Event payloads are intentionally small:
+
+```php
+[
+    'action' => 'create',
+    'resource' => 'membership-applications',
+    'uuid' => 'record-uuid',
+    'data' => $record_data, // available for create/update/delete when already loaded
+]
+```
+
+Plain event names are dispatched to module libraries by convention:
+
+```text
+ext/modules/member/lib/application-updated.php
+function application_updated($event) {}
+```
+
+Entries prefixed with `job:` enqueue a `.jobs` record instead of running work inline:
+
+```json
+"events": {
+  "create": ["job:application-email-created"]
+}
+```
+
+Core setup creates the `.jobs` resource. `job_enqueue()` also creates it lazily if an older install does not have it yet.
+
+Run queued jobs from CLI:
+
+```bash
+php core/cli/nimbly.php jobs:run
+```
+
+By default, `jobs:run` processes one eligible job. Pass an explicit limit only for catch-up runs:
+
+```bash
+php core/cli/nimbly.php jobs:run 25
+```
+
+Job handlers are module-discovered by convention:
+
+```text
+ext/modules/member/lib/application-email-created.php
+function application_email_created_job($job) {}
+```
+
+The queue stores intent and payload, not shell commands. Handlers may send email, call APIs, or perform other side effects.
 
 ### System fields (auto-managed)
 
@@ -925,7 +989,7 @@ Every record automatically has: `uuid`, `_created`, `_modified`, `_created_by`, 
 
 Resources whose names begin with `.` are hidden from the admin data management UI by default (Unix hidden-file convention). They remain fully accessible via the data library and API.
 
-Built-in hidden resources: `.config`, `.content`, `.routes`, `.i18n`.
+Built-in hidden resources: `.config`, `.content`, `.routes`, `.i18n`, `.jobs`.
 
 Custom hidden resources follow the same convention — name them with a leading dot to keep them out of the admin overview.
 
@@ -1854,10 +1918,24 @@ With `splitdir` enabled, records are stored in a two-level directory tree based 
 
 ## 13. Custom Shortcode Libraries
 
-Custom shortcodes live in `ext/lib/<name>/` as a PHP file with the same name:
+Custom shortcode libraries live as single PHP files in `ext/lib/`:
+
+```
+ext/lib/prepare-events.php
+```
+
+The older directory format is still supported for compatibility:
 
 ```
 ext/lib/prepare-events/prepare-events.php
+```
+
+Use the directory format only when the library needs support files that belong beside the entrypoint.
+
+To migrate existing single-file library directories automatically:
+
+```bash
+php core/cli/nimbly.php migrate-lib
 ```
 
 The function must be named `<name>_sc($params)` with hyphens converted to underscores:
@@ -2099,7 +2177,7 @@ The following areas are under active development and will be updated here as the
   "name_plural":   { "en": "Clients", "nl": "Klanten" }
   ```
   `resource-name` would use these when present and fall back to slug-based logic otherwise.
-- **Shortcode single-file format** — currently every shortcode requires a directory (`lib/my-shortcode/my-shortcode.php`). A planned improvement is to allow a single-file fallback (`lib/my-shortcode.php`) for simple shortcodes that don't need a template. Until then, always use the directory format.
+- **Frontend DaisyUI component patterns** — the admin is already on DaisyUI v3. Frontend DaisyUI component patterns will be documented here once the migration is complete.
 
 ---
 
@@ -2114,6 +2192,7 @@ The following areas are under active development and will be updated here as the
 | Slug routing | Routes did `data_exists($resource, md5_uuid($slug))` | Routes use `data_read_index($resource, 'slug_field', md5_uuid($slug))` |
 | Index storage | `.index/` subdir (also 1.0 late) | Same, fully automatic |
 | `data_update_pk()` | Existed — renamed data files on pk change | Removed |
+| Resource side effects | Automatic global `data-create` trigger handlers such as `member-on-data-create` | Explicit resource `.meta` `events`, optionally using `job:<type>` |
 
 **Core rule in 1.1:** the UUID is the primary key and it never changes. Slugs are stored as normal fields and looked up via indexes.
 
@@ -2140,6 +2219,8 @@ For each resource whose `.meta` still has a `pk` key it will:
 1. Add the pk field to the `index` array in `.meta` (if not already there)
 2. Create index entries for all records — including the **self-referential** entries (`index_uuid === record_uuid`) that exist because 1.0 records had `uuid = md5_uuid(pk_field_value)`. The standard `reindex` command skips these; `migrate-10` creates them explicitly so that `data_read_index` can find them.
 3. Remove `pk` from `.meta` and save the file
+
+It also reports legacy `*-on-data-create` trigger handlers so they can be migrated manually to `.meta` events.
 
 The command is interactive and asks for confirmation before making any changes.
 
@@ -2178,7 +2259,60 @@ router_accept();
 
 The slug field name (`url_slug` in the example) must match what is defined in `.meta` and listed in its `index` array.
 
-#### 4. Verify `.meta` fields
+#### 4. Migrate legacy trigger handlers to `.meta` events
+
+Core 1.0 supported automatic global data-create handlers:
+
+```text
+ext/modules/member/lib/member-on-data-create/member-on-data-create.php
+function member_on_data_create($event) {}
+```
+
+Core 1.1 removes that broadcast. Resource side effects must be declared on the target resource `.meta`:
+
+```json
+{
+  "events": {
+    "create": ["membership-application-created"]
+  }
+}
+```
+
+Plain event names dispatch to module libraries by convention:
+
+```text
+ext/modules/member/lib/membership-application-created.php
+function membership_application_created($event) {}
+```
+
+Use `job:<type>` when the work should be queued:
+
+```json
+{
+  "events": {
+    "create": ["job:application-email-created"]
+  }
+}
+```
+
+The `.jobs` resource is a core setup resource. On older installs it is created lazily the first time `job_enqueue()` runs.
+
+Queued jobs are processed by:
+
+```bash
+php core/cli/nimbly.php jobs:run
+```
+
+The default run processes one eligible job, which keeps scheduler usage simple, for example one CLI call every few seconds.
+
+Job handlers use the same single-file module library convention and are identified by their `_job` function suffix:
+
+```text
+ext/modules/member/lib/application-email-created.php
+function application_email_created_job($job) {}
+```
+
+#### 5. Verify `.meta` fields
 
 After migration, each previously pk-driven resource should look like this:
 
@@ -2202,7 +2336,7 @@ If you already had a plain `text` field acting as the slug, change its `type` to
 php core/cli/nimbly.php reindex articles
 ```
 
-#### 5. Remove any direct calls to `data_update_pk()`
+#### 6. Remove any direct calls to `data_update_pk()`
 
 The function no longer exists. If any custom shortcode or module called it, remove that code. The UUID is immutable — use a slug field + index instead.
 
@@ -2315,7 +2449,7 @@ This section explains the full flow from a resource field definition to a render
 ```
 .meta field definition
   ↓
-render_field() — PHP (core/modules/forms/lib/render-field/render-field.php)
+render_field() — PHP (core/modules/forms/lib/render-field.php)
   ↓
 _f.* template variables
   ↓
@@ -2378,7 +2512,7 @@ On submit, `form_data` is spread into the API payload and POSTed to `/api/v1/{re
 1. Create the template:
    ```
    core/modules/forms/tpl/field-{type}/index.tpl   ← core types
-   ext/lib/field-{type}/field-{type}.php            ← project-specific (shortcode wrapper only)
+   ext/lib/field-{type}.php                         ← project-specific (shortcode wrapper only)
    ```
 
 2. In the template:

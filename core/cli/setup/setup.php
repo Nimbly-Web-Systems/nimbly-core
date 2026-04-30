@@ -27,7 +27,7 @@ $GLOBALS['SYSTEM'] = [
     'uri'        => '',
 ];
 
-require_once BASE_DIR . 'core/lib/find/find.php';
+require_once BASE_DIR . 'core/lib/find.php';
 load_library('salt');
 
 // -----------------------------------------------------------------------
@@ -300,6 +300,18 @@ if (!data_exists('.content', '.meta')) {
     echo "Created: .content resource\n";
 } else {
     echo "Skipped: .content resource (already exists)\n";
+}
+
+// -----------------------------------------------------------------------
+// Create .jobs resource
+// -----------------------------------------------------------------------
+
+load_library('job');
+if (!data_exists('.jobs', '.meta')) {
+    job_ensure_resource();
+    echo "Created: .jobs resource\n";
+} else {
+    echo "Skipped: .jobs resource (already exists)\n";
 }
 
 // -----------------------------------------------------------------------
