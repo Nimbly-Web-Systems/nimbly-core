@@ -2,17 +2,6 @@
 
 use PHPMailer\PHPMailer\PHPMailer;
 
-/**
- * @doc `[email recipient@ema.il subject="test email" tpl="welcome_email"]` sends an email using email template `welcome_email`
- */
-function email_sc($params)
-{
-	$config_id = current($params);
-	load_library('data');
-	$data = data_read('.services', $config_id);
-	email($data);
-}
-
 function email($email_data)
 {
 	if (empty($email_data['recipient'])) {
@@ -42,6 +31,8 @@ function email($email_data)
 		$result = email_via_mailgun($email_data);
 	} else if ($service === 'phpmailer') {
 		$result = email_via_phpmailer($email_data);
+	} else if ($service === 'resend') {
+		$result = email_via_resend($email_data);
 	}
 
 	if ($result !== true) {
@@ -104,6 +95,38 @@ function email_via_mailgun($email_data)
 	]);
 	$response = _curl_exec($ch);
 	return curl_result($response);
+}
+
+function email_via_resend($email_data)
+{
+	load_libraries(['curl', 'plain-text', 'env', 'run']);
+
+	$api_key = env('RESEND_API_KEY');
+	$html = run_buffered($email_data['tpl']);
+	$text = plain_text($html);
+
+	$from = $email_data['from'] ?? env('MAIL_FROM');
+	$from_name = $email_data['from_name'] ?? env('MAIL_FROM_NAME');
+	if (!empty($from_name)) {
+		$from = $from_name . ' <' . $from . '>';
+	}
+
+	$ch = _curl_init('https://api.resend.com/emails', [
+		'Authorization: Bearer ' . $api_key,
+		'Content-Type: application/json',
+	]);
+	curl_setopt($ch, CURLOPT_POST, true);
+	curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode([
+		'from'    => $from,
+		'to'      => [$email_data['recipient']],
+		'subject' => $email_data['subject'],
+		'html'    => $html,
+		'text'    => $text,
+	]));
+
+	$response = _curl_exec($ch);
+	$result = json_decode($response, true);
+	return !empty($result['id']);
 }
 
 function email_via_phpmailer($email_data)

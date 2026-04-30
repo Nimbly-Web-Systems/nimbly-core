@@ -14,4 +14,4 @@ data_update('users', $user_uuid, $user);
 load_library('system-messages');
 system_message('Your password has been reset. Please log in with ' . $user['email'] . ' and your new password.');
 load_library('redirect');
-redirect('login');
+redirect('login?email=' . urlencode($user['email']));
