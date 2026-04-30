@@ -5,6 +5,8 @@ function job_enqueue($type, $payload = [], $options = [])
     load_library('data');
     job_ensure_resource();
 
+    $payload = job_payload_with_request_context($payload);
+
     $uuid = $options['uuid'] ?? md5(uniqid((string)$type, true));
     $job = [
         'type' => $type,
@@ -17,6 +19,29 @@ function job_enqueue($type, $payload = [], $options = [])
     ];
 
     return data_create('.jobs', $uuid, $job) ? $uuid : false;
+}
+
+function job_payload_with_request_context($payload)
+{
+    if (!is_array($payload) || empty($_SERVER['SERVER_NAME'])) {
+        return $payload;
+    }
+
+    $scheme = empty($_SERVER['HTTPS']) ? 'http' : 'https';
+    $port = $_SERVER['SERVER_PORT'] ?? '';
+    $port_part = ($port !== '' && $port !== '80' && $port !== '443') ? ':' . $port : '';
+    $uri_base = $GLOBALS['SYSTEM']['uri_base'] ?? '/';
+    $base_url = rtrim($scheme . '://' . $_SERVER['SERVER_NAME'] . $port_part . '/' . trim($uri_base, '/'), '/');
+    $request_uri = $GLOBALS['SYSTEM']['request_uri'] ?? ($_SERVER['REQUEST_URI'] ?? '');
+
+    if (!isset($payload['_base_url'])) {
+        $payload['_base_url'] = $base_url;
+    }
+    if ($request_uri !== '' && !isset($payload['_request_url'])) {
+        $payload['_request_url'] = $base_url . '/' . ltrim($request_uri, '/');
+    }
+
+    return $payload;
 }
 
 function job_ensure_resource()
