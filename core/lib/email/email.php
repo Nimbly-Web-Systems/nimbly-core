@@ -116,17 +116,33 @@ function email_via_resend($email_data)
 		'Content-Type: application/json',
 	]);
 	curl_setopt($ch, CURLOPT_POST, true);
-	curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode([
+	$post_fields = [
 		'from'    => $from,
-		'to'      => [$email_data['recipient']],
+		'to'      => email_recipients($email_data['recipient']),
 		'subject' => $email_data['subject'],
 		'html'    => $html,
 		'text'    => $text,
-	]));
+	];
+	if (!empty($email_data['cc'])) {
+		$post_fields['cc'] = email_recipients($email_data['cc']);
+	}
+	if (!empty($email_data['bcc'])) {
+		$post_fields['bcc'] = email_recipients($email_data['bcc']);
+	}
+
+	curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($post_fields));
 
 	$response = _curl_exec($ch);
 	$result = json_decode($response, true);
 	return !empty($result['id']);
+}
+
+function email_recipients($recipients)
+{
+	if (is_array($recipients)) {
+		return array_values(array_filter(array_map('trim', $recipients)));
+	}
+	return array_values(array_filter(array_map('trim', explode(',', (string)$recipients))));
 }
 
 function email_via_phpmailer($email_data)
