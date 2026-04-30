@@ -27,7 +27,7 @@ $GLOBALS['SYSTEM'] = [
     'uri'        => '',
 ];
 
-require_once BASE_DIR . 'core/lib/find/find.php';
+require_once BASE_DIR . 'core/lib/find.php';
 
 $env_file = BASE_DIR . '.env';
 if (!file_exists($env_file)) {

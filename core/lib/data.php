@@ -569,7 +569,7 @@ function data_update($resource, $uuid, $data_update_ls)
  * Writes the JSON-encoded $data_ls to the file identified by $resource and $uuid.
  * Automatically manages creation/modification metadata.
  * Updates indexes defined in the resource metadata.
- * Triggers 'data-create' event on success.
+ * Emits configured resource lifecycle events on success.
  *
  * @param string $resource Resource name.
  * @param string $uuid UUID of the record to create or update.
@@ -593,6 +593,7 @@ function data_create($resource, $uuid, $data_ls)
     }
 
     $file = $path;
+    $exists = file_exists($file);
 
     if (_data_validate($resource, $uuid, $data_ls) !== true) {
         return false;
@@ -618,6 +619,7 @@ function data_create($resource, $uuid, $data_ls)
     $json_data = json_encode($data_ls, JSON_UNESCAPED_UNICODE);
     if (@file_put_contents($file, $json_data) !== false) {
         touch($dir); // Update directory modification time to signal change and invalidate caches
+        _data_clear_cache('_data_read_all', $resource);
 
         $meta = data_meta($resource);
         if (isset($meta['index']) && is_array($meta['index'])) {
@@ -634,8 +636,10 @@ function data_create($resource, $uuid, $data_ls)
             }
         }
 
-        load_library('trigger');
-        trigger('data-create', ['resource' => $resource, 'uuid' => $uuid, 'data' => $data_ls]);
+        if ($uuid !== '.meta') {
+            load_library('event');
+            event_resource_lifecycle($exists ? 'update' : 'create', $resource, $uuid, $data_ls);
+        }
         return true;
     }
 
@@ -733,7 +737,12 @@ function data_delete($resource, $uuid = null)
                 $result += _data_delete_index($resource, $file, $index_name, $index_uuid);
             }
         }
+        $data_ls = $data_ls ?? data_read($resource, $uuid);
         $result += (int)unlink($file);
+        if ($result > 0 && $uuid !== '.meta') {
+            load_library('event');
+            event_resource_lifecycle('delete', $resource, $uuid, $data_ls);
+        }
         return $result;
     }
 

@@ -26,7 +26,7 @@ $GLOBALS['SYSTEM'] = [
     'uri'        => '',
 ];
 
-require_once BASE_DIR . 'core/lib/find/find.php';
+require_once BASE_DIR . 'core/lib/find.php';
 load_library('salt');
 
 $env_file = BASE_DIR . '.env';

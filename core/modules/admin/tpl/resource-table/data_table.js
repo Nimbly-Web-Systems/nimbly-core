@@ -83,6 +83,10 @@ document.addEventListener("alpine:init", () => {
 
       const val = ([_, obj]) => (obj[field] ?? "").toString().toLowerCase();
       const entries = Object.entries(this.filtered_records);
+      if (entries.length < 1) {
+        this.set_page_records();
+        return;
+      }
 
       const first_val = val(entries[0]);
       const all_equal = entries.every((e) => val(e) === first_val);

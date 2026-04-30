@@ -14,6 +14,8 @@
  *     reindex command intentionally skips.  These exist for every 1.0 record
  *     because its UUID was derived as md5_uuid(pk_field_value).
  *   - Removes "pk" from .meta and writes the updated .meta file.
+ *   - Reports legacy 1.0 trigger handlers (`*-on-data-create`) so they can be
+ *     migrated to resource `.meta` event declarations.
  *
  * After running this command you still need to update any route.inc that uses
  * the old pattern:
@@ -46,7 +48,7 @@ $GLOBALS['SYSTEM'] = [
     'uri'        => '',
 ];
 
-require_once BASE_DIR . 'core/lib/find/find.php';
+require_once BASE_DIR . 'core/lib/find.php';
 
 $env_file = BASE_DIR . '.env';
 if (!file_exists($env_file)) {
@@ -89,20 +91,38 @@ foreach (glob($data_dir . '*/.meta') as $meta_file) {
     }
 }
 
-if (empty($pk_resources)) {
-    echo "No resources with 'pk' found — nothing to migrate.\n";
+$legacy_handlers = migrate_10_find_legacy_trigger_handlers(BASE_DIR . 'ext/modules/');
+
+if (empty($pk_resources) && empty($legacy_handlers)) {
+    echo "No resources with 'pk' and no legacy trigger handlers found — nothing to migrate.\n";
     exit(0);
 }
 
-echo "\nResources with 'pk' (1.0 primary-key-as-UUID pattern):\n\n";
-foreach ($pk_resources as $resource => $info) {
-    printf("  %-24s pk = %s\n", $resource, $info['pk']);
+if (!empty($legacy_handlers)) {
+    echo "\nLegacy 1.0 trigger handlers found:\n\n";
+    foreach ($legacy_handlers as $handler) {
+        echo "  - {$handler}\n";
+    }
+    echo "\nCore 1.1 uses resource .meta events instead of automatic data-create triggers.\n";
+    echo "Move each handler to a named event or job, then declare it on the target resource .meta:\n\n";
+    echo "  \"events\": {\n";
+    echo "      \"create\": [\"job:example-created\"]\n";
+    echo "  }\n\n";
 }
-echo "\nThis migration will:\n";
-echo "  1. Add the pk field to 'index' in .meta (if not already there)\n";
-echo "  2. Create index entries for all records (including 1.0 self-referential ones)\n";
-echo "  3. Remove 'pk' from .meta\n";
-echo "  4. Convert 'name' fields with slug:true to 'text', and add a 'slug' field definition\n";
+
+if (!empty($pk_resources)) {
+    echo "\nResources with 'pk' (1.0 primary-key-as-UUID pattern):\n\n";
+    foreach ($pk_resources as $resource => $info) {
+        printf("  %-24s pk = %s\n", $resource, $info['pk']);
+    }
+    echo "\nThis migration will:\n";
+    echo "  1. Add the pk field to 'index' in .meta (if not already there)\n";
+    echo "  2. Create index entries for all records (including 1.0 self-referential ones)\n";
+    echo "  3. Remove 'pk' from .meta\n";
+    echo "  4. Convert 'name' fields with slug:true to 'text', and add a 'slug' field definition\n";
+} else {
+    echo "\nNo resources with 'pk' found.\n";
+}
 echo "\nProceed? [y/N] ";
 $confirm = trim(fgets(STDIN));
 if (strtolower($confirm) !== 'y') {
@@ -192,4 +212,20 @@ echo "    \$records = data_read_index(\$resource, 'slug_field', md5_uuid(\$slug)
 echo "    if (empty(\$records)) return;\n";
 echo "    \$record = reset(\$records);\n";
 echo "    set_variable_dot('record', \$record);\n\n";
-echo "See §17 of Nimbly.md for the full upgrade guide.\n\n";
+if (!empty($legacy_handlers)) {
+    echo "Also migrate the legacy trigger handlers listed above to .meta events.\n\n";
+}
+echo "See §18 of Nimbly.md for the full upgrade guide.\n\n";
+
+function migrate_10_find_legacy_trigger_handlers($modules_dir)
+{
+    if (!is_dir($modules_dir)) {
+        return [];
+    }
+
+    $result = [];
+    foreach (glob($modules_dir . '*/lib/*-on-data-create/*-on-data-create.php') ?: [] as $file) {
+        $result[] = str_replace(BASE_DIR, '', $file);
+    }
+    return $result;
+}

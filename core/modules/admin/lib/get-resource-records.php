@@ -34,10 +34,25 @@ function get_resource_records_sc($params)
     $data_records = [];
 
     foreach ($raw_records as $ix => $record) {
-        $data_records[$ix] = _prep_record($record, $fields);        
+        $data_records[$ix] = _prep_record($record, $fields);
+        if (!empty($meta['actions']['url'])) {
+            $data_records[$ix]['_action_url'] = _prep_action_url($meta['actions']['url'], $record, $ix);
+        }
     }
     set_variable('data.fields', $fields);
     set_variable('data.records', $data_records);
+}
+
+function _prep_action_url($url, $record, $uuid)
+{
+    if (!is_array($record)) {
+        $record = [];
+    }
+    $record['uuid'] = $record['uuid'] ?? $uuid;
+
+    return preg_replace_callback('/\[#record\.([a-zA-Z0-9_-]+)#\]/', function ($matches) use ($record) {
+        return $record[$matches[1]] ?? '';
+    }, $url);
 }
 
 /**
