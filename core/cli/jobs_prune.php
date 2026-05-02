@@ -65,8 +65,9 @@ foreach ($jobs as $uuid => $job) {
     $pruned++;
 }
 
-$mode = $dry_run ? 'dry run' : 'live';
-printf("%-12s %s  (done jobs older than %d days)\n", 'Mode:', $mode, $days);
+if ($dry_run) {
+    printf("%-12s %s  (done jobs older than %d days)\n", 'Mode:', 'dry run', $days);
+}
 printf("%-12s %d\n", 'Pruned:', $pruned);
 printf("%-12s %d\n", 'Kept:', $kept);
 printf("%-12s %d\n", 'Skipped:', $skipped);
