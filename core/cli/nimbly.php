@@ -20,6 +20,7 @@ $commands = [
     'create-user'    => ['core/cli/create_user.php',     'Create a new user account'],
     'install-module' => ['core/cli/install_module.php',  'Install a module (runs its .install.inc)'],
     'jobs:run'       => ['core/cli/jobs.php',            'Run queued background jobs'],
+    'jobs:prune'     => ['core/cli/jobs_prune.php',     'Delete completed jobs older than N days (--days=30)'],
     'migrate-lib'    => ['core/cli/migrate_lib.php',     'Migrate single-file libraries to lib/name.php'],
     'reindex'        => ['core/cli/reindex.php',         'Rebuild index entries for a resource'],
     'migrate-10'     => ['core/cli/migrate_10.php',      'Migrate resources from core 1.0 to 1.1 (pk → index)'],
