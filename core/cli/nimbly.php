@@ -25,6 +25,14 @@ $commands = [
     'migrate-10'     => ['core/cli/migrate_10.php',      'Migrate resources from core 1.0 to 1.1 (pk → index)'],
 ];
 
+$ext_commands_file = BASE_DIR . 'ext/cli/commands.php';
+if (file_exists($ext_commands_file)) {
+    $ext_commands = require $ext_commands_file;
+    if (is_array($ext_commands)) {
+        $commands = array_merge($commands, $ext_commands);
+    }
+}
+
 if (!$command || $command === 'help' || !isset($commands[$command])) {
     echo "Usage: php core/cli/nimbly.php <command>\n\n";
     echo "Commands:\n";
