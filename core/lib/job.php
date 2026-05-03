@@ -41,9 +41,8 @@ function job_payload_with_request_context($payload)
         $payload['_request_url'] = $base_url . '/' . ltrim($request_uri, '/');
     }
 
-    $site_url_file = defined('BASE_DIR') ? BASE_DIR . 'ext/data/.site_url' : '';
-    if ($site_url_file !== '' && (!file_exists($site_url_file) || file_get_contents($site_url_file) !== $base_url)) {
-        file_put_contents($site_url_file, $base_url);
+    if (data_exists('.config', 'site') && (data_read('.config', 'site')['site_url'] ?? '') !== $base_url) {
+        data_update('.config', 'site', ['site_url' => $base_url]);
     }
 
     return $payload;
