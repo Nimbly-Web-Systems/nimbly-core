@@ -76,27 +76,6 @@ RewriteCond %{REQUEST_URI} ^/%%REWRITE_BASE_PATH%%(.*)
 RewriteCond core/static/%1 -F
 RewriteRule ^ core/static/%1 [END]
 
-# finally, fallback to PHP to handle the request.
-php_flag register_globals off
-php_flag magic_quotes_gpc off
-php_flag magic_quotes_sybase off
-php_flag session.auto_start off
-php_flag mbstring.encoding_translation off
-php_value mbstring.http_input pass
-php_value mbstring.http_output pass
-php_value zlib.output_compression 16386
-php_value session.gc_maxlifetime 2592000
-php_value session.cookie_lifetime 2592000
-php_value session.gc_probability 1
-php_value error_log ext/data/.tmp/logs/system.log
-
-# script memory limit
-php_value memory_limit 2048M
-
-# file upload size
-php_value post_max_size 12M
-php_value upload_max_filesize 10M
-
 # block direct .php requests
 RewriteCond %{THE_REQUEST} \s/+.*\.php[?\s] [NC]
 RewriteCond %{REQUEST_URI} !^/index\.php$
