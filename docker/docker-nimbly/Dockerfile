@@ -21,15 +21,13 @@ ADD nimbly.conf /etc/apache2/sites-available/nimbly.conf
 ADD run.sh /run.sh
 RUN chmod 755 /*.sh
 
-# Configure PHP-FPM: fixed TCP socket and Nimbly PHP settings
+# Configure PHP-FPM: fixed TCP socket, Nimbly PHP settings, switch to event MPM
 ADD php-nimbly.ini /tmp/php-nimbly.ini
 RUN PHP_VER=$(php -r 'echo PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION;') && \
-    ln -sf /usr/sbin/php${PHP_VER}-fpm /usr/local/sbin/php-fpm && \
+    ln -sf /usr/sbin/php-fpm${PHP_VER} /usr/local/sbin/php-fpm && \
     sed -i "s|listen = /run/php/php.*-fpm.sock|listen = 127.0.0.1:9000|" /etc/php/${PHP_VER}/fpm/pool.d/www.conf && \
-    cp /tmp/php-nimbly.ini /etc/php/${PHP_VER}/fpm/conf.d/99-nimbly.ini
-
-# Switch from prefork (required by mod_php) to event MPM, enable proxy for FPM
-RUN a2dismod mpm_prefork; a2enmod mpm_event proxy proxy_fcgi
+    cp /tmp/php-nimbly.ini /etc/php/${PHP_VER}/fpm/conf.d/99-nimbly.ini && \
+    a2dismod php${PHP_VER} mpm_prefork && a2enmod mpm_event proxy proxy_fcgi
 
 # Set required permissions
 RUN usermod -u 1000 www-data

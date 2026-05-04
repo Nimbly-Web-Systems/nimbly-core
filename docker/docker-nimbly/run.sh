@@ -6,7 +6,7 @@ a2ensite nimbly > dev/null
 a2enmod rewrite expires headers > dev/null
 
 mkdir -p /run/php
-php-fpm -F &
+/usr/local/sbin/php-fpm -F &
 
 apache2ctl -k start
 
