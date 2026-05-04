@@ -125,13 +125,24 @@ if (!file_exists($htaccess_file)) {
     chmod($htaccess_file, 0640);
     echo "Written: .htaccess\n";
 } else {
-    // Verify RewriteBase matches BASE_PATH
     $htaccess_content = file_get_contents($htaccess_file);
+    $has_mod_php = (bool) preg_match('/^php_(flag|value)\s/m', $htaccess_content);
     $existing_base = null;
     if (preg_match('/^RewriteBase\s+(.+)$/m', $htaccess_content, $m)) {
         $existing_base = trim($m[1]);
     }
-    if ($existing_base !== null && $existing_base !== $base_path) {
+    $base_mismatch = $existing_base !== null && $existing_base !== $base_path;
+
+    if ($has_mod_php) {
+        // mod_php directives (php_flag/php_value) are not supported under PHP-FPM — regenerate silently
+        $content = file_get_contents(SETUP_DIR . 'htaccess.tpl');
+        $content = str_replace('%%PEPPER%%', $pepper, $content);
+        $content = str_replace('%%REWRITE_BASE%%', $base_path, $content);
+        $content = str_replace('%%REWRITE_BASE_PATH%%', $rewrite_base_path, $content);
+        file_put_contents($htaccess_file, $content);
+        chmod($htaccess_file, 0640);
+        echo "Recreated: .htaccess (removed mod_php directives, not supported under PHP-FPM)\n";
+    } elseif ($base_mismatch) {
         echo "Warning: .htaccess has RewriteBase '$existing_base' but BASE_PATH is '$base_path'.\n";
         $choice = nb_prompt('How to proceed? [leave/recreate]', 'leave');
         if (strtolower(trim($choice)) === 'recreate') {
