@@ -13,7 +13,7 @@
     "build-text": "find -name text.po | xargs msgcat > ext/data/.i18n/text.base.po",
     "watch-tw": "npx tailwindcss -i ./css/tw/in.css -o ./css/tw/out.css --watch",
     "build": "npm run build-tw && npm run build-css && npm run build-js && npm run build-text && date +%s > ext/static/app.version",
-    "up": "cd docker && docker compose down && docker compose up -d nimbly && cd ..",
+    "up": "cd docker && docker compose build --pull nimbly && docker compose down && docker compose up -d nimbly && cd ..",
     "nimbly": "php core/cli/nimbly.php"
   },
   "repository": {
