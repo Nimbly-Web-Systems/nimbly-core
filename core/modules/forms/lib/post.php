@@ -44,13 +44,13 @@ function post_sc($params) {
 
 function post_get($input_name, $default = null) {
     if (isset($_POST[$input_name])) {
-        return filter_input(INPUT_POST, $input_name, FILTER_SANITIZE_STRING);
+        return $_POST[$input_name];
     }
     return $default;
 }
 
 function post_get_all() {
-    $result = filter_input_array(INPUT_POST, FILTER_SANITIZE_STRING);
+    $result = filter_input_array(INPUT_POST, FILTER_DEFAULT);
     unset($result["form_id"]);
     unset($result["form_key"]);
     return $result;
