@@ -1,17 +1,17 @@
-FROM ubuntu:latest 
+FROM ubuntu:latest
 
 RUN userdel -r ubuntu
 
 # Install required software and modules
 ENV DEBIAN_FRONTEND noninteractive
-RUN apt-get -y update 
+RUN apt-get -y update
 RUN apt-get -y upgrade
-RUN apt-get -y install software-properties-common ca-certificates lsb-release apt-transport-https 
+RUN apt-get -y install software-properties-common ca-certificates lsb-release apt-transport-https
 RUN LC_ALL=C.UTF-8 add-apt-repository ppa:ondrej/php
 RUN apt-get -y install apache2
-RUN apt-get -y install php 
-RUN apt-get -y install php-mbstring php-gd php-gmp php-curl 
-RUN apt-get -y install libapache2-mod-php
+RUN apt-get -y install php
+RUN apt-get -y install php-mbstring php-gd php-gmp php-curl
+RUN apt-get -y install php-fpm
 RUN apt-get -y install gettext
 RUN apt-get -y install nodejs npm
 
@@ -20,6 +20,16 @@ ADD apache2.conf /etc/apache2/apache2.conf
 ADD nimbly.conf /etc/apache2/sites-available/nimbly.conf
 ADD run.sh /run.sh
 RUN chmod 755 /*.sh
+
+# Configure PHP-FPM: fixed TCP socket and Nimbly PHP settings
+ADD php-nimbly.ini /tmp/php-nimbly.ini
+RUN PHP_VER=$(php -r 'echo PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION;') && \
+    ln -sf /usr/sbin/php${PHP_VER}-fpm /usr/local/sbin/php-fpm && \
+    sed -i "s|listen = /run/php/php.*-fpm.sock|listen = 127.0.0.1:9000|" /etc/php/${PHP_VER}/fpm/pool.d/www.conf && \
+    cp /tmp/php-nimbly.ini /etc/php/${PHP_VER}/fpm/conf.d/99-nimbly.ini
+
+# Switch from prefork (required by mod_php) to event MPM, enable proxy for FPM
+RUN a2dismod mpm_prefork; a2enmod mpm_event proxy proxy_fcgi
 
 # Set required permissions
 RUN usermod -u 1000 www-data
@@ -35,4 +45,3 @@ VOLUME ["/var/www/nimbly"]
 
 # Execute the run.sh
 CMD ["/run.sh"]
-
