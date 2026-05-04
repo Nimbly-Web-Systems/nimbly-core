@@ -10,7 +10,7 @@ function http_header_sc($params) {
 function http_header_sent($type, $cached=false, $modified=0) {
     if ($cached !== false) {
         $t = $modified === 0? time() : $modified;
-        $headers = apache_request_headers();
+        $headers = getallheaders();
         header('Cache-Control: private');
         if (isset($headers['If-Modified-Since']) && $t <= strtotime($headers['If-Modified-Since'])) {
             header('Last-Modified: '. gmdate('D, d M Y H:i:s', $t).' GMT', true, 304);
@@ -36,7 +36,7 @@ function http_header_sent($type, $cached=false, $modified=0) {
 }
 
 function http_header_not_modified($modified) {
-    $headers = apache_request_headers();
+    $headers = getallheaders();
     if (!isset($headers['If-Modified-Since'])) {
         return;
     }

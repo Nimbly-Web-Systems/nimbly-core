@@ -29,7 +29,7 @@ function encrypt_2way($text, $salt)
         throw new Exception('Unknown cipher');
     }
     $ivlen = openssl_cipher_iv_length($cipher);
-    $iv = openssl_random_pseudo_bytes($ivlen);
+    $iv = random_bytes($ivlen);
     $result =
         [
             'encrypted_text' => openssl_encrypt($text, $cipher, $salt . $_SERVER['PEPPER'], 0, $iv, $tag),
