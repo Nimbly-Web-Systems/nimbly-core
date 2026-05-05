@@ -1,9 +1,9 @@
 <?php
 
 /**
- * Nimbly CLI - migrate-lib command
+ * Nimbly CLI - migrate-lib-flat command
  *
- * Usage: php core/cli/nimbly.php migrate-lib [--yes]
+ * Usage: php core/cli/nimbly.php migrate-lib-flat [--yes]
  *
  * Migrates single-file library directories from:
  *
@@ -24,47 +24,10 @@ if (!defined('BASE_DIR')) {
     define('BASE_DIR', realpath(__DIR__ . '/../..') . '/');
 }
 
+require_once BASE_DIR . 'core/cli/helpers/migrate_lib.php';
+
 $yes = in_array('--yes', $argv, true) || in_array('-y', $argv, true);
-$roots = [
-    BASE_DIR . 'core/lib',
-    BASE_DIR . 'ext/lib',
-];
-
-foreach (glob(BASE_DIR . 'core/modules/*/lib') ?: [] as $root) {
-    $roots[] = $root;
-}
-foreach (glob(BASE_DIR . 'ext/modules/*/lib') ?: [] as $root) {
-    $roots[] = $root;
-}
-
-$moves = [];
-$skipped = [];
-
-foreach ($roots as $root) {
-    if (!is_dir($root)) {
-        continue;
-    }
-    foreach (glob($root . '/*', GLOB_ONLYDIR) ?: [] as $dir) {
-        $name = basename($dir);
-        $from = $dir . '/' . $name . '.php';
-        $to = dirname($dir) . '/' . $name . '.php';
-        $files = glob($dir . '/*') ?: [];
-
-        if (!file_exists($from)) {
-            continue;
-        }
-        if (count($files) !== 1) {
-            $skipped[] = str_replace(BASE_DIR, '', $dir) . ' (support files present)';
-            continue;
-        }
-        if (file_exists($to)) {
-            $skipped[] = str_replace(BASE_DIR, '', $dir) . ' (target exists)';
-            continue;
-        }
-
-        $moves[] = [$from, $to, $dir];
-    }
-}
+[$moves, $skipped] = migrate_lib_collect();
 
 if (empty($moves)) {
     echo "No single-file library directories to migrate.\n";
@@ -98,14 +61,6 @@ if (!$yes) {
     }
 }
 
-$migrated = 0;
-foreach ($moves as [$from, $to, $dir]) {
-    if (!rename($from, $to)) {
-        echo "Failed: " . str_replace(BASE_DIR, '', $from) . "\n";
-        continue;
-    }
-    @rmdir($dir);
-    $migrated++;
-}
+$migrated = migrate_lib_apply($moves);
 
 echo "\nMigrated {$migrated} library entr" . ($migrated === 1 ? "y" : "ies") . ".\n";
