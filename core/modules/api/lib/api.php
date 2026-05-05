@@ -212,6 +212,9 @@ function resource_post($resource) { // create new
             'message' => 'RESOURCE_CREATED'),
         201);
     }
+    if (data_error_get() === 'RESOURCE_EXISTS') {
+        return json_result(array('message' => 'RESOURCE_EXISTS'), 409);
+    }
     return json_result(array('message' => 'RESOURCE_CREATE_FAILED'), 500);
 }
 
@@ -229,6 +232,9 @@ function resource_put($resource) { // update multiple
             'count' => count($result),
             'message' => 'RESOURCE_UPDATED'
         ), 200);
+    }
+    if (data_error_get() === 'RESOURCE_EXISTS') {
+        return json_result(array('message' => 'RESOURCE_EXISTS'), 409);
     }
     return json_result(array('message' => 'RESOURCE_UPDATE_FAILED'), 500);
 }
@@ -269,6 +275,9 @@ function resource_id_post($resource, $uuid) { // create new with uuid
             'message' => 'RESOURCE_CREATED'
         ), 201);
     }
+    if (data_error_get() === 'RESOURCE_EXISTS') {
+        return json_result(array('message' => 'RESOURCE_EXISTS'), 409);
+    }
     return json_result(array('message' => 'RESOURCE_CREATE_FAILED'), 500);
 }
 
@@ -286,6 +295,9 @@ function resource_id_put($resource, $uuid) { // update one
             'count' => 1,
             'message' => 'RESOURCE_UPDATED'
         ), 200);
+    }
+    if (data_error_get() === 'RESOURCE_EXISTS') {
+        return json_result(array('message' => 'RESOURCE_EXISTS'), 409);
     }
     return json_result(array('message' => 'RESOURCE_UPDATE_FAILED'), 500);
 }

@@ -126,6 +126,27 @@ Weigh the tradeoff carefully, especially when dynamic data is involved:
 
 If the data is already loaded with `[#data#]`, passing it to Alpine.js is free and keeps the template simpler. Default to the frontend approach when both options work equally well.
 
+### KISS and YAGNI
+
+Keep implementations as small as the current requirement allows.
+
+- Prefer the simplest solution that fully solves the actual task.
+- Do not add speculative fields, statuses, workflow steps, or audit data "for later".
+- Reuse built-in Nimbly metadata like `_created` and `_modified` before introducing parallel custom fields.
+- Do not derive UUIDs from business fields unless the project explicitly requires it.
+- When duplicate prevention is needed, prefer an index on the business field before inventing a more complex identity scheme.
+
+Production-ready does **not** mean speculative. It means clean, coherent, and sufficient for the current use case.
+
+- If a project-specific solution exposes a reusable framework capability, explicitly mention the core/framework option before defaulting to a local workaround.
+
+### Frontend forms
+
+For simple public forms, prefer Alpine.js with `nb.api.post()` or `build-form` over route `post_*.inc`.
+
+- Normalize values in the frontend when the stored value should be canonical, for example `trim().toLowerCase()` for email.
+- If duplicate submissions should be treated as success in the UX, map `RESOURCE_EXISTS` to the same success state as `RESOURCE_CREATED`.
+
 ---
 
 ## 2. Template Syntax
@@ -1097,7 +1118,10 @@ These rules are mandatory for all resources unless explicitly stated otherwise.
 - Does this resource need a `published` field?
 - Does ordering matter? Add `sort_order` + `sort`
 - Is this linked from a URL? Add a slug field and list it in `index`
+- Does any field need to be unique? Add it to `unique` and usually to `index`
 - Does content need to be translated? Add `languages` and `i18n` per field
+- Can this be smaller while still fully solving the current requirement?
+- Can existing system metadata or a single field index solve this without extra custom fields?
 
 **Admin visibility — fields to hide by default:**
 - images
@@ -2163,7 +2187,7 @@ Apply this reasoning before adding any field, section, or link to a template.
 - Do not create resources without considering `admin_col`, sorting, and required fields
 - Do not add `i18n: true` to non-content fields (images, booleans, sort_order, dates)
 - Do not define `languages` on a resource without also defining it in site config
-- Do not create incomplete or minimal resource schemas — always production-ready
+- Do not create sloppy or inconsistent resource schemas. Keep them production-ready, but still minimal and requirement-driven.
 - **Do not put HTML in library PHP files** — libraries set variables and call `run_buffered()`, templates render HTML
 
 ---

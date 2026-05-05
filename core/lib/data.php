@@ -1,6 +1,7 @@
 <?php
 
 $GLOBALS['SYSTEM']['data_base'] = $GLOBALS['SYSTEM']['file_base'] . 'ext/data';
+$GLOBALS['SYSTEM']['data_error'] = null;
 
 /**
  * Implements the [#data#] shortcode for loading data in templates.
@@ -141,6 +142,21 @@ function data_path($resource, $uuid = '')
 function data_exists($resource, $uuid = "")
 {
     return file_exists(data_path($resource, $uuid));
+}
+
+function data_error_set($message)
+{
+    $GLOBALS['SYSTEM']['data_error'] = $message;
+}
+
+function data_error_get()
+{
+    return $GLOBALS['SYSTEM']['data_error'];
+}
+
+function data_error_clear()
+{
+    $GLOBALS['SYSTEM']['data_error'] = null;
 }
 
 
@@ -503,6 +519,7 @@ function array_merge_recursive_distinct(array &$array1, array &$array2)
  */
 function data_update($resource, $uuid, $data_update_ls)
 {
+    data_error_clear();
     if (empty($data_update_ls) || !data_exists($resource, $uuid)) {
         return false;
     }
@@ -531,31 +548,30 @@ function data_update($resource, $uuid, $data_update_ls)
         $data_merged_ls = array_merge_recursive_distinct($data_ls, $data_update_ls);
     }
 
-    // Remove stale index entries for fields whose values changed
     $meta = data_meta($resource);
-    if (!empty($data_ls) && isset($meta['index']) && is_array($meta['index'])) {
-        load_library('md5');
-        $file = data_path($resource, $uuid);
-        foreach ($meta['index'] as $index_name) {
-            if (empty($data_ls[$index_name])) {
-                continue;
-            }
-            $old_index_uuid = md5_uuid($data_ls[$index_name]);
-            $new_index_uuid = md5_uuid($data_merged_ls[$index_name] ?? '');
-            if ($old_index_uuid !== $new_index_uuid) {
-                _data_delete_index($resource, $file, $index_name, $old_index_uuid);
-            }
-        }
-    }
-
     // Update modification metadata
     load_library('md5');
     load_library('username');
     $data_merged_ls['_modified_by'] = md5_uuid(username_get());
     $data_merged_ls['_modified'] = time();
-    _data_validate($resource, $uuid, $data_merged_ls);
+    if (_data_validate($resource, $uuid, $data_merged_ls) !== true) {
+        return false;
+    }
 
     if (data_create($resource, $uuid, $data_merged_ls)) {
+        if (!empty($data_ls) && isset($meta['index']) && is_array($meta['index'])) {
+            $file = data_path($resource, $uuid);
+            foreach ($meta['index'] as $index_name) {
+                if (empty($data_ls[$index_name])) {
+                    continue;
+                }
+                $old_index_uuid = md5_uuid($data_ls[$index_name]);
+                $new_index_uuid = md5_uuid($data_merged_ls[$index_name] ?? '');
+                if ($old_index_uuid !== $new_index_uuid) {
+                    _data_delete_index($resource, $file, $index_name, $old_index_uuid);
+                }
+            }
+        }
         return $data_merged_ls;
     }
 
@@ -578,6 +594,7 @@ function data_update($resource, $uuid, $data_update_ls)
  */
 function data_create($resource, $uuid, $data_ls)
 {
+    data_error_clear();
     $path = data_path($resource, $uuid);
 
     if ($uuid === null || $uuid === '') {
@@ -1022,19 +1039,68 @@ function _data_validate($resource, $uuid, &$data_ls)
         return true;
     }
     $meta = data_meta($resource);
-    if (empty($meta['validate'])) {
-        return true;
-    }
-    $validation_rules = $meta['validate'];
-    foreach ($validation_rules as $rule => $fields) {
-        foreach ($fields as $field) {
-            if ($rule === 'natural-short-text') {
-                if (_validate_natural_short_text($data_ls[$field] ?? '') !== true) {
-                    return false;
+    if (!empty($meta['validate'])) {
+        $validation_rules = $meta['validate'];
+        foreach ($validation_rules as $rule => $fields) {
+            foreach ($fields as $field) {
+                if ($rule === 'natural-short-text') {
+                    if (_validate_natural_short_text($data_ls[$field] ?? '') !== true) {
+                        return false;
+                    }
                 }
             }
         }
     }
+
+    if (!empty($meta['unique']) && _data_validate_unique($resource, $uuid, $data_ls, $meta['unique']) !== true) {
+        data_error_set('RESOURCE_EXISTS');
+        return false;
+    }
+
+    return true;
+}
+
+function _data_validate_unique($resource, $uuid, $data_ls, $fields)
+{
+    if (!is_array($fields)) {
+        return true;
+    }
+
+    $meta = data_meta($resource);
+    $indexed_fields = isset($meta['index']) && is_array($meta['index']) ? $meta['index'] : [];
+
+    foreach ($fields as $field) {
+        if (!array_key_exists($field, $data_ls) || !is_scalar($data_ls[$field])) {
+            continue;
+        }
+
+        $value = trim((string)$data_ls[$field]);
+        if ($value === '') {
+            continue;
+        }
+
+        if (in_array($field, $indexed_fields, true)) {
+            load_library('md5');
+            $matches = data_read_index($resource, $field, md5_uuid($value));
+        } else {
+            $matches = [];
+            foreach (data_read($resource) as $record_uuid => $record) {
+                if (!isset($record[$field]) || !is_scalar($record[$field])) {
+                    continue;
+                }
+                if ((string)$record[$field] === $value) {
+                    $matches[$record_uuid] = $record;
+                }
+            }
+        }
+
+        foreach ($matches as $match_uuid => $record) {
+            if ($match_uuid !== $uuid) {
+                return false;
+            }
+        }
+    }
+
     return true;
 }
 
