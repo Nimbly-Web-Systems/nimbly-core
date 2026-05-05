@@ -162,19 +162,11 @@ document.addEventListener("alpine:init", () => {
     },
     init() {
       this.filtered_records = { ..._records };
-
-      const first_field_id = Object.keys(_fields).find((f) => {
-        const field = _fields[f];
-        return field.sortable === undefined || field.sortable;
-      });
-
-      if (first_field_id) {
-        this.sort_field = first_field_id;
-        this.sort_asc = true;
-        this.sort_records();
-      } else {
-        this.set_page_records();
+      if (_default_sort_field && _fields[_default_sort_field]) {
+        this.sort_field = _default_sort_field;
+        this.sort_asc = _default_sort_order.toLowerCase() !== "desc";
       }
+      this.set_page_records();
     },
   }));
 });

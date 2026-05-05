@@ -5,6 +5,7 @@ load_library('detect-language');
 function get_resource_records_sc($params)
 {
     load_library('fmt');
+    load_library('text');
     $resource = get_param_value($params, 'resource', current($params));
     $role = get_param_value($params, 'role', end($params));
     if (empty($resource)) {
@@ -29,7 +30,7 @@ function get_resource_records_sc($params)
         $raw_records = data_sort_meta($raw_records, $meta['sort']);
     }
 
-    $fields = _prep_fields($meta['fields']);
+    $fields = _prep_fields($meta);
 
     $data_records = [];
 
@@ -41,6 +42,7 @@ function get_resource_records_sc($params)
     }
     set_variable('data.fields', $fields);
     set_variable('data.records', $data_records);
+    set_variable('data.sort', $meta['sort'] ?? []);
 }
 
 function _prep_action_url($url, $record, $uuid)
@@ -72,7 +74,15 @@ function _prep_record($record, $fields)
                 return (string)$item;
             }, $val), fn($v) => $v !== ''));
         }
-        $result[$k] = fmt_sc(['val' => $val, 'type' => $v['type'], 'max_length' => 32]);
+        $fmt_params = [
+            'val' => $val,
+            'type' => $v['type'],
+            'max_length' => $v['max_length'] ?? 32,
+        ];
+        if (!empty($v['fmt'])) {
+            $fmt_params['fmt'] = $v['fmt'];
+        }
+        $result[$k] = fmt_sc($fmt_params);
     }
     return $result;
 }
@@ -81,23 +91,57 @@ function _prep_record($record, $fields)
  * Prepare fields for frontend display:
  * - remove any field that has admin_col set to false
  */
-function _prep_fields($fields)
+function _prep_fields($meta)
 {
+    $fields = $meta['fields'] ?? [];
     $result = [];
+    $visible_fields = [];
+
     foreach ($fields as $k => $v) {
-        if (isset($v['admin_col']) && $v['admin_col'] === false) {
+        if ((isset($v['admin_col']) && $v['admin_col'] === false) || empty($v['type'])) {
             continue;
         }
-
-        if (empty($v['type'])) {
-            continue;
-        }
-
         if (empty($v['name'])) {
             $v['name'] = $k;
         }
+        $visible_fields[$k] = $v;
+    }
 
-        $result[$k] = $v;
+    $system_fields = _admin_system_fields();
+    $admin_columns = $meta['admin_columns'] ?? null;
+
+    if (is_array($admin_columns) && !empty($admin_columns)) {
+        foreach ($admin_columns as $field_id) {
+            if (isset($visible_fields[$field_id])) {
+                $result[$field_id] = $visible_fields[$field_id];
+                continue;
+            }
+            if (isset($system_fields[$field_id])) {
+                $result[$field_id] = $system_fields[$field_id];
+            }
+        }
+        return $result;
+    }
+
+    $result = $visible_fields;
+    foreach (['_modified', '_created'] as $field_id) {
+        $result[$field_id] = $system_fields[$field_id];
     }
     return $result;
+}
+
+function _admin_system_fields()
+{
+    return [
+        '_modified' => [
+            'name' => t('Modified'),
+            'type' => 'date',
+            'fmt' => 'Y-m-d H:i',
+        ],
+        '_created' => [
+            'name' => t('Created'),
+            'type' => 'date',
+            'fmt' => 'Y-m-d H:i',
+        ],
+    ];
 }
