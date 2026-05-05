@@ -1961,7 +1961,7 @@ Use the directory format only when the library needs support files that belong b
 To migrate existing single-file library directories automatically:
 
 ```bash
-php core/cli/nimbly.php migrate-lib
+php core/cli/nimbly.php migrate-lib-flat
 ```
 
 The function must be named `<name>_sc($params)` with hyphens converted to underscores:
@@ -2236,16 +2236,22 @@ git pull   # run from the project root (core repo)
 
 #### 2. Run the migration command
 
-The `migrate-10` CLI command handles the mechanical work automatically:
+The `upgrade-11` CLI command is the normal operator-facing entrypoint for the Nimbly 1.1 upgrade:
 
 ```bash
-php core/cli/nimbly.php migrate-10
+php core/cli/nimbly.php upgrade-11
+```
+
+Internally, the resource `pk` migration step is handled by:
+
+```bash
+php core/cli/nimbly.php migrate-pk-index
 ```
 
 For each resource whose `.meta` still has a `pk` key it will:
 
 1. Add the pk field to the `index` array in `.meta` (if not already there)
-2. Create index entries for all records — including the **self-referential** entries (`index_uuid === record_uuid`) that exist because 1.0 records had `uuid = md5_uuid(pk_field_value)`. The standard `reindex` command skips these; `migrate-10` creates them explicitly so that `data_read_index` can find them.
+2. Create index entries for all records — including the **self-referential** entries (`index_uuid === record_uuid`) that exist because 1.0 records had `uuid = md5_uuid(pk_field_value)`. The standard `reindex` command skips these; `migrate-pk-index` creates them explicitly so that `data_read_index` can find them.
 3. Remove `pk` from `.meta` and save the file
 
 It also reports legacy `*-on-data-create` trigger handlers so they can be migrated manually to `.meta` events.
@@ -2381,7 +2387,7 @@ MAIL_FROM_NAME=Your Site Name
 RESEND_API_KEY=re_xxxxxxxxxxxx
 ```
 
-If your project had a `.services` record with `tpl: email-password-reset`, it is no longer used. The `migrate-10` command will warn you if such records are found.
+If your project had a `.services` record with `tpl: email-password-reset`, it is no longer used. The `upgrade-11` command will warn you if such records are found.
 
 Projects with no `.services` records need no action here.
 
