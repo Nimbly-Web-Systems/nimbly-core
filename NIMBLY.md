@@ -1119,6 +1119,7 @@ These rules are mandatory for all resources unless explicitly stated otherwise.
 - Does ordering matter? Add `sort_order` + `sort`
 - Is this linked from a URL? Add a slug field and list it in `index`
 - Does any field need to be unique? Add it to `unique` and usually to `index`
+- Does the admin overview need a specific column order? Use `admin_columns`, including `_modified` and `_created` when useful
 - Does content need to be translated? Add `languages` and `i18n` per field
 - Can this be smaller while still fully solving the current requirement?
 - Can existing system metadata or a single field index solve this without extra custom fields?
@@ -1215,6 +1216,21 @@ These rules are mandatory for all resources unless explicitly stated otherwise.
   "sort": {
     "field": "date",
     "flags": "string",
+    "order": "desc"
+  }
+}
+```
+
+#### Example C: Admin overview columns
+
+Use `admin_columns` to control the admin table column order. This can include built-in system columns `_modified` and `_created`.
+
+```json
+{
+  "admin_columns": ["email", "_modified", "_created"],
+  "sort": {
+    "field": "_modified",
+    "flags": "numeric",
     "order": "desc"
   }
 }
