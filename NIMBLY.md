@@ -333,9 +333,28 @@ Sets a template variable.
 ```
 [#set page-title="About us"#]
 [#set active-nav=about#]
-[#set count=0 append=" "#]     → appends to existing value
-[#set key=value session#]      → persists in session
+[#set body-classes=editor-role append#]    → appends with a space separator
+[#set tags=news append=,#]                 → appends with a custom separator
+[#set key=value session#]                  → persists in session
+[#set key=value overwrite#]                → replaces value even if already set
 ```
+
+The `append` param concatenates rather than sets. Without a separator value it
+inserts a space between the existing value and the new one; supply a character
+to use a different separator. Useful for building CSS class lists or
+comma-separated strings:
+
+```
+[#set body-classes=site-body#]
+[#set body-classes=editor-role append#]    → "site-body editor-role"
+[#set body-classes=dark-mode append#]      → "site-body editor-role dark-mode"
+```
+
+**`[#set#]` does not overwrite by default.** If the variable already has a
+value, a plain `[#set#]` is a no-op. This makes it easy to define fallback
+values in shared/core templates while letting route templates override them
+first. Only add `overwrite` when you explicitly want to replace an existing
+value (e.g. when passing data into a reusable template component).
 
 #### `[#get varname#]`
 Outputs a variable's value.
@@ -395,7 +414,10 @@ Conditions: `key=value`, `key=(empty)`, `key=(not-empty)`
 Actions: `tpl=`, `tpl_else=`, `echo=`, `echo_else=`, `redirect=`
 Modifiers: `not`, `or`, `and`
 
-`[#if#]` is always a single self-closing tag — there is no block form (`[#if#]...[#/if#]`). Conditional content lives in a separate template referenced by `tpl=`.
+**`[#if#]` is always a single self-closing tag — there is no block form
+(`[#if#]...[#/if#]`), and this is by design.** Templates contain no business
+logic. Conditional content always lives in a separate template referenced by
+`tpl=`. Never write block-style `[#if#]…[#/if#]` in a template.
 
 #### `[#redirect url#]`
 Redirects immediately.
@@ -514,16 +536,27 @@ The following variables influence the HTML shell when set before `[#html#]`:
 
 | Variable | Description |
 |---|---|
-| `page-title` | Sets the `<title>` tag |
+| `page-title` | Sets the `<title>` tag and OG/Twitter title |
 | `body-classes` | Adds CSS classes to the `<body>` tag |
 | `page-settings-link` | Adds a shortcut link in the Nimbly admin bar pointing to the admin edit page for the current record. Use this on detail pages to allow quick admin access from the frontend. Example: `[#base-url#]/nb-admin/articles/[#record.uuid#]` |
+| `page-description` | Overrides the site-wide meta description for this page. Falls back to the site config description. |
+| `og-image` | Image for social sharing. Accepts a **UUID** (expanded to an absolute `/img/UUID/1200w` URL), a **relative path** (`img/og-card.png`), or an **absolute URL**. Falls back to the project default set in `ext/tpl/meta/index.tpl`. |
+| `og-type` | OG type for this page. Defaults to `website`. Use `article` for content detail pages. |
 
 ```
 [#set page-title="[#get record.title#]"#]
+[#set og-type=article#]
+[#set og-image=[#record.main_img#]#]
+[#set page-description="[#fmt var=record.main_text type=html max_length=160#]"#]
 [#set page-settings-link="[#base-url#]/nb-admin/event/[#record.uuid#]"#]
 [#set body-classes=site-body#]
 [#html#]
 ```
+
+The project default OG image is set once in `ext/tpl/meta/index.tpl` without `overwrite`, so per-page values always take priority. Two image utilities are available as shortcodes:
+
+- `[#img-url UUID-or-path-or-URL#]` — normalises any image reference to an absolute URL (useful outside meta, e.g. for JSON-LD)
+- `[#first-img-uuid var=record.main_text#]` — extracts the UUID of the first embedded image from an HTML field; returns `(empty)` when none is found
 
 ---
 
