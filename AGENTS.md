@@ -15,6 +15,15 @@ At a glance:
   or focused custom shortcodes in `ext/lib/<name>/`, not as inline page code.
 - Keep shortcode functions short. They should coordinate data and rendering,
   with logic and layout separated into libraries/templates where possible.
+- **`[#if#]` has no block form — ever.** There is no `[#if#]…[#/if#]` syntax.
+  `[#if#]` is always a single self-closing tag; conditional content lives in a
+  separate template via `tpl=`. This is by design: templates contain no business
+  logic. Never write block-style conditionals in templates.
+- **`[#set#]` does not overwrite by default.** Without the `overwrite` param a
+  `[#set#]` on an already-set variable is a no-op. Route templates can therefore
+  set page variables early and core/shared templates act as fallbacks. Use
+  `overwrite` only when you explicitly need to replace an existing value (e.g.
+  passing data into a reusable template component).
 
 Commit messages must follow the Conventional Commits style documented in
 `NIMBLY.md`: short, specific, professional, and usually one line.
