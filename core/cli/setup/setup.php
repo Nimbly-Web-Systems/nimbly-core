@@ -41,7 +41,12 @@ function nb_prompt(string $question, string $default = '', string $env_var = '')
     }
     $hint = $default !== '' ? " [$default]" : '';
     echo $question . $hint . ': ';
-    $value = trim(fgets(STDIN));
+    $input = fgets(STDIN);
+    if ($input === false) {
+        fwrite(STDERR, "\nError: input is required.\n");
+        exit(1);
+    }
+    $value = trim($input);
     return $value !== '' ? $value : $default;
 }
 
@@ -54,11 +59,16 @@ function nb_prompt_password(string $question, string $env_var = ''): string {
     if (strtoupper(substr(PHP_OS, 0, 3)) !== 'WIN') {
         system('stty -echo');
     }
-    $value = trim(fgets(STDIN));
+    $input = fgets(STDIN);
     if (strtoupper(substr(PHP_OS, 0, 3)) !== 'WIN') {
         system('stty echo');
     }
     echo "\n";
+    if ($input === false) {
+        fwrite(STDERR, "Error: input is required.\n");
+        exit(1);
+    }
+    $value = trim($input);
     return $value;
 }
 
@@ -426,4 +436,10 @@ if ($need_user) {
 // Done
 // -----------------------------------------------------------------------
 
+$cron_command = '* * * * * ' . PHP_BINARY . ' ' . BASE_DIR . 'core/cli/nimbly.php schedule:run';
+
 echo "\nSetup complete. Run 'npm run build' to compile assets.\n";
+echo "\nScheduler cron:\n";
+echo "  $cron_command\n";
+echo "\nThis single cron entry runs due scheduled commands, including queued jobs.\n";
+echo "To customize the app schedule, run: php core/cli/nimbly.php schedule:publish\n";
