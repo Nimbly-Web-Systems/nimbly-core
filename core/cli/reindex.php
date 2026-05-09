@@ -1,9 +1,9 @@
 <?php
 
 /**
- * Nimbly CLI — reindex command
+ * Nimbly CLI — index:rebuild command
  *
- * Usage: php core/cli/nimbly.php reindex [resource]
+ * Usage: php core/cli/nimbly.php index:rebuild [resource]
  *
  * Rebuilds index entries for all records in an indexed resource.
  * If no resource is given, lists resources with indexes and prompts for a choice.

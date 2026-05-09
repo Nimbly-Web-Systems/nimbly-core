@@ -1,9 +1,9 @@
 <?php
 
 /**
- * Nimbly CLI — create-user command
+ * Nimbly CLI — user:create command
  *
- * Usage: php core/cli/nimbly.php create-user
+ * Usage: php core/cli/nimbly.php user:create
  *
  * Creates a new user account with a specified role.
  */
@@ -57,7 +57,12 @@ load_library('encrypt');
 function nb_prompt(string $question, string $default = ''): string {
     $hint = $default !== '' ? " [$default]" : '';
     echo $question . $hint . ': ';
-    $value = trim(fgets(STDIN));
+    $input = fgets(STDIN);
+    if ($input === false) {
+        fwrite(STDERR, "\nError: input is required.\n");
+        exit(1);
+    }
+    $value = trim($input);
     return $value !== '' ? $value : $default;
 }
 
@@ -66,11 +71,16 @@ function nb_prompt_password(string $question): string {
     if (strtoupper(substr(PHP_OS, 0, 3)) !== 'WIN') {
         system('stty -echo');
     }
-    $value = trim(fgets(STDIN));
+    $input = fgets(STDIN);
     if (strtoupper(substr(PHP_OS, 0, 3)) !== 'WIN') {
         system('stty echo');
     }
     echo "\n";
+    if ($input === false) {
+        fwrite(STDERR, "Error: input is required.\n");
+        exit(1);
+    }
+    $value = trim($input);
     return $value;
 }
 

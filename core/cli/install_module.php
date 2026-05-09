@@ -1,9 +1,9 @@
 <?php
 
 /**
- * Nimbly CLI — install-module command
+ * Nimbly CLI — module:install command
  *
- * Usage: php core/cli/nimbly.php install-module <name>
+ * Usage: php core/cli/nimbly.php module:install <name>
  *
  * Looks for <name>/.install.inc in ext/modules (then core/modules as fallback)
  * and executes it.
@@ -58,7 +58,7 @@ load_library('encrypt');
 $module = $argv[2] ?? null;
 
 if (empty($module)) {
-    die("Usage: php core/cli/nimbly.php install-module <name>\n");
+    die("Usage: php core/cli/nimbly.php module:install <name>\n");
 }
 
 // -----------------------------------------------------------------------

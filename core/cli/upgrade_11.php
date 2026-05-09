@@ -1,9 +1,9 @@
 <?php
 
 /**
- * Nimbly CLI — upgrade-11 command
+ * Nimbly CLI — system:upgrade-11 command
  *
- * Usage: php core/cli/nimbly.php upgrade-11 [--yes]
+ * Usage: php core/cli/nimbly.php system:upgrade-11 [--yes]
  */
 
 if (php_sapi_name() !== 'cli') {
