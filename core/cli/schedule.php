@@ -186,11 +186,14 @@ function schedule_env_value($key)
 
 function schedule_state_read()
 {
-    if (!data_exists('.config', 'schedule')) {
-        return ['tasks' => []];
+    if (data_exists('.state', 'schedule')) {
+        $state = data_read('.state', 'schedule');
+    } elseif (data_exists('.config', 'schedule')) {
+        $state = data_read('.config', 'schedule');
+    } else {
+        $state = ['tasks' => []];
     }
 
-    $state = data_read('.config', 'schedule');
     if (!is_array($state)) {
         return ['tasks' => []];
     }
@@ -204,12 +207,12 @@ function schedule_state_read()
 
 function schedule_state_write($state)
 {
-    if (!data_exists('.config')) {
-        data_create('.config', '', []);
+    if (!data_exists('.state')) {
+        data_create('.state', '', []);
     }
 
     $state['_modified'] = time();
-    return data_create('.config', 'schedule', $state);
+    return data_create('.state', 'schedule', $state);
 }
 
 function schedule_normalize_task($task, $index)

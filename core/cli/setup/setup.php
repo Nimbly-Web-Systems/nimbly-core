@@ -196,7 +196,7 @@ $dirs_create = [
     'ext', 'ext/data', 'ext/static', 'ext/lib', 'ext/modules',
     'ext/tpl', 'ext/uri', 'ext/data/.tmp', 'ext/data/.tmp/cache',
     'ext/data/.tmp/logs', 'ext/data/.tmp/sessions', 'ext/data/.config',
-    'ext/data/.i18n',
+    'ext/data/.i18n', 'ext/data/.state',
 ];
 
 foreach ($dirs_create as $dir) {
