@@ -1521,6 +1521,7 @@ Prompts: **Site name**, **Admin email**, **Admin password**. Steps that are alre
 | Variable | Description |
 |---|---|
 | `BASE_PATH` | URL base path (default `/`) |
+| `APP_ENV` | Environment label (`prod`, `stage`, `dev`; default `dev`) |
 | `PEPPER` | Encryption pepper — set to reuse an existing value; omit to auto-generate |
 | `EXT_REPO` | Git remote URL for the ext repo (written to `ext/readme.md`) |
 | `SITE_NAME` | Site name written to `.config/site` |
@@ -1550,6 +1551,24 @@ php core/cli/nimbly.php reindex articles    # direct: reindex the 'articles' res
 ```
 
 The command scans all records in the resource and creates any missing index files. It is idempotent — existing entries are left untouched.
+
+#### `schedule:run`
+Runs due scheduled commands. The default cron is:
+
+```bash
+* * * * * php /path/to/site/core/cli/nimbly.php schedule:run
+```
+
+Projects may define schedules in `ext/cli/`. The scheduler selects files in this order:
+
+1. `SCHEDULE_FILE` from `.env` or the process environment, as an explicit file path.
+2. `ext/cli/schedule.<env>.inc`, where `<env>` comes from `SCHEDULE_ENV`, `APP_ENV`, or `NIMBLY_ENV`.
+3. `ext/cli/schedule.inc`.
+4. `core/cli/schedule.inc`.
+
+Environment aliases are normalized: `production` → `prod`, `staging` → `stage`, `development` and `local` → `dev`.
+
+Use environment-specific schedule files when staging or development must run background jobs but must not run production-only tasks such as member reminders.
 
 ---
 

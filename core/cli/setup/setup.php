@@ -93,6 +93,10 @@ if (empty($base_path)) $base_path = '/';
 if ($base_path[0] !== '/') $base_path = '/' . $base_path;
 if (substr($base_path, -1) !== '/') $base_path .= '/';
 
+// APP_ENV selects environment-specific schedules and gives projects one
+// shared environment label. Existing .env files are never overwritten.
+$app_env = getenv('APP_ENV') ?: ($env['APP_ENV'] ?? 'dev');
+
 // RewriteBase path without leading slash, used in RewriteCond patterns
 // e.g. "" for root install, "mysite/" for subdirectory install
 $rewrite_base_path = ltrim($base_path, '/');
@@ -106,7 +110,7 @@ if (empty($pepper)) {
 
 // Write .env
 if (!file_exists($env_file)) {
-    $env_content = "# Nimbly site configuration\n\nBASE_PATH=$base_path\nPEPPER=$pepper\n";
+    $env_content = "# Nimbly site configuration\n\nAPP_ENV=$app_env\nBASE_PATH=$base_path\nPEPPER=$pepper\n";
     file_put_contents($env_file, $env_content);
     echo "Written: .env\n";
 } else {
@@ -115,6 +119,7 @@ if (!file_exists($env_file)) {
 
 // Make PEPPER available to encrypt library
 $_SERVER['PEPPER'] = $pepper;
+$_SERVER['APP_ENV'] = $app_env;
 
 // Load data/encrypt now that PEPPER is set
 load_library('data');
