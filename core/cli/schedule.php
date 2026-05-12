@@ -103,16 +103,85 @@ exit($failed > 0 ? 1 : 0);
 
 function schedule_load()
 {
-    $schedule_file = BASE_DIR . 'ext/cli/schedule.inc';
-    if (!file_exists($schedule_file)) {
-        $schedule_file = BASE_DIR . 'core/cli/schedule.inc';
-    }
-    if (!file_exists($schedule_file)) {
+    $schedule_file = schedule_file_path();
+    if ($schedule_file === '') {
         return [];
     }
 
     $schedule = require $schedule_file;
     return is_array($schedule) ? $schedule : [];
+}
+
+function schedule_file_path()
+{
+    $override = trim((string)schedule_env_value('SCHEDULE_FILE'));
+    if ($override !== '') {
+        $override_file = str_starts_with($override, '/') ? $override : BASE_DIR . ltrim($override, '/');
+        return file_exists($override_file) ? $override_file : '';
+    }
+
+    $env = schedule_env_name();
+    if ($env !== '') {
+        $env_file = BASE_DIR . 'ext/cli/schedule.' . $env . '.inc';
+        if (file_exists($env_file)) {
+            return $env_file;
+        }
+    }
+
+    foreach ([
+        BASE_DIR . 'ext/cli/schedule.inc',
+        BASE_DIR . 'core/cli/schedule.inc',
+    ] as $schedule_file) {
+        if (file_exists($schedule_file)) {
+            return $schedule_file;
+        }
+    }
+
+    return '';
+}
+
+function schedule_env_name()
+{
+    $env = schedule_env_value('SCHEDULE_ENV');
+    if ($env === '') {
+        $env = schedule_env_value('APP_ENV');
+    }
+    if ($env === '') {
+        $env = schedule_env_value('NIMBLY_ENV');
+    }
+    $env = strtolower(trim((string)$env));
+
+    if ($env === '') {
+        return '';
+    }
+
+    $aliases = [
+        'production' => 'prod',
+        'staging' => 'stage',
+        'development' => 'dev',
+        'local' => 'dev',
+    ];
+    $env = $aliases[$env] ?? $env;
+
+    if (!preg_match('/^[a-z0-9_-]+$/', $env)) {
+        return '';
+    }
+
+    return $env;
+}
+
+function schedule_env_value($key)
+{
+    $value = getenv($key);
+    if ($value !== false && $value !== '') {
+        return $value;
+    }
+
+    if (isset($_SERVER[$key]) && $_SERVER[$key] !== '') {
+        return $_SERVER[$key];
+    }
+
+    return '';
 }
 
 function schedule_state_read()
