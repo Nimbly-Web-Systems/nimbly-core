@@ -1045,7 +1045,7 @@ Every record automatically has: `uuid`, `_created`, `_modified`, `_created_by`, 
 
 Resources whose names begin with `.` are hidden from the admin data management UI by default (Unix hidden-file convention). They remain fully accessible via the data library and API.
 
-Built-in hidden resources: `.config`, `.content`, `.routes`, `.i18n`, `.jobs`.
+Built-in hidden resources: `.config`, `.content`, `.routes`, `.i18n`, `.jobs`, `.state`.
 
 Custom hidden resources follow the same convention — name them with a leading dot to keep them out of the admin overview.
 
@@ -1569,6 +1569,8 @@ Projects may define schedules in `ext/cli/`. The scheduler selects files in this
 Environment aliases are normalized: `production` → `prod`, `staging` → `stage`, `development` and `local` → `dev`.
 
 Use environment-specific schedule files when staging or development must run background jobs but must not run production-only tasks such as member reminders.
+
+Scheduler last-run state is stored in `ext/data/.state/schedule`. Existing installs with older `ext/data/.config/schedule` state are read as a migration fallback until the scheduler writes the new state file.
 
 ---
 
