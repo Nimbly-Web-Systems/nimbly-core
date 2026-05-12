@@ -110,7 +110,17 @@ if (empty($pepper)) {
 
 // Write .env
 if (!file_exists($env_file)) {
-    $env_content = "# Nimbly site configuration\n\nAPP_ENV=$app_env\nBASE_PATH=$base_path\nPEPPER=$pepper\n";
+    $env_lines = [
+        '# Nimbly site configuration',
+        '',
+        'APP_ENV=' . $app_env,
+    ];
+    if ($base_path !== '/') {
+        $env_lines[] = 'BASE_PATH=' . $base_path;
+    }
+    $env_lines[] = 'PEPPER=' . $pepper;
+
+    $env_content = implode("\n", $env_lines) . "\n";
     file_put_contents($env_file, $env_content);
     echo "Written: .env\n";
 } else {

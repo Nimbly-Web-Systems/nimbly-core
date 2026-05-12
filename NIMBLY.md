@@ -1508,7 +1508,7 @@ php core/cli/nimbly.php help
 First-time site initialisation. Safe to re-run — existing files and records are never overwritten.
 
 What it does:
-- Creates `.env` with `BASE_PATH` and a generated `PEPPER`
+- Creates `.env` with `APP_ENV`, a generated `PEPPER`, and `BASE_PATH` only for subdirectory installs
 - Generates `.htaccess` from template
 - Creates the `ext/` directory scaffold (`data/`, `static/`, `lib/`, `modules/`, `tpl/`, `uri/`, temp dirs)
 - Creates `.config/site`, the `.content` resource, core `.routes` records, and default roles (`admin`, `editor`)
@@ -1520,8 +1520,8 @@ Prompts: **Site name**, **Admin email**, **Admin password**. Steps that are alre
 
 | Variable | Description |
 |---|---|
-| `BASE_PATH` | URL base path (default `/`) |
 | `APP_ENV` | Environment label (`prod`, `stage`, `dev`; default `dev`) |
+| `BASE_PATH` | Optional URL base path for subdirectory installs, e.g. `/mysite/`; omit for root installs |
 | `PEPPER` | Encryption pepper — set to reuse an existing value; omit to auto-generate |
 | `EXT_REPO` | Git remote URL for the ext repo (written to `ext/readme.md`) |
 | `SITE_NAME` | Site name written to `.config/site` |
