@@ -357,6 +357,8 @@ if (!data_exists('.jobs', '.meta')) {
 $routes = [
     ['route' => 'api',                                 'order' => 900],
     ['route' => 'api/v1/(resource)',                   'order' => 500],
+    ['route' => 'api/v1/(resource)/import',            'order' => 100],
+    ['route' => 'api/v1/(resource)/export',            'order' => 100],
     ['route' => 'api/v1/(resource)/(id)',              'order' => 200],
     ['route' => 'api/v1/(resource)/(id)/(id)',         'order' => 200],
     ['route' => 'api/v1/.pages/(id)',                  'order' => 200],
