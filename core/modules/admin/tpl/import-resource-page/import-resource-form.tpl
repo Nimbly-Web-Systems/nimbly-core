@@ -10,7 +10,8 @@
         [#set _f.value="" overwrite#]
         [#set _f.required=1 overwrite#]
         [#set _f.model="form_data.[#_f.key#]" overwrite#]
-        [#set _f.accept=".tsv" overwrite#]
+        [#set _f.accept=".json,.tsv,.csv" overwrite#]
+        [#set _f.format="JSON, TSV or CSV, UTF-8" overwrite#]
         [#field-upload#]
 
         <div class="mt-8"></div>
