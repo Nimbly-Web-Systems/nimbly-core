@@ -1,9 +1,9 @@
 <!-- Insert media modal -->
-<div data-te-modal-init x-data="media_insert()"
+<div x-data="media_insert()"
     class="fixed left-0 top-0 z-[1055] hidden h-full w-full overflow-y-auto overflow-x-hidden outline-none p-2 sm:p-4"
-    id="nb-modal-insert-media" tabindex="-1" aria-labelledby="nb-modal-insert-media" aria-hidden="true">
-    <div data-te-modal-dialog-ref
-        class="pointer-events-none relative w-auto translate-y-[-50px] opacity-0 transition-all duration-300 ease-in-out min-[0px]:m-0 min-[0px]:h-full min-[0px]:max-w-none">
+    id="nb-modal-insert-media" tabindex="-1" aria-labelledby="nb-modal-insert-media" aria-hidden="true"
+    @click.self="nb.modal.close('nb-modal-insert-media')" @keydown.escape.window="nb.modal.close('nb-modal-insert-media')">
+    <div class="pointer-events-none relative w-auto min-[0px]:m-0 min-[0px]:h-full min-[0px]:max-w-none">
         <div
             class="pointer-events-auto relative flex w-full flex-col rounded-md bg-neutral-50
        bg-clip-padding text-current shadow-lg outline-none min-[0px]:h-full min-[0px]:rounded-none min-[0px]:border-0">
@@ -26,7 +26,7 @@
                 <!-- Close button -->
                 <button type="button"
                     class="box-content rounded-none border-none hover:no-underline hover:opacity-75 focus:opacity-100 focus:shadow-none focus:outline-none"
-                    data-te-modal-dismiss aria-label="Close">
+                    @click="nb.modal.close('nb-modal-insert-media')" aria-label="Close">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
                         stroke="currentColor" class="h-6 w-6">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -39,17 +39,16 @@
 
                 <div class="flex">
                     <!-- tab buttons -->
-                    <ul class="flex list-none flex-col flex-wrap pl-0 w-12" role="tablist" data-te-nav-ref>
+                    <ul class="flex list-none flex-col flex-wrap pl-0 w-12" role="tablist">
                         <li role="presentation" class="text-center w-12">
                             <a href="#tab_media_library" id='tab_media_library_btn' class="w-12 my-2 block border-x-0 border-b-2 border-t-0 border-transparent px-3 pb-3.5 
                                     pt-4 text-xs font-medium uppercase leading-tight text-neutral-500 
                                     hover:isolate hover:border-transparent
                                      hover:bg-neutral-100 focus:isolate 
-                                     focus:border-transparent data-[te-nav-active]:border-primary
-                                      data-[te-nav-active]:text-primary
-                                      data-[te-nav-active]:bg-neutral-100" data-te-toggle="pill"
-                                title="[#text Pick from media library#]" data-te-target="#tab_media_library"
-                                @click="if (mode != 'select') mode='insert'" data-te-nav-active role="tab"
+                                     focus:border-transparent"
+                                :class="mode !== 'embed' ? 'border-primary text-primary bg-neutral-100' : ''"
+                                title="[#text Pick from media library#]"
+                                @click.prevent="if (mode != 'select') mode='insert'" role="tab"
                                 aria-controls="tab_media_library" aria-selected="true">
 
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
@@ -60,16 +59,17 @@
                             </a>
                         </li>
                         <li role="presentation" class="w-12 text-center">
-                            <a href="#tab_media_embed" :class="mode==='select' && 'opacity-50 pointer-events-none'"
-                                @click="if (mode != 'select') mode='embed'" title="[#text Embed external media#]" class="w-12 my-2 block border-x-0 border-b-2 border-t-0 border-transparent 
-                                px-3 pb-3.5 pt-4 text-xs font-medium uppercase leading-tight
-                                 text-neutral-500 
+                            <a href="#tab_media_embed" id="tab_media_embed_btn"
+                                :class="{
+                                    'opacity-50 pointer-events-none': mode === 'select',
+                                    'border-primary bg-neutral-100 text-primary': mode === 'embed'
+                                }"
+                                @click.prevent="if (mode != 'select') mode='embed'" title="[#text Embed external media#]" class="w-12 my-2 block border-x-0 border-b-2 border-t-0 border-transparent
+                                 px-3 pb-3.5 pt-4 text-xs font-medium uppercase leading-tight
+                                 text-neutral-500
                                  hover:isolate hover:border-transparent hover:bg-neutral-100
-                                 focus:isolate focus:border-transparent
-                                  data-[te-nav-active]:border-primary
-                                 data-[te-nav-active]:bg-neutral-100
-                                  data-[te-nav-active]:text-primary" data-te-toggle="pill"
-                                data-te-target="#tab_media_embed" role="tab" aria-controls="tab_media_embed"
+                                 focus:isolate focus:border-transparent"
+                                role="tab" aria-controls="tab_media_embed"
                                 aria-selected="false">
 
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
@@ -82,9 +82,9 @@
                         </li>
                     </ul>
                     <div class="w-full bg-neutral-100">
-                        <div class="hidden opacity-100 transition-opacity duration-150 ease-linear data-[te-tab-active]:block"
+                        <div x-show="mode !== 'embed'" class="opacity-100 transition-opacity duration-150 ease-linear"
                             id="tab_media_library" role="tabpanel" aria-labelledby="tab_media_library"
-                            data-te-tab-active>
+                            >
 
                             <div class="flex flex-wrap flex-col-reverse sm:flex-row sm:flex-nowrap">
 
@@ -97,7 +97,7 @@
                             </div>
                         </div>
 
-                        <div class="hidden opacity-100 transition-opacity duration-150 ease-linear data-[te-tab-active]:block"
+                        <div x-show="mode === 'embed'" class="opacity-100 transition-opacity duration-150 ease-linear"
                             id="tab_media_embed" role="tabpanel" aria-labelledby="tab_media_embed">
 
                             <div class="w-full p-4 md:p-6 lg:p-8">
@@ -117,7 +117,7 @@
             <div class="mt-auto flex flex-shrink-0 flex-wrap items-center justify-end rounded-b-md p-4 
           border-t border-neutral-200 min-[0px]:rounded-none">
 
-                <button type="button" class="[#btn-class-secondary#] ml-2" data-te-modal-dismiss>
+                <button type="button" class="[#btn-class-secondary#] ml-2" @click="nb.modal.close('nb-modal-insert-media')">
                     [#text Cancel#]
                 </button>
                 <button type="button" class="[#btn-class-primary#] ml-2" :disabled="!file_info" x-show="mode==='insert'"

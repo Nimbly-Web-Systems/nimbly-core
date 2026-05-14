@@ -50,8 +50,7 @@
                     </div>
                     <div class="flex">
                         <button class="btn btn-xs btn-ghost px-1" draggable="false"
-                            data-te-toggle="modal" data-te-target="#nb-modal-insert-media"
-                            @click.prevent="select_image('[#_f.key#]', ix)"
+                            @click.prevent="select_image('[#_f.key#]', ix); nb.modal.open('nb-modal-insert-media')"
                             title="[#text Change image#]">
                             <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L6.832 19.82a4.5 4.5 0 0 1-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 0 1 1.13-1.897L16.863 4.487Zm0 0L19.5 7.125"/></svg>
                         </button>
@@ -69,8 +68,7 @@
         <!-- add image card — always last -->
         <button class="flex flex-col items-center justify-center aspect-square rounded border-2 border-dashed
                 border-neutral-300 bg-white text-neutral-400 hover:border-primary hover:text-primary transition-colors"
-            data-te-toggle="modal" data-te-target="#nb-modal-insert-media"
-            @click.prevent="select_image('[#_f.key#]', [#_f.model#].length)">
+            @click.prevent="select_image('[#_f.key#]', [#_f.model#].length); nb.modal.open('nb-modal-insert-media')">
             <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 mb-1" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
             <span class="text-xs font-medium">[#text Add image#]</span>
         </button>

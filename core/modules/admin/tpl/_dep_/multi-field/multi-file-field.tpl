@@ -114,9 +114,8 @@
                     <td class="whitespace-nowrap px-4 py-2">
                         <div class="flex flex-row items-center">
 
-                            <button class="[#btn-class-icon#] p-1 text-neutral-600" data-te-toggle="modal"
-                                data-te-target="#nb-modal-insert-media" title="[#text Change file#]"
-                                @click.prevent="select_media('[#item.key#]',`${file_ix}`)">
+                            <button class="[#btn-class-icon#] p-1 text-neutral-600" title="[#text Change file#]"
+                                @click.prevent="select_media('[#item.key#]',`${file_ix}`); nb.modal.open('nb-modal-insert-media')">
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
                                     stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
                                     <path stroke-linecap="round" stroke-linejoin="round"
@@ -164,8 +163,7 @@
         </tbody>
     </table>
     <button class="[#btn-class-secondary#] flex flex-row items-center mt-4 hover:text-cnormal" style="padding: 5px 10px"
-        data-te-toggle="modal" data-te-target="#nb-modal-insert-media"
-        @click.prevent="select_media('[#item.key#]',`${form_data.[#item.key#].length}`)">
+        @click.prevent="select_media('[#item.key#]',`${form_data.[#item.key#].length}`); nb.modal.open('nb-modal-insert-media')">
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"
             class="w-5 h-5 mr-2 -mt-[1px]">
             <path stroke-linecap="round" stroke-linejoin="round"

@@ -76,11 +76,11 @@
             <!-- pick from media library — calls select_image (modal_settings method via scope
                  chain) then overrides the type filter to show documents instead of images -->
             <button class="[#btn-class-icon#] p-1 text-neutral-600"
-                data-te-toggle="modal" data-te-target="#nb-modal-insert-media"
                 title="[#text Select file#]"
                 @click.prevent="
                     select_image('[#_f.key#]');
                     nb.media_alpine.filter(['doc']);
+                    nb.modal.open('nb-modal-insert-media');
                 ">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
                     stroke="currentColor" class="w-4 h-4">
