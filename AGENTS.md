@@ -2,6 +2,9 @@ See [NIMBLY.md](NIMBLY.md) for the complete Nimbly implementation reference.
 
 At a glance:
 
+- **`ext/` is a separate git repository.** Always run git commands inside
+  `ext/` (e.g. `git -C ext status`) for application changes. The project root
+  is the `core` repo and knows nothing about `ext/` changes.
 - Work in `ext/` for project customizations. Do not modify `core/` unless the
   task is explicitly framework work.
 - Follow the PHP naming convention documented in `NIMBLY.md`: snake_case
