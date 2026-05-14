@@ -11,7 +11,7 @@ document.addEventListener("alpine:init", () => {
         }
       }
 
-      fetch(nb.base_url + "/api/v1/" + this.resource_id + "/import", {
+      fetch(nb.base_url + "/api/v1/" + this.resource_id, {
         method: "POST",
         body: formData,
       })
