@@ -118,7 +118,7 @@ function job_resource_meta()
 
 function job_run_queued($limit = 1)
 {
-    load_library('data');
+    load_libraries(['data', 'env']);
 
     $jobs = data_read('.jobs');
     if (empty($jobs) || !is_array($jobs)) {
@@ -129,6 +129,7 @@ function job_run_queued($limit = 1)
     $processed = 0;
     $done = 0;
     $failed = 0;
+    $delay_ms = max(0, (int)env('JOB_RUN_DELAY_MS', '250'));
 
     foreach ($jobs as $uuid => $job) {
         if ($processed >= $limit) {
@@ -173,6 +174,10 @@ function job_run_queued($limit = 1)
                 'last_error' => $e->getMessage(),
             ]);
             $failed++;
+        }
+
+        if ($delay_ms > 0 && $processed < $limit) {
+            usleep($delay_ms * 1000);
         }
     }
 
