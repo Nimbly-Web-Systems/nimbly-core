@@ -18,6 +18,6 @@
 		[#if _f.required=(not-empty) echo=" *"#]
 	</label>
 	<p class="text-xs pl-3 pt-1 text-neutral-500">
-		[#text Format: TSV, UTF-8#]. [#text Max file size:#] [#fmt [#max-upload-size#] bytes#]
+		[#text Format:#] [#get _f.format default="TSV, UTF-8"#]. [#text Max file size:#] [#fmt [#max-upload-size#] bytes#]
 	</p>
 </div>

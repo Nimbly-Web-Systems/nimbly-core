@@ -15,8 +15,8 @@
         </figure>
     </template>
 
-    <button class="[#btn-class-icon#] absolute right-12 top-1 p-1 text-neutral-600" data-te-toggle="modal"
-        data-te-target="#nb-modal-insert-media" @click.prevent="select_image('[#_fname#]')">
+    <button class="[#btn-class-icon#] absolute right-12 top-1 p-1 text-neutral-600"
+        @click.prevent="select_image('[#_fname#]'); nb.modal.open('nb-modal-insert-media')">
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"
             class="w-4 h-4">
             <path stroke-linecap="round" stroke-linejoin="round"

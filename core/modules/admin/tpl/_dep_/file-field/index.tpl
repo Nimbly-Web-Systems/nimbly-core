@@ -26,8 +26,8 @@
 
 	<!-- no file set (empty) -->
 	<template x-if="[#_fmodel#] == ''">
-		<button class="flex flex-col items-center justify-center w-full h-[100px]" data-te-toggle="modal"
-			data-te-target="#nb-modal-insert-media" @click.prevent="select_media('[#_fname#]')">
+		<button class="flex flex-col items-center justify-center w-full h-[100px]"
+			@click.prevent="select_media('[#_fname#]'); nb.modal.open('nb-modal-insert-media')">
 			<svg xmlns=" http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
 				stroke="currentColor" class="w-4 h-4">
 				<path stroke-linecap="round" stroke-linejoin="round"
