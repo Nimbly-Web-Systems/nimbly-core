@@ -32,6 +32,29 @@ window.nb.hide_notification = function () {
     el.classList.add('hidden');
 }
 
+window.nb.modal = {
+    open(id) {
+        const el = typeof id === 'string' ? document.getElementById(id) : id;
+        if (!el) {
+            return;
+        }
+        el.classList.remove('hidden');
+        el.removeAttribute('aria-hidden');
+        el.setAttribute('aria-modal', 'true');
+        el.dispatchEvent(new CustomEvent('nb:modal:show', { bubbles: true }));
+    },
+    close(id) {
+        const el = typeof id === 'string' ? document.getElementById(id) : id;
+        if (!el) {
+            return;
+        }
+        el.classList.add('hidden');
+        el.setAttribute('aria-hidden', 'true');
+        el.removeAttribute('aria-modal');
+        el.dispatchEvent(new CustomEvent('nb:modal:hide', { bubbles: true }));
+    }
+};
+
 window.nb.populate_template = function (tpl_id, data) {
     const tpl_el = document.getElementById(tpl_id);
     if (!tpl_el) {

@@ -1,8 +1,7 @@
-<button id="nb_page_settings_btn" class="[#if api_nb_bar_slim=(not-empty) echo=hidden#] truncate text-white rounded w-[30px] h-[30px]
-                hover:bg-clight" data-te-sidenav-slim="false" aria-haspopup="true" data-te-toggle="modal"
-    data-te-target="#nb-modal-settings">
-    <svg class="w-[23px] h-[23px]  fill-white flex-shrink-0 ml-[3px]" fill="#ffffff" height="48" viewBox="0 0 24 24"
-        width="48" xmlns="http://www.w3.org/2000/svg">
+<button id="nb_page_settings_btn" x-show="!collapsed" type="button"
+    class="flex h-8 w-8 items-center justify-center rounded text-white hover:bg-clight"
+    aria-haspopup="dialog" @click="open_modal('nb-modal-settings')" title="[#text Page settings#]">
+    <svg class="h-5 w-5 shrink-0 fill-white" fill="#ffffff" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
         <title>[#text Page settings#]</title>
         <path d="M0 0h24v24H0z" fill="none" />
         <path

@@ -155,14 +155,15 @@ nb_edit.enable_img = function (eimg) {
     let img_uuid = img_el.src.slice(img_el.src.indexOf('/img/') + 5);
     img_uuid = img_uuid.substr(0, img_uuid.indexOf('/'));
     eimg.setAttribute('data-nb-edit-img-value', img_uuid);
-    if (eimg.querySelectorAll('button[data-te-toggle=modal]').length === 0) {
+    if (eimg.querySelectorAll('button[data-nb-open-media-modal]').length === 0) {
         eimg.insertAdjacentHTML('beforeend', document.getElementById('nb_edit_img_btn').innerHTML);
-        eimg.querySelector('button[data-te-toggle=modal]').addEventListener('click', function () {
+        eimg.querySelector('button[data-nb-open-media-modal]').addEventListener('click', function () {
             nb.media_alpine.mode = 'select';
             nb.media_alpine.filter(['img', 'svg']);
             nb.media_alpine.reset_tab();
             nb.media_modal._set_media = nb_edit.set_img;
             nb.media_modal.field = eimg;
+            nb.modal.open('nb-modal-insert-media');
         });
     }
 }
