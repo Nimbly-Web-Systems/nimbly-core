@@ -41,10 +41,6 @@ function job_payload_with_request_context($payload)
         $payload['_request_url'] = $base_url . '/' . ltrim($request_uri, '/');
     }
 
-    if (data_exists('.config', 'site') && (data_read('.config', 'site')['site_url'] ?? '') !== $base_url) {
-        data_update('.config', 'site', ['site_url' => $base_url]);
-    }
-
     return $payload;
 }
 
