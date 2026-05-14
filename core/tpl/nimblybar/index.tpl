@@ -54,7 +54,7 @@
             [#feature-cond manage-content tpl=btn-dashboard#]
             [#feature-cond manage-content tpl=btn-page-settings#]
 
-            <div x-show="!collapsed" class="relative ml-auto" @click.outside="account_open = false">
+            <div x-show="!collapsed" class="relative ml-auto" @click.outside="account_open = false" id="nb-bar-account-menu">
                 <button id="nb_account_btn" type="button" @click="account_open = !account_open"
                     class="flex h-8 w-8 items-center justify-center rounded text-white hover:bg-clight focus:bg-clight focus:outline-none"
                     aria-haspopup="true" :aria-expanded="account_open.toString()" title="[#text Account#]">
@@ -75,11 +75,24 @@
                     <hr class="my-2 h-0 border border-t-0 border-solid border-neutral-700 opacity-10" />
                     <a class="flex w-full items-center whitespace-nowrap bg-transparent p-2 text-sm font-normal text-neutral-700 hover:bg-clight/20"
                         href="[#base-url#]/nb-admin/profile">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                            stroke="currentColor" data-slot="icon" class="w-6 h-6 mr-2">
+                            <title>Account</title>
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                d="M17.982 18.725A7.488 7.488 0 0 0 12 15.75a7.488 7.488 0 0 0-5.982 2.975m11.963 0a9 9 0 1 0-11.963 0m11.963 0A8.966 8.966 0 0 1 12 21a8.966 8.966 0 0 1-5.982-2.275M15 9.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z">
+                            </path>
+                        </svg>
                         [#text Profile#]
                     </a>
                     <hr class="my-2 h-0 border border-t-0 border-solid border-neutral-700 opacity-10" />
                     <a class="flex w-full items-center whitespace-nowrap bg-transparent p-2 text-sm font-normal text-neutral-700 hover:bg-clight/20"
                         href="[#base-url#]/logout">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                            stroke="currentColor" data-slot="icon" class="w-6 h-6 mr-2">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15m3 0 3-3m0 0-3-3m3 3H9">
+                            </path>
+                        </svg>
                         [#text Logout#]
                     </a>
                 </div>
@@ -96,8 +109,7 @@
     </div>
 
     <a href="[#base-url#]/nb-admin" class="absolute bottom-10 z-[1090] block h-6 w-auto text-neutral-300"
-        :class="side === 'left' ? '-right-5 rotate-[-90deg]' : '-left-5 rotate-90'"
-        title="[#text Nimbly dashboard#]">
+        :class="side === 'left' ? '-right-5 rotate-[-90deg]' : '-left-5 rotate-90'" title="[#text Nimbly dashboard#]">
         <svg width="137px" height="47px" viewBox="0 0 137 47" version="1.1" class="h-6 w-auto"
             xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
             <g stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
