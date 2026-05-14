@@ -189,6 +189,11 @@ function api_check_csrf(&$data) {
  */
 
 function resource_get($resource) { // get all
+    $export = filter_input(INPUT_GET, 'export', FILTER_SANITIZE_SPECIAL_CHARS);
+    if (!empty($export)) {
+        load_library('api_export_resource');
+        return api_export_resource($resource, $export);
+    }
     $modified = data_modified($resource);
     http_header_not_modified($modified);
     $result = data_read($resource);
@@ -196,6 +201,10 @@ function resource_get($resource) { // get all
 }
 
 function resource_post($resource) { // create new
+    if (!empty($_FILES)) {
+        load_library('api_import_resource');
+        return api_import_resource($resource);
+    }
     $data = api_json_input($resource);
     $csrf_check = api_check_csrf($data);
     if ($csrf_check === false) { //can also be null, if no key is set
