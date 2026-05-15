@@ -18,6 +18,23 @@ require_once BASE_DIR . 'core/cli/helpers/migrate_10.php';
 require_once BASE_DIR . 'core/cli/helpers/migrate_lib.php';
 require_once BASE_DIR . 'core/cli/helpers/htaccess.php';
 
+function upgrade_11_tailwind_elements_files(): array
+{
+    $files = glob(BASE_DIR . 'ext/static/tw-elements*') ?: [];
+    return array_values(array_filter($files, 'is_file'));
+}
+
+function upgrade_11_apply_tailwind_elements_cleanup(array $files): int
+{
+    $deleted = 0;
+    foreach ($files as $file) {
+        if (is_file($file) && unlink($file)) {
+            $deleted++;
+        }
+    }
+    return $deleted;
+}
+
 $yes = in_array('--yes', $argv, true) || in_array('-y', $argv, true);
 
 migrate_10_bootstrap();
@@ -26,10 +43,12 @@ $migration = migrate_10_collect();
 $env = upgrade_11_read_env();
 $paths = upgrade_11_paths_from_env($env);
 $htaccess = upgrade_11_htaccess_state($env['PEPPER'] ?? '', $paths['base_path'], $paths['rewrite_base_path']);
+$tailwind_elements_files = upgrade_11_tailwind_elements_files();
 
 $has_work = migrate_10_has_work($migration)
     || !empty($moves)
-    || in_array($htaccess['action'], ['write', 'recreate_mod_php'], true);
+    || in_array($htaccess['action'], ['write', 'recreate_mod_php'], true)
+    || !empty($tailwind_elements_files);
 
 if (!$has_work) {
     echo "Nimbly 1.1 upgrade checks complete — no automatic upgrade steps are needed.\n";
@@ -71,6 +90,13 @@ if ($htaccess['action'] === 'warn_base_mismatch') {
     echo "  This warning is informational here; use 'setup' to review rewrite-base recreation.\n";
 }
 
+if (!empty($tailwind_elements_files)) {
+    echo "\n[4] Tailwind Elements static asset cleanup\n\n";
+    foreach ($tailwind_elements_files as $file) {
+        echo '  Delete ' . str_replace(BASE_DIR, '', $file) . "\n";
+    }
+}
+
 if (!$yes) {
     echo "\nProceed with the automatic 1.1 upgrade steps? [y/N] ";
     $confirm = trim(fgets(STDIN));
@@ -104,4 +130,10 @@ if (in_array($htaccess['action'], ['write', 'recreate_mod_php'], true)) {
 if ($htaccess['action'] === 'warn_base_mismatch') {
     echo "\n" . $htaccess['message'] . "\n";
     echo "Run 'php core/cli/nimbly.php setup' if you want to recreate .htaccess for the current BASE_PATH.\n";
+}
+
+if (!empty($tailwind_elements_files)) {
+    echo "\n=== Removing Tailwind Elements static assets ===\n";
+    $deleted = upgrade_11_apply_tailwind_elements_cleanup($tailwind_elements_files);
+    echo "Deleted {$deleted} Tailwind Elements static asset" . ($deleted === 1 ? '' : 's') . ".\n";
 }
