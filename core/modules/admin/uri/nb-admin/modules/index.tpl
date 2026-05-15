@@ -1,5 +1,0 @@
-[#access feature=system-maintenance,install-modules#]
-[#set page-title="[#text Modules#]"#]
-[#set nb-skip-insert-media=true#]
-[#post#]
-[#html#]
