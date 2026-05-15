@@ -1803,7 +1803,7 @@ The admin (1.1+) uses DaisyUI components. The following shortcodes from `core/mo
 - `[#get-resource-record resource=users uuid=abc123#]` — loads a single record for editing, with i18n and encryption handling
 - `[#get-resource-meta resource=users#]` — loads only field definitions into `data.fields`
 
-The old admin templates are in `_dep_` folders and remain functional during the transition to the new UI.
+The legacy `_dep_` admin UI has been removed. Active admin routes and templates live in the non-`_dep_` admin paths.
 
 ---
 
