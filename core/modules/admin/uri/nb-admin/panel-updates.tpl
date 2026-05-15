@@ -12,28 +12,27 @@
                 <path d="M2 12C2 6.47715 6.47715 2 12 2V5C8.13401 5 5 8.13401 5 12H2Z" fill="#000000" />
             </svg>
         </div>
-        <div class="relative [#feature-cond manage-system echo_else=hidden#]" data-te-dropdown-ref>
-            <button class="rounded-full hover:bg-neutral-100 p-2 -mt-1" data-te-dropdown-toggle-ref>
+        <div class="dropdown dropdown-end [#feature-cond manage-system echo_else=hidden#]">
+            <button type="button" tabindex="0" class="rounded-full hover:bg-neutral-100 p-2 -mt-1">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5">
                     <path
                         d="M10 3a1.5 1.5 0 110 3 1.5 1.5 0 010-3zM10 8.5a1.5 1.5 0 110 3 1.5 1.5 0 010-3zM11.5 15.5a1.5 1.5 0 10-3 0 1.5 1.5 0 003 0z" />
                 </svg>
 
             </button>
-            <ul class="absolute z-[1000] float-left m-0 hidden min-w-max list-none overflow-hidden rounded-lg border-none bg-orange-500 bg-clip-padding text-left text-base shadow-lg [&[data-te-dropdown-show]]:block"
-                aria-labelledby="dropdownMenuSmallButton" data-te-dropdown-menu-ref>
+            <ul tabindex="0" class="dropdown-content z-[1000] m-0 min-w-max list-none overflow-hidden rounded-lg border-none bg-orange-500 bg-clip-padding text-left text-base shadow-lg">
                 <li>
                     <button
                         class="block w-full whitespace-nowrap bg-transparent px-4 py-2 
                         text-sm font-normal text-neutral-50 hover:bg-orange-400 disabled:cursor-auto
                          active:text-white active:no-underline disabled:pointer-events-none disabled:bg-transparent disabled:text-neutral-200"
-                        data-te-dropdown-item-ref @click="pull_site" :disabled="site_updates==0">
+                        @click="pull_site" :disabled="site_updates==0">
                         [#text Get site updates#] (<span x-text="site_updates"></span>)</button>
                 </li>
                 <li>
                     <button
                         class="block w-full whitespace-nowrap bg-transparent disabled:cursor-auto px-4 py-2 text-sm font-normal text-neutral-50 hover:bg-orange-400 active:text-white active:no-underline disabled:pointer-events-none disabled:bg-transparent disabled:text-neutral-200"
-                        data-te-dropdown-item-ref @click="pull_core" :disabled="core_updates==0">
+                        @click="pull_core" :disabled="core_updates==0">
                         [#text Get core updates#] (<span x-text="core_updates"></span>)</button>
                 </li>
             </ul>
