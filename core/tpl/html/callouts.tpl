@@ -1,7 +1,7 @@
 [#system-messages#]
 <div id="nb-system-messages"
-    class="fixed top-0 w-full md:w-[330px] z-[1102] left-0 right-0 md:left-[calc(50%-165px)] my-4 rounded-lg bg-yellow-100 shadow-lg px-6 py-5 text-base text-neutral-900 [#if system_message=(empty) echo=hidden#]"
-    data-te-alert-init role="alert">
+    class="alert alert-warning fixed top-0 w-full md:w-[330px] z-[1102] left-0 right-0 md:left-[calc(50%-165px)] my-4 rounded-lg bg-yellow-100 shadow-lg px-6 py-5 text-base text-neutral-900 [#if system_message=(empty) echo=hidden#]"
+    role="alert">
     <button type="button"
         class="float-right ml-auto box-content rounded-none border-none p-1 text-warning-900 opacity-50 hover:text-warning-900 hover:no-underline hover:opacity-75 focus:opacity-100 focus:shadow-none focus:outline-none"
         aria-label="Close" onclick="nb.hide_notification()">

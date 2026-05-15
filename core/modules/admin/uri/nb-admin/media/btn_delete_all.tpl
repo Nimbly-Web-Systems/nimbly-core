@@ -1,14 +1,24 @@
-<button class="[#btn-class-secondary#]" type="button" data-te-ripple-init data-te-ripple-color="light"
-	id="nb_btn_delete_all"
-	data-te-toggle="popconfirm" data-te-popconfirm-mode="inline"
-	data-te-ok-text="[#text Delete all#]"
-	data-te-class-popover="w-[300px] border-[1px] border-solid border-cnormal bg-clight rounded-[0.5rem] z-[1080] shadow-lg"
-	data-te-message="[#text Delete all files? Are you sure?#]">
+<button class="[#btn-class-secondary#]" type="button" onclick="nb_delete_all_modal.showModal()">
 	[#text Delete all files#]
 </button>
+<dialog id="nb_delete_all_modal" class="modal">
+	<div class="modal-box border border-cnormal bg-clight">
+		<h3 class="font-bold text-lg">[#text Delete all files#]</h3>
+		<p class="py-4">[#text Delete all files? Are you sure?#]</p>
+		<div class="modal-action">
+			<form method="dialog">
+				<button class="[#btn-class-secondary#]" type="submit">[#text Cancel#]</button>
+			</form>
+			<button class="[#btn-class-primary#]" type="button" id="nb_btn_delete_all">[#text Delete all#]</button>
+		</div>
+	</div>
+	<form method="dialog" class="modal-backdrop">
+		<button>[#text Close#]</button>
+	</form>
+</dialog>
 <script>
 	const nb_btn_delete_all = document.getElementById('nb_btn_delete_all');
-	nb_btn_delete_all.addEventListener('confirm.te.popconfirm', (event) => {
+	nb_btn_delete_all.addEventListener('click', (event) => {
 		if (event.target != nb_btn_delete_all) {
 			return;
 		}

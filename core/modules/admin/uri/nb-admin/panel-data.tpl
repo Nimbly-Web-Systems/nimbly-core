@@ -6,8 +6,7 @@
         </div>
     </div>
     <div class=" text-rose-600 font-bold mt-4 w-full">
-        <ul class="relative flex flex-row flex-wrap justify-evenly gap-x-4 gap-y-2 overflow-hidden max-h-[180px]"
-            data-te-perfect-scrollbar-init>
+        <ul class="relative flex flex-row flex-wrap justify-evenly gap-x-4 gap-y-2 overflow-y-auto max-h-[180px]">
             [#repeat data.user-resources tpl=data-resource-item#]
         </ul>
     </div>
