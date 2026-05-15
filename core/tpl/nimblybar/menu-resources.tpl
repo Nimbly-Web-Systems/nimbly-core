@@ -32,7 +32,6 @@
                 [#text Media Library#]
             </a>
         </li>
-        [#feature-cond features="manage-system,manage-.config,edit-.config,(any)_.config" tpl=menu-site-config-item#]
         [#get-user-resources#]
         [#repeat data.user-resources tpl=menu-resource-item#]
     </ul>
