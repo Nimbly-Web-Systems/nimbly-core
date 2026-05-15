@@ -87,3 +87,37 @@ window.nb.tw_breakpoints = {
 };
 
 nb_breakpoints.init();
+
+Alpine.data('nb_table', () => ({
+    search: '',
+    sort_index: null,
+    sort_direction: 'asc',
+    rows: [],
+    init() {
+        this.rows = Array.from(this.$refs.body.querySelectorAll('tr'));
+    },
+    filter_rows() {
+        const term = this.search.trim().toLowerCase();
+        this.rows.forEach((row) => {
+            row.classList.toggle('hidden', term && !row.textContent.toLowerCase().includes(term));
+        });
+    },
+    sort_by(index) {
+        if (this.sort_index === index) {
+            this.sort_direction = this.sort_direction === 'asc' ? 'desc' : 'asc';
+        } else {
+            this.sort_index = index;
+            this.sort_direction = 'asc';
+        }
+
+        const direction = this.sort_direction === 'asc' ? 1 : -1;
+        this.rows.sort((a, b) => {
+            const a_text = (a.children[index]?.textContent || '').trim().toLowerCase();
+            const b_text = (b.children[index]?.textContent || '').trim().toLowerCase();
+            return a_text.localeCompare(b_text, undefined, { numeric: true }) * direction;
+        });
+
+        this.rows.forEach((row) => this.$refs.body.appendChild(row));
+        this.filter_rows();
+    },
+}));
