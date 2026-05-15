@@ -14,20 +14,28 @@
 	</div>
 </section>
 
-<section class="bg-neutral-100 px-2 sm:px-4 md:px-6 lg:px-8 pb-10">
-	<div data-te-datatable-init class="rounded-2xl shadow-md bg-neutral-50 p-4"
-		data-te-no-found-message="[#text No entries#]" data-te-class-color="bg-neutral-50">
-		<table>
+<section class="bg-neutral-100 px-2 sm:px-4 md:px-6 lg:px-8 pb-10" x-data="nb_table">
+	<div class="rounded-2xl shadow-md bg-neutral-50 p-4">
+		<div class="form-control mb-4 max-w-xs">
+			<label for="syslog_search" class="label">
+				<span class="label-text">[#text Search#]</span>
+			</label>
+			<input id="syslog_search" type="search" class="input input-bordered input-sm bg-neutral-50"
+				x-model="search" @input="filter_rows" placeholder="[#text Search#]">
+		</div>
+		<div class="overflow-x-auto">
+		<table class="table table-zebra">
 			<thead>
 				<tr>
-					<th>[#text Date#]</th>
-					<th>[#text Type#]</th>
-					<th>[#text Description#]</th>
+					<th><button type="button" class="font-semibold" @click="sort_by(0)">[#text Date#]</button></th>
+					<th><button type="button" class="font-semibold" @click="sort_by(1)">[#text Type#]</button></th>
+					<th><button type="button" class="font-semibold" @click="sort_by(2)">[#text Description#]</button></th>
 				</tr>
 			</thead>
-			<tbody>
+			<tbody x-ref="body">
 				[#repeat system_log var=record#]
 			</tbody>
 		</table>
+		</div>
 	</div>
 </section>
