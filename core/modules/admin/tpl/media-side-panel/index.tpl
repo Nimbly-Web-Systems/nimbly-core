@@ -83,30 +83,20 @@
             </button>
 
             <!-- title input -->
-            <div class="relative mt-6 mb-4" data-te-input-wrapper-init>
-                <input type="text" x-model="file_info.title" class="peer block min-h-[auto] w-full rounded border-0 bg-neutral-50 
-              px-3 py-[0.33rem] text-xs leading-[1.5] outline-none transition-all" id="nb_media_title"
-                    placeholder="" />
-                <label for="nb_media_title" class="pointer-events-none absolute left-3 top-0 mb-0 max-w-[90%] origin-[0_0] 
-            truncate pt-[0.37rem] text-xs leading-[1.5] text-neutral-500 
-             -translate-y-[0.75rem] scale-[0.8] ">
-                    [#text Title#]
+            <div class="form-control mt-6 mb-4">
+                <label for="nb_media_title" class="label py-1">
+                    <span class="label-text text-xs">[#text Title#]</span>
                 </label>
+                <input type="text" x-model="file_info.title" class="input input-bordered input-sm w-full bg-neutral-50" id="nb_media_title"
+                    placeholder="[#text Title#]" />
             </div>
 
             <!-- description input -->
-            <div class="relative" data-te-input-wrapper-init>
-                <textarea x-model="file_info.description" class="peer block min-h-[auto] w-full rounded border-0 bg-neutral-50 
-              text-xs
-              px-3 py-[0.32rem] leading-[1.6] 
-              outline-none transition-all duration-200 ease-linear 
-              " id="nb_media_description" rows="3" placeholder=""></textarea>
-                <label for="nb_media_description" class="text-xs pointer-events-none absolute left-3 top-0 
-            mb-0 max-w-[90%] origin-[0_0] truncate pt-[0.37rem] leading-[1.6]
-             text-neutral-500 
-             -translate-y-[0.75rem] scale-[0.8]">
-                    [#text Description#]
+            <div class="form-control">
+                <label for="nb_media_description" class="label py-1">
+                    <span class="label-text text-xs">[#text Description#]</span>
                 </label>
+                <textarea x-model="file_info.description" class="textarea textarea-bordered w-full bg-neutral-50 text-xs" id="nb_media_description" rows="3" placeholder="[#text Description#]"></textarea>
             </div>
 
             <button class="[#btn-class-primary#] my-4" @click="save_media"

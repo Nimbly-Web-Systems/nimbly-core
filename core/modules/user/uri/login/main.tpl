@@ -18,46 +18,20 @@
                 <form name="login" action="[#url#]" method="post" accept-charset="utf-8" class="mt-8">
                     [#form-key login#]
 
-                    <div class="relative mb-6 border" data-te-input-wrapper-init>
-                        <input type="email" class="
-                                peer block min-h-[auto] w-full rounded border-0 bg-transparent px-3 py-[0.32rem] 
-                                leading-[2.15] outline-none transition-all duration-200 ease-linear 
-                                focus:placeholder:opacity-100 
-                                motion-reduce:transition-none
-                                data-[te-input-state-active]:placeholder:opacity-100 
-                                [&:not([data-te-input-placeholder-active])]:placeholder:opacity-0" id="email"
-                            name="email" value="[#sticky email#]" placeholder="[#text Email#]" required />
-                        <label for="email" class="pointer-events-none absolute left-3 top-0 mb-0 
-                                max-w-[90%] origin-[0_0] truncate pt-[0.37rem] leading-[2.15] 
-                                text-neutral-600 transition-all duration-200 ease-out 
-                                peer-focus:-translate-y-[1.15rem] 
-                                peer-focus:scale-[0.8] peer-focus:text-primary 
-                                peer-data-[te-input-state-active]:-translate-y-[1.15rem] 
-                                peer-data-[te-input-state-active]:scale-[0.8] 
-                                motion-reduce:transition-none">
-                            [#text Email#]
+                    <div class="form-control mb-6">
+                        <label for="email" class="label">
+                            <span class="label-text">[#text Email#]</span>
                         </label>
+                        <input type="email" class="input input-bordered w-full bg-neutral-50" id="email"
+                            name="email" value="[#sticky email#]" placeholder="[#text Email#]" required />
                     </div>
 
-                    <div class="relative mb-6" data-te-input-wrapper-init>
-                        <input type="password" class="
-                          border-neutral-400
-                            peer block min-h-[auto] w-full rounded border-0 
-                            bg-transparent px-3 py-[0.32rem] leading-[2.15] 
-                            outline-none transition-all duration-200 ease-linear 
-                            focus:placeholder:opacity-100 data-[te-input-state-active]:placeholder:opacity-100 
-                            motion-reduce:transition-none 
-                            [&:not([data-te-input-placeholder-active])]:placeholder:opacity-0" id="password"
-                            name="password" placeholder="[#text Password#]" required />
-                        <label for="password" class="pointer-events-none absolute left-3 top-0 mb-0 max-w-[90%] 
-                                origin-[0_0] truncate pt-[0.37rem] leading-[2.15] text-neutral-600 
-                                transition-all duration-200 ease-out peer-focus:-translate-y-[1.15rem] 
-                                peer-focus:scale-[0.8] peer-focus:text-primary 
-                                peer-data-[te-input-state-active]:-translate-y-[1.15rem] 
-                                peer-data-[te-input-state-active]:scale-[0.8] 
-                                motion-reduce:transition-none">
-                            [#text Password#]
+                    <div class="form-control mb-6">
+                        <label for="password" class="label">
+                            <span class="label-text">[#text Password#]</span>
                         </label>
+                        <input type="password" class="input input-bordered w-full bg-neutral-50" id="password"
+                            name="password" placeholder="[#text Password#]" required />
                     </div>
 
                     <input type="submit" value="[#text Login#]" class="[#btn-class-primary#]" />
