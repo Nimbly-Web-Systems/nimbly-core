@@ -3,7 +3,7 @@
         <div class="text-lg font-primary font-medium truncate text-neutral-900">
             [#text Users#]
         </div>
-        <div class="dropdown dropdown-end">
+        <div class="dropdown dropdown-end relative">
             <button type="button" tabindex="0" class="rounded-full hover:bg-neutral-100 p-2 -mt-1">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5">
                     <path
@@ -11,7 +11,7 @@
                 </svg>
 
             </button>
-            <ul tabindex="0" class="dropdown-content z-[1000] m-0 min-w-max list-none overflow-hidden rounded-lg border-none bg-cdark bg-clip-padding text-left text-base shadow-lg">
+            <ul tabindex="0" class="dropdown-content absolute right-0 top-full z-[1000] mt-1 m-0 min-w-max list-none overflow-hidden rounded-lg border-none bg-cdark bg-clip-padding text-left text-base shadow-lg">
                 <li>
                     <a class="block w-full whitespace-nowrap bg-transparent px-4 py-2 text-sm font-normal
                          text-neutral-50 hover:bg-cnormal active:text-white active:no-underline disabled:pointer-events-none disabled:bg-transparent disabled:text-neutral-400"

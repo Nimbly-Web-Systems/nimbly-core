@@ -12,7 +12,7 @@
                 <path d="M2 12C2 6.47715 6.47715 2 12 2V5C8.13401 5 5 8.13401 5 12H2Z" fill="#000000" />
             </svg>
         </div>
-        <div class="dropdown dropdown-end [#feature-cond manage-system echo_else=hidden#]">
+        <div class="dropdown dropdown-end relative [#feature-cond manage-system echo_else=hidden#]">
             <button type="button" tabindex="0" class="rounded-full hover:bg-neutral-100 p-2 -mt-1">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5">
                     <path
@@ -20,7 +20,7 @@
                 </svg>
 
             </button>
-            <ul tabindex="0" class="dropdown-content z-[1000] m-0 min-w-max list-none overflow-hidden rounded-lg border-none bg-orange-500 bg-clip-padding text-left text-base shadow-lg">
+            <ul tabindex="0" class="dropdown-content absolute right-0 top-full z-[1000] mt-1 m-0 min-w-max list-none overflow-hidden rounded-lg border-none bg-orange-500 bg-clip-padding text-left text-base shadow-lg">
                 <li>
                     <button
                         class="block w-full whitespace-nowrap bg-transparent px-4 py-2 
