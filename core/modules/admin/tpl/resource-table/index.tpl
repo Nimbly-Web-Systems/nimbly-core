@@ -1,12 +1,13 @@
 [#init-resource-table#]
 <section class="bg-neutral-100 p-2 sm:p-4 md:p-6 lg:p-8 font-primary">
 
-    <div class="flex flex-row items-center">
-        <h1 class="text-2xl md:text-3xl font-semibold text-neutral-800"
+    <div class="flex flex-wrap md:flex-nowrap items-center gap-2">
+        <h1 class="w-full md:w-auto text-2xl md:text-3xl font-semibold text-neutral-800"
             data-nb-edit-options='{"buttons":""}'>
             [#text [#resource-name [#resource-id#] plural#]#]
         </h1>
-        <input type="search" class="ml-auto mr-6 py-1.5 px-4 focus:outline-2 focus:outline-cnormal"
+        <input type="search"
+            class="order-last w-full md:order-none md:w-auto md:ml-auto md:mr-6 py-1.5 px-4 focus:outline-2 focus:outline-cnormal"
             placeholder="[#text Search#]"
             x-data="{search_term: ''}"
             x-init="search_term=''"
