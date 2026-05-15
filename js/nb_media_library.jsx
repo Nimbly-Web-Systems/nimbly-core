@@ -71,14 +71,9 @@ var nb_media_library = {
         this.set_page(this.current_page);
     },
     reset_tab() {
-        const library_tab = document.getElementById('tab_media_library');
-        const embed_tab = document.getElementById('tab_media_embed');
-        const library_btn = document.getElementById('tab_media_library_btn');
-        const embed_btn = document.getElementById('tab_media_embed_btn');
-        library_tab && library_tab.classList.remove('hidden');
-        embed_tab && embed_tab.classList.add('hidden');
-        library_btn && library_btn.setAttribute('data-nb-tab-active', 'true');
-        embed_btn && embed_btn.removeAttribute('data-nb-tab-active');
+        if (this.mode === 'embed') {
+            this.mode = 'insert';
+        }
     },
     sort_files() {
         this.files.sort((a, b) => {
