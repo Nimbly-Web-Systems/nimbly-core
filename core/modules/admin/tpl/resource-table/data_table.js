@@ -75,6 +75,12 @@ document.addEventListener("alpine:init", () => {
     is_sorted_desc(field_id) {
       return this.sort_field === field_id && !this.sort_asc;
     },
+    is_system_field(field_id) {
+      return field_id === "_created" || field_id === "_modified";
+    },
+    field_class(field_id) {
+      return this.is_system_field(field_id) ? "text-xs text-secondary" : "";
+    },
     sort_records() {
       const field = this.sort_field;
       if (!field) {

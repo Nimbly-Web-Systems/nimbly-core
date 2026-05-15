@@ -1,11 +1,14 @@
 <div class="w-full px-4 py-2 rounded-md shadow-md bg-neutral-50 mt-4" 
     x-data="data_table()"
     @search.window="search($event.detail || '')">
-    <table class="min-w-full">
+        <div class="hidden md:block">
+          <table class="min-w-full">
         <thead>
             <tr>
                 <template x-for="(field, field_id) in _fields" :key="field_id">
-                    <th scope="col" class="font-bold border-b border-neutral-200 py-3 text-left" x-ref="field_id">
+                    <th scope="col" class="font-bold border-b border-neutral-200 py-3 text-left"
+                        :class="field_class(field_id)"
+                        x-ref="field_id">
                         <template x-if="field.sortable !== undefined && !field.sortable">
                             <span x-text="field.name"></span>
                         </template>
@@ -48,8 +51,9 @@
             <template x-for="(record, record_id) in page_records" :key="record_id">
                 <tr :x-ref="record_id">
                     <template x-for="(field, field_id) in _fields">
-                        <td class="text-neutral-600 py-3 border-b border-neutral-200" 
-                        x-html="highlight(record[field_id])">
+                        <td class="text-neutral-600 py-3 border-b border-neutral-200"
+                            :class="field_class(field_id)"
+                            x-html="highlight(record[field_id])">
                         </td>
                     </template>
                     <td class="text-neutral-600 py-3 border-b border-neutral-200">
@@ -60,10 +64,47 @@
                 </tr>
             </template>
         </tbody>
-    </table>
-    <div class="flex flex-row items-center py-4">
+          </table>
+        </div>
+
+    <div class="md:hidden divide-y divide-neutral-200">
+        <template x-if="total_count() < 1">
+            <div class="py-4 text-neutral-600">
+                <p x-text="search_regex? '[#text No search results#]': '[#text No records yet#]'"></p>
+                <template x-if="Object.keys(_records).length < 1">
+                    <div class="pt-3">
+                        [#feature-cond add-[#resource-id#] tpl=action_add#]
+                    </div>
+                </template>
+            </div>
+        </template>
+
+        <template x-for="(record, record_id) in page_records" :key="record_id">
+            <article class="py-4">
+                <div class="space-y-3">
+                    <template x-for="(field, field_id) in _fields" :key="field_id">
+                        <div>
+                            <div class="text-xs font-semibold uppercase tracking-wide text-neutral-500"
+                                :class="is_system_field(field_id) ? 'text-secondary' : ''"
+                                x-text="field.name">
+                            </div>
+                            <div class="break-words text-neutral-700"
+                                :class="field_class(field_id)"
+                                x-html="highlight(record[field_id])">
+                            </div>
+                        </div>
+                    </template>
+                </div>
+                <div class="mt-3 flex items-center border-t border-neutral-100 pt-3">
+                    [#actions#]
+                </div>
+            </article>
+        </template>
+    </div>
+
+    <div class="flex flex-wrap md:flex-nowrap items-center gap-3 py-4">
         <div></div>
-        <div class="ml-auto text-sm text-neutral-700">
+        <div class="w-full md:w-auto md:ml-auto text-sm text-neutral-700">
             [#text Rows per page:#]
             <select x-model="page_size"
                 class="px-2 pt-1 pb-2 ml-2 border border-neutral-200 focus:border-primary rounded"
@@ -77,9 +118,9 @@
             </select>
         </div>
         <div x-text="Math.min(offset + 1, total_count()) + ' - ' + Math.min(total_count(), offset + page_size) + ' of ' + Object.keys(filtered_records).length"
-            class="ml-6 text-sm text-neutral-700">
+            class="text-sm text-neutral-700">
         </div>
-        <div class="mx-4">
+        <div class="ml-auto md:ml-1">
             <button
                 class="pt-1.5 text-neutral-700 disabled:text-neutral-300 disabled:pointer-events-none hover:bg-neutral-100"
                 @click="prev()" :disabled="page < 2" x-ref="btn_prev_page">
