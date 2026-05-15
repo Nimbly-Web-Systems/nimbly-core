@@ -1,4 +1,4 @@
-<div class="flex flex-col flex-auto p-6 bg-neutral-50 shadow rounded-2xl overflow-hidden" x-data="updates">
+<div class="flex flex-col flex-auto p-6 bg-neutral-50 shadow rounded-2xl overflow-visible" x-data="updates">
     <div class="flex items-start justify-between">
         <div class="flex flex-row items-center">
             <div class="text-lg font-primary font-medium truncate text-neutral-900 min-w-[100px]">
