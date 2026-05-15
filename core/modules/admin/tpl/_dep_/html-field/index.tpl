@@ -1,1 +1,0 @@
-[#if resource_op=edit and item.i18n=(not-empty) tpl=html-i18n tpl_else=html-default#]
