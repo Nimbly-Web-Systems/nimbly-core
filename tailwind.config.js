@@ -1,6 +1,5 @@
 import theme, { daisyuiThemes } from "./ext/tailwind.theme.js";
 import typography from "@tailwindcss/typography";
-import twElements from "tw-elements/dist/plugin.cjs";
 import daisyui from "daisyui";
 
 /** @type {import('tailwindcss').Config} */
@@ -17,12 +16,11 @@ export default {
     "./ext/lib/**/*.tpl",
     "./ext/tpl/**/*.tpl",
     "./ext/modules/**/*.tpl",
-    "./node_modules/tw-elements/dist/js/**/*.js",
   ],
   theme,
   daisyui: {
     darkTheme: "light", // force dark mode to fall back to light (temporary fix)
     themes: daisyuiThemes,
   },
-  plugins: [typography, twElements, daisyui],
+  plugins: [typography, daisyui],
 };

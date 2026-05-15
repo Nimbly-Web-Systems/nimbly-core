@@ -27,5 +27,3 @@ window.nb = {
 [#include [#uri-path#]/index.js#]
 Alpine.start();
 </script>
-
-<script src="[#base-url#]/tw-elements.umd.min.js"></script>
