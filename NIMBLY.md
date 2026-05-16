@@ -1369,7 +1369,7 @@ msgstr "Lees meer"
 
 Build the merged base file after changes:
 ```bash
-npm run text-build
+npm run build:text
 ```
 
 ### Step 5 — Templates per language
@@ -1484,21 +1484,21 @@ ext/uri/dashboard/index.js     ← auto-loaded on /dashboard/ only
 
 ## 7. CLI
 
-Nimbly ships a CLI at `core/cli/nimbly.php`. The npm scripts are the preferred way to invoke it:
+Nimbly ships a CLI at `core/cli/nimbly.php`. The `nimbly` npm script is the preferred way to invoke it:
 
 ```bash
-npm run setup
-npm run create-user
-npm run install-module <name>
+npm run nimbly -- setup
+npm run nimbly -- user:create
+npm run nimbly -- module:install <name>
 ```
 
 Equivalent direct invocations:
 
 ```bash
 php core/cli/nimbly.php setup
-php core/cli/nimbly.php create-user
-php core/cli/nimbly.php install-module <name>
-php core/cli/nimbly.php reindex [resource]
+php core/cli/nimbly.php user:create
+php core/cli/nimbly.php module:install <name>
+php core/cli/nimbly.php index:rebuild [resource]
 php core/cli/nimbly.php help
 ```
 
@@ -1529,7 +1529,7 @@ Prompts: **Site name**, **Admin email**, **Admin password**. Steps that are alre
 | `ADMIN_PASSWORD` | Initial admin user password (min 8 chars) |
 
 ```bash
-SITE_NAME="My Site" ADMIN_EMAIL=admin@example.com ADMIN_PASSWORD=secret123 npm run setup
+SITE_NAME="My Site" ADMIN_EMAIL=admin@example.com ADMIN_PASSWORD=secret123 npm run nimbly -- setup
 ```
 
 #### `create-user`
@@ -1539,15 +1539,15 @@ Creates an additional user account. Prompts for email, role, and password intera
 Runs a module's `.install.inc` script. Looks in `ext/modules/` first, then `core/modules/` as fallback. Requires setup to have been run first.
 
 ```bash
-npm run install-module event
+npm run nimbly -- module:install event
 ```
 
 #### `reindex`
 Rebuilds index entries for an indexed resource. Use this after adding `index` to an existing resource's `.meta`, or after importing records outside of the normal API flow.
 
 ```bash
-php core/cli/nimbly.php reindex             # interactive: lists indexed resources, prompts for choice
-php core/cli/nimbly.php reindex articles    # direct: reindex the 'articles' resource
+php core/cli/nimbly.php index:rebuild             # interactive: lists indexed resources, prompts for choice
+php core/cli/nimbly.php index:rebuild articles    # direct: reindex the 'articles' resource
 ```
 
 The command scans all records in the resource and creates any missing index files. It is idempotent — existing entries are left untouched.
@@ -1578,13 +1578,12 @@ Scheduler last-run state is stored in `ext/data/.state/schedule`. Existing insta
 
 ```bash
 npm run build       # full build: Tailwind + CSS + JS + i18n
-npm run tw          # watch Tailwind
-npm run tw-build    # build Tailwind once
-npm run css-build   # build CSS (esbuild)
-npm run js-build    # build JS (esbuild)
-npm run text-build  # merge .po translation files
+npm run build:tw    # build Tailwind once
+npm run build:css   # build CSS (esbuild)
+npm run build:js    # build JS (esbuild)
+npm run build:text  # merge .po translation files
+npm run watch:tw    # watch Tailwind source
 npm run up          # start Docker dev environment
-npm run init        # initialise a new ext/ setup
 ```
 
 Built files go to `ext/static/`. Always run build after changing CSS, JS, or Tailwind classes.

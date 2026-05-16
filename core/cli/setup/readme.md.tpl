@@ -27,7 +27,7 @@ VS Code will detect the dev container and ask to reopen inside it. Accept — th
 In the VS Code terminal (inside the container):
 
 ```bash
-npm run setup   # creates .htaccess, data dirs and admin user — runs once
+npm run nimbly -- setup   # creates .htaccess, data dirs and admin user — runs once
 npm run build   # compiles CSS and JS
 ```
 
@@ -38,6 +38,6 @@ Day-to-day
 
 ```bash
 npm run build   # full rebuild
-npm run tw      # watch Tailwind changes
+npm run watch:tw # watch Tailwind changes
 npm run up      # restart the container
 ```
