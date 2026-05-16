@@ -7,12 +7,12 @@
     "lib": "lib"
   },
   "scripts": {
-    "build-js": "cp ./node_modules/medium-editor/dist/js/medium-editor.min.js ext/static/medium-editor.min.js && esbuild js/index.jsx --bundle --minify --outfile=ext/static/app.js && date +%s > ext/static/app.version",
-    "build-css": "cp ./node_modules/medium-editor/dist/css/medium-editor.min.css ./css/medium-editor.min.css && esbuild css/index.css --bundle --minify --external:img/* --external:font/* --outfile=ext/static/app.css && date +%s > ext/static/app.version",
-    "build-tw": "npx tailwindcss -i ./css/tw/in.css -o ./css/tw/out.css",
-    "build-text": "find -name text.po | xargs msgcat > ext/data/.i18n/text.base.po",
-    "watch-tw": "npx tailwindcss -i ./css/tw/in.css -o ./css/tw/out.css --watch",
-    "build": "npm run build-tw && npm run build-css && npm run build-js && npm run build-text && date +%s > ext/static/app.version",
+    "build": "npm run build:tw && npm run build:css && npm run build:js && npm run build:text && date +%s > ext/static/app.version",
+    "build:js": "cp ./node_modules/medium-editor/dist/js/medium-editor.min.js ext/static/medium-editor.min.js && esbuild js/index.jsx --bundle --minify --outfile=ext/static/app.js && date +%s > ext/static/app.version",
+    "build:css": "cp ./node_modules/medium-editor/dist/css/medium-editor.min.css ./css/medium-editor.min.css && esbuild css/index.css --bundle --minify --external:img/* --external:font/* --outfile=ext/static/app.css && date +%s > ext/static/app.version",
+    "build:tw": "npx tailwindcss -i ./css/tw/in.css -o ./css/tw/out.css",
+    "build:text": "find -name text.po | xargs msgcat > ext/data/.i18n/text.base.po",
+    "watch:tw": "npx tailwindcss -i ./css/tw/in.css -o ./css/tw/out.css --watch",
     "up": "cd docker && docker compose build --pull nimbly && docker compose down && docker compose up -d nimbly && cd ..",
     "nimbly": "php core/cli/nimbly.php"
   },
