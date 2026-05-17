@@ -7,7 +7,7 @@
             [#text [#resource-name [#resource-id#] plural#]#]
         </h1>
         <input type="search"
-            class="order-last w-full md:order-none md:w-auto md:ml-auto md:mr-6 py-1.5 px-4 focus:outline-2 focus:outline-cnormal"
+            class="order-last w-full md:order-none md:w-auto md:ml-auto md:mr-6 py-1.5 px-4 rounded border border-neutral-300 bg-neutral-50 text-neutral-800 placeholder:text-neutral-500 focus:outline-2 focus:outline-cnormal"
             placeholder="[#text Search#]"
             x-data="{search_term: ''}"
             x-init="search_term=''"

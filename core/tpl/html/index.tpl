@@ -21,7 +21,7 @@
 
 -->
 <head>
-    <title>[#page-title#] | [#site-name#]</title>
+    <title>[#if page-title=(not-empty) echo="[#page-title#] | "#][#site-name#]</title>
     [#meta#]
     [#fonts#]
     [#stylesheets#]
