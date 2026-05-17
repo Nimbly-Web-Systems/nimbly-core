@@ -38,6 +38,5 @@ Day-to-day
 
 ```bash
 npm run build   # full rebuild
-npm run watch:tw # watch Tailwind changes
 npm run up      # restart the container
 ```

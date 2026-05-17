@@ -37,7 +37,7 @@ cd my-project
 # 2. Clone your application into ext/
 git clone git@github.com:your-org/your-app.git ext
 
-# 3. Install dependencies and build
+# 3. Install dependencies with Node 20+ and build
 bash -i -c "nvm use --lts && npm install && npm run build"
 ```
 
@@ -85,10 +85,9 @@ Use `.context/` for private/operator/client-specific material. Use `ext/.context
 
 ## Frontend Stack
 
-The frontend (both admin and public) uses **Tailwind CSS**, **DaisyUI**, and **Alpine.js** exclusively.
+The frontend (both admin and public) uses **Tailwind CSS 4**, **DaisyUI 5**, and **Alpine.js** exclusively.
 
 - **Do not use jQuery** or any other JavaScript library/framework.
-- **Do not use Tailwind Elements** — it is being phased out. Use DaisyUI equivalents.
 - Interactivity is handled with Alpine.js (`x-data`, `x-bind`, `@event`, etc.).
 - CSS is written with Tailwind utility classes. Component styles use DaisyUI.
 
@@ -98,7 +97,7 @@ This constraint applies to all templates in `core/` and `ext/`.
 
 Project-specific Nimbly theme colors and DaisyUI theme values are defined in `ext/tailwind.theme.js`.
 
-This file exports the default Tailwind theme extension and a named `daisyuiThemes` export. Together they control the project color tokens used by Nimbly UI surfaces such as the Nimbly bar, admin controls, buttons, links, and related DaisyUI/Tailwind styling. Update colors there when matching a project design.
+This file exports the default Tailwind theme extension and a named `daisyuiThemes` export. Together they control the project color tokens used by Nimbly UI surfaces such as the Nimbly bar, admin controls, buttons, links, and related DaisyUI/Tailwind styling. Core keeps this JavaScript theme file as the project customization API while building with Tailwind CSS 4 and DaisyUI 5. Update colors there when matching a project design.
 
 Use `ext/theme.css` for project-specific public-site CSS and component overrides. Do not use `ext/theme.css` as the primary place to redefine Nimbly/admin theme colors unless a narrow component override is required.
 
@@ -1582,7 +1581,6 @@ npm run build:tw    # build Tailwind once
 npm run build:css   # build CSS (esbuild)
 npm run build:js    # build JS (esbuild)
 npm run build:text  # merge .po translation files
-npm run watch:tw    # watch Tailwind source
 npm run up          # start Docker dev environment
 ```
 
@@ -2265,14 +2263,13 @@ Apply this reasoning before adding any field, section, or link to a template.
 
 The following areas are under active development and will be updated here as they are finalized:
 
-- **DaisyUI migration** — Tailwind Elements is being phased out. The admin is already on DaisyUI v3. Frontend templates that still use Tailwind Elements components (modals, dropdowns, etc.) are being migrated. Do not introduce new Tailwind Elements usage; use DaisyUI equivalents instead. Frontend DaisyUI component patterns will be documented here once the migration is complete.
 - **Resource display names** — the `resource-name` shortcode currently derives singular/plural from the slug (strips trailing `s`, handles `ies→y`). Plan: allow `.meta` to define `name_singular` and `name_plural` with optional i18n:
   ```json
   "name_singular": { "en": "Client", "nl": "Klant" },
   "name_plural":   { "en": "Clients", "nl": "Klanten" }
   ```
   `resource-name` would use these when present and fall back to slug-based logic otherwise.
-- **Frontend DaisyUI component patterns** — the admin is already on DaisyUI v3. Frontend DaisyUI component patterns will be documented here once the migration is complete.
+- **Frontend DaisyUI component patterns** — the admin uses DaisyUI 5. Frontend DaisyUI component patterns will be documented as they become standardized.
 
 ---
 
