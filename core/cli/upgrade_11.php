@@ -35,6 +35,58 @@ function upgrade_11_apply_tailwind_elements_cleanup(array $files): int
     return $deleted;
 }
 
+function upgrade_11_tailwind_entrypoint_state(): array
+{
+    $file = BASE_DIR . 'css/tw/in.css';
+    if (!is_file($file)) {
+        return [
+            'action' => 'missing',
+            'file' => $file,
+            'message' => 'css/tw/in.css does not exist; skipping Tailwind CSS 4 entrypoint migration.',
+        ];
+    }
+
+    $content = file_get_contents($file);
+    $has_config = preg_match('/^\s*@config\s+["\']\.\.\/\.\.\/tailwind\.config\.js["\'];\s*$/m', $content);
+    $has_import = preg_match('/^\s*@import\s+["\']tailwindcss["\'];\s*$/m', $content);
+    $has_legacy_tailwind = preg_match('/^\s*@tailwind\s+(base|components|utilities)\s*;\s*$/m', $content);
+
+    if ($has_config && $has_import && !$has_legacy_tailwind) {
+        return [
+            'action' => 'none',
+            'file' => $file,
+            'message' => 'Tailwind CSS entrypoint already uses the Tailwind 4 @config/@import format.',
+        ];
+    }
+
+    return [
+        'action' => 'update',
+        'file' => $file,
+        'message' => 'Update css/tw/in.css to load tailwind.config.js using the Tailwind CSS 4 @config entrypoint.',
+    ];
+}
+
+function upgrade_11_render_tailwind_entrypoint(string $content): string
+{
+    $content = preg_replace('/^\s*@config\s+["\'][^"\']+["\'];\s*\R?/m', '', $content);
+    $content = preg_replace('/^\s*@import\s+["\']tailwindcss["\'];\s*\R?/m', '', $content);
+    $content = preg_replace('/^\s*@tailwind\s+(base|components|utilities)\s*;\s*\R?/m', '', $content);
+    $content = ltrim($content);
+
+    $prefix = "@config \"../../tailwind.config.js\";\n@import \"tailwindcss\";\n";
+    return $prefix . ($content === '' ? '' : "\n" . $content);
+}
+
+function upgrade_11_apply_tailwind_entrypoint(array $state): bool
+{
+    if (($state['action'] ?? '') !== 'update') {
+        return false;
+    }
+
+    $content = file_get_contents($state['file']);
+    return file_put_contents($state['file'], upgrade_11_render_tailwind_entrypoint($content)) !== false;
+}
+
 $yes = in_array('--yes', $argv, true) || in_array('-y', $argv, true);
 
 migrate_10_bootstrap();
@@ -44,11 +96,13 @@ $env = upgrade_11_read_env();
 $paths = upgrade_11_paths_from_env($env);
 $htaccess = upgrade_11_htaccess_state($env['PEPPER'] ?? '', $paths['base_path'], $paths['rewrite_base_path']);
 $tailwind_elements_files = upgrade_11_tailwind_elements_files();
+$tailwind_entrypoint = upgrade_11_tailwind_entrypoint_state();
 
 $has_work = migrate_10_has_work($migration)
     || !empty($moves)
     || in_array($htaccess['action'], ['write', 'recreate_mod_php'], true)
-    || !empty($tailwind_elements_files);
+    || !empty($tailwind_elements_files)
+    || $tailwind_entrypoint['action'] === 'update';
 
 if (!$has_work) {
     echo "Nimbly 1.1 upgrade checks complete — no automatic upgrade steps are needed.\n";
@@ -90,8 +144,14 @@ if ($htaccess['action'] === 'warn_base_mismatch') {
     echo "  This warning is informational here; use 'setup' to review rewrite-base recreation.\n";
 }
 
+if ($tailwind_entrypoint['action'] !== 'none') {
+    echo "\n[4] Tailwind CSS 4 entrypoint migration\n\n";
+    echo '  ' . $tailwind_entrypoint['message'] . "\n";
+}
+
 if (!empty($tailwind_elements_files)) {
-    echo "\n[4] Tailwind Elements static asset cleanup\n\n";
+    $tailwind_elements_step = $tailwind_entrypoint['action'] !== 'none' ? 5 : 4;
+    echo "\n[{$tailwind_elements_step}] Tailwind Elements static asset cleanup\n\n";
     foreach ($tailwind_elements_files as $file) {
         echo '  Delete ' . str_replace(BASE_DIR, '', $file) . "\n";
     }
@@ -130,6 +190,15 @@ if (in_array($htaccess['action'], ['write', 'recreate_mod_php'], true)) {
 if ($htaccess['action'] === 'warn_base_mismatch') {
     echo "\n" . $htaccess['message'] . "\n";
     echo "Run 'php core/cli/nimbly.php setup' if you want to recreate .htaccess for the current BASE_PATH.\n";
+}
+
+if ($tailwind_entrypoint['action'] === 'update') {
+    echo "\n=== Updating Tailwind CSS entrypoint ===\n";
+    if (upgrade_11_apply_tailwind_entrypoint($tailwind_entrypoint)) {
+        echo "Updated: css/tw/in.css\n";
+    } else {
+        echo "ERROR: failed to update css/tw/in.css\n";
+    }
 }
 
 if (!empty($tailwind_elements_files)) {
