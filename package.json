@@ -2,7 +2,11 @@
   "name": "nimbly",
   "version": "1.1.0",
   "description": "Nimbly Web App Framework",
+  "type": "module",
   "main": "index.php",
+  "engines": {
+    "node": ">=20"
+  },
   "directories": {
     "lib": "lib"
   },
@@ -12,7 +16,6 @@
     "build:css": "cp ./node_modules/medium-editor/dist/css/medium-editor.min.css ./css/medium-editor.min.css && esbuild css/index.css --bundle --minify --external:img/* --external:font/* --outfile=ext/static/app.css && date +%s > ext/static/app.version",
     "build:tw": "npx tailwindcss -i ./css/tw/in.css -o ./css/tw/out.css",
     "build:text": "find -name text.po | xargs msgcat > ext/data/.i18n/text.base.po",
-    "watch:tw": "npx tailwindcss -i ./css/tw/in.css -o ./css/tw/out.css --watch",
     "up": "cd docker && docker compose build --pull nimbly && docker compose down && docker compose up -d nimbly && cd ..",
     "nimbly": "php core/cli/nimbly.php"
   },
@@ -28,12 +31,13 @@
   "homepage": "git@github.com:Nimbly-Web-Systems/nimbly-core.git#readme",
   "dependencies": {
     "alpinejs": "^3.13.2",
-    "daisyui": "^3.9.4",
     "medium-editor": "^5.23.3"
   },
   "devDependencies": {
-    "@tailwindcss/typography": "^0.5.9",
+    "@tailwindcss/cli": "^4.3.0",
+    "@tailwindcss/typography": "^0.5.19",
+    "daisyui": "^5.5.19",
     "esbuild": "^0.25.4",
-    "tailwindcss": "^3.4.17"
+    "tailwindcss": "^4.3.0"
   }
 }
