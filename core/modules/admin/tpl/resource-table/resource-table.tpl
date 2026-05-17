@@ -30,7 +30,7 @@
                         </template>
                     </th>
                 </template>
-                <th scope="col" class="font-bold border-b border-neutral-200 py-3 text-left">Actions</th>
+                <th scope="col" class="font-bold border-b border-neutral-200 py-3 text-left text-xs text-secondary">Actions</th>
             </tr>
         </thead>
         <tbody>
