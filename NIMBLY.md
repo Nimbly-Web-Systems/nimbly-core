@@ -2308,9 +2308,21 @@ The `upgrade-11` CLI command is the normal operator-facing entrypoint for the Ni
 php core/cli/nimbly.php upgrade-11
 ```
 
-The upgrade command also removes legacy Tailwind Elements bundles from `ext/static/`
-(`tw-elements*`). Core 1.1 uses Alpine.js and DaisyUI for admin interactivity, so these
-assets should not remain in upgraded projects.
+The upgrade command also updates the Tailwind CSS entrypoint at `css/tw/in.css`
+from the Tailwind 3 `@tailwind base/components/utilities` directives to the
+Tailwind 4 format:
+
+```css
+@config "../../tailwind.config.js";
+@import "tailwindcss";
+```
+
+This matters because Tailwind 4 reads the project config from the CSS
+entrypoint. The command preserves any custom CSS below those directives.
+
+It also removes legacy Tailwind Elements bundles from `ext/static/`
+(`tw-elements*`). Core 1.1 uses Alpine.js and DaisyUI for admin interactivity,
+so these assets should not remain in upgraded projects.
 
 Internally, the resource `pk` migration step is handled by:
 
