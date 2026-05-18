@@ -119,13 +119,13 @@ foreach ($records as $uuid => $record) {
         if (empty($record[$index_name])) {
             continue;
         }
-        $index_uuid = md5_uuid($record[$index_name]);
-        if ($index_uuid === $uuid) {
-            $is_self_ref = true;
-            continue;
+        foreach (data_index_uuids($record[$index_name]) as $index_uuid) {
+            if ($index_uuid === $uuid) {
+                $is_self_ref = true;
+            }
+            _data_create_index($target, $file, $index_name, $index_uuid);
+            $indexed = true;
         }
-        _data_create_index($target, $file, $index_name, $index_uuid);
-        $indexed = true;
     }
     if ($indexed) {
         $count++;
