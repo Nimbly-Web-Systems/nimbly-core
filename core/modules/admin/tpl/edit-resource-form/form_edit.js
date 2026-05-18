@@ -47,8 +47,44 @@ document.addEventListener("alpine:init", () => {
       });
     },
 
+    sync_editors(lang) {
+      if (!this.$refs.edit_resource_form) {
+        return;
+      }
+
+      const editors =
+        this.$refs.edit_resource_form.querySelectorAll("[data-nb-edit]");
+
+      editors.forEach((el) => {
+        const parts = el.dataset.nbEdit.split(".");
+        const field = parts[parts.length - 1];
+        const field_data = this.form_data[field];
+
+        if (!field_data || typeof field_data !== "object") {
+          return;
+        }
+
+        this.form_data[field][lang] = el.innerHTML.trim();
+      });
+    },
+
+    get_editor_values() {
+      const editor_values = nb.edit.get_field_values(this.$refs.edit_resource_form);
+
+      Object.keys(editor_values).forEach((field) => {
+        const field_data = this.form_data[field];
+
+        if (field_data && typeof field_data === "object" && typeof editor_values[field] !== "object") {
+          delete editor_values[field];
+        }
+      });
+
+      return editor_values;
+    },
+
     submit() {
       this.busy = true;
+      this.sync_editors(this.lang);
       if (this.form_data.hasOwnProperty("keep_password")) {
         if (
           this.form_data.keep_password &&
@@ -61,7 +97,7 @@ document.addEventListener("alpine:init", () => {
       nb.api
         .put(nb.base_url + "/api/v1/" + resource_id + "/" + record_id, {
           ...this.form_data,
-          ...nb.edit.get_field_values(this.$refs.edit_resource_form),
+          ...this.get_editor_values(),
         })
         .then((data) => {
           this.busy = false;
