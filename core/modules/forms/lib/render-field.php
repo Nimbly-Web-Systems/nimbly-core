@@ -116,24 +116,31 @@ function render_field(array $def, string $field = '', $value = null, string $sto
     set_variable('_f.bg',       'bg-white');
     set_variable('_f.required', !empty($def['required']));
     set_variable('_f.ai',       !empty($def['ai_prompts']));
-    set_variable('_f.value',    $value ?? $def['default'] ?? '');
+    $field_value = $value ?? $def['default'] ?? '';
+    $i18n_seed = null;
 
     if ($model === null) {
         $model = "{$store}.{$field}";
         if (!empty($def['i18n'])) {
             $lang = get_variable('lang') ?? get_variable('record.lang') ?? '';
+            $i18n_seed = is_array($field_value) ? $field_value : ($lang ? [$lang => $field_value] : []);
             if ($lang) {
-                $model .= "[{$lang}]";
+                if (is_array($field_value)) {
+                    $field_value = $field_value[$lang] ?? '';
+                }
+                $model .= "[lang]";
             }
         }
     }
+    set_variable('_f.value', $field_value);
     set_variable('_f.model', $model);
 
-    // i18n html fields: seed the full language map into the Alpine store so the
-    // inline editor can switch languages client-side without a round-trip.
-    if (!empty($def['i18n']) && $type === 'html') {
-        $json = json_encode($value ?? '', JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-        echo "<div x-init='if (!{$store}.{$field}) { {$store}.{$field} = {$json}; }'></div>\n";
+    // i18n fields: seed the full language map into the Alpine store so editors
+    // can bind to form_data.field['lang'] without losing other languages.
+    if (!empty($def['i18n'])) {
+        $json = json_encode($i18n_seed ?? [], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        $init = "if (!{$store}.{$field} || typeof {$store}.{$field} !== 'object') { {$store}.{$field} = {$json}; }";
+        echo "<div x-init=\"" . htmlspecialchars($init, ENT_QUOTES, 'UTF-8') . "\"></div>\n";
     }
 
     if ($source !== null) {
