@@ -125,7 +125,8 @@ function _get_key($record, $field) {
         }
     }
 
-    $hash = md5($record['uuid'] . $field . $v);
+    $record_id = is_array($record) && isset($record['uuid']) ? (string)$record['uuid'] : serialize($record);
+    $hash = md5($record_id . $field . $v);
     if (isset($cached_result[$hash])) {
         return $cached_result[$hash];
     }
