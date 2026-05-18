@@ -1,5 +1,5 @@
 <section class="bg-neutral-100 pb-10">
-    <form autocomplete="false" x-ref="edit_resource_form" x-data="form_edit('[#data.resource#]', '[#data.uuid#]')" @submit.prevent="submit"
+    <form autocomplete="false" x-ref="edit_resource_form" x-data="form_edit('[#data.resource#]', '[#data.uuid#]')" :data-lang="lang" @submit.prevent="submit"
         class="bg-neutral-50 rounded-md p-2 sm:p-4 md:p-6 lg:p-8 xl:p-10 shadow-md mx-auto">
 
         <div class="max-w-lg mx-auto">
