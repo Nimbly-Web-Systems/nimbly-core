@@ -134,6 +134,12 @@ function render_field(array $def, string $field = '', $value = null, string $sto
     }
     set_variable('_f.value', $field_value);
     set_variable('_f.model', $model);
+    $x_init = '';
+    if (empty($def['i18n'])) {
+        $init_value = json_encode((string)$field_value, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        $x_init = 'x-init="' . htmlspecialchars("{$model}={$init_value}", ENT_QUOTES, 'UTF-8') . '"';
+    }
+    set_variable('_f.x_init', $x_init);
 
     // i18n fields: seed the full language map into the Alpine store so editors
     // can bind to form_data.field['lang'] without losing other languages.

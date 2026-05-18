@@ -1,7 +1,7 @@
 <div class="relative my-10">
     [#if _f.ai=(not-empty) tpl=ai-btn#]
     <textarea name="[#_f.key#]" rows="[#get _f.rows default=3#]" placeholder=""
-        x-init="[#_f.model#]=`[#_f.value#]`"
+        [#_f.x_init#]
         x-model="[#_f.model#]"
         [#if _f.required=(not-empty) echo=required#]
         class="textarea textarea-bordered w-full">[#_f.value#]</textarea>
