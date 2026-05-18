@@ -175,12 +175,24 @@ nb_edit.disable_img = function (eimg) {
 nb_edit.get_field_values = function (el) {
     var result = {};
     const fields = el.querySelectorAll('[data-nb-edit]');
+    const alpine_scope = el._x_dataStack ? el._x_dataStack.find(scope => scope.form_data) : null;
+    const form_data = alpine_scope ? alpine_scope.form_data : {};
+    const form_lang = el.dataset.lang;
 
     fields.forEach(f => {
         const key = f.dataset.nbEdit;
         if (!key) return;
 
         nb_edit.make_links_target_blank(f);
+
+        if (f.dataset.nbEditI18n === 'true' && form_lang) {
+            const current_value = form_data[key];
+            result[key] = current_value && typeof current_value === 'object' && !Array.isArray(current_value)
+                ? { ...current_value }
+                : {};
+            result[key][form_lang] = f.innerHTML.trim();
+            return;
+        }
 
         const parts = key.split('.');
         const last = parts[parts.length - 1];
