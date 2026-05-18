@@ -1,7 +1,10 @@
-<div x-init="form_data['[#_f.key#]'] = '[#_f.value#]'"
+<div [#_f.x_init#]
      x-effect="
-         const _parts = '[#_f.source#]'.split(',').map(f => form_data[f.trim()] || '').join(' ');
-         form_data['[#_f.key#]'] = slugify(_parts);
+         const _parts = '[#_f.source#]'.split(',').map(f => {
+             const _value = form_data[f.trim()] || '';
+             return _value && typeof _value === 'object' ? (_value[lang] || '') : _value;
+         }).join(' ');
+         [#_f.model#] = slugify(_parts);
      "
      class="relative my-10">
     <input type="text"

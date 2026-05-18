@@ -100,11 +100,21 @@ function render_field_sc($params)
  */
 function render_field(array $def, string $field = '', $value = null, string $store = 'form_data', ?string $source = null, ?string $model = null): void
 {
+    $fields = $def;
     if ($field && isset($def[$field])) {
         $def = $def[$field];
     }
 
     $type = $def['type'] ?? 'text';
+    if ($type === 'slug' && !empty($def['source']) && empty($def['i18n'])) {
+        foreach (explode(',', $def['source']) as $source_field) {
+            $source_field = trim($source_field);
+            if (!empty($fields[$source_field]['i18n'])) {
+                $def['i18n'] = true;
+                break;
+            }
+        }
+    }
 
     // Spread entire definition into _f.* so templates have access to all
     // field attributes without this function needing to enumerate them.
