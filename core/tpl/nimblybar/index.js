@@ -4,14 +4,19 @@ const nb_edit_insert_media = document.getElementById("nb_edit_insert_media");
 const nb_modal_settings = document.getElementById("nb-modal-settings");
 
 function nb_bar_set_page_layout(side, collapsed) {
-  const el = document.getElementById("page") || document.body;
+  const page = document.getElementById("page");
   const expanded = "15rem";
   const compact = "2rem";
   const offset = collapsed ? compact : expanded;
-  el.style.boxSizing = "border-box";
-  el.style.width = "calc(100% - " + offset + ")";
-  el.style.marginLeft = side === "left" ? offset : "";
-  el.style.marginRight = side === "right" ? offset : "";
+  if (page) {
+    page.style.width = "";
+    page.style.marginLeft = "";
+    page.style.marginRight = "";
+  }
+  document.body.classList.add("nb-bar-layout");
+  document.body.style.boxSizing = "border-box";
+  document.body.style.paddingLeft = side === "left" ? offset : "";
+  document.body.style.paddingRight = side === "right" ? offset : "";
 }
 
 function nb_bar_edit_menu(show = true) {
