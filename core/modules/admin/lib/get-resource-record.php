@@ -78,6 +78,7 @@ function get_resource_record_sc($params)
     set_variable('uuid', $uuid);
     set_variable('resource-name', $resource);
     set_variable('record', $record);
+    set_variable('_frecord', $record);
     set_variable('data.uuid', $uuid);
     set_variable('data.resource', $resource);
     set_variable('data.fields', $meta['fields']);
