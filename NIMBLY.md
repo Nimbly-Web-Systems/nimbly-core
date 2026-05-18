@@ -125,7 +125,7 @@ Weigh the tradeoff carefully, especially when dynamic data is involved:
 
 If the data is already loaded with `[#data#]`, passing it to Alpine.js is free and keeps the template simpler. Default to the frontend approach when both options work equally well.
 
-### KISS and YAGNI
+### KISS, YAGNI and DRY
 
 Keep implementations as small as the current requirement allows.
 
@@ -133,6 +133,7 @@ Keep implementations as small as the current requirement allows.
 - Do not add speculative fields, statuses, workflow steps, or audit data "for later".
 - Reuse built-in Nimbly metadata like `_created` and `_modified` before introducing parallel custom fields.
 - Do not derive UUIDs from business fields unless the project explicitly requires it.
+- Don't repeat logic — extract shared behaviour into a helper rather than duplicating it.
 - When duplicate prevention is needed, prefer an index on the business field before inventing a more complex identity scheme.
 
 Production-ready does **not** mean speculative. It means clean, coherent, and sufficient for the current use case.
