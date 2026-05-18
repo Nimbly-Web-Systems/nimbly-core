@@ -10,7 +10,7 @@
 			<button type="submit" class="[#btn-class-secondary#]">
 				[#text Clear log#]
 			</button>
-		<form>
+		</form>
 	</div>
 </section>
 
