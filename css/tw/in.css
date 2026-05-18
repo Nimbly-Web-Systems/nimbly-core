@@ -116,12 +116,12 @@
 
 form .medium-editor-element,
 form [data-nb-edit] {
-  @apply rounded border border-neutral-300 bg-transparent px-2 py-3;
+  @apply rounded border border-neutral-300 bg-white px-3 py-3;
   @apply outline-none outline-offset-0 min-h-[41px] transition-all duration-200 ease-linear;
 }
 
 form .medium-editor-element[data-medium-focused] {
-  @apply outline-2 outline-primary outline-offset-0 border-transparent;
+  @apply border-primary bg-white outline-2 outline-primary/30 outline-offset-2;
 }
 
 /* editable images */
