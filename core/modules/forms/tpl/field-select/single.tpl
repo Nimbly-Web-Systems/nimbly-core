@@ -1,6 +1,6 @@
 <select class="select select-bordered w-full" name="[#_f.key#]"
     [#if _f.required=(not-empty) echo=required#]
-    x-init="[#_f.model#]=`[#_f.value#]`"
+    [#_f.x_init#]
     x-model="[#_f.model#]">
     <option value="(empty)">[#text None#]</option>
     [#if _f.resource=(not-empty) tpl=resource-options#]

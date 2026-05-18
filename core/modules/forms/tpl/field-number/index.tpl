@@ -1,6 +1,6 @@
 <div class="relative my-10">
     <input type="number" value="[#_f.value#]" name="[#_f.key#]" placeholder=""
-        x-init="[#_f.model#]=`[#_f.value#]`"
+        [#_f.x_init#]
         x-model="[#_f.model#]"
         [#if _f.required=(not-empty) echo=required#]
         [#if _f.min=(not-empty) echo="min='[#_f.min#]'"#]
