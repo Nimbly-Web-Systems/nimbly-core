@@ -5,6 +5,48 @@ document.addEventListener("alpine:init", () => {
     lang: _initial_lang,
     redirect_on_submit: true,
     busy: false,
+
+    init() {
+      this.form_data = window._frecord || {};
+
+      this.$watch("lang", (lang) => {
+        this.set_editors(lang);
+      });
+
+      this.$nextTick(() => {
+        this.set_editors(this.lang);
+      });
+    },
+
+    set_editors(lang) {
+      if (!this.$refs.edit_resource_form) {
+        return;
+      }
+
+      const editors =
+        this.$refs.edit_resource_form.querySelectorAll("[data-nb-edit]");
+
+      editors.forEach((el) => {
+        const parts = el.dataset.nbEdit.split(".");
+        const field = parts[parts.length - 1];
+        const field_data = this.form_data[field];
+
+        if (!field_data || typeof field_data !== "object") {
+          return;
+        }
+
+        const value = field_data[lang] || "";
+
+        if (el._nb_medium_editor) {
+          el._nb_medium_editor.destroy();
+          delete el._nb_medium_editor;
+        }
+
+        el.innerHTML = value;
+        nb.edit.init_editor(el, true);
+      });
+    },
+
     submit() {
       this.busy = true;
       if (this.form_data.hasOwnProperty("keep_password")) {
@@ -62,6 +104,9 @@ document.addEventListener("alpine:init", () => {
             this.form_data[field][lang] = data.completion;
             if (data.completion.length === 0) {
               nb.notify("Empty result");
+            }
+            if (this.lang === lang) {
+              this.set_editors(lang);
             }
           } else {
             nb.notify(data.message);

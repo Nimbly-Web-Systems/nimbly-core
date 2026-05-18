@@ -1,6 +1,6 @@
 <div class="relative my-6">
     <div data-nb-edit="[#_f.key#]"
-        [#if _f.i18n=(not-empty) echo="data-nb-edit-i18n=\"true\" x-effect=\"$el.innerHTML = form_data['[#_f.key#]'] && form_data['[#_f.key#]'][lang] ? form_data['[#_f.key#]'][lang] : ''\""#]
+        [#if _f.i18n=(not-empty) echo="data-nb-edit-i18n=\"true\""#]
         data-nb-edit-options='{
             "buttons":"[#get _f.buttons default=bold,italic#]", 
             "media_sizes":"[#get _f.media_sizes default=#]",
