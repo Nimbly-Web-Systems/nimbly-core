@@ -22,6 +22,25 @@ if (!data_exists(".files", $uuid)) {
 	}
 }
 
+$meta = data_read(".files_meta", $uuid);
+if (($meta['type'] ?? '') === 'image/svg+xml') {
+	$file = data_path(".files", $uuid);
+	if (!is_file($file)) {
+		http_response_code(404);
+		exit();
+	}
+
+	$t = time();
+	$cache_time = 315360000; //10 years
+	header('Cache-Control: private');
+	header("Expires: " . gmdate("D, d M Y H:i:s", $t + $cache_time) . " GMT");
+	header('Last-Modified: '. gmdate('D, d M Y H:i:s', $t).' GMT');
+	header('Content-Length: '. filesize($file));
+	header('Content-Type: image/svg+xml');
+	readfile($file);
+	exit();
+}
+
 // browser cache return
 header('Cache-Control: private');
 $t = time();
@@ -81,8 +100,6 @@ $file = thumbnail_create($uuid, $size, $ratio, $mode);
 if (empty($file)) {
     return;
 }
-
-$meta = data_read(".files_meta", $uuid);
 
 $type = $meta['type'] ?? 'image/jpg';
 if ($type === 'image/jpeg' || $type === 'image/bmp' || $type === 'image/jpg') {

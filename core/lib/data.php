@@ -461,7 +461,7 @@ function data_read_index($resource, $index_name, $index_uuid)
 
         $item = data_read($resource, $index_file);
 
-        if (isset($item[$index_name]) && md5_uuid($item[$index_name]) === $index_uuid) {
+        if (isset($item[$index_name]) && in_array($index_uuid, data_index_uuids($item[$index_name]), true)) {
             $result[$index_file] = $item;
         } else {
             // Remove stale index entry
@@ -472,6 +472,29 @@ function data_read_index($resource, $index_name, $index_uuid)
 
     return $result;
 }
+
+function data_index_uuids($value)
+{
+    load_library('md5');
+
+    $result = [];
+    $stack = is_array($value) ? $value : [$value];
+    foreach ($stack as $item) {
+        if (is_array($item)) {
+            foreach (data_index_uuids($item) as $nested) {
+                $result[$nested] = true;
+            }
+            continue;
+        }
+        if (!is_scalar($item) || (string)$item === '') {
+            continue;
+        }
+        $result[md5_uuid((string)$item)] = true;
+    }
+
+    return array_keys($result);
+}
+
 
 /**
  * Recursively merges two arrays, distinctively.
@@ -565,9 +588,9 @@ function data_update($resource, $uuid, $data_update_ls)
                 if (empty($data_ls[$index_name])) {
                     continue;
                 }
-                $old_index_uuid = md5_uuid($data_ls[$index_name]);
-                $new_index_uuid = md5_uuid($data_merged_ls[$index_name] ?? '');
-                if ($old_index_uuid !== $new_index_uuid) {
+                $old_index_uuids = data_index_uuids($data_ls[$index_name]);
+                $new_index_uuids = data_index_uuids($data_merged_ls[$index_name] ?? '');
+                foreach (array_diff($old_index_uuids, $new_index_uuids) as $old_index_uuid) {
                     _data_delete_index($resource, $file, $index_name, $old_index_uuid);
                 }
             }
@@ -645,11 +668,12 @@ function data_create($resource, $uuid, $data_ls)
                 if (empty($data_ls[$index_name])) {
                     continue;
                 }
-                $index_uuid = md5_uuid($data_ls[$index_name]);
-                if ($index_uuid === $uuid) {
-                    continue; // no need to index self
+                foreach (data_index_uuids($data_ls[$index_name]) as $index_uuid) {
+                    if ($index_uuid === $uuid) {
+                        continue; // no need to index self
+                    }
+                    _data_create_index($resource, $file, $index_name, $index_uuid);
                 }
-                _data_create_index($resource, $file, $index_name, $index_uuid);
             }
         }
 
@@ -750,8 +774,9 @@ function data_delete($resource, $uuid = null)
                 if (empty($data_ls[$index_name])) {
                     continue;
                 }
-                $index_uuid = md5_uuid($data_ls[$index_name]);
-                $result += _data_delete_index($resource, $file, $index_name, $index_uuid);
+                foreach (data_index_uuids($data_ls[$index_name]) as $index_uuid) {
+                    $result += _data_delete_index($resource, $file, $index_name, $index_uuid);
+                }
             }
         }
         $data_ls = $data_ls ?? data_read($resource, $uuid);

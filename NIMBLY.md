@@ -2334,6 +2334,7 @@ For each resource whose `.meta` still has a `pk` key it will:
 
 1. Add the pk field to the `index` array in `.meta` (if not already there)
 2. Create index entries for all records — including the **self-referential** entries (`index_uuid === record_uuid`) that exist because 1.0 records had `uuid = md5_uuid(pk_field_value)`. The standard `reindex` command skips these; `migrate-pk-index` creates them explicitly so that `data_read_index` can find them.
+   For i18n fields whose stored value is an object keyed by language, each non-empty scalar language value is indexed separately.
 3. Remove `pk` from `.meta` and save the file
 
 It also reports legacy `*-on-data-create` trigger handlers so they can be migrated manually to `.meta` events.

@@ -140,13 +140,14 @@ function migrate_10_apply($state)
                 $skipped++;
                 continue;
             }
-            $index_uuid = md5_uuid($record[$pk_field]);
-            $file       = data_path($resource, $uuid);
-            _data_create_index($resource, $file, $pk_field, $index_uuid);
-            $indexed++;
+            $file = data_path($resource, $uuid);
+            foreach (data_index_uuids($record[$pk_field]) as $index_uuid) {
+                _data_create_index($resource, $file, $pk_field, $index_uuid);
+                $indexed++;
+            }
         }
 
-        echo "  Indexed: $indexed record(s), skipped (no value): $skipped record(s).\n";
+        echo "  Indexed: $indexed entr" . ($indexed === 1 ? 'y' : 'ies') . ", skipped (no value): $skipped record(s).\n";
 
         if (!empty($meta['fields']) && is_array($meta['fields'])) {
             foreach ($meta['fields'] as $fname => &$fdef) {

@@ -8,13 +8,18 @@
             var collapsed = [#nbar_collapsed#];
             var offset = collapsed ? "2rem" : "15rem";
             var page = document.getElementById("page");
-            if (!page) {
+            if (!document.body) {
                 return false;
             }
-            page.style.boxSizing = "border-box";
-            page.style.width = "calc(100% - " + offset + ")";
-            page.style.marginLeft = side === "left" ? offset : "";
-            page.style.marginRight = side === "right" ? offset : "";
+            if (page) {
+                page.style.width = "";
+                page.style.marginLeft = "";
+                page.style.marginRight = "";
+            }
+            document.body.classList.add("nb-bar-layout");
+            document.body.style.boxSizing = "border-box";
+            document.body.style.paddingLeft = side === "left" ? offset : "";
+            document.body.style.paddingRight = side === "right" ? offset : "";
             return true;
         }
         if (!set_page_layout()) {
@@ -22,6 +27,12 @@
         }
     })();
 </script>
+
+<style>
+    body.nb-bar-layout {
+        transition: padding-left 200ms ease-in-out, padding-right 200ms ease-in-out;
+    }
+</style>
 
 <nav id="nb-bar" x-data="nimblybar('[#nbar_side#]', [#nbar_collapsed#])"
     class="fixed top-0 z-[1035] h-screen overflow-visible bg-cbar text-white font-primary shadow-[0_4px_12px_0_rgba(0,0,0,0.07),_0_2px_4px_rgba(0,0,0,0.05)] transition-all duration-200 ease-in-out [#if nbar_side=left echo=left-0#][#if nbar_side=left echo_else=right-0#] [#if nbar_side=left echo=border-r#][#if nbar_side=left echo_else=border-l#] border-cbar"
