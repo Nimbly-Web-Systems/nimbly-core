@@ -1072,6 +1072,10 @@ function _data_validate($resource, $uuid, &$data_ls)
                     if (_validate_natural_short_text($data_ls[$field] ?? '') !== true) {
                         return false;
                     }
+                } else if ($rule === 'natural-text') {
+                    if (_validate_natural_text($data_ls[$field] ?? '') !== true) {
+                        return false;
+                    }
                 }
             }
         }
@@ -1129,7 +1133,7 @@ function _data_validate_unique($resource, $uuid, $data_ls, $fields)
     return true;
 }
 
-function _validate_natural_short_text($val)
+function _validate_natural_language($val, $max_length = 255)
 {
     if (!is_string($val)) {
         return true;
@@ -1140,33 +1144,19 @@ function _validate_natural_short_text($val)
         return true;
     }
 
-    // Hard limit (avoid regex on huge payloads)
-    if (strlen($raw) > 255) {
-        return false;
-    }
-
-    // Normalize for analysis: keep letters only, Unicode-safe
-    $s = mb_strtolower($raw, 'UTF-8');
+    $s = mb_strtolower(mb_substr($raw, 0, $max_length, 'UTF-8'), 'UTF-8');
     $s = preg_replace('/[^\p{L}]/u', '', $s);
 
     $len = mb_strlen($s, 'UTF-8');
 
-    // If after stripping it's empty, don't block (let other validation handle)
-    if ($len === 0) {
+    if ($len === 0 || $len < 4) {
         return true;
     }
 
-    // Allow very short (avoid blocking e.g. "Ng", "TNO")
-    if ($len < 4) {
-        return true;
-    }
-
-    // Common keyboard-mash repeats that still contain vowels, e.g. ASDFASDF.
     if (preg_match('/(asdf|qwer|zxcv|hjkl){2,}/u', $s)) {
         return false;
     }
 
-    // Count vowels
     preg_match_all('/[aeiouyàáâãäåèéêëìíîïòóôõöùúûü]/u', $s, $m);
     $vowel_count = count($m[0]);
 
@@ -1179,13 +1169,22 @@ function _validate_natural_short_text($val)
         return false;
     }
 
-    // Low vowel ratio for long single-token strings
-    if ($len >= 12) {
-        $ratio = $vowel_count / $len;
-        if ($ratio < 0.20) {
-            return false;
-        }
+    if ($len >= 12 && ($vowel_count / $len) < 0.20) {
+        return false;
     }
 
     return true;
+}
+
+function _validate_natural_text($val)
+{
+    return _validate_natural_language($val);
+}
+
+function _validate_natural_short_text($val)
+{
+    if (is_string($val) && strlen(trim($val)) > 255) {
+        return false;
+    }
+    return _validate_natural_language($val);
 }
