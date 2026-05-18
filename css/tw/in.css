@@ -121,7 +121,18 @@ form [data-nb-edit] {
 }
 
 form .medium-editor-element[data-medium-focused] {
-  @apply border-primary bg-white outline-2 outline-primary/30 outline-offset-2;
+  --input-color: var(--color-base-content);
+  border-color: var(--input-color);
+  box-shadow: 0 1px var(--input-color);
+  outline: 2px solid var(--input-color);
+  outline-offset: 2px;
+  isolation: isolate;
+}
+
+@supports (color: color-mix(in lab, red, red)) {
+  form .medium-editor-element[data-medium-focused] {
+    box-shadow: 0 1px color-mix(in oklab, var(--input-color) calc(var(--depth) * 10%), #0000);
+  }
 }
 
 /* editable images */
