@@ -10,11 +10,15 @@ function get_first_sc($params) {
     $data_id = current($params);
     $var_id = get_param_value($params, "var", "first");
     $data = get_variable($data_id);
-    if (!is_array($data) && is_string($data)) {
-        $data = array($data);
-    }
 
     clear_variable($var_id);
+
+    if (empty($data)) {
+        return;
+    }
+    if (!is_array($data)) {
+        $data = array($data);
+    }
 
     if (count($data) < 1) {
         return;

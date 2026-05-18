@@ -1,16 +1,31 @@
 # deny access to certain file extensions, including PHP files
 <FilesMatch "\.(tpl|inc|php|htaccess|md)$">
-    deny from all
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        deny from all
+    </IfModule>
 </FilesMatch>
 
 # index.php is the only PHP file which can be accessed from the browser
 <Files index.php>
-    allow from all
+    <IfModule mod_authz_core.c>
+        Require all granted
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        allow from all
+    </IfModule>
 </Files>
 
 # install.php redirects to index.php
 <Files install.php>
-    allow from all
+    <IfModule mod_authz_core.c>
+        Require all granted
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        allow from all
+    </IfModule>
 </Files>
 
 # never show directory listings for URLs which map to a directory.
@@ -82,25 +97,27 @@ RewriteCond core/static/%1 -F
 RewriteRule ^ core/static/%1 [END]
 
 # finally, fallback to PHP to handle the request.
-php_flag register_globals off
-php_flag magic_quotes_gpc off
-php_flag magic_quotes_sybase off
-php_flag session.auto_start off
-php_flag mbstring.encoding_translation off
-php_value mbstring.http_input pass
-php_value mbstring.http_output pass
-php_value zlib.output_compression 16386
-php_value session.gc_maxlifetime 2592000
-php_value session.cookie_lifetime 2592000
-php_value session.gc_probability 1
-php_value error_log ext/data/.tmp/logs/system.log
+<IfModule mod_php.c>
+    php_flag register_globals off
+    php_flag magic_quotes_gpc off
+    php_flag magic_quotes_sybase off
+    php_flag session.auto_start off
+    php_flag mbstring.encoding_translation off
+    php_value mbstring.http_input pass
+    php_value mbstring.http_output pass
+    php_value zlib.output_compression 16386
+    php_value session.gc_maxlifetime 2592000
+    php_value session.cookie_lifetime 2592000
+    php_value session.gc_probability 1
+    php_value error_log ext/data/.tmp/logs/system.log
 
-# script memory limit
-php_value memory_limit 2048M
+    # script memory limit
+    php_value memory_limit 2048M
 
-# file upload size
-php_value post_max_size 12M
-php_value upload_max_filesize 10M
+    # file upload size
+    php_value post_max_size 12M
+    php_value upload_max_filesize 10M
+</IfModule>
 
 # block direct .php requests
 RewriteCond %{THE_REQUEST} \s/+.*\.php[?\s] [NC]
