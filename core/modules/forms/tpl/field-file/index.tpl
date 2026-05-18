@@ -1,5 +1,5 @@
 <div class="relative my-6 border border-neutral-300 rounded bg-neutral-50 px-4 pt-4 pb-3"
-    x-init="[#_f.model#]='[#get [#get _f.source default=record#].[#_f.key#]#]'">
+    [#_f.x_init#]>
 
     <label class="pointer-events-none absolute left-3 top-0 text-sm px-1
             text-neutral-600 -translate-y-[10px] bg-neutral-50">
