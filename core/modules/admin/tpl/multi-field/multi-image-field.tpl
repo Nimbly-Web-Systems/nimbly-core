@@ -26,7 +26,7 @@
                 <th scope="col" class="px-4 py-2">[#text Actions#]</th>
             </tr>
         </thead>
-        <tbody x-init='form_data.[#item.key#]=[#get record.[#item.key#] empty=[] json#])'
+        <tbody x-init='form_data.[#item.key#]=[#get record.[#item.key#] empty=[] json#]'
             data-nb-edit-multi-image="[#item.key#]">
             <template x-for="(img_uuid, img_ix) in form_data.[#item.key#]" :key="img_ix">
                 <tr class="border-b dark:border-neutral-500 transition-all cursor-grab hover:bg-clight/10"
