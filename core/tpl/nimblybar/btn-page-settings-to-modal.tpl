@@ -1,5 +1,5 @@
 <button id="nb_page_settings_btn" x-show="!collapsed" type="button"
-    class="flex h-8 w-8 items-center justify-center rounded text-white hover:bg-clight"
+    class="flex h-8 w-8 cursor-pointer items-center justify-center rounded text-white hover:bg-clight"
     aria-haspopup="dialog" @click="open_modal('nb-modal-settings')" title="[#text Page settings#]">
     <svg class="h-5 w-5 shrink-0 fill-white" fill="#ffffff" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
         <title>[#text Page settings#]</title>
