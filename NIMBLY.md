@@ -516,14 +516,35 @@ The `.content` resource is a key-value store for editable HTML blocks that are n
 
 This pattern requires the user module to be active (loaded automatically).
 
-#### `[#get-img-html image sizes="...#]`
-Renders a responsive `<img>` tag with `srcset` and `sizes`.
+#### `[#get-img-html uuid sizes="..." mode=w#]`
+**Preferred way to render images.** Generates a responsive `<img>` with `srcset`, `sizes`, lazy loading, and anti-upscale dimension guards. Always use this over a manual `<img>` tag.
 
 ```
-[#get-img-html [#record.main_img#] sizes="xs-50,sm-33,lg-25"#]
+[#get-img-html [#record.main_img#] sizes="sm-100,md-50,lg-33"#]
 ```
 
-Size tokens use breakpoint-percentage pairs (`lg-50` = 50% of viewport width at lg breakpoint). The module generates appropriately sized variants for all specified breakpoints.
+**`sizes` param** — comma-separated breakpoint-percentage pairs. Each token is `breakpoint-vw` where `vw` is the percentage of viewport width the image occupies at that breakpoint and above. Omitted breakpoints fall back to `100vw`.
+
+| Example | Meaning |
+|---|---|
+| `sm-100,md-50` | Full width on mobile, half on md+ |
+| `sm-100,md-33` | Full width on mobile, one-third on md+ |
+| `sm-100,md-50,lg-25` | Full → half → quarter |
+
+**`mode` param** — controls how the image is sized server-side:
+
+| Mode | URL shape | Result |
+|---|---|---|
+| `w` (default) | `480w` | Resized to that width, height proportional |
+| `c` | `480c` | Resized to that height, width proportional — good for consistent-height layouts |
+| `w?ratio=1.0` | `480w?ratio=1.0` | Square crop (centre) — use for avatars, thumbnails |
+
+Square crop example:
+```
+[#get-img-html [#record.avatar#] sizes="sm-50,md-25" mode=w?ratio=1.0#]
+```
+
+The inline `max-width`/`max-height` styles on the generated `<img>` are only anti-upscale guards — they do not interfere with CSS `object-fit: cover` or grid layouts when images are larger than their display size (which they always are for real content).
 
 ---
 
