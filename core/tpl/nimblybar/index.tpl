@@ -41,7 +41,7 @@
     <div class="flex h-full flex-col overflow-hidden" :class="collapsed ? 'items-center pt-3' : 'items-stretch pt-3'">
         <div class="flex h-8 items-center gap-2" :class="collapsed ? 'justify-center' : ''">
             <button id="nb_nav_toggler"
-                class="flex h-8 w-8 items-center justify-center rounded text-white hover:bg-clight focus:bg-clight focus:outline-none"
+                class="flex h-8 w-8 cursor-pointer items-center justify-center rounded text-white hover:bg-clight focus:bg-clight focus:outline-none"
                 type="button" @click="toggle" :title="collapsed ? '[#text Expand menu#]' : '[#text Collapse menu#]'">
                 <svg aria-hidden="true" focusable="false" class="h-5 w-5 shrink-0 fill-white" role="img"
                     xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512">
@@ -67,7 +67,7 @@
 
             <div x-show="!collapsed" class="relative ml-auto" @click.outside="account_open = false" id="nb-bar-account-menu">
                 <button id="nb_account_btn" type="button" @click="account_open = !account_open"
-                    class="flex h-8 w-8 items-center justify-center rounded text-white hover:bg-clight focus:bg-clight focus:outline-none"
+                    class="flex h-8 w-8 cursor-pointer items-center justify-center rounded text-white hover:bg-clight focus:bg-clight focus:outline-none"
                     aria-haspopup="true" :aria-expanded="account_open.toString()" title="[#text Account#]">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
                         stroke="currentColor" class="h-5 w-5 shrink-0">
