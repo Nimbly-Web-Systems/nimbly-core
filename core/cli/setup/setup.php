@@ -3,7 +3,7 @@
 /**
  * Nimbly CLI — setup command
  *
- * Usage: php core/cli/nimbly.php setup
+ * Usage: php core/cli/nimbly.php setup [alias=oddone|base_path=/oddone] [app_env=stage]
  *
  * Safe to re-run — existing records and files are never overwritten.
  */
@@ -72,30 +72,96 @@ function nb_prompt_password(string $question, string $env_var = ''): string {
     return $value;
 }
 
+function nb_cli_options(array $argv): array {
+    $options = [];
+    foreach (array_slice($argv, 2) as $arg) {
+        $arg = ltrim($arg, '-');
+        if ($arg === '' || !str_contains($arg, '=')) {
+            continue;
+        }
+        [$key, $value] = explode('=', $arg, 2);
+        $key = str_replace('-', '_', trim($key));
+        if ($key !== '') {
+            $options[$key] = trim($value);
+        }
+    }
+    return $options;
+}
+
+function nb_normalize_base_path(string $base_path): string {
+    $base_path = trim($base_path);
+    if ($base_path === '' || $base_path === '/') {
+        return '/';
+    }
+    $base_path = trim($base_path, '/');
+    return '/' . $base_path . '/';
+}
+
+function nb_env_set(array $lines, string $key, string $value, ?string $after_key = null): array {
+    $found = false;
+    foreach ($lines as $i => $line) {
+        if (preg_match('/^' . preg_quote($key, '/') . '\s*=/', $line)) {
+            $lines[$i] = $key . '=' . $value;
+            $found = true;
+            break;
+        }
+    }
+    if ($found) {
+        return $lines;
+    }
+    if ($after_key !== null) {
+        foreach ($lines as $i => $line) {
+            if (preg_match('/^' . preg_quote($after_key, '/') . '\s*=/', $line)) {
+                array_splice($lines, $i + 1, 0, [$key . '=' . $value]);
+                return $lines;
+            }
+        }
+    }
+    $lines[] = $key . '=' . $value;
+    return $lines;
+}
+
+function nb_render_htaccess(string $pepper, string $base_path, string $rewrite_base_path): string {
+    $content = file_get_contents(SETUP_DIR . 'htaccess.tpl');
+    $content = str_replace('%%PEPPER%%', $pepper, $content);
+    $content = str_replace('%%REWRITE_BASE%%', $base_path, $content);
+    $content = str_replace('%%REWRITE_BASE_PATH%%', $rewrite_base_path, $content);
+    return $content;
+}
+
 // -----------------------------------------------------------------------
 // Load / create .env
 // -----------------------------------------------------------------------
 
 $env_file = BASE_DIR . '.env';
 $env = [];
+$env_lines_existing = [];
+$cli_options = nb_cli_options($argv);
 
 if (file_exists($env_file)) {
-    foreach (file($env_file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) as $line) {
+    $env_lines_existing = file($env_file, FILE_IGNORE_NEW_LINES) ?: [];
+    foreach ($env_lines_existing as $line) {
+        if (trim($line) === '') continue;
         if (str_starts_with(trim($line), '#')) continue;
         [$key, $val] = array_map('trim', explode('=', $line, 2) + [1 => '']);
         $env[$key] = $val;
     }
 }
 
-// Resolve BASE_PATH (env var overrides .env)
-$base_path = getenv('BASE_PATH') ?: ($env['BASE_PATH'] ?? '/');
-if (empty($base_path)) $base_path = '/';
-if ($base_path[0] !== '/') $base_path = '/' . $base_path;
-if (substr($base_path, -1) !== '/') $base_path .= '/';
+// Resolve BASE_PATH (CLI overrides env var; env var overrides .env)
+$base_path_arg = $cli_options['base_path'] ?? $cli_options['base'] ?? null;
+if ($base_path_arg === null && isset($cli_options['alias'])) {
+    $base_path_arg = $cli_options['alias'];
+}
+$base_path_env = getenv('BASE_PATH');
+$base_path = $base_path_arg ?? ($base_path_env !== false && $base_path_env !== '' ? $base_path_env : ($env['BASE_PATH'] ?? '/'));
+$base_path = nb_normalize_base_path($base_path);
+$base_path_requested = $base_path_arg !== null || ($base_path_env !== false && $base_path_env !== '');
 
 // APP_ENV selects environment-specific schedules and gives projects one
 // shared environment label. Existing .env files are never overwritten.
-$app_env = getenv('APP_ENV') ?: ($env['APP_ENV'] ?? 'dev');
+$app_env_env = getenv('APP_ENV');
+$app_env = $cli_options['app_env'] ?? $cli_options['env'] ?? ($app_env_env !== false && $app_env_env !== '' ? $app_env_env : ($env['APP_ENV'] ?? 'dev'));
 
 // RewriteBase path without leading slash, used in RewriteCond patterns
 // e.g. "" for root install, "mysite/" for subdirectory install
@@ -108,7 +174,7 @@ if (empty($pepper)) {
     echo "Generated new PEPPER: $pepper\n";
 }
 
-// Write .env
+// Write/update .env
 if (!file_exists($env_file)) {
     $env_lines = [
         '# Nimbly site configuration',
@@ -124,7 +190,33 @@ if (!file_exists($env_file)) {
     file_put_contents($env_file, $env_content);
     echo "Written: .env\n";
 } else {
-     echo "Skipped: .env (already exists)\n";
+    $env_lines = $env_lines_existing;
+    $changed = false;
+
+    if (!isset($env['APP_ENV'])) {
+        $env_lines = nb_env_set($env_lines, 'APP_ENV', $app_env);
+        $changed = true;
+    } elseif (isset($cli_options['app_env']) || isset($cli_options['env'])) {
+        $env_lines = nb_env_set($env_lines, 'APP_ENV', $app_env);
+        $changed = true;
+    }
+
+    if ($base_path !== '/' && (!isset($env['BASE_PATH']) || $base_path_requested)) {
+        $env_lines = nb_env_set($env_lines, 'BASE_PATH', rtrim($base_path, '/'), 'APP_ENV');
+        $changed = true;
+    }
+
+    if (!isset($env['PEPPER'])) {
+        $env_lines = nb_env_set($env_lines, 'PEPPER', $pepper);
+        $changed = true;
+    }
+
+    if ($changed) {
+        file_put_contents($env_file, implode("\n", $env_lines) . "\n");
+        echo "Updated: .env\n";
+    } else {
+        echo "Skipped: .env (already exists)\n";
+    }
 }
 
 // Make PEPPER available to encrypt library
@@ -142,15 +234,12 @@ load_library('encrypt');
 $htaccess_file = BASE_DIR . '.htaccess';
 
 if (!file_exists($htaccess_file)) {
-    $content = file_get_contents(SETUP_DIR . 'htaccess.tpl');
-    $content = str_replace('%%PEPPER%%', $pepper, $content);
-    $content = str_replace('%%REWRITE_BASE%%', $base_path, $content);
-    $content = str_replace('%%REWRITE_BASE_PATH%%', $rewrite_base_path, $content);
-    file_put_contents($htaccess_file, $content);
+    file_put_contents($htaccess_file, nb_render_htaccess($pepper, $base_path, $rewrite_base_path));
     chmod($htaccess_file, 0640);
     echo "Written: .htaccess\n";
 } else {
     $htaccess_content = file_get_contents($htaccess_file);
+    $expected_htaccess = nb_render_htaccess($pepper, $base_path, $rewrite_base_path);
     $has_mod_php = (bool) preg_match('/^php_(flag|value)\s/m', $htaccess_content);
     $existing_base = null;
     if (preg_match('/^RewriteBase\s+(.+)$/m', $htaccess_content, $m)) {
@@ -160,22 +249,24 @@ if (!file_exists($htaccess_file)) {
 
     if ($has_mod_php) {
         // mod_php directives (php_flag/php_value) are not supported under PHP-FPM — regenerate silently
-        $content = file_get_contents(SETUP_DIR . 'htaccess.tpl');
-        $content = str_replace('%%PEPPER%%', $pepper, $content);
-        $content = str_replace('%%REWRITE_BASE%%', $base_path, $content);
-        $content = str_replace('%%REWRITE_BASE_PATH%%', $rewrite_base_path, $content);
-        file_put_contents($htaccess_file, $content);
+        file_put_contents($htaccess_file, $expected_htaccess);
         chmod($htaccess_file, 0640);
         echo "Recreated: .htaccess (removed mod_php directives, not supported under PHP-FPM)\n";
     } elseif ($base_mismatch) {
         echo "Warning: .htaccess has RewriteBase '$existing_base' but BASE_PATH is '$base_path'.\n";
         $choice = nb_prompt('How to proceed? [leave/recreate]', 'leave');
         if (strtolower(trim($choice)) === 'recreate') {
-            $content = file_get_contents(SETUP_DIR . 'htaccess.tpl');
-            $content = str_replace('%%PEPPER%%', $pepper, $content);
-            $content = str_replace('%%REWRITE_BASE%%', $base_path, $content);
-            $content = str_replace('%%REWRITE_BASE_PATH%%', $rewrite_base_path, $content);
-            file_put_contents($htaccess_file, $content);
+            file_put_contents($htaccess_file, $expected_htaccess);
+            chmod($htaccess_file, 0640);
+            echo "Recreated: .htaccess\n";
+        } else {
+            echo "Skipped: .htaccess (left as-is)\n";
+        }
+    } elseif ($base_path_requested && trim($htaccess_content) !== trim($expected_htaccess)) {
+        echo "Warning: .htaccess differs from the setup template for BASE_PATH '$base_path'.\n";
+        $choice = nb_prompt('How to proceed? [leave/recreate]', 'recreate');
+        if (strtolower(trim($choice)) === 'recreate') {
+            file_put_contents($htaccess_file, $expected_htaccess);
             chmod($htaccess_file, 0640);
             echo "Recreated: .htaccess\n";
         } else {
