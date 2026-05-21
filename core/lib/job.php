@@ -49,7 +49,19 @@ function job_ensure_resource()
     load_library('data');
     if (!data_exists('.jobs', '.meta')) {
         data_create_resource('.jobs', job_resource_meta());
+        return;
     }
+
+    $meta = data_read('.jobs', '.meta');
+    if (!is_array($meta)) {
+        return;
+    }
+    if (($meta['fields']['payload']['admin_col'] ?? null) === false) {
+        return;
+    }
+
+    $meta['fields']['payload']['admin_col'] = false;
+    file_put_contents(data_path('.jobs', '.meta'), json_encode($meta, JSON_UNESCAPED_UNICODE));
 }
 
 function job_resource_meta()
@@ -69,6 +81,7 @@ function job_resource_meta()
             'payload' => [
                 'name' => 'Payload',
                 'type' => 'text',
+                'admin_col' => false,
             ],
             'attempts' => [
                 'name' => 'Attempts',

@@ -129,6 +129,23 @@ function nb_render_htaccess(string $pepper, string $base_path, string $rewrite_b
     return $content;
 }
 
+function setup_routes_resource_meta(): array {
+    return [
+        'fields' => [
+            'route' => [
+                'name' => 'Route',
+                'type' => 'text',
+                'required' => true,
+            ],
+            'order' => [
+                'name' => 'Order',
+                'type' => 'number',
+                'required' => true,
+            ],
+        ],
+    ];
+}
+
 // -----------------------------------------------------------------------
 // Load / create .env
 // -----------------------------------------------------------------------
@@ -444,6 +461,16 @@ if (!data_exists('.jobs', '.meta')) {
 // -----------------------------------------------------------------------
 // Create core routes
 // -----------------------------------------------------------------------
+
+if (!data_exists('.routes', '.meta')) {
+    data_create_resource('.routes', setup_routes_resource_meta());
+    echo "Created: .routes resource\n";
+} else if (data_read('.routes', '.meta', 'fields') === false) {
+    data_create('.routes', '.meta', setup_routes_resource_meta());
+    echo "Updated: .routes resource\n";
+} else {
+    echo "Skipped: .routes resource (already exists)\n";
+}
 
 $routes = [
     ['route' => 'api',                                 'order' => 900],
