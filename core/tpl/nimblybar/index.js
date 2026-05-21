@@ -222,6 +222,22 @@ const alpine_media_insert = function () {
       if (!this.embed_info || !this.embed_info.active) {
         return;
       }
+      if (this.mode === "select_embed") {
+        let value = null;
+        if (this.embed_info.active === "vimeo" && this.embed_info.vimeo.id) {
+          value = "vimeo-" + this.embed_info.vimeo.id;
+          if (this.embed_info.vimeo.hash) {
+            value += ":" + this.embed_info.vimeo.hash;
+          }
+        } else if (this.embed_info.active === "youtube" && this.embed_info.youtube.id) {
+          value = "youtube-" + this.embed_info.youtube.id;
+        }
+        if (value) {
+          nb.media_modal._set_media(nb.media_modal.field, { uuid: value });
+          nb.modal.close("nb-modal-insert-media");
+        }
+        return;
+      }
       const embed_data_el = document.querySelector(
         "#media_modal_embed_options div[data-nb-embed=" +
           this.embed_info.active +

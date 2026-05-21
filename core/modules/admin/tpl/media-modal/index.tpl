@@ -41,14 +41,14 @@
                     <!-- tab buttons -->
                     <ul class="flex list-none flex-col flex-wrap pl-0 w-12" role="tablist">
                         <li role="presentation" class="text-center w-12">
-                            <a href="#tab_media_library" id='tab_media_library_btn' class="w-12 my-2 block border-x-0 border-b-2 border-t-0 border-transparent px-3 pb-3.5 
-                                    pt-4 text-xs font-medium uppercase leading-tight text-neutral-500 
+                            <a href="#tab_media_library" id='tab_media_library_btn' class="w-12 my-2 block border-x-0 border-b-2 border-t-0 border-transparent px-3 pb-3.5
+                                    pt-4 text-xs font-medium uppercase leading-tight text-neutral-500
                                     hover:isolate hover:border-transparent
-                                     hover:bg-neutral-100 focus:isolate 
+                                     hover:bg-neutral-100 focus:isolate
                                      focus:border-transparent"
-                                :class="mode !== 'embed' ? 'border-primary text-primary bg-neutral-100' : ''"
+                                :class="mode !== 'embed' && mode !== 'select_embed' ? 'border-primary text-primary bg-neutral-100' : ''"
                                 title="[#text Pick from media library#]"
-                                @click.prevent="if (mode != 'select') mode='insert'" role="tab"
+                                @click.prevent="if (mode === 'embed') mode='insert'; else if (mode === 'select_embed') mode='select_vid'" role="tab"
                                 aria-controls="tab_media_library" aria-selected="true">
 
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
@@ -62,9 +62,9 @@
                             <a href="#tab_media_embed" id="tab_media_embed_btn"
                                 :class="{
                                     'opacity-50 pointer-events-none': mode === 'select',
-                                    'border-primary bg-neutral-100 text-primary': mode === 'embed'
+                                    'border-primary bg-neutral-100 text-primary': mode === 'embed' || mode === 'select_embed'
                                 }"
-                                @click.prevent="if (mode != 'select') mode='embed'" title="[#text Embed external media#]" class="w-12 my-2 block border-x-0 border-b-2 border-t-0 border-transparent
+                                @click.prevent="if (mode === 'insert') mode='embed'; else if (mode === 'select_vid') mode='select_embed'" title="[#text Embed external media#]" class="w-12 my-2 block border-x-0 border-b-2 border-t-0 border-transparent
                                  px-3 pb-3.5 pt-4 text-xs font-medium uppercase leading-tight
                                  text-neutral-500
                                  hover:isolate hover:border-transparent hover:bg-neutral-100
@@ -82,7 +82,7 @@
                         </li>
                     </ul>
                     <div class="w-full bg-neutral-100">
-                        <div x-show="mode !== 'embed'" class="opacity-100 transition-opacity duration-150 ease-linear"
+                        <div x-show="mode !== 'embed' && mode !== 'select_embed'" class="opacity-100 transition-opacity duration-150 ease-linear"
                             id="tab_media_library" role="tabpanel" aria-labelledby="tab_media_library"
                             >
 
@@ -97,7 +97,7 @@
                             </div>
                         </div>
 
-                        <div x-show="mode === 'embed'" class="opacity-100 transition-opacity duration-150 ease-linear"
+                        <div x-show="mode === 'embed' || mode === 'select_embed'" class="opacity-100 transition-opacity duration-150 ease-linear"
                             id="tab_media_embed" role="tabpanel" aria-labelledby="tab_media_embed">
 
                             <div class="w-full p-4 md:p-6 lg:p-8">
@@ -124,13 +124,14 @@
                     @click="insert_media">
                     [#text Insert media#]
                 </button>
-                <button type="button" class="[#btn-class-primary#] ml-2" :disabled="!file_info" x-show="mode==='select'"
+                <button type="button" class="[#btn-class-primary#] ml-2" :disabled="!file_info" x-show="mode==='select' || mode==='select_vid'"
                     @click="set_media">
                     [#text Select#]
                 </button>
                 <button type="button" class="[#btn-class-primary#] ml-2" :disabled="!can_embed()"
-                    x-show="mode==='embed'" @click="embed_media">
-                    [#text Embed media#]
+                    x-show="mode==='embed' || mode==='select_embed'" @click="embed_media">
+                    <span x-show="mode==='select_embed'">[#text Select#]</span>
+                    <span x-show="mode!=='select_embed'">[#text Embed media#]</span>
                 </button>
             </div>
         </div>
