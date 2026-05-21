@@ -2458,7 +2458,7 @@ After migration, each previously pk-driven resource should look like this:
 ```json
 {
   "fields": {
-    "title":    { "name": "Title", "type": "name", "required": true, "slug": true },
+    "title":    { "name": "Title", "type": "text", "required": true },
     "url_slug": { "name": "URL slug", "type": "slug", "source": "title" }
   },
   "index": ["url_slug"]
@@ -2495,6 +2495,28 @@ RESEND_API_KEY=re_xxxxxxxxxxxx
 If your project had a `.services` record with `tpl: email-password-reset`, it is no longer used. The `upgrade-11` command will warn you if such records are found.
 
 Projects with no `.services` records need no action here.
+
+#### 8. Check for removed field types
+
+**`name` → `text`**
+
+The `name` field type no longer exists in 1.1. Any `.meta` using `"type": "name"` must be changed to `"type": "text"`. In 1.0 the `name` type carried a `slug: true` shorthand that auto-generated a URL slug — this does not exist on `text` fields. Replace the pattern with a dedicated `slug`-type field:
+
+```diff
+- "title": { "name": "Title", "type": "name", "required": true, "slug": true }
++ "title": { "name": "Title", "type": "text", "required": true },
++ "url_slug": { "name": "URL slug", "type": "slug", "source": "title" }
+```
+
+**`gallery` — data format changed**
+
+The `gallery` type in 1.1 stores its value as a JSON array in a single field. Projects from 1.0 that used gallery data as flat sibling fields (e.g. `grid1`, `grid1_cover`, `grid2`, `grid2_cover`, ...) are not compatible. Changing `.meta` to `"type": "gallery"` without migration shows an empty gallery in the admin — the data exists in the flat fields, but the 1.1 gallery type reads `record.{fieldname}` as a JSON array (which is absent).
+
+Options:
+
+1. **Custom field type** — create `ext/tpl/field-{typename}/index.tpl` and register `"type": "{typename}"` in `.meta`. The template receives `_f.key` (the field key), and `form_data` contains all flat fields already initialized from the record. This avoids touching the stored data.
+
+2. **Data migration** — write a script that reads every record, collects the flat fields into a JSON array, writes it to the single gallery field, removes the flat keys, and saves the record. Then use `"type": "gallery"` normally.
 
 ### What you do NOT need to do
 
