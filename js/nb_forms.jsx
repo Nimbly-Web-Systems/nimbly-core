@@ -9,6 +9,49 @@ var nb_forms = {
     },
     select_image(field_name, field_ix = undefined) {
         this.select_media(field_name, field_ix, ['img', 'svg']);
+        this._preselect_media_file(this.form_data[field_name]);
+    },
+    select_video(field_name, field_ix = undefined) {
+        this.select_media(field_name, field_ix, ['vid']);
+        const current = this.form_data[field_name];
+        if (current && String(current).startsWith('vimeo-')) {
+            const parts = String(current).replace('vimeo-', '').split(':');
+            nb.media_alpine.embed_info.vimeo.id = parts[0];
+            nb.media_alpine.embed_info.vimeo.hash = parts[1] || null;
+            nb.media_alpine.embed_info.active = 'vimeo';
+            nb.media_alpine.mode = 'select_embed';
+        } else if (current && String(current).startsWith('youtube-')) {
+            nb.media_alpine.embed_info.youtube.id = String(current).replace('youtube-', '');
+            nb.media_alpine.embed_info.active = 'youtube';
+            nb.media_alpine.mode = 'select_embed';
+        } else {
+            nb.media_alpine.mode = 'select_vid';
+            this._preselect_media_file(current);
+        }
+    },
+    _preselect_media_file(uuid) {
+        if (!uuid || uuid === '0' || !nb.media_alpine) {
+            return;
+        }
+        const unfiltered = nb.media_alpine.unfiltered;
+        if (!unfiltered || !unfiltered.length) {
+            return;
+        }
+        const file = unfiltered.find(function(f) { return f.uuid === uuid; });
+        if (!file) {
+            return;
+        }
+        nb.media_alpine.file_info = file;
+        nb.media_alpine._original_title = file.title;
+        nb.media_alpine._original_description = file.description;
+        try {
+            const idx = nb.media_alpine.files.indexOf(file);
+            if (idx >= 0) {
+                nb.media_alpine.set_page(Math.floor(idx / nb.media_alpine.page_size));
+            }
+        } catch (e) {
+            // set_page has a known bug with its recursive fallback; silently ignore
+        }
     },
     select_media(field_name, field_ix = undefined, filter = []) {
         nb.media_alpine.mode = 'select';
