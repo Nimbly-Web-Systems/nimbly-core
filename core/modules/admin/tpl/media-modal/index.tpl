@@ -17,7 +17,7 @@
                     </h5>
                     <h6 class="text-sm text-neutral-700">
                         <span x-text="`${first} - ${last} of ${files.length}`"></span>
-                        [#text files#] <span x-text="mode"></span>
+                        [#text files#]
                     </h6>
 
                 </div>
