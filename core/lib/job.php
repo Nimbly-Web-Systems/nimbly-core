@@ -56,11 +56,38 @@ function job_ensure_resource()
     if (!is_array($meta)) {
         return;
     }
-    if (($meta['fields']['payload']['admin_col'] ?? null) === false) {
+    $changed = false;
+
+    if (($meta['fields']['payload']['admin_col'] ?? null) !== false) {
+        $meta['fields']['payload']['admin_col'] = false;
+        $changed = true;
+    }
+
+    if (!isset($meta['fields']['execution_ms'])) {
+        $meta['fields']['execution_ms'] = [
+            'name' => 'Execution (ms)',
+            'type' => 'number',
+            'admin_col' => false,
+        ];
+        $changed = true;
+    }
+
+    if (($meta['sort']['field'] ?? '') !== '_modified'
+        || ($meta['sort']['flags'] ?? '') !== 'numeric'
+        || ($meta['sort']['order'] ?? '') !== 'desc'
+    ) {
+        $meta['sort'] = [
+            'field' => '_modified',
+            'flags' => 'numeric',
+            'order' => 'desc',
+        ];
+        $changed = true;
+    }
+
+    if (!$changed) {
         return;
     }
 
-    $meta['fields']['payload']['admin_col'] = false;
     file_put_contents(data_path('.jobs', '.meta'), json_encode($meta, JSON_UNESCAPED_UNICODE));
 }
 
@@ -125,6 +152,11 @@ function job_resource_meta()
         'index' => [
             'status',
             'type',
+        ],
+        'sort' => [
+            'field' => '_modified',
+            'flags' => 'numeric',
+            'order' => 'desc',
         ],
     ];
 }
