@@ -2346,6 +2346,32 @@ It also removes legacy Tailwind Elements bundles from `ext/static/`
 (`tw-elements*`). Core 1.1 uses Alpine.js and DaisyUI for admin interactivity,
 so these assets should not remain in upgraded projects.
 
+Legacy `nb-open` / `nb-close` class toggles and `data-open` / `data-close`
+attributes are also pre-1.1 patterns. Replace them with local Alpine.js state
+and bind state to visibility or classes directly:
+
+```html
+<!-- Old pattern (1.0) -->
+<button data-open=".mobile-menu" data-close=".menu-button">Menu</button>
+<nav class="mobile-menu nb-close">...</nav>
+
+<!-- New pattern (1.1) -->
+<div x-data="{ menu_open: false }">
+    <button type="button" x-show="!menu_open" @click="menu_open = true">
+        Menu
+    </button>
+    <button type="button" x-show="menu_open" @click="menu_open = false">
+        Close
+    </button>
+    <nav :class="{ 'is-open': menu_open }">...</nav>
+</div>
+```
+
+When migration work touches responsive CSS, use the Tailwind breakpoint values
+already configured for the project (`sm`, `md`, `lg`, etc.) instead of inventing
+new one-off media query widths. For example, use `@media (min-width: 768px)`
+for Tailwind's default `md` breakpoint.
+
 Internally, the resource `pk` migration step is handled by:
 
 ```bash
