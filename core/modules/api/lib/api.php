@@ -148,6 +148,8 @@ function api_honeypot_check(array &$data): bool {
         return false;
     }
     if (!empty($data[$field])) {
+        load_library("log");
+        log_system("honeypot field was filled");
         return true;
     }
     unset($data[$field]);
@@ -223,6 +225,13 @@ function resource_post($resource) { // create new
     }
     if (data_error_get() === 'RESOURCE_EXISTS') {
         return json_result(array('message' => 'RESOURCE_EXISTS'), 409);
+    }
+    load_library("log");
+    $error = data_error_get();
+    if ($error === 'VALIDATION_FAILED') {
+        log_system("resource create failed for " . $resource . ": validation failed");
+    } else {
+        log_system("resource create failed for " . $resource . ": write failed");
     }
     return json_result(array('message' => 'RESOURCE_CREATE_FAILED'), 500);
 }

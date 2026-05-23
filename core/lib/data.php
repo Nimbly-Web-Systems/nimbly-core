@@ -1070,10 +1070,12 @@ function _data_validate($resource, $uuid, &$data_ls)
             foreach ($fields as $field) {
                 if ($rule === 'natural-short-text') {
                     if (_validate_natural_short_text($data_ls[$field] ?? '') !== true) {
+                        data_error_set('VALIDATION_FAILED');
                         return false;
                     }
                 } else if ($rule === 'natural-text') {
                     if (_validate_natural_text($data_ls[$field] ?? '') !== true) {
+                        data_error_set('VALIDATION_FAILED');
                         return false;
                     }
                 }
