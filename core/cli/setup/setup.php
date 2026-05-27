@@ -403,7 +403,6 @@ if (!file_exists($gitignore_dst)) {
 // Determine what still needs to be set up
 // -----------------------------------------------------------------------
 
-$need_repo = !is_dir(BASE_DIR . 'ext/.git');
 $need_site = !data_exists('.config', 'site');
 
 $users_dir  = BASE_DIR . 'ext/data/users/';
@@ -420,21 +419,14 @@ if (is_dir($users_dir)) {
 // Prompt only for what is missing
 // -----------------------------------------------------------------------
 
-$ext_repo = '';
+$ext_repo = nb_optional_env_or_empty('EXT_REPO');
 $sitename = '';
 $email    = '';
 $password = '';
 
-if ($need_repo || $need_site || $need_user) {
+if ($need_site || $need_user) {
     if (!nb_compact_output()) {
         echo "\n--- Nimbly Setup ---\n\n";
-    }
-
-    if ($need_repo) {
-        $ext_repo = nb_optional_env_or_empty('EXT_REPO');
-        if ($ext_repo === '' && empty(getenv('NIMBLY_SKIP_EXT_REPO_PROMPT')) && nb_can_prompt()) {
-            $ext_repo = nb_prompt('Project repo URL (ext)', '', 'EXT_REPO');
-        }
     }
 
     if ($need_site) {

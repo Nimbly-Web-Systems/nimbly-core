@@ -124,7 +124,6 @@ function clone_ext_repo(repo_url) {
   if (ext_has_files()) {
     note('ext/ already exists but is not a git repository. Continuing with existing files.');
     note('Run git init inside ext/ when you are ready to version the application.');
-    process.env.NIMBLY_SKIP_EXT_REPO_PROMPT = '1';
     return;
   }
 
@@ -139,7 +138,6 @@ async function prepare_ext_repo() {
   if (ext_has_files()) {
     note('ext/ is not a git repository yet. Continuing with existing files.');
     note('Run git init inside ext/ when you are ready to version the application.');
-    process.env.NIMBLY_SKIP_EXT_REPO_PROMPT = '1';
     return;
   }
 
@@ -150,7 +148,6 @@ async function prepare_ext_repo() {
   }
 
   if (!can_prompt()) {
-    process.env.NIMBLY_SKIP_EXT_REPO_PROMPT = '1';
     return;
   }
 
@@ -161,7 +158,6 @@ async function prepare_ext_repo() {
   }
 
   mkdirSync('ext', { recursive: true });
-  process.env.NIMBLY_SKIP_EXT_REPO_PROMPT = '1';
 }
 
 function run_dependencies() {
