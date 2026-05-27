@@ -12,6 +12,7 @@ if (php_sapi_name() !== 'cli') {
 }
 
 define('BASE_DIR', realpath(__DIR__ . '/../..') . '/');
+require_once BASE_DIR . 'core/cli/helpers/output.php';
 
 $command = $argv[1] ?? null;
 $show_all = $command === 'help';
@@ -48,7 +49,7 @@ if (file_exists($ext_commands_file)) {
 
 if (!$command || $command === 'help' || !isset($commands[$command])) {
     echo "Usage: php core/cli/nimbly.php <command>\n\n";
-    echo "Commands:\n";
+    cli_section('Commands');
     foreach ($commands as $name => $meta) {
         $is_public = $meta['public'] ?? true;
         if (!$is_public) {
@@ -57,7 +58,8 @@ if (!$command || $command === 'help' || !isset($commands[$command])) {
         printf("  %-18s %s\n", $name, $meta['desc']);
     }
     if ($show_all) {
-        echo "\nAdditional Commands:\n";
+        echo "\n";
+        cli_section('Additional commands');
         foreach ($commands as $name => $meta) {
             $is_public = $meta['public'] ?? true;
             if ($is_public) {

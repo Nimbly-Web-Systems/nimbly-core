@@ -52,7 +52,7 @@ function pretty_cwd() {
 }
 
 function banner(label) {
-  if (!output.isTTY) {
+  if (!output.isTTY || process.env.NIMBLY_INIT === '1') {
     return;
   }
 
@@ -60,6 +60,25 @@ function banner(label) {
   console.log(`${color.cyan('██▄  ██')}  ${color.bold('Nimbly 1.1')}`);
   console.log(`${color.cyan('██ ▀▄██')}  ${color.green(label)}`);
   console.log(`${color.cyan('██   ██')}  ${color.dim(pretty_cwd())}`);
+  console.log('');
+}
+
+function command_label(name) {
+  const labels = {
+    deps: 'Dependencies',
+    build: 'Build',
+    up: 'Docker up',
+    init: 'Setup',
+    setup: 'Setup',
+    'site:setup': 'Setup',
+    help: 'Help',
+    'user:create': 'Create user',
+    'module:install': 'Install module',
+    'index:rebuild': 'Rebuild index',
+    'system:upgrade-11': 'Upgrade 1.1',
+    '': 'Usage: ./nimbly <command>',
+  };
+  return labels[name] ?? name;
 }
 
 function rule() {
@@ -72,6 +91,12 @@ function step(number, total, title) {
   console.log('');
   console.log(color.cyan(rule()));
   console.log(`${color.dim(`${number}/${total}`)}  ${title}`);
+  console.log(color.cyan(rule()));
+}
+
+function section(title) {
+  console.log(color.cyan(rule()));
+  console.log(title);
   console.log(color.cyan(rule()));
 }
 
@@ -162,16 +187,19 @@ async function prepare_ext_repo() {
 
 function run_dependencies() {
   require_npm();
+  section('Install dependencies');
   run('npm', ['ci', '--silent', '--no-audit', '--fund=false']);
 }
 
 function run_build() {
   require_npm();
+  section('Build assets');
   run('npm', ['run', '--silent', 'build']);
 }
 
 function run_up() {
   require_npm();
+  section('Docker environment');
   run('npm', ['run', 'up']);
 }
 
@@ -199,10 +227,12 @@ async function run_init() {
   console.log('');
 }
 
-function show_common_help(show_all_hint = true) {
-  console.log('Usage: ./nimbly <command>');
-  console.log('');
-  console.log('Common commands:');
+function show_common_help(show_all_hint = true, show_usage = true) {
+  if (show_usage) {
+    console.log('Usage: ./nimbly <command>');
+    console.log('');
+  }
+  section('Common commands');
   console.log('  init               Prepare a checkout for first use');
   console.log('  build              Build project assets');
   console.log('  up                 Start the local Docker environment');
@@ -273,14 +303,17 @@ function run_docker_php() {
 }
 
 if (command === 'deps') {
+  banner(command_label(command));
   run_dependencies();
 }
 
 if (command === 'build') {
+  banner(command_label(command));
   run_build();
 }
 
 if (command === 'up') {
+  banner(command_label(command));
   run_up();
 }
 
@@ -290,30 +323,32 @@ if (command === 'init') {
 }
 
 if (!has_command) {
-  show_common_help();
+  banner(command_label(''));
+  show_common_help(true, !output.isTTY);
   process.exit(0);
 }
 
 if (command === 'help' && !force_docker && command_exists('php')) {
-  console.log('Nimbly commands:');
-  console.log('');
+  banner(command_label(command));
   show_common_help(false);
-  console.log('All PHP-backed commands:');
-  console.log('');
+  section('All PHP-backed commands');
   run_step('php', ['core/cli/nimbly.php', 'help']);
   process.exit(0);
 }
 
 if (command === 'help' && !force_docker && !command_exists('php')) {
+  banner(command_label(command));
   show_common_help();
-  console.log('PHP-backed commands:');
+  section('PHP-backed commands');
   console.log('  Run ./nimbly --docker help to list PHP-backed commands through Docker.');
   console.log('');
   process.exit(0);
 }
 
 if (!force_docker && command_exists('php')) {
+  banner(command_label(command));
   run_host_php();
 }
 
+banner(command_label(command));
 run_docker_php();
