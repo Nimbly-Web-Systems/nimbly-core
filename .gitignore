@@ -4,6 +4,7 @@
 !/.context/.gitignore
 !/.context/readme.md
 .env
+.user.ini
 /node_modules/
 .sass-cache/
 .htaccess

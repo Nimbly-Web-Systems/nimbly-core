@@ -11,15 +11,6 @@
 [#init#]
 <!doctype html>
 <html class="[#html-classes#] scroll-smooth" lang="[#language#]">
-<!--
-
-# This website is developed with #
- __ _  __  _  _  ____  __    _  _ 
-(  ( \(  )( \/ )(  _ \(  )  ( \/ )
-/    / )( / \/ \ ) _ (/ (_/\ )  / 
-\_)__)(__)\_)(_/(____/\____/(__/  
-
--->
 <head>
     <title>[#if page-title=(not-empty) echo="[#page-title#] | "#][#site-name#]</title>
     [#meta#]
@@ -47,3 +38,9 @@
 </body>
 
 </html>
+
+<!--
+██▄  ██  Nimbly v1.1
+██ ▀▄██  [#fmt [#app-modified#] date#]
+██   ██  Generated in [#fmt [#execution-time#] type=number decimals=2#]s
+-->

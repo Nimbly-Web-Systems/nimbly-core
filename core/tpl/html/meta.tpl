@@ -1,7 +1,7 @@
 <meta charset="utf-8" />
 <meta http-equiv="x-ua-compatible" content="ie=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-<meta name="generator" content="nimbly">
+<meta name="generator" content="Nimbly v1.1">
 <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
 [#set page-description="[#get-key data.config.site description default=nimbly#]"#]
 [#set og-type=website#]
