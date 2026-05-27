@@ -63,6 +63,11 @@ function job_ensure_resource()
         $changed = true;
     }
 
+    if (($meta['fields']['last_error']['admin_col'] ?? null) !== false) {
+        $meta['fields']['last_error']['admin_col'] = false;
+        $changed = true;
+    }
+
     if (!isset($meta['fields']['execution_ms'])) {
         $meta['fields']['execution_ms'] = [
             'name' => 'Execution (ms)',
@@ -137,6 +142,7 @@ function job_resource_meta()
             'last_error' => [
                 'name' => 'Last error',
                 'type' => 'text',
+                'admin_col' => false,
             ],
             'completed_at' => [
                 'name' => 'Completed at',
