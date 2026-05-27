@@ -37,14 +37,42 @@ function run_step(command, command_args, options = {}) {
 
 const use_color = output.isTTY && process.env.NO_COLOR === undefined;
 const color = {
+  bold: (text) => use_color ? `\x1b[1m${text}\x1b[0m` : text,
   cyan: (text) => use_color ? `\x1b[36m${text}\x1b[0m` : text,
   green: (text) => use_color ? `\x1b[32m${text}\x1b[0m` : text,
   dim: (text) => use_color ? `\x1b[2m${text}\x1b[0m` : text,
 };
 
+function pretty_cwd() {
+  const home = process.env.HOME;
+  if (home && process.cwd().startsWith(home)) {
+    return `~${process.cwd().slice(home.length)}`;
+  }
+  return process.cwd();
+}
+
+function banner(label) {
+  if (!output.isTTY) {
+    return;
+  }
+
+  console.log('');
+  console.log(`${color.cyan('██▄  ██')}  ${color.bold('Nimbly 1.1')}`);
+  console.log(`${color.cyan('██ ▀▄██')}  ${color.green(label)}`);
+  console.log(`${color.cyan('██   ██')}  ${color.dim(pretty_cwd())}`);
+}
+
+function rule() {
+  const columns = output.columns || 80;
+  const width = Math.max(48, Math.min(columns, 96));
+  return '─'.repeat(width);
+}
+
 function step(number, total, title) {
   console.log('');
-  console.log(color.cyan(`----[ ${number}/${total} ${title.toUpperCase()} ]----`));
+  console.log(color.cyan(rule()));
+  console.log(`${color.dim(`${number}/${total}`)}  ${title}`);
+  console.log(color.cyan(rule()));
 }
 
 function ok(message) {
@@ -152,7 +180,7 @@ function run_up() {
 }
 
 async function run_init() {
-  console.log('');
+  banner('Setup');
   step(1, 5, 'Prepare ext');
   await prepare_ext_repo();
   ok('ext ready.');
