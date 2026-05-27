@@ -1,0 +1,9 @@
+error_log=ext/data/.tmp/logs/system.log
+memory_limit=2048M
+post_max_size=60M
+upload_max_filesize=50M
+session.gc_maxlifetime=2592000
+session.cookie_lifetime=2592000
+session.gc_probability=1
+session.auto_start=0
+zlib.output_compression=16386

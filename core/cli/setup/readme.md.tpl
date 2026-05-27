@@ -27,7 +27,7 @@ VS Code will detect the dev container and ask to reopen inside it. Accept — th
 In the VS Code terminal (inside the container):
 
 ```bash
-npm run nimbly -- setup   # creates .htaccess, data dirs and admin user — runs once
+npm run nimbly -- setup   # creates .htaccess, .user.ini, data dirs and admin user — runs once
 npm run build   # compiles CSS and JS
 ```
 

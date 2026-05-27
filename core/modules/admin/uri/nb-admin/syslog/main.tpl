@@ -32,7 +32,7 @@
 				</tr>
 			</thead>
 			<tbody>
-				[#repeat system_log var=record#]
+				[#repeat system_log var=record empty=system_log_empty#]
 			</tbody>
 		</table>
 		</div>
