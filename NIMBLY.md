@@ -1647,6 +1647,16 @@ docker compose -f docker/docker-compose.yml run --rm --build nimbly sh -lc "find
 
 Keep `.env` on the target host and ensure it contains the production `APP_ENV`, stable `PEPPER`, canonical `SITE_URL`, and mail settings. Re-running `site:setup` is idempotent and is safe when a deployment needs to create missing directories, routes, roles, `.jobs`, or `.htaccess`.
 
+### Data storage and scaling
+
+Nimbly stores all application data as JSON files under `ext/data/`. This is a deliberate design decision, not a shortcut. The vast majority of web applications — business tools, content sites, client portals, SaaS products — stay well under 100,000 records per resource. At that scale, file I/O is fast, in-memory joins between resources are trivial, and the entire data layer requires zero infrastructure: no database server, no connection pooling, no migrations, no ORM.
+
+For most Nimbly projects, a single server or single container is the right deployment target. Simple, operationally boring, and fast enough for real traffic.
+
+**Horizontal scaling** (multiple servers or container replicas) requires that `ext/` is on a shared network volume so all instances read and write the same data — including sessions, which are also stored on disk. On AWS this means EFS; on GCP, Filestore; on bare metal, NFS. Mount the shared volume at `ext/` and all replicas work correctly. This is conceptually equivalent to pointing multiple app servers at a shared database host: same class of problem, similar infrastructure cost.
+
+When a project does need a relational database — high write concurrency, complex reporting, existing data infrastructure — adding one is straightforward: a library that opens a PDO connection is plain PHP, callable from any route handler, shortcode, or job. The built-in resource layer and a database-backed library coexist without friction. Nimbly does not constrain what the underlying PHP and system can do.
+
 ### GitHub Actions to VPS over SSH/rsync
 
 Use CI to build and verify the checkout, then copy the result to the server:
