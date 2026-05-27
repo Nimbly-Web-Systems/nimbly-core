@@ -1,38 +1,23 @@
 # Nimbly
 
-Nimbly is a lightweight framework and admin platform for building custom web applications — fast, without overhead.
+Nimbly is a lean web framework that gives you the building blocks to create exactly what you need, fast.
 
-It is designed for developers and frontenders who want to build real systems without fighting a framework. No heavy abstractions, no bloated dependencies, no separation between prototype and production. What you build from day one becomes the final system.
+## Getting started
 
----
+```bash
+git clone git@github.com:Nimbly-Web-Systems/nimbly-core.git my-project
+cd my-project
+./nimbly init
+```
 
-## What you get
+`./nimbly init` installs dependencies, prepares the site, creates the first admin user, and builds assets.
 
-- **Routing** — clean URL routing, file-based
-- **Template engine** — shortcode-based, output-format agnostic
-- **Built-in admin** — inline editing, resource management, media library
-- **Data layer** — file-based JSON records, no database required
-- **API** — every resource is automatically available via REST
-- **User management** — roles, access control, sessions
-- **Multi-language** — i18n built in, no extra configuration
+**Requirements:** Node 20+ and Docker.
 
-## How it works
+## Stack
 
-Nimbly separates **core** (the framework, stable, never modified) from **ext** (your application — routes, templates, data, logic).
+PHP 8 · Tailwind CSS 4 · DaisyUI 5 · Alpine.js · esbuild
 
-Development happens primarily in:
-- HTML + Tailwind CSS + Alpine.js for the frontend
-- Shortcodes for data, logic, and composition in templates
-- JSON `.meta` files to define data structures
+## Documentation
 
-Backend work is minimal by design. Frontenders can build complete features. Teams move fast without needing deep framework knowledge.
-
-## Why Nimbly
-
-Most web projects don't need the complexity that is typically introduced from the start. Nimbly removes that complexity without removing capability.
-
-Systems built with Nimbly are fast to start, easy to maintain, and straightforward to hand over. There is no hidden magic — what you see is what runs.
-
----
-
-For precise implementation instructions, shortcode reference, and conventions for AI-assisted development, see [Nimbly.md](Nimbly.md).
+See [NIMBLY.md](NIMBLY.md) for the full implementation reference.

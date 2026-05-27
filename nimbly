@@ -1,0 +1,15 @@
+#!/usr/bin/env sh
+
+if ! command -v node >/dev/null 2>&1; then
+  echo "Nimbly requires Node.js 20+ for setup and asset builds." >&2
+  echo "Install Node.js 20+ or activate it first, for example: nvm use --lts" >&2
+  exit 1
+fi
+
+node_major="$(node -p 'process.versions.node.split(".")[0]' 2>/dev/null)"
+if [ -z "$node_major" ] || [ "$node_major" -lt 20 ]; then
+  echo "Nimbly requires Node.js 20+ for setup and asset builds. Current version: $(node --version 2>/dev/null || echo unknown)" >&2
+  exit 1
+fi
+
+exec node core/cli/nimbly-runner.mjs "$@"

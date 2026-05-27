@@ -31,7 +31,7 @@ require_once BASE_DIR . 'core/lib/find.php';
 
 $env_file = BASE_DIR . '.env';
 if (!file_exists($env_file)) {
-    die("Error: .env not found. Run 'php core/cli/nimbly.php setup' first.\n");
+    die("Error: .env not found. Run './nimbly init' first.\n");
 }
 
 $env = [];

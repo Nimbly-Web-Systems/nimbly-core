@@ -32,7 +32,7 @@ load_library('salt');
 
 $env_file = BASE_DIR . '.env';
 if (!file_exists($env_file)) {
-    die("Error: .env not found. Run 'php core/cli/nimbly.php setup' first.\n");
+    die("Error: .env not found. Run './nimbly init' first.\n");
 }
 
 $env = [];
@@ -44,7 +44,7 @@ foreach (file($env_file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) as $line
 
 $pepper = $env['PEPPER'] ?? '';
 if (empty($pepper)) {
-    die("Error: PEPPER not set in .env. Run 'php core/cli/nimbly.php setup' first.\n");
+    die("Error: PEPPER not set in .env. Run './nimbly init' first.\n");
 }
 
 $_SERVER['PEPPER'] = $pepper;

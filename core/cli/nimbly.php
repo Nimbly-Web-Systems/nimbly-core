@@ -17,20 +17,21 @@ $command = $argv[1] ?? null;
 $show_all = $command === 'help';
 
 $commands = [
-    'help'              => ['file' => '',                           'desc' => 'Show all commands', 'public' => true],
-    'setup'            => ['file' => 'core/cli/setup/setup.php',    'desc' => 'First-time site setup', 'public' => true],
+    'help'              => ['file' => '',                           'desc' => 'Show command help', 'public' => true],
+    'site:setup'       => ['file' => 'core/cli/setup/setup.php',    'desc' => 'Create or repair local site files, resources, and first user', 'public' => true],
     'user:create'      => ['file' => 'core/cli/create_user.php',    'desc' => 'Create a new user account', 'public' => true],
     'module:install'   => ['file' => 'core/cli/install_module.php', 'desc' => 'Install a module (runs its .install.inc)', 'public' => true],
-    'jobs:run'         => ['file' => 'core/cli/jobs.php',           'desc' => 'Run queued background jobs', 'public' => true],
-    'jobs:prune'       => ['file' => 'core/cli/jobs_prune.php',     'desc' => 'Delete completed jobs older than N days (--days=30)', 'public' => true],
-    'schedule:run'     => ['file' => 'core/cli/schedule.php',       'desc' => 'Run due scheduled commands', 'public' => true],
-    'schedule:publish' => ['file' => 'core/cli/schedule_publish.php', 'desc' => 'Copy core schedule defaults to ext/cli/schedule.inc', 'public' => true],
+    'jobs:run'         => ['file' => 'core/cli/jobs.php',           'desc' => 'Run queued background jobs', 'public' => false],
+    'jobs:prune'       => ['file' => 'core/cli/jobs_prune.php',     'desc' => 'Delete completed jobs older than N days (--days=30)', 'public' => false],
+    'schedule:run'     => ['file' => 'core/cli/schedule.php',       'desc' => 'Run due scheduled commands', 'public' => false],
+    'schedule:publish' => ['file' => 'core/cli/schedule_publish.php', 'desc' => 'Copy core schedule defaults to ext/cli/schedule.inc', 'public' => false],
     'index:rebuild'    => ['file' => 'core/cli/reindex.php',        'desc' => 'Rebuild index entries for a resource', 'public' => true],
     'system:upgrade-11' => ['file' => 'core/cli/upgrade_11.php',    'desc' => 'Upgrade project to Nimbly 1.1', 'public' => true],
     'create-user'      => ['file' => 'core/cli/create_user.php',    'desc' => 'Alias of user:create', 'public' => false],
     'install-module'   => ['file' => 'core/cli/install_module.php', 'desc' => 'Alias of module:install', 'public' => false],
     'reindex'          => ['file' => 'core/cli/reindex.php',        'desc' => 'Alias of index:rebuild', 'public' => false],
     'upgrade-11'       => ['file' => 'core/cli/upgrade_11.php',     'desc' => 'Alias of system:upgrade-11', 'public' => false],
+    'setup'            => ['file' => 'core/cli/setup/setup.php',    'desc' => 'Alias of site:setup', 'public' => false],
     'migrate-pk-index' => ['file' => 'core/cli/migrate_10.php',     'desc' => 'Migrate 1.0 pk resources to indexed 1.1 resources', 'public' => false],
     'migrate-lib-flat' => ['file' => 'core/cli/migrate_lib.php',    'desc' => 'Flatten single-file library directories to lib/name.php', 'public' => false],
     'migrate-10'       => ['file' => 'core/cli/migrate_10.php',     'desc' => 'Alias of migrate-pk-index', 'public' => false],
@@ -56,7 +57,7 @@ if (!$command || $command === 'help' || !isset($commands[$command])) {
         printf("  %-18s %s\n", $name, $meta['desc']);
     }
     if ($show_all) {
-        echo "\nInternal/Dev Commands:\n";
+        echo "\nAdditional Commands:\n";
         foreach ($commands as $name => $meta) {
             $is_public = $meta['public'] ?? true;
             if ($is_public) {

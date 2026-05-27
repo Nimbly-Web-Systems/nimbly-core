@@ -3,6 +3,6 @@
     "dockerComposeFile": "../docker/docker-compose.yml",
     "service": "nimbly",
     "workspaceFolder": "/var/www/nimbly",
-    "postCreateCommand": "npm install",
+    "postCreateCommand": "npm ci",
     "remoteUser": "www-data"
 }

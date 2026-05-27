@@ -11,13 +11,16 @@
     "lib": "lib"
   },
   "scripts": {
-    "build": "npm run build:tw && npm run build:css && npm run build:js && npm run build:text && date +%s > ext/static/app.version",
-    "build:js": "cp ./node_modules/medium-editor/dist/js/medium-editor.min.js ext/static/medium-editor.min.js && esbuild js/index.jsx --bundle --minify --outfile=ext/static/app.js && date +%s > ext/static/app.version",
-    "build:css": "cp ./node_modules/medium-editor/dist/css/medium-editor.min.css ./css/medium-editor.min.css && esbuild css/index.css --bundle --minify --external:img/* --external:font/* --outfile=ext/static/app.css && date +%s > ext/static/app.version",
+    "build": "npm run --silent build:tw && npm run --silent build:css && npm run --silent build:js && npm run --silent build:text && npm run --silent build:version",
+    "build:js": "node core/cli/copy-file.mjs ./node_modules/medium-editor/dist/js/medium-editor.min.js ext/static/medium-editor.min.js && esbuild js/index.jsx --bundle --minify --outfile=ext/static/app.js && npm run --silent build:version",
+    "build:css": "node core/cli/copy-file.mjs ./node_modules/medium-editor/dist/css/medium-editor.min.css ./css/medium-editor.min.css && esbuild css/index.css --bundle --minify --external:img/* --external:font/* --outfile=ext/static/app.css && npm run --silent build:version",
     "build:tw": "npx tailwindcss -i ./css/tw/in.css -o ./css/tw/out.css",
-    "build:text": "find -name text.po | xargs msgcat > ext/data/.i18n/text.base.po",
+    "build:text": "node core/cli/merge-text-po.mjs",
+    "build:version": "node core/cli/write-app-version.mjs",
     "up": "cd docker && docker compose build --pull nimbly && docker compose down && docker compose up -d nimbly && cd ..",
-    "nimbly": "php core/cli/nimbly.php"
+    "nimbly": "./nimbly",
+    "nimbly:host": "php core/cli/nimbly.php",
+    "nimbly:docker": "./nimbly --docker"
   },
   "repository": {
     "type": "git",

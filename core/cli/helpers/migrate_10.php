@@ -14,7 +14,7 @@ function migrate_10_bootstrap()
 
     $env_file = BASE_DIR . '.env';
     if (!file_exists($env_file)) {
-        die("Error: .env not found. Run 'php core/cli/nimbly.php setup' first.\n");
+        die("Error: .env not found. Run './nimbly init' first.\n");
     }
 
     $env = [];
@@ -90,7 +90,7 @@ function migrate_10_print_summary($state)
         echo "\nAll service configuration now lives in .env.\n";
         echo "Move any credentials or API keys to .env and delete these records.\n\n";
         echo "For email services, add:\n";
-        echo "  MAIL_SERVICE=resend          # or: phpmailer, mailgun, system\n";
+        echo "  MAIL_SERVICE=resend          # or: smtp, mailgun, system\n";
         echo "  MAIL_FROM=no-reply@yourdomain.com\n";
         echo "  MAIL_FROM_NAME=Your Site Name\n";
         echo "  RESEND_API_KEY=re_xxxxxxxxxxxx\n\n";

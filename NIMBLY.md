@@ -34,18 +34,24 @@ This means `git status` at the project root reflects core changes; `git status` 
 git clone git@github.com:Nimbly-Web-Systems/nimbly-core.git my-project
 cd my-project
 
-# 2. Clone your application into ext/
+# 2. Clone your application into ext/ (or let setup create an empty ext/)
 git clone git@github.com:your-org/your-app.git ext
 
-# 3. Install dependencies with Node 20+ and build
-bash -i -c "nvm use --lts && npm install && npm run build"
+# 3. Install dependencies, create local config/data/admin user, and build assets
+./nimbly init
 ```
 
 After this, the project is fully operational. Core and ext evolve independently.
 
+`./nimbly` uses npm internally for frontend dependencies and assets. It uses host PHP when PHP 8+ is available. If PHP is not available, it automatically runs PHP-backed commands through the Nimbly Docker Compose service. To force Docker explicitly:
+
+```bash
+./nimbly --docker init
+```
+
 ### Updating core or ext from the admin
 
-Both repos can be updated without touching the terminal. In the admin (`/nb-admin/`), navigate to **Settings** — there are separate **Update Core** and **Update Ext** buttons that run `git pull` on the respective repository. This is the standard way to deploy updates in production.
+Both repos can be updated without touching the terminal. In the admin (`/nb-admin/`), navigate to **Settings** — there are separate **Update Core** and **Update Ext** buttons that run `git pull` on the respective repository. Treat this as a simple self-managed update option for small installations. Production deployments should normally come from CI/CD so the same checkout, setup, build, and lint path has already passed before files reach the server.
 
 ### Directory layout
 
@@ -604,7 +610,7 @@ Returns a value from `.env`, falling back to `default` when the key is missing.
 
 ```
 [#env STRIPE_LINK_ANNUAL#]
-[#env MAIL_DRIVER default=smtp#]
+[#env MAIL_SERVICE default=resend#]
 ```
 
 #### `[#logged-in#]`
@@ -786,17 +792,6 @@ Outputs `DEV` or `PROD`. Useful for conditional debug output or environment-spec
 [#if [#is-dev-env#]=DEV tpl=debug-panel#]
 ```
 
-#### `[#ipsum words=200#]`
-Generates Lorem Ipsum placeholder text. For prototyping only.
-
-```
-[#ipsum words=100#]
-[#ipsum words=50 format=html#]
-```
-
-#### `[#email config_id#]`
-Legacy email helper. Existing projects may still use `.services`-based email configuration, but new work should avoid direct email sending inside HTTP requests. Prefer an env-backed mail transport and enqueue email jobs for background processing when the jobs runner is available.
-
 #### `[#detect-language#]`
 Returns the active language code. Detection order:
 1. URL prefix (`/en/`, `/nl/`)
@@ -821,6 +816,16 @@ Writes to `ext/data/.tmp/logs/system.log`.
 
 #### `[#nop#]`
 No-op. Use to comment out shortcodes temporarily.
+
+### Shortcode API classification
+
+The inventory below is generated from `*_sc()` implementations in `core/lib` and `core/modules/*/lib` and cross-checked against local `ext/` usage. Public shortcodes are stable for project templates. Internal/admin shortcodes are supported for core templates and modules but should not be treated as project-facing APIs.
+
+| Classification | Shortcodes |
+|---|---|
+| Public core | `app-modified`, `base-path`, `base-url`, `cfield`, `collect-script`, `count`, `data`, `data-count`, `data-join`, `data-last-update`, `data-sort`, `date`, `debug`, `detect-language`, `empty-img`, `env`, `fmt`, `get`, `get-first`, `get-html`, `get-i18n`, `get-ip`, `get-key`, `host`, `http-header`, `if`, `implode`, `include`, `int`, `is-dev-env`, `is-url`, `jget`, `json2post`, `last-update`, `log`, `logged-in`, `lookup`, `markdown`, `max-upload-size`, `md5`, `module`, `nop`, `obfuscate`, `redirect`, `repeat`, `reverse-lookup`, `rkey`, `salt`, `set`, `slug`, `strip`, `system-messages`, `text`, `unquote`, `uri-path`, `url`, `url-key`, `uuid` |
+| Public module | `access`, `api-allow`, `build-form`, `feature-cond`, `first-img-uuid`, `form-key`, `get-form-errors`, `get-img-html`, `get-user`, `honeypot-field`, `img-url`, `key-access`, `logout`, `post`, `role-cond`, `role-switch`, `sanitize`, `sticky`, `sticky-post`, `userfield`, `username`, `validate` |
+| Internal/admin | `api-session`, `api-token`, `create-settings`, `disk-space-free`, `disk-space-resource`, `disk-space-thumbs`, `disk-space-total`, `empty-resource`, `exif`, `field-name`, `files`, `files-unused`, `find`, `get-gallery-json`, `get-meta-data`, `get-pages`, `get-resource-meta`, `get-resource-record`, `get-resource-records`, `get-resources`, `get-sessions`, `get-system-log`, `get-user-resources`, `git-pull`, `git-status`, `json`, `openai-complete`, `openai-translate`, `pages`, `render-field`, `resource-name`, `resources`, `sys-info`, `sys-libraries`, `sys-messages`, `thumbnail` |
 
 ---
 
@@ -1390,7 +1395,7 @@ msgstr "Lees meer"
 
 Build the merged base file after changes:
 ```bash
-npm run build:text
+./nimbly build
 ```
 
 ### Step 5 — Templates per language
@@ -1505,18 +1510,27 @@ ext/uri/dashboard/index.js     ← auto-loaded on /dashboard/ only
 
 ## 7. CLI
 
-Nimbly ships a CLI at `core/cli/nimbly.php`. The `nimbly` npm script is the preferred way to invoke it:
+Nimbly ships a CLI at `core/cli/nimbly.php`. The root `./nimbly` launcher is the preferred way to invoke it:
 
 ```bash
-npm run nimbly -- setup
-npm run nimbly -- user:create
-npm run nimbly -- module:install <name>
+./nimbly init
+./nimbly deps
+./nimbly build
+./nimbly user:create
+./nimbly module:install <name>
+```
+
+`init`, `deps`, and `build` use npm internally. PHP-backed commands use host PHP when available and fall back to Docker automatically. Explicit variants are also available:
+
+```bash
+php core/cli/nimbly.php site:setup     # require host PHP
+./nimbly --docker site:setup           # force Docker Compose
 ```
 
 Equivalent direct invocations:
 
 ```bash
-php core/cli/nimbly.php setup
+php core/cli/nimbly.php site:setup
 php core/cli/nimbly.php user:create
 php core/cli/nimbly.php module:install <name>
 php core/cli/nimbly.php index:rebuild [resource]
@@ -1525,7 +1539,7 @@ php core/cli/nimbly.php help
 
 ### Commands
 
-#### `setup`
+#### `site:setup`
 First-time site initialisation. Safe to re-run — existing files and records are never overwritten.
 
 What it does:
@@ -1551,7 +1565,7 @@ Prompts: **Site name**, **Admin email**, **Admin password**. Steps that are alre
 | `ADMIN_PASSWORD` | Initial admin user password (min 8 chars) |
 
 ```bash
-SITE_NAME="My Site" ADMIN_EMAIL=admin@example.com ADMIN_PASSWORD=secret123 npm run nimbly -- setup
+SITE_NAME="My Site" ADMIN_EMAIL=admin@example.com ADMIN_PASSWORD=secret123 ./nimbly site:setup
 ```
 
 #### `create-user`
@@ -1561,7 +1575,7 @@ Creates an additional user account. Prompts for email, role, and password intera
 Runs a module's `.install.inc` script. Looks in `ext/modules/` first, then `core/modules/` as fallback. Requires setup to have been run first.
 
 ```bash
-npm run nimbly -- module:install event
+./nimbly module:install event
 ```
 
 #### `reindex`
@@ -1599,7 +1613,8 @@ Scheduler last-run state is stored in `ext/data/.state/schedule`. Existing insta
 ## 8. Build
 
 ```bash
-npm run build       # full build: Tailwind + CSS + JS + i18n
+./nimbly build      # full build: Tailwind + CSS + JS + i18n
+npm run build       # same build, direct npm form
 npm run build:tw    # build Tailwind once
 npm run build:css   # build CSS (esbuild)
 npm run build:js    # build JS (esbuild)
@@ -1611,7 +1626,136 @@ Built files go to `ext/static/`. Always run build after changing CSS, JS, or Tai
 
 ---
 
-## 9. Forms
+## 9. Deployment
+
+The release baseline is the same path used in CI:
+
+```bash
+./nimbly deps
+APP_ENV=prod SITE_NAME="My Site" ADMIN_EMAIL=admin@example.com ADMIN_PASSWORD="change-me" PEPPER="$PEPPER" ./nimbly setup
+./nimbly build
+./nimbly help
+find core -name '*.php' -print0 | xargs -0 -n1 php -l
+```
+
+When host PHP is not available, use the Docker-backed CLI and PHP lint:
+
+```bash
+APP_ENV=prod SITE_NAME="My Site" ADMIN_EMAIL=admin@example.com ADMIN_PASSWORD="change-me" PEPPER="$PEPPER" ./nimbly --docker site:setup
+docker compose -f docker/docker-compose.yml run --rm --build nimbly sh -lc "find core -name '*.php' -print0 | xargs -0 -n1 php -l"
+```
+
+Keep `.env` on the target host and ensure it contains the production `APP_ENV`, stable `PEPPER`, canonical `SITE_URL`, and mail settings. Re-running `site:setup` is idempotent and is safe when a deployment needs to create missing directories, routes, roles, `.jobs`, or `.htaccess`.
+
+### GitHub Actions to VPS over SSH/rsync
+
+Use CI to build and verify the checkout, then copy the result to the server:
+
+```yaml
+name: Deploy
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: ./nimbly deps
+      - run: ./nimbly build
+      - run: ./nimbly --docker help
+      - run: docker compose -f docker/docker-compose.yml run --rm --build nimbly sh -lc "find core -name '*.php' -print0 | xargs -0 -n1 php -l"
+      - run: rsync -az --delete --exclude='.env' --exclude='ext/data/' ./ deploy@example.com:/var/www/site/
+      - run: ssh deploy@example.com 'cd /var/www/site && ./nimbly deps && ./nimbly site:setup && ./nimbly system:upgrade-11 --yes'
+```
+
+Adapt excludes for project-owned upload/data directories. If indexes changed, run `./nimbly index:rebuild <resource>` after deployment. For 1.0 to 1.1 upgrades, run `./nimbly system:upgrade-11 --yes` once per environment.
+
+### GitHub Actions to Docker Compose
+
+For container deployments, build and publish an image in CI, then pull and restart with Compose:
+
+```yaml
+name: Deploy container
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ghcr.io/your-org/your-site:latest
+      - run: ssh deploy@example.com 'cd /srv/your-site && docker compose pull && docker compose up -d'
+```
+
+The container still needs a mounted `.env` and persistent `ext/data/` volume. Run setup and upgrade commands inside the container when needed:
+
+```bash
+docker compose exec nimbly ./nimbly site:setup
+docker compose exec nimbly ./nimbly system:upgrade-11 --yes
+docker compose exec nimbly ./nimbly index:rebuild articles
+```
+
+### Scheduler and jobs
+
+Configure cron for the production checkout or container:
+
+```cron
+* * * * * php /var/www/site/core/cli/nimbly.php schedule:run
+```
+
+This single scheduler entry runs due scheduled commands and queued jobs. Use `php core/cli/nimbly.php schedule:publish` to copy the default schedule to `ext/cli/schedule.inc` before project-specific changes.
+
+Admin `git pull` remains available under Settings as a simple self-managed update option, but it is not the standard production deployment path for release-managed sites.
+
+---
+
+## 10. Email
+
+Core-managed emails use `.env` settings. Resend is recommended for new installs:
+
+```env
+MAIL_SERVICE=resend
+MAIL_FROM=no-reply@yourdomain.com
+MAIL_FROM_NAME="Your Site Name"
+RESEND_API_KEY=re_xxxxxxxxxxxx
+```
+
+SMTP remains supported for projects that must send through an SMTP provider:
+
+```env
+MAIL_SERVICE=smtp
+MAIL_FROM=no-reply@yourdomain.com
+MAIL_FROM_NAME="Your Site Name"
+SMTP_HOST=smtp.example.com
+SMTP_PORT=465
+SMTP_USER=smtp-user
+SMTP_PASSWORD=smtp-password
+SMTP_SECURE=smtps
+```
+
+`SMTP_SECURE` accepts `smtps` for implicit TLS on port 465, or `starttls`/`tls` for STARTTLS on port 587. Nimbly uses PHPMailer internally as its SMTP adapter; `MAIL_SERVICE=phpmailer` is accepted as a compatibility alias for older configs.
+
+---
+
+## 11. Forms
 
 The forms module handles front-end form submissions with CSRF protection, honeypot spam filtering, validation, and Alpine.js-powered submission via the REST API.
 
@@ -1720,7 +1864,7 @@ The files are named `post_{name}.inc` and `validate_{name}.inc`, where `{name}` 
 
 ---
 
-## 10. Rich content fields — end-to-end
+## 12. Rich content fields — end-to-end
 
 This section shows the full flow for an editable HTML field: resource definition → template output → inline admin editing.
 
@@ -1813,7 +1957,7 @@ Both attributes only activate for logged-in admins. The value format is `resourc
 
 ---
 
-## 11. Admin
+## 13. Admin
 
 The built-in admin is available at `/nb-admin/`.
 
@@ -1827,7 +1971,7 @@ The legacy `_dep_` admin UI has been removed. Active admin routes and templates 
 
 ---
 
-## 12. API
+## 14. API
 
 The Nimbly API has routes for every resource. Access is still controlled by role permissions, bearer tokens, or an explicit public `[#api-allow#]` route for narrow cases such as public forms.
 
@@ -2032,7 +2176,7 @@ With `splitdir` enabled, records are stored in a two-level directory tree based 
 
 ---
 
-## 13. Custom Shortcode Libraries
+## 15. Custom Shortcode Libraries
 
 Custom shortcode libraries live as single PHP files in `ext/lib/`:
 
@@ -2154,7 +2298,7 @@ If a library must render a template, use `run_buffered($path_to_tpl_file)`. The 
 
 ---
 
-## 14. Modules
+## 16. Modules
 
 A module is a self-contained feature that bundles its own routes, templates, libraries, and install logic.
 
@@ -2254,7 +2398,7 @@ The record UUID is stable and random — slugs are stored as regular fields and 
 
 ---
 
-## 15. UX principles
+## 17. UX principles
 
 Before deciding what to put on a page, reason through these questions:
 
@@ -2268,7 +2412,7 @@ Apply this reasoning before adding any field, section, or link to a template.
 
 ---
 
-## 16. Anti-patterns
+## 18. Anti-patterns
 
 - Do not modify `core/`
 - Do not add database concepts (tables, joins, foreign keys) — use resources
@@ -2282,7 +2426,7 @@ Apply this reasoning before adding any field, section, or link to a template.
 
 ---
 
-## 17. Pending changes
+## 19. Pending changes
 
 The following areas are under active development and will be updated here as they are finalized:
 
@@ -2296,7 +2440,7 @@ The following areas are under active development and will be updated here as the
 
 ---
 
-## 18. Upgrading from core 1.0 to core 1.1
+## 20. Upgrading from core 1.0 to core 1.1
 
 ### What changed
 
@@ -2317,7 +2461,7 @@ The following areas are under active development and will be updated here as the
 
 #### 1. Update core
 
-Pull the latest core via the admin (**Settings → Update Core**) or:
+Deploy the latest core through the normal CI/CD path for the project. For simple self-managed installations, the admin update button (**Settings → Update Core**) or a manual pull is also available:
 
 ```bash
 git pull   # run from the project root (core repo)
@@ -2325,10 +2469,10 @@ git pull   # run from the project root (core repo)
 
 #### 2. Run the migration command
 
-The `upgrade-11` CLI command is the normal operator-facing entrypoint for the Nimbly 1.1 upgrade:
+The `system:upgrade-11` CLI command is the normal operator-facing entrypoint for the Nimbly 1.1 upgrade:
 
 ```bash
-php core/cli/nimbly.php upgrade-11
+php core/cli/nimbly.php system:upgrade-11
 ```
 
 The upgrade command also updates the Tailwind CSS entrypoint at `css/tw/in.css`
@@ -2508,7 +2652,7 @@ The function no longer exists. If any custom shortcode or module called it, remo
 
 #### 7. Migrate email service config from `.services` to `.env`
 
-Core 1.1 drops SMTP-via-`.services` for core-managed emails. Email delivery is now configured in `.env` and sent via a provider API (Resend by default). The password reset email is no longer sent inline — it is enqueued as a job and dispatched by the job runner.
+Core 1.1 drops SMTP-via-`.services` for core-managed emails. Email delivery is now configured in `.env`; Resend is recommended, and SMTP is still supported. The password reset email is no longer sent inline — it is enqueued as a job and dispatched by the job runner.
 
 Add the following to your `.env`:
 
@@ -2517,6 +2661,19 @@ MAIL_SERVICE=resend
 MAIL_FROM=no-reply@yourdomain.com
 MAIL_FROM_NAME=Your Site Name
 RESEND_API_KEY=re_xxxxxxxxxxxx
+```
+
+For SMTP:
+
+```
+MAIL_SERVICE=smtp
+MAIL_FROM=no-reply@yourdomain.com
+MAIL_FROM_NAME=Your Site Name
+SMTP_HOST=smtp.example.com
+SMTP_PORT=465
+SMTP_USER=smtp-user
+SMTP_PASSWORD=smtp-password
+SMTP_SECURE=smtps
 ```
 
 If your project had a `.services` record with `tpl: email-password-reset`, it is no longer used. The `upgrade-11` command will warn you if such records are found.
@@ -2553,7 +2710,7 @@ Options:
 
 ---
 
-## 19. Code Quality & Conventions
+## 21. Code Quality & Conventions
 
 ### Always use curly brackets
 
@@ -2645,7 +2802,7 @@ If more context is needed, add it as a second paragraph after a blank line — b
 
 ---
 
-## 20. Form field rendering pipeline
+## 22. Form field rendering pipeline
 
 This section explains the full flow from a resource field definition to a rendered form input. Read this before building a new field type.
 
