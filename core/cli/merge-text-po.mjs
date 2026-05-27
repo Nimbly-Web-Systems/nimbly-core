@@ -75,3 +75,4 @@ const content = [...messages.entries()]
 
 mkdirSync(dirname(output_path), { recursive: true });
 writeFileSync(output_path, content ? `${content}\n` : '');
+console.log(`Merged text: ${entries.length} source file(s), ${messages.size} string(s) -> ${output_path}`);

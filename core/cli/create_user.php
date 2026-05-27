@@ -13,6 +13,7 @@ if (php_sapi_name() !== 'cli') {
 }
 
 if (!defined('BASE_DIR')) define('BASE_DIR', realpath(__DIR__ . '/../..') . '/');
+require_once BASE_DIR . 'core/cli/helpers/output.php';
 
 // -----------------------------------------------------------------------
 // Bootstrap
@@ -103,7 +104,7 @@ if (is_dir($roles_dir)) {
 // Prompt
 // -----------------------------------------------------------------------
 
-echo "\n--- Create User ---\n\n";
+cli_section('User details', true);
 
 $email = nb_prompt('Email');
 while (empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
@@ -113,7 +114,7 @@ while (empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
 
 $default_role = in_array('admin', $available_roles) ? 'admin' : ($available_roles[0] ?? 'admin');
 if ($available_roles) {
-    echo 'Available roles: ' . implode(', ', $available_roles) . "\n";
+    cli_tip('Available roles: ' . implode(', ', $available_roles));
 }
 $role = nb_prompt('Role', $default_role);
 
@@ -131,6 +132,8 @@ $user_uuid = md5($email);
 if (data_exists('users', $user_uuid)) {
     die("User $email already exists.\n");
 }
+
+cli_section('Result', true);
 
 $salt = salt_sc();
 data_create('users', $user_uuid, [

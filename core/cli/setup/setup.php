@@ -14,6 +14,7 @@ if (php_sapi_name() !== 'cli') {
 
 if (!defined('BASE_DIR')) define('BASE_DIR', realpath(__DIR__ . '/../../..') . '/');
 define('SETUP_DIR', __DIR__ . '/');
+require_once BASE_DIR . 'core/cli/helpers/output.php';
 
 // -----------------------------------------------------------------------
 // Bootstrap Nimbly minimally (no HTTP context)
@@ -219,6 +220,8 @@ $app_env = $cli_options['app_env'] ?? $cli_options['env'] ?? ($app_env_env !== f
 $rewrite_base_path = ltrim($base_path, '/');
 
 // Pepper (env var overrides .env; generate if neither exists)
+cli_section('Configuration', true);
+
 $pepper = getenv('PEPPER') ?: ($env['PEPPER'] ?? '');
 if (empty($pepper)) {
     $pepper = salt_sc();
@@ -346,6 +349,9 @@ if (!file_exists($user_ini_file)) {
 // Create directory structure and htaccess guards
 // -----------------------------------------------------------------------
 
+cli_section('Project files', true);
+
+$project_files_changed = false;
 $dirs_deny  = ['ext', 'core'];
 $dirs_allow = ['ext/data/.tmp/cache', 'ext/static', 'core/static'];
 $dirs_create = [
@@ -359,6 +365,7 @@ foreach ($dirs_create as $dir) {
     $path = BASE_DIR . $dir;
     if (!is_dir($path)) {
         mkdir($path, 0750, true);
+        $project_files_changed = true;
         nb_status("Created dir: $dir");
     }
 }
@@ -367,6 +374,8 @@ foreach ($dirs_deny as $dir) {
     $dst = BASE_DIR . $dir . '/.htaccess';
     if (!file_exists($dst)) {
         copy(SETUP_DIR . 'deny.htaccess', $dst);
+        $project_files_changed = true;
+        nb_status("Created guard: $dir/.htaccess");
     }
 }
 
@@ -374,6 +383,8 @@ foreach ($dirs_allow as $dir) {
     $dst = BASE_DIR . $dir . '/.htaccess';
     if (!file_exists($dst)) {
         copy(SETUP_DIR . 'allow.htaccess', $dst);
+        $project_files_changed = true;
+        nb_status("Created guard: $dir/.htaccess");
     }
 }
 
@@ -384,10 +395,12 @@ foreach ($dirs_allow as $dir) {
 $theme_dst = BASE_DIR . 'ext/tailwind.theme.js';
 if (!file_exists($theme_dst)) {
     copy(SETUP_DIR . 'tailwind.theme.js', $theme_dst);
+    $project_files_changed = true;
     nb_status("Copied: ext/tailwind.theme.js");
 }
 if (!file_exists(BASE_DIR . 'ext/theme.css')) {
     touch(BASE_DIR . 'ext/theme.css');
+    $project_files_changed = true;
     nb_status("Created: ext/theme.css");
 }
 
@@ -396,7 +409,31 @@ $gitignore_dst = BASE_DIR . 'ext/.gitignore';
 if (!file_exists($gitignore_dst)) {
     copy(SETUP_DIR . '.gitignore.tpl', $gitignore_dst);
     chmod($gitignore_dst, 0640);
+    $project_files_changed = true;
     nb_status("Created: ext/.gitignore");
+}
+
+// -----------------------------------------------------------------------
+// Create ext/readme.md from template
+// -----------------------------------------------------------------------
+
+$ext_repo = nb_optional_env_or_empty('EXT_REPO');
+$readme_dst = BASE_DIR . 'ext/readme.md';
+if (!file_exists($readme_dst)) {
+    $core_repo = trim(shell_exec('git remote get-url origin 2>/dev/null') ?? '');
+    $site_slug = basename(BASE_DIR);
+    $readme = file_get_contents(SETUP_DIR . 'readme.md.tpl');
+    $readme = str_replace('%%CORE_REPO%%', $core_repo ?: 'git@github.com:your-org/nimbly-core.git', $readme);
+    $readme = str_replace('%%EXT_REPO%%',  $ext_repo  ?: 'git@github.com:your-org/your-project.git', $readme);
+    $readme = str_replace('%%SITE_NAME%%', $site_slug ?: 'myproject', $readme);
+    file_put_contents($readme_dst, $readme);
+    chmod($readme_dst, 0640);
+    $project_files_changed = true;
+    nb_status("Created: ext/readme.md");
+}
+
+if (!$project_files_changed) {
+    nb_skip("Skipped: project files already exist");
 }
 
 // -----------------------------------------------------------------------
@@ -419,15 +456,12 @@ if (is_dir($users_dir)) {
 // Prompt only for what is missing
 // -----------------------------------------------------------------------
 
-$ext_repo = nb_optional_env_or_empty('EXT_REPO');
 $sitename = '';
 $email    = '';
 $password = '';
 
 if ($need_site || $need_user) {
-    if (!nb_compact_output()) {
-        echo "\n--- Nimbly Setup ---\n\n";
-    }
+    cli_section('Site details', true);
 
     if ($need_site) {
         $sitename = nb_prompt('Site name', 'My Nimbly Site', 'SITE_NAME');
@@ -450,25 +484,10 @@ if ($need_site || $need_user) {
 }
 
 // -----------------------------------------------------------------------
-// Create ext/readme.md from template (needs $ext_repo)
-// -----------------------------------------------------------------------
-
-$readme_dst = BASE_DIR . 'ext/readme.md';
-if (!file_exists($readme_dst)) {
-    $core_repo = trim(shell_exec('git remote get-url origin 2>/dev/null') ?? '');
-    $site_slug = basename(BASE_DIR);
-    $readme = file_get_contents(SETUP_DIR . 'readme.md.tpl');
-    $readme = str_replace('%%CORE_REPO%%', $core_repo ?: 'git@github.com:your-org/nimbly-core.git', $readme);
-    $readme = str_replace('%%EXT_REPO%%',  $ext_repo  ?: 'git@github.com:your-org/your-project.git', $readme);
-    $readme = str_replace('%%SITE_NAME%%', $site_slug ?: 'myproject', $readme);
-    file_put_contents($readme_dst, $readme);
-    chmod($readme_dst, 0640);
-    nb_status("Created: ext/readme.md");
-}
-
-// -----------------------------------------------------------------------
 // Create .config/site
 // -----------------------------------------------------------------------
+
+cli_section('Site data', true);
 
 if ($need_site) {
     data_create('.config', 'site', [
@@ -579,6 +598,8 @@ if (!data_exists('roles', 'editor')) {
 // Create users resource
 // -----------------------------------------------------------------------
 
+cli_section('Users', true);
+
 if (!data_exists('users', '.meta')) {
     data_create('users', '.meta', [
         'fields' => [
@@ -624,7 +645,7 @@ if ($need_user) {
     $existing_user_text = empty($existing_users) ? '' : ': ' . implode(', ', $existing_users);
     if (!nb_compact_output()) {
         nb_skip("Skipped: first admin user because users already exist$existing_user_text");
-        nb_status("Use './nimbly user:create' to add another user.");
+        cli_tip("Use './nimbly user:create' to add another user.");
     }
 }
 
@@ -635,8 +656,9 @@ if ($need_user) {
 $cron_command = '* * * * * ' . PHP_BINARY . ' ' . BASE_DIR . 'core/cli/nimbly.php schedule:run';
 
 if (empty(getenv('NIMBLY_INIT'))) {
-    echo "\nSetup complete. Run './nimbly build' to compile assets.\n";
-    echo "\nScheduler cron:\n";
+    cli_section('Next steps', true);
+    echo "Setup complete. Run './nimbly build' to compile assets.\n";
+    echo "\nScheduler cron\n";
     echo "  $cron_command\n";
     echo "\nThis single cron entry runs due scheduled commands, including queued jobs.\n";
     echo "To customize the app schedule, run: ./nimbly schedule:publish\n";
