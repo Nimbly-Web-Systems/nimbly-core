@@ -2,6 +2,7 @@ services:
  nimbly:
     build: ./docker-nimbly
     container_name: nimbly
+    working_dir: /var/www/nimbly
     volumes:
       - ..:/var/www/nimbly
     ports:

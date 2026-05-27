@@ -29,8 +29,8 @@ function email($email_data)
 		$result = email_via_system($email_data);
 	} else if ($service === 'mailgun') {
 		$result = email_via_mailgun($email_data);
-	} else if ($service === 'phpmailer') {
-		$result = email_via_phpmailer($email_data);
+	} else if ($service === 'smtp' || $service === 'phpmailer') {
+		$result = email_via_smtp($email_data);
 	} else if ($service === 'resend') {
 		$result = email_via_resend($email_data);
 	}
@@ -145,10 +145,12 @@ function email_recipients($recipients)
 	return array_values(array_filter(array_map('trim', explode(',', (string)$recipients))));
 }
 
-function email_via_phpmailer($email_data)
+function email_via_smtp($email_data)
 {
+	require_once 'php_mailer/Exception.php';
 	require_once 'php_mailer/PHPMailer.php';
 	require_once 'php_mailer/SMTP.php';
+	load_libraries(['env', 'run', 'plain-text']);
 
 	$mail = new PHPMailer(false);
 
@@ -160,14 +162,17 @@ function email_via_phpmailer($email_data)
 	try {
 		$mail->SMTPDebug = 0;
 		$mail->isSMTP();
-		$mail->Host       = $email_data['server'];
+		$mail->Host       = $email_data['server'] ?? env('SMTP_HOST');
 		$mail->SMTPAuth   = true;
-		$mail->Username   = $email_data['user'];
-		$mail->Password   = $email_data['pw'];
-		$mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
-		$mail->Port       = $email_data['port'] ?? 465;
+		$mail->Username   = $email_data['user'] ?? env('SMTP_USER');
+		$mail->Password   = $email_data['pw'] ?? env('SMTP_PASSWORD');
+		$smtp_secure      = $email_data['secure'] ?? env('SMTP_SECURE', 'smtps');
+		$mail->SMTPSecure = in_array($smtp_secure, ['tls', 'starttls'], true)
+			? PHPMailer::ENCRYPTION_STARTTLS
+			: PHPMailer::ENCRYPTION_SMTPS;
+		$mail->Port       = (int)($email_data['port'] ?? env('SMTP_PORT', $mail->SMTPSecure === PHPMailer::ENCRYPTION_STARTTLS ? 587 : 465));
 
-		$mail->setFrom($email_data['from'] ?? 'info@nimblycms.com', $email_data['from_name'] ?? 'Nimbly CMS');
+		$mail->setFrom($email_data['from'] ?? env('MAIL_FROM', 'info@nimblycms.com'), $email_data['from_name'] ?? env('MAIL_FROM_NAME', 'Nimbly CMS'));
 
 		$recipients = explode(',', $email_data['recipient'] ?? $email_data['to']);
 		$recipient_names = explode(',', $email_data['recipient_name'] ?? '');
@@ -178,7 +183,6 @@ function email_via_phpmailer($email_data)
 		}
 
 		$html = run_buffered($email_data['tpl']);
-		load_library('plain-text');
 		$plain = plain_text($html);
 
 		//Content

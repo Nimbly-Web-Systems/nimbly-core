@@ -153,7 +153,7 @@ if (!$has_work) {
     echo "Nimbly 1.1 upgrade checks complete — no automatic upgrade steps are needed.\n";
     if ($htaccess['action'] === 'warn_base_mismatch') {
         echo $htaccess['message'] . "\n";
-        echo "Run 'php core/cli/nimbly.php setup' if you want to review recreating .htaccess.\n";
+        echo "Run './nimbly site:setup' if you want to review recreating .htaccess.\n";
     }
     exit(0);
 }
@@ -186,7 +186,7 @@ if (!empty($moves) || !empty($skipped)) {
 echo "\n[3] .htaccess repair\n\n";
 echo '  ' . $htaccess['message'] . "\n";
 if ($htaccess['action'] === 'warn_base_mismatch') {
-    echo "  This warning is informational here; use 'setup' to review rewrite-base recreation.\n";
+    echo "  This warning is informational here; use 'site:setup' to review rewrite-base recreation.\n";
 }
 
 if ($tailwind_entrypoint['action'] !== 'none') {
@@ -243,7 +243,7 @@ if (in_array($htaccess['action'], ['write', 'recreate_mod_php'], true)) {
 
 if ($htaccess['action'] === 'warn_base_mismatch') {
     echo "\n" . $htaccess['message'] . "\n";
-    echo "Run 'php core/cli/nimbly.php setup' if you want to recreate .htaccess for the current BASE_PATH.\n";
+    echo "Run './nimbly site:setup' if you want to recreate .htaccess for the current BASE_PATH.\n";
 }
 
 if ($tailwind_entrypoint['action'] === 'update') {

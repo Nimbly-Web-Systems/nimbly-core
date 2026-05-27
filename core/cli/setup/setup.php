@@ -1,9 +1,9 @@
 <?php
 
 /**
- * Nimbly CLI — setup command
+ * Nimbly CLI — site:setup command
  *
- * Usage: php core/cli/nimbly.php setup [alias=oddone|base_path=/oddone] [app_env=stage]
+ * Usage: php core/cli/nimbly.php site:setup [alias=oddone|base_path=/oddone] [app_env=stage]
  *
  * Safe to re-run — existing records and files are never overwritten.
  */
@@ -70,6 +70,21 @@ function nb_prompt_password(string $question, string $env_var = ''): string {
     }
     $value = trim($input);
     return $value;
+}
+
+function nb_optional_env_or_empty(string $env_var): string {
+    $env_val = getenv($env_var);
+    return $env_val !== false ? trim($env_val) : '';
+}
+
+function nb_can_prompt(): bool {
+    if (function_exists('stream_isatty')) {
+        return stream_isatty(STDIN);
+    }
+    if (function_exists('posix_isatty')) {
+        return posix_isatty(STDIN);
+    }
+    return false;
 }
 
 function nb_cli_options(array $argv): array {
@@ -150,6 +165,21 @@ function setup_routes_resource_meta(): array {
     ];
 }
 
+function nb_compact_output(): bool {
+    return getenv('NIMBLY_COMPACT_OUTPUT') === '1';
+}
+
+function nb_status(string $message): void {
+    echo $message . "\n";
+}
+
+function nb_skip(string $message): void {
+    if (nb_compact_output()) {
+        return;
+    }
+    nb_status($message);
+}
+
 // -----------------------------------------------------------------------
 // Load / create .env
 // -----------------------------------------------------------------------
@@ -209,7 +239,7 @@ if (!file_exists($env_file)) {
 
     $env_content = implode("\n", $env_lines) . "\n";
     file_put_contents($env_file, $env_content);
-    echo "Written: .env\n";
+    nb_status("Written: .env");
 } else {
     $env_lines = $env_lines_existing;
     $changed = false;
@@ -234,9 +264,9 @@ if (!file_exists($env_file)) {
 
     if ($changed) {
         file_put_contents($env_file, implode("\n", $env_lines) . "\n");
-        echo "Updated: .env\n";
+        nb_status("Updated: .env");
     } else {
-        echo "Skipped: .env (already exists)\n";
+        nb_skip("Skipped: .env (already exists)");
     }
 }
 
@@ -257,7 +287,7 @@ $htaccess_file = BASE_DIR . '.htaccess';
 if (!file_exists($htaccess_file)) {
     file_put_contents($htaccess_file, nb_render_htaccess($pepper, $base_path, $rewrite_base_path));
     chmod($htaccess_file, 0640);
-    echo "Written: .htaccess\n";
+    nb_status("Written: .htaccess");
 } else {
     $htaccess_content = file_get_contents($htaccess_file);
     $expected_htaccess = nb_render_htaccess($pepper, $base_path, $rewrite_base_path);
@@ -272,16 +302,16 @@ if (!file_exists($htaccess_file)) {
         // mod_php directives (php_flag/php_value) are not supported under PHP-FPM — regenerate silently
         file_put_contents($htaccess_file, $expected_htaccess);
         chmod($htaccess_file, 0640);
-        echo "Recreated: .htaccess (removed mod_php directives, not supported under PHP-FPM)\n";
+        nb_status("Recreated: .htaccess (removed mod_php directives, not supported under PHP-FPM)");
     } elseif ($base_mismatch) {
         echo "Warning: .htaccess has RewriteBase '$existing_base' but BASE_PATH is '$base_path'.\n";
         $choice = nb_prompt('How to proceed? [leave/recreate]', 'leave');
         if (strtolower(trim($choice)) === 'recreate') {
             file_put_contents($htaccess_file, $expected_htaccess);
             chmod($htaccess_file, 0640);
-            echo "Recreated: .htaccess\n";
+            nb_status("Recreated: .htaccess");
         } else {
-            echo "Skipped: .htaccess (left as-is)\n";
+            nb_skip("Skipped: .htaccess (left as-is)");
         }
     } elseif ($base_path_requested && trim($htaccess_content) !== trim($expected_htaccess)) {
         echo "Warning: .htaccess differs from the setup template for BASE_PATH '$base_path'.\n";
@@ -289,12 +319,12 @@ if (!file_exists($htaccess_file)) {
         if (strtolower(trim($choice)) === 'recreate') {
             file_put_contents($htaccess_file, $expected_htaccess);
             chmod($htaccess_file, 0640);
-            echo "Recreated: .htaccess\n";
+            nb_status("Recreated: .htaccess");
         } else {
-            echo "Skipped: .htaccess (left as-is)\n";
+            nb_skip("Skipped: .htaccess (left as-is)");
         }
     } else {
-        echo "Skipped: .htaccess (already exists)\n";
+        nb_skip("Skipped: .htaccess (already exists)");
     }
 }
 
@@ -329,7 +359,7 @@ foreach ($dirs_create as $dir) {
     $path = BASE_DIR . $dir;
     if (!is_dir($path)) {
         mkdir($path, 0750, true);
-        echo "Created dir: $dir\n";
+        nb_status("Created dir: $dir");
     }
 }
 
@@ -354,11 +384,11 @@ foreach ($dirs_allow as $dir) {
 $theme_dst = BASE_DIR . 'ext/tailwind.theme.js';
 if (!file_exists($theme_dst)) {
     copy(SETUP_DIR . 'tailwind.theme.js', $theme_dst);
-    echo "Copied: ext/tailwind.theme.js\n";
+    nb_status("Copied: ext/tailwind.theme.js");
 }
 if (!file_exists(BASE_DIR . 'ext/theme.css')) {
     touch(BASE_DIR . 'ext/theme.css');
-    echo "Created: ext/theme.css\n";
+    nb_status("Created: ext/theme.css");
 }
 
 // Create ext/.gitignore from template
@@ -366,7 +396,7 @@ $gitignore_dst = BASE_DIR . 'ext/.gitignore';
 if (!file_exists($gitignore_dst)) {
     copy(SETUP_DIR . '.gitignore.tpl', $gitignore_dst);
     chmod($gitignore_dst, 0640);
-    echo "Created: ext/.gitignore\n";
+    nb_status("Created: ext/.gitignore");
 }
 
 // -----------------------------------------------------------------------
@@ -396,10 +426,15 @@ $email    = '';
 $password = '';
 
 if ($need_repo || $need_site || $need_user) {
-    echo "\n--- Nimbly Setup ---\n\n";
+    if (!nb_compact_output()) {
+        echo "\n--- Nimbly Setup ---\n\n";
+    }
 
     if ($need_repo) {
-        $ext_repo = nb_prompt('Project repo URL (ext)', '', 'EXT_REPO');
+        $ext_repo = nb_optional_env_or_empty('EXT_REPO');
+        if ($ext_repo === '' && empty(getenv('NIMBLY_SKIP_EXT_REPO_PROMPT')) && nb_can_prompt()) {
+            $ext_repo = nb_prompt('Project repo URL (ext)', '', 'EXT_REPO');
+        }
     }
 
     if ($need_site) {
@@ -436,7 +471,7 @@ if (!file_exists($readme_dst)) {
     $readme = str_replace('%%SITE_NAME%%', $site_slug ?: 'myproject', $readme);
     file_put_contents($readme_dst, $readme);
     chmod($readme_dst, 0640);
-    echo "Created: ext/readme.md\n";
+    nb_status("Created: ext/readme.md");
 }
 
 // -----------------------------------------------------------------------
@@ -448,9 +483,9 @@ if ($need_site) {
         'name'        => $sitename,
         'description' => $sitename . ': a Nimbly site',
     ]);
-    echo "Created: .config/site\n";
+    nb_status("Created: .config/site");
 } else {
-    echo "Skipped: .config/site (already exists)\n";
+    nb_skip("Skipped: .config/site (already exists)");
 }
 
 // -----------------------------------------------------------------------
@@ -459,9 +494,9 @@ if ($need_site) {
 
 if (!data_exists('.content', '.meta')) {
     data_create_resource('.content', ['fields' => false]);
-    echo "Created: .content resource\n";
+    nb_status("Created: .content resource");
 } else {
-    echo "Skipped: .content resource (already exists)\n";
+    nb_skip("Skipped: .content resource (already exists)");
 }
 
 // -----------------------------------------------------------------------
@@ -471,9 +506,9 @@ if (!data_exists('.content', '.meta')) {
 load_library('job');
 if (!data_exists('.jobs', '.meta')) {
     job_ensure_resource();
-    echo "Created: .jobs resource\n";
+    nb_status("Created: .jobs resource");
 } else {
-    echo "Skipped: .jobs resource (already exists)\n";
+    nb_skip("Skipped: .jobs resource (already exists)");
 }
 
 // -----------------------------------------------------------------------
@@ -482,12 +517,12 @@ if (!data_exists('.jobs', '.meta')) {
 
 if (!data_exists('.routes', '.meta')) {
     data_create_resource('.routes', setup_routes_resource_meta());
-    echo "Created: .routes resource\n";
+    nb_status("Created: .routes resource");
 } else if (data_read('.routes', '.meta', 'fields') === false) {
     data_create('.routes', '.meta', setup_routes_resource_meta());
-    echo "Updated: .routes resource\n";
+    nb_status("Updated: .routes resource");
 } else {
-    echo "Skipped: .routes resource (already exists)\n";
+    nb_skip("Skipped: .routes resource (already exists)");
 }
 
 $routes = [
@@ -520,9 +555,11 @@ foreach ($routes as $route) {
         $routes_created++;
     }
 }
-echo $routes_created > 0
-    ? "Created: $routes_created route(s)\n"
-    : "Skipped: all routes (already exist)\n";
+if ($routes_created > 0) {
+    nb_status("Created: $routes_created route(s)");
+} else {
+    nb_skip("Skipped: all routes (already exist)");
+}
 
 // -----------------------------------------------------------------------
 // Create roles
@@ -534,7 +571,7 @@ if (!data_exists('roles', 'admin')) {
         'description' => 'Technical system administration',
         'features'    => '(all)',
     ]);
-    echo "Created: roles/admin\n";
+    nb_status("Created: roles/admin");
 }
 
 if (!data_exists('roles', 'editor')) {
@@ -543,7 +580,7 @@ if (!data_exists('roles', 'editor')) {
         'description' => 'Content writers, site maintainers',
         'features'    => 'manage-content',
     ]);
-    echo "Created: roles/editor\n";
+    nb_status("Created: roles/editor");
 }
 
 // -----------------------------------------------------------------------
@@ -560,7 +597,7 @@ if (!data_exists('users', '.meta')) {
         ],
         'encrypt' => 'password',
     ]);
-    echo "Created: users/.meta\n";
+    nb_status("Created: users/.meta");
 }
 
 // -----------------------------------------------------------------------
@@ -577,12 +614,26 @@ if ($need_user) {
             'salt'     => $salt,
             'password' => encrypt($password, $salt),
         ]);
-        echo "Created: admin user ($email)\n";
+        nb_status("Created: admin user ($email)");
     } else {
-        echo "Skipped: admin user ($email) already exists\n";
+        nb_skip("Skipped: admin user ($email) already exists");
     }
 } else {
-    echo "Skipped: users already exist\n";
+    $existing_users = [];
+    foreach (glob($users_dir . '*') ?: [] as $user_file) {
+        if (basename($user_file) === '.meta') {
+            continue;
+        }
+        $user_data = json_decode(file_get_contents($user_file), true);
+        if (!empty($user_data['email'])) {
+            $existing_users[] = $user_data['email'];
+        }
+    }
+    $existing_user_text = empty($existing_users) ? '' : ': ' . implode(', ', $existing_users);
+    if (!nb_compact_output()) {
+        nb_skip("Skipped: first admin user because users already exist$existing_user_text");
+        nb_status("Use './nimbly user:create' to add another user.");
+    }
 }
 
 // -----------------------------------------------------------------------
@@ -591,8 +642,12 @@ if ($need_user) {
 
 $cron_command = '* * * * * ' . PHP_BINARY . ' ' . BASE_DIR . 'core/cli/nimbly.php schedule:run';
 
-echo "\nSetup complete. Run 'npm run build' to compile assets.\n";
-echo "\nScheduler cron:\n";
-echo "  $cron_command\n";
-echo "\nThis single cron entry runs due scheduled commands, including queued jobs.\n";
-echo "To customize the app schedule, run: php core/cli/nimbly.php schedule:publish\n";
+if (empty(getenv('NIMBLY_INIT'))) {
+    echo "\nSetup complete. Run './nimbly build' to compile assets.\n";
+    echo "\nScheduler cron:\n";
+    echo "  $cron_command\n";
+    echo "\nThis single cron entry runs due scheduled commands, including queued jobs.\n";
+    echo "To customize the app schedule, run: ./nimbly schedule:publish\n";
+} else {
+    echo "Site setup complete.\n";
+}
