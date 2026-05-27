@@ -129,6 +129,10 @@ function nb_render_htaccess(string $pepper, string $base_path, string $rewrite_b
     return $content;
 }
 
+function nb_render_user_ini(): string {
+    return file_get_contents(SETUP_DIR . 'user.ini.tpl');
+}
+
 function setup_routes_resource_meta(): array {
     return [
         'fields' => [
@@ -292,6 +296,20 @@ if (!file_exists($htaccess_file)) {
     } else {
         echo "Skipped: .htaccess (already exists)\n";
     }
+}
+
+// -----------------------------------------------------------------------
+// Check / generate .user.ini
+// -----------------------------------------------------------------------
+
+$user_ini_file = BASE_DIR . '.user.ini';
+
+if (!file_exists($user_ini_file)) {
+    file_put_contents($user_ini_file, nb_render_user_ini());
+    chmod($user_ini_file, 0640);
+    echo "Written: .user.ini\n";
+} else {
+    echo "Skipped: .user.ini (already exists)\n";
 }
 
 // -----------------------------------------------------------------------

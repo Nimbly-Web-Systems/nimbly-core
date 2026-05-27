@@ -1531,6 +1531,7 @@ First-time site initialisation. Safe to re-run — existing files and records ar
 What it does:
 - Creates `.env` with `APP_ENV`, a generated `PEPPER`, and `BASE_PATH` only for subdirectory installs
 - Generates `.htaccess` from template
+- Generates `.user.ini` from template for PHP-FPM runtime settings
 - Creates the `ext/` directory scaffold (`data/`, `static/`, `lib/`, `modules/`, `tpl/`, `uri/`, temp dirs)
 - Creates `.config/site`, the `.content` resource, core `.routes` records, and default roles (`admin`, `editor`)
 - Creates the `users` resource and an initial admin user
