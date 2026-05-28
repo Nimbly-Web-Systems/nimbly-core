@@ -1655,7 +1655,23 @@ Configure cron for the production checkout or container:
 * * * * * php /var/www/site/core/cli/nimbly.php schedule:run
 ```
 
-This single scheduler entry runs due scheduled commands and queued jobs. Use `php core/cli/nimbly.php schedule:publish` to copy the default schedule to `ext/cli/schedule.inc` before project-specific changes.
+This single scheduler entry runs due scheduled commands and queued jobs. In Docker containers the scheduler runs automatically — no cron setup required.
+
+Run `schedule:publish` once to copy the core defaults into `ext/cli/`:
+
+```bash
+./nimbly schedule:publish
+```
+
+This generates three files:
+
+| File | Used when |
+|---|---|
+| `ext/cli/schedule.inc` | `APP_ENV=dev` or no env-specific file found |
+| `ext/cli/schedule.prod.inc` | `APP_ENV=prod` |
+| `ext/cli/schedule.stage.inc` | `APP_ENV=stage` |
+
+The prod and stage schedules include `ext:sync`, which commits and pushes data changes in `ext/` back to the repository every hour. The dev schedule does not. Customize each file independently for environment-specific tasks.
 
 Admin `git pull` remains available under Settings as a simple self-managed update option, but it is not the standard production deployment path for release-managed sites.
 
