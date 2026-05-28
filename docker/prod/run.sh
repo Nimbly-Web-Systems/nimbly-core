@@ -6,9 +6,8 @@ echo "Starting Nimbly v1.1"
 # Configure git credentials if GIT_TOKEN is set
 if [ -n "$GIT_TOKEN" ]; then
     REPO_NAME=$(git -C /var/www/nimbly/ext remote get-url origin 2>/dev/null | sed 's/.*\///' | sed 's/\.git$//' || echo "nimbly")
-    APP_ENV=$(grep -m1 '^APP_ENV=' /var/www/nimbly/.env 2>/dev/null | cut -d= -f2 | tr -d '[:space:]' || echo "prod")
     git config --global user.name "${REPO_NAME}"
-    git config --global user.email "${REPO_NAME}@${APP_ENV}"
+    git config --global user.email "${REPO_NAME}@${APP_ENV:-dev}"
     git config --global --add safe.directory /var/www/nimbly/ext
     git config --global url."https://${GIT_TOKEN}@github.com/".insteadOf "https://github.com/"
     git config --global url."https://${GIT_TOKEN}@github.com/".insteadOf "git@github.com:"
