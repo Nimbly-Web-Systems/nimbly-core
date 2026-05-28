@@ -63,7 +63,7 @@ if (!empty(trim($status['output']))) {
         exit(1);
     }
 
-    $commit = git('commit -m "chore(' . ($branch ?: 'auto') . '): auto-sync content ' . $date . '"');
+    $commit = git('commit -m "chore(' . ($branch ?: 'auto') . '): auto-sync content ' . $date . ' [skip ci]"');
     if ($commit['code'] !== 0) {
         echo "ext:sync error: git commit failed\n{$commit['output']}\n";
         exit(1);
