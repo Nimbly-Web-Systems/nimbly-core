@@ -1,11 +1,11 @@
 services:
  nimbly:
     build:
-      context: ..
+      context: ../..
       dockerfile: docker/dev/Dockerfile
     container_name: nimbly
     working_dir: /var/www/nimbly
     volumes:
-      - ..:/var/www/nimbly
+      - ../..:/var/www/nimbly
     ports:
       - 80:80
