@@ -1,4 +1,4 @@
-import theme, { daisyuiThemes } from "./ext/tailwind.theme.js";
+import theme, { daisyuiThemes = [] } from "./ext/tailwind.theme.js";
 import typography from "@tailwindcss/typography";
 import daisyui from "daisyui";
 
