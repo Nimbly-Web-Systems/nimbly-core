@@ -182,7 +182,8 @@ write_generated($workflow_path, $workflow . "\n", $update, $generated, $skipped)
 $dockerignore = <<<DOCKERIGNORE
 .git
 .github
-data
+data/.tmp
+data/users
 DOCKERIGNORE;
 
 write_generated($dockerignore_path, $dockerignore . "\n", $update, $generated, $skipped);
