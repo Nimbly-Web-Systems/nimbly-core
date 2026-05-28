@@ -15,6 +15,23 @@ if (php_sapi_name() !== 'cli') {
 
 if (!defined('BASE_DIR')) define('BASE_DIR', realpath(__DIR__ . '/../..') . '/');
 
+// Only run on non-dev environments
+$app_env = getenv('APP_ENV') ?: '';
+if (empty($app_env)) {
+    $env_file = BASE_DIR . '.env';
+    if (file_exists($env_file)) {
+        foreach (file($env_file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) as $line) {
+            if (str_starts_with(trim($line), 'APP_ENV=')) {
+                $app_env = trim(substr($line, 8));
+                break;
+            }
+        }
+    }
+}
+if ($app_env === 'dev' || $app_env === '') {
+    exit(0);
+}
+
 $ext_dir = BASE_DIR . 'ext';
 
 // Bail silently if ext/ is not a git repo
