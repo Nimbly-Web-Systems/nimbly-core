@@ -28,6 +28,7 @@ $commands = [
     'schedule:publish' => ['file' => 'core/cli/schedule_publish.php', 'desc' => 'Copy core schedule defaults to ext/cli/schedule.inc', 'public' => false],
     'index:rebuild'    => ['file' => 'core/cli/reindex.php',        'desc' => 'Rebuild index entries for a resource', 'public' => true],
     'system:upgrade-11' => ['file' => 'core/cli/upgrade_11.php',    'desc' => 'Upgrade project to Nimbly 1.1', 'public' => true],
+    'docker:init'       => ['file' => 'core/cli/docker_init.php',   'desc' => 'Generate Dockerfile and CI workflow in ext/ for Docker image builds', 'public' => true],
     'create-user'      => ['file' => 'core/cli/create_user.php',    'desc' => 'Alias of user:create', 'public' => false],
     'install-module'   => ['file' => 'core/cli/install_module.php', 'desc' => 'Alias of module:install', 'public' => false],
     'reindex'          => ['file' => 'core/cli/reindex.php',        'desc' => 'Alias of index:rebuild', 'public' => false],

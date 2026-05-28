@@ -1,6 +1,8 @@
 services:
  nimbly:
-    build: ./docker-nimbly
+    build:
+      context: ..
+      dockerfile: docker/dev/Dockerfile
     container_name: nimbly
     working_dir: /var/www/nimbly
     volumes:

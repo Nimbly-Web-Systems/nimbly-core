@@ -1,0 +1,9 @@
+.git
+.github
+.context
+.env
+node_modules
+ext/data
+*.md
+.gitignore
+.gitattributes

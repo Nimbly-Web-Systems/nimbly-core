@@ -96,7 +96,7 @@ function migrate_10_print_summary($state)
         echo "  RESEND_API_KEY=re_xxxxxxxxxxxx\n\n";
         echo "For OpenAI:\n";
         echo "  OPENAI_API_KEY=sk-xxxxxxxxxxxx\n\n";
-        echo "See §18 step 7 of NIMBLY.md for details.\n\n";
+        cli_tip("See §18 step 7 of NIMBLY.md for details.");
     }
 
     if (!empty($pk_resources)) {
@@ -192,7 +192,7 @@ function migrate_10_print_done($state)
     if (!empty($state['legacy_handlers'])) {
         echo "Also migrate the legacy trigger handlers listed above to .meta events.\n\n";
     }
-    echo "See §18 of NIMBLY.md for the full upgrade guide.\n\n";
+    cli_tip("See §18 of NIMBLY.md for the full upgrade guide.");
 }
 
 function migrate_10_find_legacy_trigger_handlers($modules_dir)

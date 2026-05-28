@@ -105,7 +105,7 @@ function ok(message) {
 }
 
 function note(message) {
-  console.log(`${color.dim('note')} ${message}`);
+  console.log(`${color.green('→')} ${color.dim(message)}`);
 }
 
 function require_npm() {
@@ -239,7 +239,7 @@ function show_common_help(show_all_hint = true, show_usage = true) {
   console.log('  user:create        Create an additional user account');
   if (show_all_hint) {
     console.log('');
-    console.log('Run ./nimbly help to list every command.');
+    note('Run ./nimbly help to list every command.');
   }
   console.log('');
 }
@@ -290,7 +290,7 @@ function run_docker_php() {
   run('docker', [
     'compose',
     '-f',
-    'docker/docker-compose.yml',
+    'docker/dev/docker-compose.yml',
     'run',
     '--rm',
     '--build',
@@ -340,7 +340,7 @@ if (command === 'help' && !force_docker && !command_exists('php')) {
   banner(command_label(command));
   show_common_help();
   section('PHP-backed commands');
-  console.log('  Run ./nimbly --docker help to list PHP-backed commands through Docker.');
+  note('Run ./nimbly --docker help to list PHP-backed commands through Docker.');
   console.log('');
   process.exit(0);
 }
