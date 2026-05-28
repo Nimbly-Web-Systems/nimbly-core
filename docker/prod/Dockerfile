@@ -24,8 +24,6 @@ RUN PHP_VER=$(php -r 'echo PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION;') && \
     a2enmod mpm_event proxy proxy_fcgi rewrite expires headers && \
     a2dissite 000-default && a2ensite nimbly
 
-RUN usermod -u 1000 www-data && groupmod -g 1000 www-data
-
 WORKDIR /var/www/nimbly
 COPY core/    ./core/
 COPY index.php ./
