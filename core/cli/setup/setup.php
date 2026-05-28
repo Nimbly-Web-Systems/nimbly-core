@@ -657,11 +657,12 @@ $cron_command = '* * * * * ' . PHP_BINARY . ' ' . BASE_DIR . 'core/cli/nimbly.ph
 
 if (empty(getenv('NIMBLY_INIT'))) {
     cli_section('Next steps', true);
-    echo "Setup complete. Run './nimbly build' to compile assets.\n";
+    echo "Setup complete.\n";
+    cli_tip("Run './nimbly build' to compile assets.");
     echo "\nScheduler cron\n";
     echo "  $cron_command\n";
-    echo "\nThis single cron entry runs due scheduled commands, including queued jobs.\n";
-    echo "To customize the app schedule, run: ./nimbly schedule:publish\n";
+    cli_tip("This single cron entry runs due scheduled commands, including queued jobs.");
+    cli_tip("To customize the schedule, run: ./nimbly schedule:publish");
 } else {
     echo "Site setup complete.\n";
 }

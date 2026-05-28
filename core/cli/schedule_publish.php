@@ -15,6 +15,7 @@ if (php_sapi_name() !== 'cli') {
 if (!defined('BASE_DIR')) {
     define('BASE_DIR', realpath(__DIR__ . '/../..') . '/');
 }
+require_once BASE_DIR . 'core/cli/helpers/output.php';
 
 $src = BASE_DIR . 'core/cli/schedule.inc';
 $dst = BASE_DIR . 'ext/cli/schedule.inc';
@@ -30,7 +31,7 @@ if (!is_dir(dirname($dst)) && !mkdir(dirname($dst), 0750, true) && !is_dir(dirna
 
 if (file_exists($dst) && !$force) {
     echo "Skipped: ext/cli/schedule.inc already exists.\n";
-    echo "Use --force to overwrite it with the core defaults.\n";
+    cli_tip("Use --force to overwrite it with the core defaults.");
     exit(0);
 }
 

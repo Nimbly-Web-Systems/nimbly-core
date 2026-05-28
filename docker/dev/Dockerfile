@@ -19,13 +19,13 @@ RUN apt-get -y update && \
     rm -rf /var/lib/apt/lists/*
 
 # Add scripts and configuration files
-ADD apache2.conf /etc/apache2/apache2.conf
-ADD nimbly.conf /etc/apache2/sites-available/nimbly.conf
-ADD run.sh /run.sh
+ADD docker/apache2.conf /etc/apache2/apache2.conf
+ADD docker/nimbly.conf /etc/apache2/sites-available/nimbly.conf
+ADD docker/dev/run.sh /run.sh
 RUN chmod 755 /*.sh
 
 # Configure PHP-FPM: fixed TCP socket, Nimbly PHP settings, switch to event MPM
-ADD php-nimbly.ini /tmp/php-nimbly.ini
+ADD docker/php-nimbly.ini /tmp/php-nimbly.ini
 RUN PHP_VER=$(php -r 'echo PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION;') && \
     ln -sf /usr/sbin/php-fpm${PHP_VER} /usr/local/sbin/php-fpm && \
     sed -i "s|listen = /run/php/php.*-fpm.sock|listen = 127.0.0.1:9000|" /etc/php/${PHP_VER}/fpm/pool.d/www.conf && \

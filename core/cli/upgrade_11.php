@@ -14,6 +14,7 @@ if (!defined('BASE_DIR')) {
     define('BASE_DIR', realpath(__DIR__ . '/../..') . '/');
 }
 
+require_once BASE_DIR . 'core/cli/helpers/output.php';
 require_once BASE_DIR . 'core/cli/helpers/migrate_10.php';
 require_once BASE_DIR . 'core/cli/helpers/migrate_lib.php';
 require_once BASE_DIR . 'core/cli/helpers/htaccess.php';
@@ -153,7 +154,7 @@ if (!$has_work) {
     echo "Nimbly 1.1 upgrade checks complete — no automatic upgrade steps are needed.\n";
     if ($htaccess['action'] === 'warn_base_mismatch') {
         echo $htaccess['message'] . "\n";
-        echo "Run './nimbly site:setup' if you want to review recreating .htaccess.\n";
+        cli_tip("Run './nimbly site:setup' if you want to review recreating .htaccess.");
     }
     exit(0);
 }
@@ -186,7 +187,7 @@ if (!empty($moves) || !empty($skipped)) {
 echo "\n[3] .htaccess repair\n\n";
 echo '  ' . $htaccess['message'] . "\n";
 if ($htaccess['action'] === 'warn_base_mismatch') {
-    echo "  This warning is informational here; use 'site:setup' to review rewrite-base recreation.\n";
+    cli_tip("Use 'site:setup' to review rewrite-base recreation.");
 }
 
 if ($tailwind_entrypoint['action'] !== 'none') {
@@ -243,7 +244,7 @@ if (in_array($htaccess['action'], ['write', 'recreate_mod_php'], true)) {
 
 if ($htaccess['action'] === 'warn_base_mismatch') {
     echo "\n" . $htaccess['message'] . "\n";
-    echo "Run './nimbly site:setup' if you want to recreate .htaccess for the current BASE_PATH.\n";
+    cli_tip("Run './nimbly site:setup' if you want to recreate .htaccess for the current BASE_PATH.");
 }
 
 if ($tailwind_entrypoint['action'] === 'update') {
@@ -259,7 +260,7 @@ if ($gitignore['action'] === 'update') {
     echo "\n=== Updating ext/.gitignore ===\n";
     if (upgrade_11_apply_gitignore($gitignore)) {
         echo "Updated: ext/.gitignore\n";
-        echo "Note: if ext/static/_thumb_/ is already tracked, run 'git -C ext rm -r --cached static/_thumb_'.\n";
+        cli_tip("If ext/static/_thumb_/ is already tracked, run: git -C ext rm -r --cached static/_thumb_");
     } else {
         echo "ERROR: failed to update ext/.gitignore\n";
     }

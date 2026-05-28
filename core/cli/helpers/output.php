@@ -57,5 +57,5 @@ function cli_tip(string $message): void
     if (cli_compact_output()) {
         return;
     }
-    echo cli_color('tip', 'green') . ' ' . cli_color($message, 'dim') . "\n";
+    echo cli_color('→', 'green') . ' ' . cli_color($message, 'dim') . "\n";
 }
