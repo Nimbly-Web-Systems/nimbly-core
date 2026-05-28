@@ -21,13 +21,15 @@ require_once BASE_DIR . 'core/cli/helpers/output.php';
 $update = in_array('--update', $argv);
 
 // -------------------------------------------------------------------------
-// Read NIMBLY_VERSION from package.json (major.minor only, e.g. "1.1")
+// Read NIMBLY_VERSION from package.json
+// Full semver (e.g. "1.1.0") for git clone; major.minor (e.g. "1.1") for image tag
 // -------------------------------------------------------------------------
 
 $pkg = json_decode(file_get_contents(BASE_DIR . 'package.json'), true);
 $full_version = $pkg['version'] ?? '1.1.0';
-preg_match('/^(\d+\.\d+)/', $full_version, $m);
-$nimbly_version = $m[1] ?? '1.1';
+preg_match('/^(\d+)\.(\d+)\.(\d+)/', $full_version, $m);
+$nimbly_version       = isset($m[0]) ? $m[0] : '1.1.0';   // 1.1.0 — for git clone tag
+$nimbly_image_tag     = isset($m[1]) ? "{$m[1]}.{$m[2]}" : '1.1'; // 1.1 — for image FROM
 
 // -------------------------------------------------------------------------
 // Read APP_NAME from .env
@@ -115,7 +117,7 @@ COPY . ./ext/
 RUN npm run build
 
 # Stage 2: production app image
-FROM ghcr.io/nimbly-web-systems/nimbly-core:\${NIMBLY_VERSION}
+FROM ghcr.io/nimbly-web-systems/nimbly-core:{$nimbly_image_tag}
 COPY --from=builder /build/ext/ /var/www/nimbly/ext/
 RUN chown -R www-data:www-data /var/www/nimbly/ext/
 DOCKERFILE;
