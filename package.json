@@ -17,7 +17,7 @@
     "build:tw": "npx tailwindcss -i ./css/tw/in.css -o ./css/tw/out.css",
     "build:text": "node core/cli/merge-text-po.mjs",
     "build:version": "node core/cli/write-app-version.mjs",
-    "up": "cd docker && docker compose build --pull nimbly && docker compose down && docker compose up -d nimbly && cd ..",
+    "up": "docker compose -f docker/dev/docker-compose.yml build --pull nimbly && docker compose -f docker/dev/docker-compose.yml down && docker compose -f docker/dev/docker-compose.yml up -d nimbly",
     "nimbly": "./nimbly",
     "nimbly:host": "php core/cli/nimbly.php",
     "nimbly:docker": "./nimbly --docker"
@@ -29,9 +29,9 @@
   "author": "Nimbly Web Systems",
   "license": "ISC",
   "bugs": {
-    "url": "git@github.com:Nimbly-Web-Systems/nimbly-core.git/issues"
+    "url": "https://github.com/Nimbly-Web-Systems/nimbly-core/issues"
   },
-  "homepage": "git@github.com:Nimbly-Web-Systems/nimbly-core.git#readme",
+  "homepage": "https://github.com/Nimbly-Web-Systems/nimbly-core#readme",
   "dependencies": {
     "alpinejs": "^3.13.2",
     "medium-editor": "^5.23.3"
