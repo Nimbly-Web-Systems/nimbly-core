@@ -224,6 +224,8 @@ Important: a subfolder inside `ext/uri/` **always** creates a new route. A flat 
 
 `route.inc` is only used for **dynamic routes** — routes with `(param)` segments in the URL that need to be matched, validated, and accepted or rejected. Static routes (plain URL paths with no parameters) do not use `route.inc`; their `index.tpl` is loaded directly.
 
+Dynamic routes are **not auto-discovered**. Every route with a `(param)` segment must also have a record in the `.routes` resource, otherwise the request will never reach its `route.inc` and will 404. For example, `ext/uri/en/blog/(slug)/route.inc` needs a `.routes` record with `route: "en/blog/(slug)"` and an appropriate `order`, usually `200`. Run `php core/cli/nimbly.php routes:add` to scan `ext/uri/**/route.inc` files and create missing `.routes` records.
+
 A `route.inc` sits alongside `index.tpl` and decides whether this route owns the request:
 
 ```php
@@ -1496,6 +1498,8 @@ Dynamic URL segments use parentheses:
 ext/uri/blog/(slug)/index.tpl     → /blog/<anything>/
 ext/uri/user/(id)/index.tpl       → /user/<anything>/
 ```
+
+Dynamic routes are not registered from the folder structure alone. If the route contains a `(param)` segment, add a matching `.routes` record or run `php core/cli/nimbly.php routes:add` after creating the route files. Static routes do not need `.routes` records.
 
 ### Route-scoped JavaScript
 

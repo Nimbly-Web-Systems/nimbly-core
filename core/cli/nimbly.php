@@ -26,6 +26,7 @@ $commands = [
     'jobs:prune'       => ['file' => 'core/cli/jobs_prune.php',     'desc' => 'Delete completed jobs older than N days (--days=30)', 'public' => false],
     'schedule:run'     => ['file' => 'core/cli/schedule.php',       'desc' => 'Run due scheduled commands', 'public' => false],
     'schedule:publish' => ['file' => 'core/cli/schedule_publish.php', 'desc' => 'Copy core schedule defaults to ext/cli/schedule.inc', 'public' => false],
+    'routes:add'      => ['file' => 'core/cli/routes_add.php',   'desc' => 'Scan route.inc files and create missing dynamic route records', 'public' => true],
     'index:rebuild'    => ['file' => 'core/cli/reindex.php',        'desc' => 'Rebuild index entries for a resource', 'public' => true],
     'system:upgrade-11' => ['file' => 'core/cli/upgrade_11.php',    'desc' => 'Upgrade project to Nimbly 1.1', 'public' => true],
     'docker:init'       => ['file' => 'core/cli/docker_init.php',   'desc' => 'Generate Dockerfile and CI workflow in ext/ for Docker image builds', 'public' => true],
