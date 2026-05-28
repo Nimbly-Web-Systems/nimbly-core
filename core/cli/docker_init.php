@@ -119,7 +119,8 @@ RUN npm run build
 # Stage 2: production app image
 FROM ghcr.io/nimbly-web-systems/nimbly-core:{$nimbly_image_tag}
 COPY --from=builder /build/ext/ /var/www/nimbly/ext/
-RUN chown -R www-data:www-data /var/www/nimbly/ext/
+RUN cp -a /var/www/nimbly/ext/data /var/www/nimbly/ext/.data-seed && \
+    chown -R www-data:www-data /var/www/nimbly/ext/
 DOCKERFILE;
 
 write_generated($dockerfile_path, $dockerfile . "\n", $update, $generated, $skipped);
@@ -132,7 +133,7 @@ name: Build and publish
 
 on:
   push:
-    branches: [main, master]
+    branches: [main, master, live]
     tags: ['v*']
 
 jobs:
@@ -180,10 +181,8 @@ write_generated($workflow_path, $workflow . "\n", $update, $generated, $skipped)
 // -- ext/.dockerignore --
 
 $dockerignore = <<<DOCKERIGNORE
-.git
 .github
 data/.tmp
-data/users
 DOCKERIGNORE;
 
 write_generated($dockerignore_path, $dockerignore . "\n", $update, $generated, $skipped);

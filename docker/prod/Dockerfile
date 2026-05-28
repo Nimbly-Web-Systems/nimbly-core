@@ -4,6 +4,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get -y update && \
     apt-get -y install \
         apache2 \
+        git \
         php-cli \
         php-curl \
         php-fpm \
@@ -30,7 +31,6 @@ COPY index.php ./
 
 RUN mkdir -p ext/data && chown -R www-data:www-data /var/www/nimbly
 
-VOLUME ["/var/www/nimbly/ext/data"]
 EXPOSE 80
 
 COPY docker/prod/run.sh /run.sh
