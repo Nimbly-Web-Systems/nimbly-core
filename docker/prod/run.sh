@@ -3,19 +3,22 @@ set -e
 
 echo "Starting Nimbly v1.1"
 
-# Configure git credentials if GIT_TOKEN is set
-if [ -n "$GIT_TOKEN" ]; then
+if [ -d /var/www/nimbly/ext/.git ]; then
     REPO_NAME=$(git -C /var/www/nimbly/ext remote get-url origin 2>/dev/null | sed 's/.*\///' | sed 's/\.git$//')
     REPO_NAME=${REPO_NAME:-nimbly}
+
+    git config --global --add safe.directory /var/www/nimbly/ext
     git config --global user.name "${REPO_NAME}"
     git config --global user.email "${REPO_NAME}@${APP_ENV:-dev}"
-    git config --global --add safe.directory /var/www/nimbly/ext
-    git config --global url."https://${GIT_TOKEN}@github.com/".insteadOf "https://github.com/"
-    git config --global url."https://${GIT_TOKEN}@github.com/".insteadOf "git@github.com:"
-fi
 
-# Pull latest ext/ changes before starting (catches content added since image build)
-if [ -d /var/www/nimbly/ext/.git ]; then
+    # Embed token directly in the remote URL so git never prompts for credentials
+    if [ -n "$GIT_TOKEN" ]; then
+        REMOTE_URL=$(git -C /var/www/nimbly/ext remote get-url origin 2>/dev/null || echo "")
+        AUTHED_URL=$(echo "$REMOTE_URL" | sed "s|git@github.com:|https://github.com/|" | sed "s|https://github.com/|https://${GIT_TOKEN}@github.com/|")
+        git -C /var/www/nimbly/ext remote set-url origin "$AUTHED_URL"
+    fi
+
+    # Pull latest ext/ changes before starting
     git -C /var/www/nimbly/ext pull --rebase --autostash 2>/dev/null || true
 fi
 
