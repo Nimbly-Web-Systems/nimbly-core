@@ -3,7 +3,7 @@ services:
     build:
       context: ../..
       dockerfile: docker/dev/Dockerfile
-    container_name: nimbly
+    container_name: ${NIMBLY_CONTAINER_NAME:-nimbly-v1.1.0}
     working_dir: /var/www/nimbly
     volumes:
       - ../..:/var/www/nimbly
