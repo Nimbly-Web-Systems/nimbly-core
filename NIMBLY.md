@@ -1523,11 +1523,12 @@ Nimbly ships a CLI at `core/cli/nimbly.php`. The root `./nimbly` launcher is the
 ./nimbly init
 ./nimbly deps
 ./nimbly build
+./nimbly watch
 ./nimbly user:create
 ./nimbly module:install <name>
 ```
 
-`init`, `deps`, and `build` use npm internally. PHP-backed commands use host PHP when available and fall back to Docker automatically. Explicit variants are also available:
+`init`, `deps`, `build`, and `watch` use npm internally. PHP-backed commands use host PHP when available and fall back to Docker automatically. Explicit variants are also available:
 
 ```bash
 php core/cli/nimbly.php site:setup     # require host PHP
@@ -1630,6 +1631,21 @@ npm run up          # start Docker dev environment
 ```
 
 Built files go to `ext/static/`. Always run build after changing CSS, JS, or Tailwind classes.
+
+### Watch mode
+
+```bash
+./nimbly watch
+```
+
+Runs one full build, then keeps assets live during development:
+
+- **Tailwind** — watches all `*.tpl` files in `core/` and `ext/` and rebuilds `css/tw/out.css` on any class change
+- **CSS** — esbuild watches `css/index.css` and its imports (including `css/tw/out.css`); rebuilds `ext/static/app.css` whenever Tailwind or the CSS source changes
+- **JS** — esbuild watches `js/index.jsx` and rebuilds `ext/static/app.js`
+- **Text** — polls `text.po` files every 2 s and reruns `merge-text-po.mjs` on change
+
+`ext/static/app.version` is updated after every rebuild to preserve cache busting. Press `Ctrl+C` to stop.
 
 ---
 
