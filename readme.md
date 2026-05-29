@@ -13,16 +13,16 @@ cd my-project
 `./nimbly init` installs dependencies, prepares `ext/`, creates the first admin
 user, and builds assets.
 
-**Requirements:** Node 20+ and Docker.
+**Requirements:** Node 20+ and either PHP 8+ or Docker.
 
 ## Deployment
 
-Nimbly's public deployment path is Docker-first. Run `./nimbly docker:init` to
-generate an application Dockerfile and GitHub Actions workflow in `ext/`. The
-workflow publishes an app image that can run on a VPS, EC2 instance, Render, or
-any container host.
+Nimbly supports both container and manual VPS deployment. Run
+`./nimbly docker:init` to generate an application Dockerfile and GitHub Actions
+workflow in `ext/`. The workflow publishes an app image that can run on a VPS,
+EC2 instance, Render, or any container host.
 
-Manual VPS deployment is also supported for self-managed installs with existing
+Manual VPS deployment is equally valid for self-managed installs with existing
 Apache/PHP infrastructure. See `NIMBLY.md` for cron, env, and update details.
 
 ## Stack

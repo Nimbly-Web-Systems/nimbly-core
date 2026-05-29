@@ -75,7 +75,7 @@ function migrate_10_print_summary($state)
         foreach ($legacy_handlers as $handler) {
             echo "  - {$handler}\n";
         }
-        echo "\nCore 1.1 uses resource .meta events instead of automatic data-create triggers.\n";
+        echo "\nCore 1.1.0 uses resource .meta events instead of automatic data-create triggers.\n";
         echo "Move each handler to a named event or job, then declare it on the target resource .meta:\n\n";
         echo "  \"events\": {\n";
         echo "      \"create\": [\"job:example-created\"]\n";
@@ -83,7 +83,7 @@ function migrate_10_print_summary($state)
     }
 
     if (!empty($services)) {
-        echo "\n.services records found — this resource is removed in core 1.1:\n\n";
+        echo "\n.services records found — this resource is removed in core 1.1.0:\n\n";
         foreach ($services as $s) {
             printf("  %-40s  service=%-16s  tpl=%s\n", $s['uuid'], $s['service'], $s['tpl']);
         }
@@ -184,7 +184,7 @@ function migrate_10_print_done($state)
     echo "Next step — update route.inc files that use the old 1.0 lookup pattern:\n\n";
     echo "  OLD (1.0):\n";
     echo "    if (!data_exists(\$resource, md5_uuid(\$slug))) return;\n\n";
-    echo "  NEW (1.1):\n";
+    echo "  NEW (1.1.0):\n";
     echo "    \$records = data_read_index(\$resource, 'slug_field', md5_uuid(\$slug));\n";
     echo "    if (empty(\$records)) return;\n";
     echo "    \$record = reset(\$records);\n";

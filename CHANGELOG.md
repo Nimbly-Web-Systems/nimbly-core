@@ -5,7 +5,7 @@
 ### Added
 - Automatic resource indexes — field lookups via `.index/` subdirectory, no manual index management
 - `index:rebuild` CLI command to regenerate indexes for a resource
-- `system:upgrade-11` CLI command — automated migration from 1.0 to 1.1
+- `system:upgrade-11` CLI command — automated migration from 1.0.0 to 1.1.0
 - Resource `.meta` events system replacing global trigger handlers (`data-create` hooks removed)
 - Email delivery via `.env` configuration (`MAIL_SERVICE`, `MAIL_FROM`, `RESEND_API_KEY`, etc.)
 - Resend support as the recommended email provider alongside SMTP/PHPMailer
@@ -34,7 +34,7 @@
 - Automatic `data-create` global trigger handlers
 
 ### Upgrade
-Run `./nimbly system:upgrade-11` to migrate a 1.0 project automatically. See [NIMBLY.md](NIMBLY.md) §20 for the full upgrade guide.
+Run `./nimbly system:upgrade-11` to migrate a 1.0.0 project automatically. See [NIMBLY.md](NIMBLY.md) §19 for the full upgrade guide.
 
 ---
 

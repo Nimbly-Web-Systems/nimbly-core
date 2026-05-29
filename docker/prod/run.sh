@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-echo "Starting Nimbly v1.1"
+echo "Starting Nimbly v1.1.0"
 
 if [ -d /var/www/nimbly/ext/.git ]; then
     REPO_NAME=$(git -C /var/www/nimbly/ext remote get-url origin 2>/dev/null | sed 's/.*\///' | sed 's/\.git$//')

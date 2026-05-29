@@ -151,7 +151,7 @@ $has_work = migrate_10_has_work($migration)
     || $gitignore['action'] === 'update';
 
 if (!$has_work) {
-    echo "Nimbly 1.1 upgrade checks complete — no automatic upgrade steps are needed.\n";
+    echo "Nimbly 1.1.0 upgrade checks complete — no automatic upgrade steps are needed.\n";
     if ($htaccess['action'] === 'warn_base_mismatch') {
         echo $htaccess['message'] . "\n";
         cli_tip("Run './nimbly site:setup' if you want to review recreating .htaccess.");
@@ -159,7 +159,7 @@ if (!$has_work) {
     exit(0);
 }
 
-echo "Nimbly 1.1 upgrade plan:\n";
+echo "Nimbly 1.1.0 upgrade plan:\n";
 
 if (migrate_10_has_work($migration)) {
     echo "\n[1] Resource/data migration\n";
@@ -213,7 +213,7 @@ if (!empty($tailwind_elements_files)) {
 }
 
 if (!$yes) {
-    echo "\nProceed with the automatic 1.1 upgrade steps? [y/N] ";
+    echo "\nProceed with the automatic 1.1.0 upgrade steps? [y/N] ";
     $confirm = trim(fgets(STDIN));
     if (strtolower($confirm) !== 'y') {
         die("Aborted.\n");
