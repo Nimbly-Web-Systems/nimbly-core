@@ -57,7 +57,7 @@ function banner(label) {
   }
 
   console.log('');
-  console.log(`${color.cyan('██▄  ██')}  ${color.bold('Nimbly 1.1')}`);
+  console.log(`${color.cyan('██▄  ██')}  ${color.bold('Nimbly 1.1.0')}`);
   console.log(`${color.cyan('██ ▀▄██')}  ${color.green(label)}`);
   console.log(`${color.cyan('██   ██')}  ${color.dim(pretty_cwd())}`);
   console.log('');
@@ -67,6 +67,7 @@ function command_label(name) {
   const labels = {
     deps: 'Dependencies',
     build: 'Build',
+    watch: 'Watch',
     up: 'Docker up',
     init: 'Setup',
     setup: 'Setup',
@@ -75,7 +76,7 @@ function command_label(name) {
     'user:create': 'Create user',
     'module:install': 'Install module',
     'index:rebuild': 'Rebuild index',
-    'system:upgrade-11': 'Upgrade 1.1',
+    'system:upgrade-11': 'Upgrade 1.1.0',
     '': 'Usage: ./nimbly <command>',
   };
   return labels[name] ?? name;
@@ -197,6 +198,11 @@ function run_build() {
   run('npm', ['run', '--silent', 'build']);
 }
 
+function run_watch() {
+  require_npm();
+  run('npm', ['run', '--silent', 'watch']);
+}
+
 function run_up() {
   require_npm();
   section('Docker environment');
@@ -232,11 +238,11 @@ function show_common_help(show_all_hint = true, show_usage = true) {
     console.log('Usage: ./nimbly <command>');
     console.log('');
   }
-  section('Common commands');
+  section('Main commands');
   console.log('  init               Prepare a checkout for first use');
   console.log('  build              Build project assets');
+  console.log('  watch              Watch and rebuild assets during development');
   console.log('  up                 Start the local Docker environment');
-  console.log('  user:create        Create an additional user account');
   if (show_all_hint) {
     console.log('');
     note('Run ./nimbly help to list every command.');
@@ -312,6 +318,11 @@ if (command === 'build') {
   run_build();
 }
 
+if (command === 'watch') {
+  banner(command_label(command));
+  run_watch();
+}
+
 if (command === 'up') {
   banner(command_label(command));
   run_up();
@@ -331,7 +342,6 @@ if (!has_command) {
 if (command === 'help' && !force_docker && command_exists('php')) {
   banner(command_label(command));
   show_common_help(false);
-  section('All PHP-backed commands');
   run_step('php', ['core/cli/nimbly.php', 'help']);
   process.exit(0);
 }
@@ -339,8 +349,8 @@ if (command === 'help' && !force_docker && command_exists('php')) {
 if (command === 'help' && !force_docker && !command_exists('php')) {
   banner(command_label(command));
   show_common_help();
-  section('PHP-backed commands');
-  note('Run ./nimbly --docker help to list PHP-backed commands through Docker.');
+  section('All commands');
+  note('Run ./nimbly --docker help to list all commands through Docker.');
   console.log('');
   process.exit(0);
 }
