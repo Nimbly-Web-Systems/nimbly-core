@@ -26,7 +26,7 @@ function thumbnail_sharpen($img)
 
 function thumbnail_create($uuid, $size, $ratio = 0, $mode = 'h')
 {
-    $MAX_UPSCALE = 1.0; // @todo: make this dynamic
+    $MAX_UPSCALE = 1.0;
 
     // 1. Create thumbnail from original
 
@@ -158,7 +158,7 @@ function thumbnail_create($uuid, $size, $ratio = 0, $mode = 'h')
                 $result = $static_path;
             }
             */
-            if (imagewebp($thumb_img, $static_path, 85)) { //@todo switch to avif when available
+            if (imagewebp($thumb_img, $static_path, 85)) {
                 $result = $static_path;
             }
             break;

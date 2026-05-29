@@ -9,19 +9,6 @@ load_library('uuid');
 
 function map_header($key, $first = false)
 {
-    /*
-    todo: get import mapping from resource .meta file
-    for now, just assume the header names are equal to the field names
-
-    static $map = array(
-        'name' => 'name',
-        'url' => 'link',
-        'opportunities' => 'opportunities',
-        'fields_of_work' => 'fields_of_work',
-        'types_of_work' => 'types_of_work'
-    );
-    $mapkey = strtolower(str_replace([' ', '-', '&', '.', '\t'], '_', trim($key)));
-    return $map[$mapkey] ?? false;*/
     return strtolower(str_replace([' ', '-', '&', '.', '\t'], '_', trim($key)));
 }
 
@@ -60,8 +47,6 @@ function get_pk_field($record)
         return $pk_field;
     }
 
-    //todo: get pk fields from .meta
-
     foreach (['uuid', 'id', 'name', 'title'] as $f) {
         if (!empty($record[$f])) {
             $pk_field = $f;
@@ -75,7 +60,6 @@ function get_pk_field($record)
 function record_exists_by_pk($resource, $record)
 {
     static $all_records = false;
-    static $fields_to_try = ['uuid', 'id', 'name', 'title']; // TODO: get from .meta
     $pk_field = get_pk_field($record);
 
     if ($all_records === false) {
