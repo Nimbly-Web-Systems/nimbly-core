@@ -45,7 +45,7 @@ function upgrade_11_htaccess_state($pepper, $base_path, $rewrite_base_path)
     if (!file_exists($htaccess_file)) {
         return [
             'action' => 'write',
-            'message' => 'Missing .htaccess — will create it for 1.1.',
+            'message' => 'Missing .htaccess — will create it for 1.1.0.',
             'path' => $htaccess_file,
             'content' => upgrade_11_render_htaccess($pepper, $base_path, $rewrite_base_path),
         ];
@@ -79,7 +79,7 @@ function upgrade_11_htaccess_state($pepper, $base_path, $rewrite_base_path)
 
     return [
         'action' => 'noop',
-        'message' => '.htaccess already matches the 1.1-safe template assumptions.',
+        'message' => '.htaccess already matches the 1.1.0-safe template assumptions.',
         'path' => $htaccess_file,
         'content' => null,
     ];

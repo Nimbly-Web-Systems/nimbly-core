@@ -1004,7 +1004,7 @@ Options from another resource:
 
 ### Resource lifecycle events
 
-Nimbly 1.1 uses `.meta` event declarations for resource lifecycle side effects. A resource can declare what should happen after a record is created, updated, or deleted:
+Nimbly 1.1.0 uses `.meta` event declarations for resource lifecycle side effects. A resource can declare what should happen after a record is created, updated, or deleted:
 
 ```json
 {
@@ -1635,9 +1635,10 @@ Built files go to `ext/static/`. Always run build after changing CSS, JS, or Tai
 
 ## 9. Deployment
 
-The recommended public deployment path is Docker-first: build a project image
-from `ext/`, publish it to a container registry, and run that image on a VPS,
-EC2 instance, or any container host.
+Nimbly supports both container and manual VPS deployment. Containers package the
+app and runtime together for repeatable image updates. Manual VPS deployment is
+equally valid for self-managed Apache/PHP hosts where you prefer direct control
+over the server. Choose the model that matches how the site will be operated.
 
 ### Docker deployment
 
@@ -1737,8 +1738,8 @@ replacing the container.
 
 ### Manual VPS deployment
 
-Manual VPS deployment remains supported for self-managed installations. The
-release baseline is the same path used in CI:
+Manual VPS deployment is supported for self-managed installations. The release
+baseline is the same path used in CI:
 
 ```bash
 ./nimbly deps
@@ -1785,7 +1786,7 @@ This generates three files:
 
 The prod and stage schedules include `ext:sync`, which commits and pushes data changes in `ext/` back to the repository every hour. The dev schedule does not. Customize each file independently for environment-specific tasks.
 
-Admin `git pull` remains available under Settings as a simple self-managed update option, but it is not the standard production deployment path for release-managed sites.
+Admin `git pull` remains available under Settings as a simple self-managed update option. For release-managed sites, prefer a repeatable deploy path: pull the intended git revision, run setup/build/lint, and make sure the scheduler is active.
 
 ---
 
@@ -2027,7 +2028,7 @@ Both attributes only activate for logged-in admins. The value format is `resourc
 
 The built-in admin is available at `/nb-admin/`.
 
-The admin (1.1+) uses DaisyUI components. The following shortcodes from `core/modules/admin/lib/` handle data loading for admin views:
+The admin (1.1.0+) uses DaisyUI components. The following shortcodes from `core/modules/admin/lib/` handle data loading for admin views:
 
 - `[#get-resource-records resource=users role=table#]` — loads all records + table-filtered fields into `data.records` and `data.fields`
 - `[#get-resource-record resource=users uuid=abc123#]` — loads a single record for editing, with i18n and encryption handling
@@ -2492,11 +2493,11 @@ Apply this reasoning before adding any field, section, or link to a template.
 
 ---
 
-## 19. Upgrading from core 1.0 to core 1.1
+## 19. Upgrading from core 1.0.0 to core 1.1.0
 
 ### What changed
 
-| Area | 1.0 | 1.1 |
+| Area | 1.0.0 | 1.1.0 |
 |---|---|---|
 | UUID | Could be derived from a field value via `md5_uuid(pk_value)` | Always a stable random identifier — never derived |
 | `.meta` `pk` key | Defined which field drove the UUID | Removed entirely |
@@ -2507,7 +2508,7 @@ Apply this reasoning before adding any field, section, or link to a template.
 | Email delivery | Configured in `.services` resource (SMTP credentials stored encrypted) | Configured via `.env`: `MAIL_SERVICE`, `MAIL_FROM`, `MAIL_FROM_NAME`, provider key (e.g. `RESEND_API_KEY`) |
 | Password reset email | Sent synchronously over SMTP during the web request | Enqueued as a `password-reset` job; processed by the job runner |
 
-**Core rule in 1.1:** the UUID is the primary key and it never changes. Slugs are stored as normal fields and looked up via indexes.
+**Core rule in 1.1.0:** the UUID is the primary key and it never changes. Slugs are stored as normal fields and looked up via indexes.
 
 ### Migration steps
 
@@ -2521,7 +2522,7 @@ git pull   # run from the project root (core repo)
 
 #### 2. Run the migration command
 
-The `system:upgrade-11` CLI command is the normal operator-facing entrypoint for the Nimbly 1.1 upgrade:
+The `system:upgrade-11` CLI command is the normal operator-facing entrypoint for the Nimbly 1.1.0 upgrade:
 
 ```bash
 php core/cli/nimbly.php system:upgrade-11
@@ -2540,7 +2541,7 @@ This matters because Tailwind 4 reads the project config from the CSS
 entrypoint. The command preserves any custom CSS below those directives.
 
 It also removes legacy Tailwind Elements bundles from `ext/static/`
-(`tw-elements*`). Core 1.1 uses Alpine.js and DaisyUI for admin interactivity,
+(`tw-elements*`). Core 1.1.0 uses Alpine.js and DaisyUI for admin interactivity,
 so these assets should not remain in upgraded projects.
 
 Legacy `nb-open` / `nb-close` class toggles and `data-open` / `data-close`
@@ -2552,7 +2553,7 @@ and bind state to visibility or classes directly:
 <button data-open=".mobile-menu" data-close=".menu-button">Menu</button>
 <nav class="mobile-menu nb-close">...</nav>
 
-<!-- New pattern (1.1) -->
+<!-- New pattern (1.1.0) -->
 <div x-data="{ menu_open: false }">
     <button type="button" x-show="!menu_open" @click="menu_open = true">
         Menu
@@ -2603,7 +2604,7 @@ set_variable('slug', $slug);
 router_accept();
 ```
 
-**New pattern (1.1):**
+**New pattern (1.1.0):**
 
 ```php
 $slug = $parts[0];
@@ -2630,7 +2631,7 @@ ext/modules/member/lib/member-on-data-create/member-on-data-create.php
 function member_on_data_create($event) {}
 ```
 
-Core 1.1 removes that broadcast. Resource side effects must be declared on the target resource `.meta`:
+Core 1.1.0 removes that broadcast. Resource side effects must be declared on the target resource `.meta`:
 
 ```json
 {
@@ -2704,7 +2705,7 @@ The function no longer exists. If any custom shortcode or module called it, remo
 
 #### 7. Migrate email service config from `.services` to `.env`
 
-Core 1.1 drops SMTP-via-`.services` for core-managed emails. Email delivery is now configured in `.env`; Resend is recommended, and SMTP is still supported. The password reset email is no longer sent inline — it is enqueued as a job and dispatched by the job runner.
+Core 1.1.0 drops SMTP-via-`.services` for core-managed emails. Email delivery is now configured in `.env`; Resend is recommended, and SMTP is still supported. The password reset email is no longer sent inline — it is enqueued as a job and dispatched by the job runner.
 
 Add the following to your `.env`:
 
@@ -2736,7 +2737,7 @@ Projects with no `.services` records need no action here.
 
 **`name` → `text`**
 
-The `name` field type no longer exists in 1.1. Any `.meta` using `"type": "name"` must be changed to `"type": "text"`. In 1.0 the `name` type carried a `slug: true` shorthand that auto-generated a URL slug — this does not exist on `text` fields. Replace the pattern with a dedicated `slug`-type field:
+The `name` field type no longer exists in 1.1.0. Any `.meta` using `"type": "name"` must be changed to `"type": "text"`. In 1.0.0 the `name` type carried a `slug: true` shorthand that auto-generated a URL slug — this does not exist on `text` fields. Replace the pattern with a dedicated `slug`-type field:
 
 ```diff
 - "title": { "name": "Title", "type": "name", "required": true, "slug": true }
@@ -2746,7 +2747,7 @@ The `name` field type no longer exists in 1.1. Any `.meta` using `"type": "name"
 
 **`gallery` — data format changed**
 
-The `gallery` type in 1.1 stores its value as a JSON array in a single field. Projects from 1.0 that used gallery data as flat sibling fields (e.g. `grid1`, `grid1_cover`, `grid2`, `grid2_cover`, ...) are not compatible. Changing `.meta` to `"type": "gallery"` without migration shows an empty gallery in the admin — the data exists in the flat fields, but the 1.1 gallery type reads `record.{fieldname}` as a JSON array (which is absent).
+The `gallery` type in 1.1.0 stores its value as a JSON array in a single field. Projects from 1.0.0 that used gallery data as flat sibling fields (e.g. `grid1`, `grid1_cover`, `grid2`, `grid2_cover`, ...) are not compatible. Changing `.meta` to `"type": "gallery"` without migration shows an empty gallery in the admin — the data exists in the flat fields, but the 1.1.0 gallery type reads `record.{fieldname}` as a JSON array (which is absent).
 
 Options:
 

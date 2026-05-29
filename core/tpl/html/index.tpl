@@ -40,7 +40,7 @@
 </html>
 
 <!--
-██▄  ██  Nimbly v1.1
+██▄  ██  Nimbly v1.1.0
 ██ ▀▄██  [#fmt [#app-modified#] date#]
 ██   ██  Generated in [#fmt [#execution-time#] type=number decimals=2#]s
 -->

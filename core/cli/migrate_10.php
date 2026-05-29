@@ -5,7 +5,7 @@
  *
  * Usage: php core/cli/nimbly.php migrate-pk-index
  *
- * Migrates resources from core 1.0 to core 1.1:
+ * Migrates resources from core 1.0.0 to core 1.1.0:
  *
  *   - Finds every .meta that defines "pk" (the old primary-key-as-UUID mechanism).
  *   - Ensures the pk field is listed in the .meta "index" array.
