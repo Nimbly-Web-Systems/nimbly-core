@@ -293,6 +293,9 @@ function run_docker_php() {
       ? 'Running Nimbly CLI through Docker.'
       : 'PHP is not available on the host; running Nimbly CLI through Docker.'
   );
+  if (!force_docker) {
+    note('Install PHP 8+ on the host for faster CLI commands without Docker overhead.');
+  }
   run('docker', [
     'compose',
     '-f',
