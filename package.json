@@ -17,6 +17,7 @@
     "build:tw": "npx tailwindcss -i ./css/tw/in.css -o ./css/tw/out.css",
     "build:text": "node core/cli/merge-text-po.mjs",
     "build:version": "node core/cli/write-app-version.mjs",
+    "watch": "node core/cli/watch.mjs",
     "up": "docker compose -f docker/dev/docker-compose.yml build --pull nimbly && docker compose -f docker/dev/docker-compose.yml down && docker compose -f docker/dev/docker-compose.yml up -d nimbly",
     "nimbly": "./nimbly",
     "nimbly:host": "php core/cli/nimbly.php",
