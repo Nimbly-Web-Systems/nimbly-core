@@ -1369,7 +1369,10 @@ Mark translatable fields with `i18n: true`:
 }
 ```
 
-Fields without `i18n: true` are shared across all languages (images, booleans, sort_order, etc.).
+Fields without `i18n: true` are shared across all languages. Most technical
+fields should stay shared, but `i18n: true` is valid for any field whose value
+intentionally differs per language, such as a language-specific image,
+visibility flag, sort order, or date.
 
 ### Step 4 — Add static text translations
 
@@ -1480,7 +1483,7 @@ Rules for HTML translation:
 
 - Always define `languages` in both site config and resource `.meta`
 - Always use 2-letter language codes, consistently everywhere
-- Only add `"i18n": true` to content fields — not images, booleans, sort_order, dates
+- Add `"i18n": true` only when the field value should intentionally differ per language
 - Never translate slug fields or UUIDs
 - Keep resource structure identical across languages
 - Use `[#text#]` for UI labels; use `i18n` fields for structured content
@@ -1632,7 +1635,110 @@ Built files go to `ext/static/`. Always run build after changing CSS, JS, or Tai
 
 ## 9. Deployment
 
-The release baseline is the same path used in CI:
+The recommended public deployment path is Docker-first: build a project image
+from `ext/`, publish it to a container registry, and run that image on a VPS,
+EC2 instance, or any container host.
+
+### Docker deployment
+
+From the project checkout, generate the app image files in `ext/`:
+
+```bash
+./nimbly docker:init
+```
+
+Commit the generated `ext/Dockerfile`, `ext/.dockerignore`, and
+`ext/.github/workflows/docker-publish.yml` in the `ext/` repository. On push,
+GitHub Actions builds the app image from the versioned Nimbly core image and
+publishes it to GHCR. Release tags should use full semantic versions such as
+`v1.1.0`; Docker image references should use the matching full version tag such
+as `ghcr.io/nimbly-web-systems/nimbly-core:1.1.0`.
+
+For local deployment testing without waiting for GitHub Actions to publish a
+new core image, build a local core image and pass it as the app build base:
+
+```bash
+docker build -t nimbly-core-local:1.1.0 -f docker/prod/Dockerfile .
+docker build -t nimbly-app-local:test \
+  --build-arg NIMBLY_BASE_IMAGE=nimbly-core-local:1.1.0 \
+  -f ext/Dockerfile ext
+```
+
+Choose the production data source-of-truth before deploying:
+
+- **Immutable dev-to-live:** edit content in development, commit it to `ext/`,
+  and deploy a new image. Production should not be used as an editor. No Git
+  write token is needed.
+- **Live editing:** editors change content, uploads, or resource records on the
+  production site. In this mode production writes to `ext/data/`, and those
+  changes must be pushed back to the `ext/` repository before the next deploy
+  replaces the container.
+
+For live editing, the production image must include `ext/.git` and the container
+must receive `GIT_TOKEN`. The prod and stage schedules include `ext:sync`, which
+commits and pushes data changes back to the `ext/` repository. For GitHub, use a
+fine-grained token scoped to the `ext/` repository with **Contents: Read and
+write**. The container configures Git credentials from this token at startup; do
+not commit the token or bake it into the image.
+
+For local Docker testing or a self-managed VPS, an untracked env file is fine:
+
+```bash
+docker run --rm --env-file .env.prod ghcr.io/your-org/your-nimbly-app:main
+```
+
+Keep `.env`, `.env.prod`, `.env.stage`, and similar files out of Git. Commit
+only example files such as `.env.example` or `.env.prod.example` with dummy
+values. On managed container platforms, configure these as runtime environment
+variables or secrets instead:
+
+- **AWS ECS/Fargate:** store secrets in AWS Secrets Manager or SSM Parameter
+  Store and reference them from the task definition `secrets` block.
+- **AWS App Runner:** configure runtime environment variables and secrets on the
+  service.
+- **Other container hosts:** use the platform's secret/env mechanism, not the
+  Docker image build.
+
+Minimal production Compose example:
+
+```yaml
+services:
+  web:
+    image: ghcr.io/your-org/your-nimbly-app:main
+    restart: unless-stopped
+    env_file:
+      - .env.prod
+    ports:
+      - "80:80"
+    environment:
+      APP_ENV: prod
+      SITE_URL: https://example.com
+      SITE_NAME: Example
+      MAIL_SERVICE: resend
+      MAIL_FROM: no-reply@example.com
+      MAIL_FROM_NAME: Example
+    volumes:
+      - nimbly-data:/var/www/nimbly/ext/data
+
+volumes:
+  nimbly-data:
+```
+
+If production content is edited in place, do not add `.git` to
+`ext/.dockerignore`. Without `ext/.git` or `GIT_TOKEN`, the container still
+starts, but `ext:sync` cannot push live data changes and those changes may be
+lost on the next image deployment.
+
+Container updates are image updates: push `ext/`, let the workflow publish a
+new image, pull the image on the host, and restart the container. The container
+runs `site:setup` at startup and runs the scheduler every minute. In live
+editing mode, make sure `ext:sync` has pushed current production data before
+replacing the container.
+
+### Manual VPS deployment
+
+Manual VPS deployment remains supported for self-managed installations. The
+release baseline is the same path used in CI:
 
 ```bash
 ./nimbly deps
@@ -1653,13 +1759,15 @@ Keep `.env` on the target host and ensure it contains the production `APP_ENV`, 
 
 ### Scheduler and jobs
 
-Configure cron for the production checkout or container:
+For manual VPS deployments, configure cron for the production checkout:
 
 ```cron
 * * * * * php /var/www/site/core/cli/nimbly.php schedule:run
 ```
 
-This single scheduler entry runs due scheduled commands and queued jobs. In Docker containers the scheduler runs automatically — no cron setup required.
+This single scheduler entry runs due scheduled commands and queued jobs. In
+Docker containers the scheduler runs automatically, so no host cron setup is
+required.
 
 Run `schedule:publish` once to copy the core defaults into `ext/cli/`:
 
@@ -2373,28 +2481,14 @@ Apply this reasoning before adding any field, section, or link to a template.
 - Do not define system fields (`uuid`, `_created`, etc.) in `.meta`
 - Do not create HTML fields without explicit `buttons` config
 - Do not create resources without considering `admin_col`, sorting, and required fields
-- Do not add `i18n: true` to non-content fields (images, booleans, sort_order, dates)
+- Do not add `i18n: true` by habit to technical fields; use it only when the field value should intentionally differ per language
 - Do not define `languages` on a resource without also defining it in site config
 - Do not create sloppy or inconsistent resource schemas. Keep them production-ready, but still minimal and requirement-driven.
 - **Do not put HTML in library PHP files** — libraries set variables and call `run_buffered()`, templates render HTML
 
 ---
 
-## 19. Pending changes
-
-The following areas are under active development and will be updated here as they are finalized:
-
-- **Resource display names** — the `resource-name` shortcode currently derives singular/plural from the slug (strips trailing `s`, handles `ies→y`). Plan: allow `.meta` to define `name_singular` and `name_plural` with optional i18n:
-  ```json
-  "name_singular": { "en": "Client", "nl": "Klant" },
-  "name_plural":   { "en": "Clients", "nl": "Klanten" }
-  ```
-  `resource-name` would use these when present and fall back to slug-based logic otherwise.
-- **Frontend DaisyUI component patterns** — the admin uses DaisyUI 5. Frontend DaisyUI component patterns will be documented as they become standardized.
-
----
-
-## 20. Upgrading from core 1.0 to core 1.1
+## 19. Upgrading from core 1.0 to core 1.1
 
 ### What changed
 
@@ -2664,7 +2758,7 @@ Options:
 
 ---
 
-## 21. Code Quality & Conventions
+## 20. Code Quality & Conventions
 
 ### Always use curly brackets
 
@@ -2756,7 +2850,7 @@ If more context is needed, add it as a second paragraph after a blank line — b
 
 ---
 
-## 22. Form field rendering pipeline
+## 21. Form field rendering pipeline
 
 This section explains the full flow from a resource field definition to a rendered form input. Read this before building a new field type.
 
