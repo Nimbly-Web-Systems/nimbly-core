@@ -147,4 +147,4 @@ function shutdown() {
 process.on('SIGINT', shutdown);
 process.on('SIGTERM', shutdown);
 
-log('Watching assets. Press Ctrl+C to stop.');
+section('Watching assets  (Ctrl+C to stop)');
