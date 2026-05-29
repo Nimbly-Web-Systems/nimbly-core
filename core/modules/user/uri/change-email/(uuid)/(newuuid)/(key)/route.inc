@@ -39,8 +39,6 @@ load_library('uuid');
 $user['change_email_token'] = uuid_sc();
 $user['old_email'] = $user['email'];
 $user['email'] = $user['new_email'];
-data_update('users', $uuid, $user); //updates the pk too
-
-// todo: update ownership (_created_by, _modified_by) of data and personal data like uploads/uuid/...
+data_update('users', $uuid, $user);
 
 router_accept();
