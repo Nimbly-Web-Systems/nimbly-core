@@ -30,7 +30,6 @@ jobs:
           images: ghcr.io/nimbly-web-systems/nimbly-core
           tags: |
             type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
 
       - uses: docker/build-push-action@v6
         with:

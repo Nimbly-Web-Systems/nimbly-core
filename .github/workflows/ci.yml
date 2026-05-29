@@ -21,7 +21,11 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Build assets
+        run: npm run build
+
       - name: Lint PHP
         run: |
+          sudo apt-get update
           sudo apt-get install -y -q php-cli php-mbstring
-          find core -name '*.php' -print0 | xargs -0 php -l
+          find core -name '*.php' -print0 | xargs -0 -n1 php -l
