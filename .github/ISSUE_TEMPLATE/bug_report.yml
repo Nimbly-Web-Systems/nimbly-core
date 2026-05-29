@@ -1,0 +1,64 @@
+name: Bug report
+description: Report something that is broken or behaving unexpectedly.
+title: "fix: "
+labels: ["bug"]
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: What is broken?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: List the smallest steps that reproduce the issue.
+      placeholder: |
+        1. ...
+        2. ...
+        3. ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      description: Include logs or error output when available.
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Nimbly version or commit
+      placeholder: "v1.1.0 or git commit"
+    validations:
+      required: true
+  - type: dropdown
+    id: deployment
+    attributes:
+      label: Deployment style
+      options:
+        - Local Docker dev
+        - Docker production container
+        - Manual VPS
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: php
+    attributes:
+      label: PHP version
+      placeholder: "8.3"
+  - type: input
+    id: node
+    attributes:
+      label: Node.js version
+      placeholder: "20.x"
