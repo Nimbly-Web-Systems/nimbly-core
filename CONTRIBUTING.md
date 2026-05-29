@@ -1,12 +1,12 @@
 # Contributing to Nimbly
 
-Nimbly is a small PHP framework with a two-repository project model:
+Nimbly uses a two-repository project model:
 
 - `core/` is the framework.
 - `ext/` is the application, content, templates, and project-specific code.
 
 Framework changes belong in the core repository. Project customizations belong
-in an `ext/` repository.
+in an `ext/` repository. See `NIMBLY.md` for a full description of the stack.
 
 ## Reporting Bugs
 
