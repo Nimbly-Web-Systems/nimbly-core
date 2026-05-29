@@ -1800,7 +1800,7 @@ MAIL_FROM_NAME="Your Site Name"
 RESEND_API_KEY=re_xxxxxxxxxxxx
 ```
 
-SMTP remains supported for projects that must send through an SMTP provider:
+SMTP is also supported for projects that send through an SMTP provider:
 
 ```env
 MAIL_SERVICE=smtp
@@ -1813,7 +1813,11 @@ SMTP_PASSWORD=smtp-password
 SMTP_SECURE=smtps
 ```
 
-`SMTP_SECURE` accepts `smtps` for implicit TLS on port 465, or `starttls`/`tls` for STARTTLS on port 587. Nimbly uses PHPMailer internally as its SMTP adapter; `MAIL_SERVICE=phpmailer` is accepted as a compatibility alias for older configs.
+`SMTP_SECURE` accepts `smtps` for implicit TLS on port 465, or `starttls`/`tls`
+for STARTTLS on port 587. Nimbly uses bundled PHPMailer internally as its SMTP
+adapter; projects configure SMTP through `.env`, not by calling PHPMailer
+directly. `MAIL_SERVICE=phpmailer` is accepted as a compatibility alias for
+older configs.
 
 ---
 
