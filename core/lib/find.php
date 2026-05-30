@@ -53,6 +53,15 @@ function find_library($name) {
         $modules_discovered = true;
     }
 
+    if (!empty($SYSTEM['sc_stack'])) {
+        foreach (array_reverse($SYSTEM['sc_stack']) as $sc_stack_item) {
+            $local = dirname(current($sc_stack_item)) . '/' . $name . '.inc';
+            if (file_exists($local) && !infinite_loop($local)) {
+                return $local;
+            }
+        }
+    }
+
     foreach ($SYSTEM['env_paths'] as $env_path) {
         foreach ($SYSTEM['modules'] as $module_path) {
             $result = $SYSTEM['file_base'] . $env_path . $module_path . 'lib/' . $name . ".php";
