@@ -131,6 +131,41 @@ function upgrade_11_apply_gitignore(array $state): bool
     return file_put_contents($state['file'], $content) !== false;
 }
 
+function upgrade_11_get_key_collect(): array
+{
+    $hits = [];
+    $dirs = [BASE_DIR . 'ext'];
+    $exts = ['tpl', 'php', 'inc'];
+
+    $it = new RecursiveIteratorIterator(new RecursiveDirectoryIterator(BASE_DIR . 'ext', FilesystemIterator::SKIP_DOTS));
+    foreach ($it as $file) {
+        if (!in_array($file->getExtension(), $exts, true)) {
+            continue;
+        }
+        $content = file_get_contents($file->getPathname());
+        $count = preg_match_all('/\[#get-key\s/', $content);
+        if ($count > 0) {
+            $hits[] = [$file->getPathname(), $count];
+        }
+    }
+
+    return $hits;
+}
+
+function upgrade_11_apply_get_key(array $hits): int
+{
+    $migrated = 0;
+    foreach ($hits as [$path]) {
+        $content = file_get_contents($path);
+        $new = preg_replace('/\[#get-key ([^\s#]+) ([^\s#]+)(.*?)#\]/', '[#jget $1.$2$3#]', $content);
+        if ($new !== $content) {
+            file_put_contents($path, $new);
+            $migrated++;
+        }
+    }
+    return $migrated;
+}
+
 $yes = in_array('--yes', $argv, true) || in_array('-y', $argv, true);
 
 migrate_10_bootstrap();
@@ -142,13 +177,15 @@ $htaccess = upgrade_11_htaccess_state($env['PEPPER'] ?? '', $paths['base_path'],
 $tailwind_elements_files = upgrade_11_tailwind_elements_files();
 $tailwind_entrypoint = upgrade_11_tailwind_entrypoint_state();
 $gitignore = upgrade_11_gitignore_state();
+$get_key_hits = upgrade_11_get_key_collect();
 
 $has_work = migrate_10_has_work($migration)
     || !empty($moves)
     || in_array($htaccess['action'], ['write', 'recreate_mod_php'], true)
     || !empty($tailwind_elements_files)
     || $tailwind_entrypoint['action'] === 'update'
-    || $gitignore['action'] === 'update';
+    || $gitignore['action'] === 'update'
+    || !empty($get_key_hits);
 
 if (!$has_work) {
     echo "Nimbly 1.1.0 upgrade checks complete — no automatic upgrade steps are needed.\n";
@@ -212,6 +249,15 @@ if (!empty($tailwind_elements_files)) {
     }
 }
 
+if (!empty($get_key_hits)) {
+    $get_key_step = ($tailwind_elements_step ?? $gitignore_step) + (!empty($tailwind_elements_files) ? 1 : 0);
+    $total_hits = array_sum(array_column($get_key_hits, 1));
+    echo "\n[{$get_key_step}] Replace [#get-key#] with [#jget#] ({$total_hits} occurrence" . ($total_hits === 1 ? '' : 's') . " in " . count($get_key_hits) . " file" . (count($get_key_hits) === 1 ? '' : 's') . ")\n\n";
+    foreach ($get_key_hits as [$path, $count]) {
+        echo '  ' . str_replace(BASE_DIR, '', $path) . " ({$count})\n";
+    }
+}
+
 if (!$yes) {
     echo "\nProceed with the automatic 1.1.0 upgrade steps? [y/N] ";
     $confirm = trim(fgets(STDIN));
@@ -270,4 +316,10 @@ if (!empty($tailwind_elements_files)) {
     echo "\n=== Removing Tailwind Elements static assets ===\n";
     $deleted = upgrade_11_apply_tailwind_elements_cleanup($tailwind_elements_files);
     echo "Deleted {$deleted} Tailwind Elements static asset" . ($deleted === 1 ? '' : 's') . ".\n";
+}
+
+if (!empty($get_key_hits)) {
+    echo "\n=== Replacing [#get-key#] with [#jget#] ===\n";
+    $migrated = upgrade_11_apply_get_key($get_key_hits);
+    echo "Updated {$migrated} file" . ($migrated === 1 ? '' : 's') . ".\n";
 }
