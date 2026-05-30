@@ -258,6 +258,8 @@ Keep `route.inc` focused on routing logic only — match, validate, set a variab
 
 > **Never add `route.inc` to a static route.** A static route (e.g. `login/`, `about/`) has no `(param)` segments and is always accepted — adding `route.inc` without calling `router_accept()` causes a 404. If you need to run logic on a static page, put it in a shortcode called from `index.tpl`, not in `route.inc`.
 
+> **`route` is a reserved shortcode name.** There is no `[#route#]` shortcode and one cannot be created. The `route.inc` filename belongs exclusively to the routing system.
+
 ---
 
 ## 3. Core Shortcode Reference
@@ -2378,6 +2380,28 @@ function membership_status_switch_sc($_params)
 ```
 
 If a library must render a template, use `run_buffered($path_to_tpl_file)`. The path is a filesystem path; anchor it with `dirname(__FILE__)`. Templates for a module live in `ext/modules/<name>/tpl/`.
+
+### Template-local libraries (.inc)
+
+Not every library is a reusable building block. Some PHP files exist only to serve a single template — bootstrap logic, page-specific data preparation, or one-off configuration that does not belong in the global `ext/lib/` namespace.
+
+Place these as `(shortcode-name).inc` files alongside the template that uses them:
+
+```
+core/tpl/html/
+  init.tpl
+  create-settings.inc    ← loaded only when called from init.tpl
+```
+
+`find_library()` checks the calling template's directory for a matching `.inc` before falling back to `ext/lib/` or `core/lib/`. Because the lookup walks the shortcode stack, it resolves to the innermost calling template's directory — so `[#create-settings#]` called from `core/tpl/html/init.tpl` finds `core/tpl/html/create-settings.inc`, not a global lib.
+
+The `.inc` extension signals "private / internal". These files are invisible to templates in other directories.
+
+Rules:
+- Use `.inc` for logic that is only meaningful in the context of one template and would not make sense reused elsewhere.
+- The function name still follows the `<name>_sc($params)` convention.
+- Do not name a `.inc` file after a global lib (`data.inc`, `url-key.inc`) — the local file would silently shadow the global one within that template scope.
+- `route` is a **forbidden** shortcode name — `route.inc` belongs exclusively to the routing system and cannot be repurposed as a library.
 
 ---
 
