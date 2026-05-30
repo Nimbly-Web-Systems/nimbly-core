@@ -2,10 +2,8 @@
 
 load_libraries(['get', 'data', 'api']);
 
-// @doc delete all records of a resource
 function empty_resource_sc()
 {
-
     $response['error'] = true;
     $response['count'] = 0;
     $resource = get_variable('resource');
@@ -19,6 +17,6 @@ function empty_resource_sc()
             data_empty('.files_meta');
         }
     }
-    
+
     return json_result($response);
 }
