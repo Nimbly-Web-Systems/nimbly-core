@@ -1,13 +1,5 @@
-<?php 
+<?php
 
-/**
- * Shortcode: [#app-modified#]
- * @doc Returns a numeric version string for cache busting static files like app.css and app.js.
- * @doc Reads ext/static/app.version if it exists (written during build).
- * @doc Falls back to file modification times of app.css and app.js if app.version is missing.
- * @doc Example usage: <link rel="stylesheet" href="/app.css?v=[#app-modified#]">
- * @doc              <script src="/app.js?v=[#app-modified#]"></script>
- */
 function app_modified_sc() {
 	static $result = false;
 	if ($result !== false) {

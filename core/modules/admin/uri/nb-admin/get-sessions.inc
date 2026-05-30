@@ -22,7 +22,7 @@ function get_sessions_sc() {
 function get_sessions() {
     $result = [];
     $sessions = scandir(session_save_path());
-    $current_session = session_id();  
+    $current_session = session_id();
     session_abort();
     foreach($sessions as $session) {
         if (strpos($session, '.') !== false) {
@@ -31,11 +31,11 @@ function get_sessions() {
         $sid = str_replace("sess_", "", $session);
         session_id($sid);
         session_start();
-        header_remove ("Set-Cookie"); // prevents returning numerous Set-Cookie headers
+        header_remove("Set-Cookie");
         $result[$sid] = $_SESSION;
         session_abort();
     }
-    session_id($current_session); 
+    session_id($current_session);
     session_start();
     return $result;
 }
