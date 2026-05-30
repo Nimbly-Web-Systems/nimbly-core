@@ -1,5 +1,5 @@
 [#data .config.site#]
-[#set site-name="[#get-key data.config.site name#]"#]
+[#set site-name="[#jget data.config.site.name#]"#]
 <h1>Reset your password</h1>
 <p>Hi [#get name#]!</p>
 <p>It looks like you've forgotten your password at [#site-name#]. Don't worry, you can reset your password by clicking the link below.</p>
