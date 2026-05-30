@@ -22,7 +22,7 @@ jobs:
         run: npm ci
 
       - name: Prepare ext
-        run: mkdir -p ext && cp core/cli/setup/tailwind.theme.js ext/tailwind.theme.js
+        run: mkdir -p ext && cp core/cli/setup/tailwind.theme.js ext/tailwind.theme.js && cp core/cli/setup/theme.css ext/theme.css
 
       - name: Build assets
         run: npm run build
