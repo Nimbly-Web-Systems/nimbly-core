@@ -1190,3 +1190,16 @@ function _validate_natural_short_text($val)
     }
     return _validate_natural_language($val);
 }
+
+function data_lookup($resource, $uuid, $key, $default = '')
+{
+    $var = "data." . trim($resource, '.');
+    if (isset($GLOBALS['SYSTEM']['variables'][$var])) {
+        $data = $GLOBALS['SYSTEM']['variables'][$var];
+        if (isset($data[$uuid][$key])) {
+            return $data[$uuid][$key];
+        }
+    }
+    $result = data_read($resource, $uuid, $key);
+    return $result ?? $default;
+}

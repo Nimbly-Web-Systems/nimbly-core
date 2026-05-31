@@ -1,6 +1,6 @@
 <?php
 
-load_library('lookup');
+load_library('data');
 load_library('util');
 
 function get_html_sc($params)
@@ -55,7 +55,7 @@ function get_html_sc($params)
             return;
         }
 
-        $html = lookup_data($resource, $uuid, $field, get_param_value('default', ''));
+        $html = data_lookup($resource, $uuid, $field, get_param_value('default', ''));
     }
 
     /**

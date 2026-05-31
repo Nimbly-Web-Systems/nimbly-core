@@ -46,8 +46,8 @@ function password_reset_job($job)
 
 	load_libraries(['email', 'env', 'set', 'log', 'data', 'lookup']);
 
-	$site_name = lookup_data('.config', 'site', 'name', 'our site');
-	$subject = lookup_data('.config', 'site', 'pw_reset_subject', 'Reset your ' . $site_name . ' password');
+	$site_name = data_lookup('.config', 'site', 'name', 'our site');
+	$subject = data_lookup('.config', 'site', 'pw_reset_subject', 'Reset your ' . $site_name . ' password');
 
 	set_variable('name', $payload['name'] ?? $email);
 	set_variable('email', $email);

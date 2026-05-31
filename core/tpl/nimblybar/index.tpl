@@ -1,4 +1,4 @@
-[#set nbar_side="[#jget data.config.site.nimblybar.side default=right#]"#]
+[#set nbar_side="[#get data.config.site.nimblybar.side default=right#]"#]
 [#set nbar_collapsed="[#if api_nb_bar_slim=(empty) echo=false echo_else=true#]"#]
 
 <script>

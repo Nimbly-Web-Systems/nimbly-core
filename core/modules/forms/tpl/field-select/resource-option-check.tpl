@@ -7,5 +7,5 @@
             i === -1 ? s.push('[#opt.key#]') : s.splice(i, 1);
             form_data['[#_f.key#]'] = s.join(',') || '(empty)';
         ">
-    <span class="text-sm">[#get-i18n opt.name [#detect-language#]#][#get-i18n opt.title [#detect-language#]#]</span>
+    <span class="text-sm">[#get opt.name#][#get opt.title#]</span>
 </label>
