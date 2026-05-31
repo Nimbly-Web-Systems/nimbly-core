@@ -6,7 +6,7 @@ function honeypot_field_sc($params) {
 }
 
 function honeypot_field_name() {
-    load_library('lookup');
-    return lookup_data('.config', 'site', 'honeypot_field', 'company_adress__2');
+    load_library('data');
+    return data_lookup('.config', 'site', 'honeypot_field', 'company_adress__2');
 }
 

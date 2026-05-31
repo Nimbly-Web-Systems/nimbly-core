@@ -30,10 +30,10 @@
     </div>
     <div class="text-7xl text-emerald-700 font-bold text-center mt-4 -ml-4">
         [#sys-info#]
-        <div x-html="pretty_bytes('[#fmt [#jget mem_info.MemAvailable#] bytes#]', 'text-3xl')"></div>
+        <div x-html="pretty_bytes('[#fmt [#get mem_info.MemAvailable#] bytes#]', 'text-3xl')"></div>
     </div>
     <div class="text-lg text-emerald-700 font-bold text-center ">
-        [#text free of#] <span x-html="pretty_bytes('[#fmt [#jget mem_info.MemTotal#] bytes#]', 'text-xs')"> </span>
+        [#text free of#] <span x-html="pretty_bytes('[#fmt [#get mem_info.MemTotal#] bytes#]', 'text-xs')"> </span>
         [#text RAM#]
     </div>
     <div class="text-md text-neutral-500 text-center mt-4 ">
@@ -46,7 +46,7 @@
     <div class="text-md text-neutral-500 text-center">
         [#get-system-log last-fatal#]
         [#text Last error#]:
-        [#set last_fatal_time="[#jget last_fatal.time default-0#]"#]
+        [#set last_fatal_time="[#get last_fatal.time default-0#]"#]
         <span class="font-bold text-lg">
             [#if last_fatal_time=(empty) echo="[#text None#]"#]
             [#if last_fatal_time=(not-empty) echo="<a href='[#base-url#]/nb-admin/syslog' class='text-emerald-700 hover:underline'>[#fmt [#last_fatal_time#] ago#]</a>"#]

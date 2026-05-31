@@ -1,4 +1,4 @@
-[#set site-name="[#jget data.config.site.name#]"#]
+[#set site-name="[#get data.config.site.name#]"#]
 <h1>Change your email</h1>
 <p>Hi [#get name#]!</p>
 <p>To confirm your new email address, please click the following link:</p>

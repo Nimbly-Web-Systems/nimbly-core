@@ -131,25 +131,28 @@ function upgrade_11_apply_gitignore(array $state): bool
     return file_put_contents($state['file'], $content) !== false;
 }
 
-function upgrade_11_get_key_collect(): array
+function upgrade_11_collect_sc(string $pattern): array
 {
     $hits = [];
-    $dirs = [BASE_DIR . 'ext'];
-    $exts = ['tpl', 'php', 'inc'];
-
-    $it = new RecursiveIteratorIterator(new RecursiveDirectoryIterator(BASE_DIR . 'ext', FilesystemIterator::SKIP_DOTS));
+    $it = new RecursiveIteratorIterator(
+        new RecursiveDirectoryIterator(BASE_DIR . 'ext', FilesystemIterator::SKIP_DOTS)
+    );
     foreach ($it as $file) {
-        if (!in_array($file->getExtension(), $exts, true)) {
+        if (!in_array($file->getExtension(), ['tpl', 'php', 'inc'], true)) {
             continue;
         }
         $content = file_get_contents($file->getPathname());
-        $count = preg_match_all('/\[#get-key\s/', $content);
+        $count = preg_match_all($pattern, $content);
         if ($count > 0) {
             $hits[] = [$file->getPathname(), $count];
         }
     }
-
     return $hits;
+}
+
+function upgrade_11_get_key_collect(): array
+{
+    return upgrade_11_collect_sc('/\[#get-key\s/');
 }
 
 function upgrade_11_apply_get_key(array $hits): int
@@ -157,7 +160,67 @@ function upgrade_11_apply_get_key(array $hits): int
     $migrated = 0;
     foreach ($hits as [$path]) {
         $content = file_get_contents($path);
-        $new = preg_replace('/\[#get-key ([^\s#]+) ([^\s#]+)(.*?)#\]/', '[#jget $1.$2$3#]', $content);
+        $new = preg_replace('/\[#get-key ([^\s#]+) ([^\s#]+)(.*?)#\]/', '[#get $1.$2$3#]', $content);
+        if ($new !== $content) {
+            file_put_contents($path, $new);
+            $migrated++;
+        }
+    }
+    return $migrated;
+}
+
+function upgrade_11_jget_collect(): array
+{
+    return upgrade_11_collect_sc('/\[#jget\s/');
+}
+
+function upgrade_11_apply_jget(array $hits): int
+{
+    $migrated = 0;
+    foreach ($hits as [$path]) {
+        $content = file_get_contents($path);
+        $new = str_replace('[#jget ', '[#get ', $content);
+        if ($new !== $content) {
+            file_put_contents($path, $new);
+            $migrated++;
+        }
+    }
+    return $migrated;
+}
+
+function upgrade_11_get_i18n_collect(): array
+{
+    return upgrade_11_collect_sc('/\[#get-i18n\s/');
+}
+
+function upgrade_11_apply_get_i18n(array $hits): int
+{
+    $migrated = 0;
+    foreach ($hits as [$path]) {
+        $content = file_get_contents($path);
+        // Strip [#detect-language#] positional arg — auto-detect is now the default
+        $new = preg_replace('/\[#get-i18n ([^\s#]+) \[#detect-language#\]#\]/', '[#get $1#]', $content);
+        // Replace remaining get-i18n with get (lang=xx named params carry through)
+        $new = str_replace('[#get-i18n ', '[#get ', $new);
+        if ($new !== $content) {
+            file_put_contents($path, $new);
+            $migrated++;
+        }
+    }
+    return $migrated;
+}
+
+function upgrade_11_lookup_collect(): array
+{
+    return upgrade_11_collect_sc('/\[#lookup\s/');
+}
+
+function upgrade_11_apply_lookup(array $hits): int
+{
+    $migrated = 0;
+    foreach ($hits as [$path]) {
+        $content = file_get_contents($path);
+        $new = str_replace('[#lookup ', '[#get ', $content);
         if ($new !== $content) {
             file_put_contents($path, $new);
             $migrated++;
@@ -169,23 +232,29 @@ function upgrade_11_apply_get_key(array $hits): int
 $yes = in_array('--yes', $argv, true) || in_array('-y', $argv, true);
 
 migrate_10_bootstrap();
-$migration = migrate_10_collect();
+$migration    = migrate_10_collect();
 [$moves, $skipped] = migrate_lib_collect();
-$env = upgrade_11_read_env();
-$paths = upgrade_11_paths_from_env($env);
-$htaccess = upgrade_11_htaccess_state($env['PEPPER'] ?? '', $paths['base_path'], $paths['rewrite_base_path']);
-$tailwind_elements_files = upgrade_11_tailwind_elements_files();
-$tailwind_entrypoint = upgrade_11_tailwind_entrypoint_state();
-$gitignore = upgrade_11_gitignore_state();
+$env          = upgrade_11_read_env();
+$paths        = upgrade_11_paths_from_env($env);
+$htaccess     = upgrade_11_htaccess_state($env['PEPPER'] ?? '', $paths['base_path'], $paths['rewrite_base_path']);
+$tw_elements  = upgrade_11_tailwind_elements_files();
+$tw_entry     = upgrade_11_tailwind_entrypoint_state();
+$gitignore    = upgrade_11_gitignore_state();
 $get_key_hits = upgrade_11_get_key_collect();
+$jget_hits    = upgrade_11_jget_collect();
+$i18n_hits    = upgrade_11_get_i18n_collect();
+$lookup_hits  = upgrade_11_lookup_collect();
 
 $has_work = migrate_10_has_work($migration)
     || !empty($moves)
     || in_array($htaccess['action'], ['write', 'recreate_mod_php'], true)
-    || !empty($tailwind_elements_files)
-    || $tailwind_entrypoint['action'] === 'update'
+    || !empty($tw_elements)
+    || $tw_entry['action'] === 'update'
     || $gitignore['action'] === 'update'
-    || !empty($get_key_hits);
+    || !empty($get_key_hits)
+    || !empty($jget_hits)
+    || !empty($i18n_hits)
+    || !empty($lookup_hits);
 
 if (!$has_work) {
     echo "Nimbly 1.1.0 upgrade checks complete — no automatic upgrade steps are needed.\n";
@@ -196,15 +265,17 @@ if (!$has_work) {
     exit(0);
 }
 
+$step = 0;
+
 echo "Nimbly 1.1.0 upgrade plan:\n";
 
 if (migrate_10_has_work($migration)) {
-    echo "\n[1] Resource/data migration\n";
+    echo "\n[" . ++$step . "] Resource/data migration\n";
     migrate_10_print_summary($migration);
 }
 
 if (!empty($moves) || !empty($skipped)) {
-    echo "\n[2] Library layout migration\n\n";
+    echo "\n[" . ++$step . "] Library layout migration\n\n";
     if (!empty($moves)) {
         foreach ($moves as [$from, $to]) {
             echo '  ' . str_replace(BASE_DIR, '', $from) . "\n";
@@ -221,40 +292,44 @@ if (!empty($moves) || !empty($skipped)) {
     }
 }
 
-echo "\n[3] .htaccess repair\n\n";
+echo "\n[" . ++$step . "] .htaccess repair\n\n";
 echo '  ' . $htaccess['message'] . "\n";
 if ($htaccess['action'] === 'warn_base_mismatch') {
     cli_tip("Use 'site:setup' to review rewrite-base recreation.");
 }
 
-if ($tailwind_entrypoint['action'] !== 'none') {
-    echo "\n[4] Tailwind CSS 4 entrypoint migration\n\n";
-    echo '  ' . $tailwind_entrypoint['message'] . "\n";
+if ($tw_entry['action'] !== 'none') {
+    echo "\n[" . ++$step . "] Tailwind CSS 4 entrypoint migration\n\n";
+    echo '  ' . $tw_entry['message'] . "\n";
 }
 
-$gitignore_step = $tailwind_entrypoint['action'] !== 'none' ? 5 : 4;
 if ($gitignore['action'] !== 'none') {
-    echo "\n[{$gitignore_step}] ext/.gitignore migration\n\n";
+    echo "\n[" . ++$step . "] ext/.gitignore migration\n\n";
     echo '  ' . $gitignore['message'] . "\n";
     if ($gitignore['action'] === 'update') {
         echo "  If ext/static/_thumb_/ was already tracked, remove it from the git index after this migration.\n";
     }
 }
 
-if (!empty($tailwind_elements_files)) {
-    $tailwind_elements_step = $gitignore_step + ($gitignore['action'] !== 'none' ? 1 : 0);
-    echo "\n[{$tailwind_elements_step}] Tailwind Elements static asset cleanup\n\n";
-    foreach ($tailwind_elements_files as $file) {
+if (!empty($tw_elements)) {
+    echo "\n[" . ++$step . "] Tailwind Elements static asset cleanup\n\n";
+    foreach ($tw_elements as $file) {
         echo '  Delete ' . str_replace(BASE_DIR, '', $file) . "\n";
     }
 }
 
-if (!empty($get_key_hits)) {
-    $get_key_step = ($tailwind_elements_step ?? $gitignore_step) + (!empty($tailwind_elements_files) ? 1 : 0);
-    $total_hits = array_sum(array_column($get_key_hits, 1));
-    echo "\n[{$get_key_step}] Replace [#get-key#] with [#jget#] ({$total_hits} occurrence" . ($total_hits === 1 ? '' : 's') . " in " . count($get_key_hits) . " file" . (count($get_key_hits) === 1 ? '' : 's') . ")\n\n";
-    foreach ($get_key_hits as [$path, $count]) {
-        echo '  ' . str_replace(BASE_DIR, '', $path) . " ({$count})\n";
+foreach ([
+    [$get_key_hits, '[#get-key#] → [#get#]'],
+    [$jget_hits,    '[#jget#] → [#get#]'],
+    [$i18n_hits,    '[#get-i18n#] → [#get#]'],
+    [$lookup_hits,  '[#lookup#] → [#get#]'],
+] as [$hits, $label]) {
+    if (!empty($hits)) {
+        $total = array_sum(array_column($hits, 1));
+        echo "\n[" . ++$step . "] Replace {$label} ({$total} occurrence" . ($total === 1 ? '' : 's') . " in " . count($hits) . " file" . (count($hits) === 1 ? '' : 's') . ")\n\n";
+        foreach ($hits as [$path, $count]) {
+            echo '  ' . str_replace(BASE_DIR, '', $path) . " ({$count})\n";
+        }
     }
 }
 
@@ -293,9 +368,9 @@ if ($htaccess['action'] === 'warn_base_mismatch') {
     cli_tip("Run './nimbly site:setup' if you want to recreate .htaccess for the current BASE_PATH.");
 }
 
-if ($tailwind_entrypoint['action'] === 'update') {
+if ($tw_entry['action'] === 'update') {
     echo "\n=== Updating Tailwind CSS entrypoint ===\n";
-    if (upgrade_11_apply_tailwind_entrypoint($tailwind_entrypoint)) {
+    if (upgrade_11_apply_tailwind_entrypoint($tw_entry)) {
         echo "Updated: css/tw/in.css\n";
     } else {
         echo "ERROR: failed to update css/tw/in.css\n";
@@ -312,14 +387,28 @@ if ($gitignore['action'] === 'update') {
     }
 }
 
-if (!empty($tailwind_elements_files)) {
+if (!empty($tw_elements)) {
     echo "\n=== Removing Tailwind Elements static assets ===\n";
-    $deleted = upgrade_11_apply_tailwind_elements_cleanup($tailwind_elements_files);
+    $deleted = upgrade_11_apply_tailwind_elements_cleanup($tw_elements);
     echo "Deleted {$deleted} Tailwind Elements static asset" . ($deleted === 1 ? '' : 's') . ".\n";
 }
 
 if (!empty($get_key_hits)) {
-    echo "\n=== Replacing [#get-key#] with [#jget#] ===\n";
-    $migrated = upgrade_11_apply_get_key($get_key_hits);
-    echo "Updated {$migrated} file" . ($migrated === 1 ? '' : 's') . ".\n";
+    echo "\n=== Replacing [#get-key#] with [#get#] ===\n";
+    echo "Updated " . upgrade_11_apply_get_key($get_key_hits) . " file(s).\n";
+}
+
+if (!empty($jget_hits)) {
+    echo "\n=== Replacing [#jget#] with [#get#] ===\n";
+    echo "Updated " . upgrade_11_apply_jget($jget_hits) . " file(s).\n";
+}
+
+if (!empty($i18n_hits)) {
+    echo "\n=== Replacing [#get-i18n#] with [#get#] ===\n";
+    echo "Updated " . upgrade_11_apply_get_i18n($i18n_hits) . " file(s).\n";
+}
+
+if (!empty($lookup_hits)) {
+    echo "\n=== Replacing [#lookup#] with [#get#] ===\n";
+    echo "Updated " . upgrade_11_apply_lookup($lookup_hits) . " file(s).\n";
 }

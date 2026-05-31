@@ -10,8 +10,8 @@ function change_email_job($job)
 
     load_libraries(['email', 'env', 'set', 'log', 'data', 'lookup']);
 
-    $site_name = lookup_data('.config', 'site', 'name', 'our site');
-    $subject = lookup_data('.config', 'site', 'change_email_subject', 'Confirm your new ' . $site_name . ' email address');
+    $site_name = data_lookup('.config', 'site', 'name', 'our site');
+    $subject = data_lookup('.config', 'site', 'change_email_subject', 'Confirm your new ' . $site_name . ' email address');
 
     set_variable('name', $payload['name'] ?? $email);
     set_variable('change-email-url', $payload['change_email_url'] ?? '');

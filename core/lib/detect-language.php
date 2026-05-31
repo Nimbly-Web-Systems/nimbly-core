@@ -8,8 +8,8 @@ function detect_language_sc() {
 		return $result;
 	}
 
-    load_library('lookup');
-    $allowed_lang = lookup_data('.config', 'site', 'languages', ['en']);
+    load_library('data');
+    $allowed_lang = data_lookup('.config', 'site', 'languages', ['en']);
     //1. from url
     $uri = $GLOBALS['SYSTEM']['request_uri'];
     foreach ($allowed_lang as $l) {

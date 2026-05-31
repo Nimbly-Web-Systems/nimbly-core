@@ -53,6 +53,13 @@ function find_library($name) {
         $modules_discovered = true;
     }
 
+    if (!empty($SYSTEM['uri_path'])) {
+        $local = $SYSTEM['uri_path'] . '/' . $name . '.inc';
+        if (file_exists($local) && !infinite_loop($local)) {
+            return $local;
+        }
+    }
+
     if (!empty($SYSTEM['sc_stack'])) {
         foreach (array_reverse($SYSTEM['sc_stack']) as $sc_stack_item) {
             $local = dirname(current($sc_stack_item)) . '/' . $name . '.inc';
