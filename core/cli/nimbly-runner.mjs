@@ -74,6 +74,9 @@ function command_label(name) {
     'site:setup': 'Setup',
     help: 'Help',
     'user:create': 'Create user',
+    'test': 'Test',
+    'test:setup': 'Test setup',
+    'test:teardown': 'Test teardown',
     'module:install': 'Install module',
     'index:rebuild': 'Rebuild index',
     'system:upgrade-11': 'Upgrade 1.1.0',
@@ -334,6 +337,69 @@ if (command === 'up') {
 if (command === 'init') {
   await run_init();
   process.exit(0);
+}
+
+if (command === 'test') {
+  banner(command_label(command));
+
+  const env_keys_test = [
+    'APP_ENV', 'BASE_PATH', 'EXT_REPO', 'PEPPER', 'SITE_NAME', 'ADMIN_EMAIL',
+    'ADMIN_PASSWORD', 'SCHEDULE_FILE', 'SCHEDULE_ENV', 'NIMBLY_ENV', 'NIMBLY_INIT',
+    'MAIL_SERVICE', 'MAIL_FROM', 'MAIL_FROM_NAME', 'RESEND_API_KEY',
+    'SMTP_HOST', 'SMTP_PORT', 'SMTP_USER', 'SMTP_PASSWORD', 'SMTP_SECURE', 'OPENAI_API_KEY',
+  ];
+
+  function php_step(sub_cmd) {
+    if (!force_docker && command_exists('php')) {
+      return spawnSync('php', ['core/cli/nimbly.php', sub_cmd], { stdio: 'inherit' });
+    }
+    if (!command_exists('docker')) {
+      console.error('PHP is not available and Docker was not found. Install PHP 8+ or Docker, then retry.');
+      process.exit(1);
+    }
+    const env_args = env_keys_test
+      .filter((key) => process.env[key] !== undefined)
+      .flatMap((key) => ['-e', `${key}=${process.env[key]}`]);
+    return spawnSync('docker', [
+      'compose', '-f', 'docker/dev/docker-compose.yml',
+      'run', '--rm', ...env_args, 'nimbly',
+      'php', 'core/cli/nimbly.php', sub_cmd,
+    ], { stdio: 'inherit' });
+  }
+
+  section('Setup');
+  const setup = php_step('test:setup');
+  if ((setup.status ?? 1) !== 0) {
+    console.error('test:setup failed — aborting.');
+    process.exit(setup.status ?? 1);
+  }
+
+  if (!existsSync('node_modules/@playwright/test')) {
+    section('Install @playwright/test');
+    run_step('npm', ['install', '--save-dev', '@playwright/test']);
+  }
+
+  section('Install Playwright browsers');
+  const install_result = spawnSync('npx', ['playwright', 'install', '--with-deps', 'chromium'], { stdio: 'inherit' });
+
+  let test_status = 1;
+  if ((install_result.status ?? 1) === 0) {
+    section('Run tests');
+    const pw_extra = cli_args.slice(1);
+    const test_result = spawnSync(
+      'npx',
+      ['playwright', 'test', '--config', 'core/tests/playwright.config.js', ...pw_extra],
+      { stdio: 'inherit' }
+    );
+    test_status = test_result.status ?? 1;
+  } else {
+    console.error('Playwright browser install failed.');
+  }
+
+  section('Teardown');
+  php_step('test:teardown');
+
+  process.exit(test_status);
 }
 
 if (!has_command) {
