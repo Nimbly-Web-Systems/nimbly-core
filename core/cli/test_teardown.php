@@ -58,6 +58,16 @@ if (!data_exists('roles', 'test')) {
     echo "ok    deleted role 'test'\n";
 }
 
+// ── Route config entries ─────────────────────────────────────────────────────
+foreach (['.test/ping' => '_test_ping', '.test/shortcodes' => '_test_shortcodes'] as $route => $key) {
+    if (!data_exists('.config', $key)) {
+        echo "skip  .config/$key not found\n";
+    } else {
+        data_delete('.config', $key);
+        echo "ok    deleted .config/$key\n";
+    }
+}
+
 // ── Resource ──────────────────────────────────────────────────────────────────
 if (!data_exists('test-records', '.meta')) {
     echo "skip  resource 'test-records' not found\n";
