@@ -113,7 +113,7 @@ function get_dot_resolve($key)
 {
     $parts = explode('.', $key);
     $n = count($parts);
-    $vars = $GLOBALS['SYSTEM']['variables'];
+    $vars = $GLOBALS['SYSTEM']['variables'] ?? [];
 
     for ($len = $n; $len >= 1; $len--) {
         $prefix = implode('.', array_slice($parts, 0, $len));
