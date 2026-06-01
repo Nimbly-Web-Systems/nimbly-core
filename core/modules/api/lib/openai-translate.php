@@ -65,8 +65,8 @@ function openai_translate_post()
     }
     $uuid = $record['translations'][$data['lang']] ?? null;
     if (empty($uuid)) {
-        load_library('uuid');
-        $uuid = uuid_sc();
+        load_library('util');
+        $uuid = generate_uuid();
     }
 
     // update orignal record

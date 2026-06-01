@@ -1,5 +1,5 @@
 [#get-resource-meta [#resource-id#]#]
-[#get-resource-record [#resource-id#] [#uuid#]#]
+[#get-resource-record [#resource-id#] [#get uuid#]#]
 <script>
     var _resource_url="[#get _resource_url default=[#base-url#]/nb-admin/[#resource-id#]#]";
     var _initial_lang="[#get record.lang default=en#]"
