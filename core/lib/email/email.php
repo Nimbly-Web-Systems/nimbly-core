@@ -76,7 +76,7 @@ function email_via_system($email_data)
 function email_via_mailgun($email_data)
 {
 	$email_data['html'] = run_buffered($email_data['tpl']);
-	load_libraries(['curl', 'plain-text']);
+	load_libraries(['curl', 'util']);
 	$url = sprintf(
 		'%s/v3/%s/messages',
 		$email_data['api_base_url'] ?? 'https://api.mailgun.net',
@@ -99,7 +99,7 @@ function email_via_mailgun($email_data)
 
 function email_via_resend($email_data)
 {
-	load_libraries(['curl', 'plain-text', 'env', 'run']);
+	load_libraries(['curl', 'util', 'env', 'run']);
 
 	$api_key = env('RESEND_API_KEY');
 	$html = run_buffered($email_data['tpl']);
@@ -150,7 +150,7 @@ function email_via_smtp($email_data)
 	require_once 'php_mailer/Exception.php';
 	require_once 'php_mailer/PHPMailer.php';
 	require_once 'php_mailer/SMTP.php';
-	load_libraries(['env', 'run', 'plain-text']);
+	load_libraries(['env', 'run', 'util']);
 
 	$mail = new PHPMailer(false);
 
