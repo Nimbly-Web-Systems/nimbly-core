@@ -123,7 +123,8 @@ function generate_uuid(): string
 
 function generate_salt(): string
 {
-    return rtrim(strtr(base64_encode(random_bytes(32)), '+/', '._'), '=');
+    // bcrypt only accepts [./A-Za-z0-9]; '+' must not map to '_'
+    return rtrim(strtr(base64_encode(random_bytes(32)), '+/', '0.'), '=');
 }
 
 function is_md5($val): bool
