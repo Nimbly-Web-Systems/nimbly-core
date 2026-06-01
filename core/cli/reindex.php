@@ -44,7 +44,7 @@ foreach (file($env_file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) as $line
 $_SERVER['PEPPER'] = $env['PEPPER'] ?? '';
 
 load_library('data');
-load_library('md5');
+load_library('util');
 
 // -----------------------------------------------------------------------
 // Find resources that have indexes defined

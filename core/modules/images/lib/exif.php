@@ -5,7 +5,7 @@ function exif_sc($params) {
     $author = get_param_value($params, 'author');
     $img_uuid = get_param_value($params, 'uuid', current($params));
     if ($author) {
-        load_library('md5');
+        load_library('util');
         $author_uuid = md5_uuid($author);
         $meta = data_read('.files_meta/' . $author_uuid, $img_uuid);
     } else {

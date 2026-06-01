@@ -29,7 +29,7 @@ $GLOBALS['SYSTEM'] = [
 ];
 
 require_once BASE_DIR . 'core/lib/find.php';
-load_library('salt');
+load_library('util');
 
 // -----------------------------------------------------------------------
 // Prompt helpers
@@ -224,7 +224,7 @@ cli_section('Configuration', true);
 
 $pepper = getenv('PEPPER') ?: ($env['PEPPER'] ?? '');
 if (empty($pepper)) {
-    $pepper = salt_sc();
+    $pepper = generate_salt();
     echo "Generated new PEPPER: $pepper\n";
 }
 
@@ -620,7 +620,7 @@ if (!data_exists('users', '.meta')) {
 if ($need_user) {
     $user_uuid = md5($email);
     if (!data_exists('users', $user_uuid)) {
-        $salt = salt_sc();
+        $salt = generate_salt();
         data_create('users', $user_uuid, [
             'email'    => $email,
             'roles'    => 'admin,user',

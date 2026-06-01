@@ -28,7 +28,7 @@ $GLOBALS['SYSTEM'] = [
 ];
 
 require_once BASE_DIR . 'core/lib/find.php';
-load_library('salt');
+load_library('util');
 
 $env_file = BASE_DIR . '.env';
 if (!file_exists($env_file)) {
@@ -135,7 +135,7 @@ if (data_exists('users', $user_uuid)) {
 
 cli_section('Result', true);
 
-$salt = salt_sc();
+$salt = generate_salt();
 data_create('users', $user_uuid, [
     'email'    => $email,
     'roles'    => $role . ',user',

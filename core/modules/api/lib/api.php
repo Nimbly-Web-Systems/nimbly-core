@@ -109,9 +109,9 @@ function api_json_input($resource) {
     $meta = data_meta($resource);
     $data = json_input();
     if (isset($meta['encrypt'])) {
-        load_library('salt');
+        load_library('util');
         load_library('encrypt');
-        $salt = salt_sc();
+        $salt = generate_salt();
         $fs = explode(',', $meta['encrypt']);
         foreach ($fs as $f) {
             if (!isset($data[$f])) {
@@ -122,9 +122,9 @@ function api_json_input($resource) {
         }
     }
     if (isset($meta['encrypt2way'])) {
-        load_library('salt');
+        load_library('util');
         load_library('encrypt');
-        $salt = salt_sc();
+        $salt = generate_salt();
         $fs = explode(',', $meta['encrypt2way']);
         foreach ($fs as $f) {
             if (!isset($data[$f])) {
