@@ -41,7 +41,11 @@ function get_sc($params, $default = null)
     if (strpos($key, '.') === false) {
         $result = get_flat_lookup($key);
         if ($result === null) {
-            $result = $default;
+            // Single-segment fallback: try dot2rs (e.g. [#get img001#] → current page .content field)
+            [$result, $found] = get_dot_resolve($key);
+            if (!$found) {
+                $result = $default;
+            }
         }
     } else {
         [$result, $found] = get_dot_resolve($key);
