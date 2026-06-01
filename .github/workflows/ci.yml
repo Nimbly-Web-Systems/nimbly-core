@@ -37,6 +37,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       COMPOSE_PROJECT_NAME: nimbly
+      NIMBLY_CONTAINER_NAME: nimbly-ci
 
     steps:
       - uses: actions/checkout@v4
