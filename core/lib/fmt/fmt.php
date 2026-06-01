@@ -23,6 +23,12 @@ function fmt_sc($params)
 
     $max_length = intval(get_param_value($params, 'max_length') ?? 0);
     switch ($type) {
+        case 'plain':
+            if (is_array($val)) {
+                $val = resolve_i18n($val, $lang);
+            }
+            $result = plain_text($val);
+            break;
         case 'html':
             if (is_array($val)) {
                 $val = resolve_i18n($val, $lang);

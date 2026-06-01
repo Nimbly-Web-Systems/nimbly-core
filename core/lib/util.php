@@ -111,6 +111,11 @@ function _parse_size($size)
     return $unit ? round($size * pow(1024, stripos('bkmgtpezy', $unit[0]))) : round($size);
 }
 
+function plain_text(string $html): string
+{
+    return preg_replace("/\n\s+/", "\n", rtrim(html_entity_decode(strip_tags($html))));
+}
+
 function generate_uuid(): string
 {
     return gmp_strval(gmp_init(bin2hex(random_bytes(10)), 16), 36);
