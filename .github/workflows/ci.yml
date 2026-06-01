@@ -35,6 +35,8 @@ jobs:
 
   e2e:
     runs-on: ubuntu-latest
+    env:
+      COMPOSE_PROJECT_NAME: nimbly
 
     steps:
       - uses: actions/checkout@v4
@@ -47,8 +49,11 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Install PHP
-        run: sudo apt-get update -q && sudo apt-get install -y -q php-cli php-gmp php-mbstring
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ hashFiles('package-lock.json') }}
 
       - name: Create .env
         run: |
@@ -61,8 +66,22 @@ jobs:
       - name: Build assets
         run: npm run build
 
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build dev image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/dev/Dockerfile
+          load: true
+          tags: nimbly-nimbly:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
       - name: Start dev container
-        run: docker compose -f docker/dev/docker-compose.yml up -d --build
+        run: docker compose -f docker/dev/docker-compose.yml up -d
+        env:
+          COMPOSE_PROJECT_NAME: nimbly
 
       - name: Wait for server
         run: |
@@ -76,7 +95,7 @@ jobs:
           SITE_NAME: Nimbly
           ADMIN_EMAIL: admin@ci.test
           ADMIN_PASSWORD: Admin123!
-        run: php core/cli/nimbly.php site:setup
+        run: ./nimbly site:setup
 
       - name: Run E2E tests
         run: ./nimbly test
