@@ -88,6 +88,33 @@ function upgrade_11_apply_tailwind_entrypoint(array $state): bool
     return file_put_contents($state['file'], upgrade_11_render_tailwind_entrypoint($content)) !== false;
 }
 
+function upgrade_11_daisyui_themes_state(): array
+{
+    $file = BASE_DIR . 'ext/tailwind.theme.js';
+    if (!is_file($file)) {
+        return [
+            'action' => 'missing',
+            'file' => $file,
+            'message' => 'ext/tailwind.theme.js does not exist; skipping daisyuiThemes check.',
+        ];
+    }
+
+    $content = file_get_contents($file);
+    if (preg_match('/export\s+const\s+daisyuiThemes\s*=/', $content)) {
+        return [
+            'action' => 'none',
+            'file' => $file,
+            'message' => 'ext/tailwind.theme.js already exports daisyuiThemes.',
+        ];
+    }
+
+    return [
+        'action' => 'warn',
+        'file' => $file,
+        'message' => 'ext/tailwind.theme.js is missing the named daisyuiThemes export. Without it, DaisyUI CSS variables (--color-base-content, --border, --depth, etc.) are not injected and admin form fields lose their correct styling.',
+    ];
+}
+
 function upgrade_11_gitignore_state(): array
 {
     $file = BASE_DIR . 'ext/.gitignore';
@@ -240,7 +267,7 @@ function upgrade_11_uuid_collect(): array
             continue;
         }
         $content = file_get_contents($file->getPathname());
-        $count = preg_match_all("/load_library\(['\"]uuid['\"]\\)|uuid_sc\s*\(|\\[#uuid#\\]/", $content);
+        $count = preg_match_all("/load_library\(['\"]uuid['\"]\\)|(?<![A-Za-z0-9_])uuid_sc\s*\(|\\[#uuid#\\]/", $content);
         if ($count > 0) {
             $hits[] = [$file->getPathname(), $count];
         }
@@ -254,7 +281,7 @@ function upgrade_11_apply_uuid(array $hits): int
     foreach ($hits as [$path]) {
         $content = file_get_contents($path);
         $new = preg_replace("/load_library\(['\"]uuid['\"]\)/", "load_library('util')", $content);
-        $new = str_replace('uuid_sc(', 'generate_uuid(', $new);
+        $new = preg_replace('/(?<![A-Za-z0-9_])uuid_sc\s*\(/', 'generate_uuid(', $new);
         $new = str_replace('[#uuid#]', '[#get uuid#]', $new);
         if ($new !== $content) {
             file_put_contents($path, $new);
@@ -275,7 +302,7 @@ function upgrade_11_util_collect(): array
             continue;
         }
         $content = file_get_contents($file->getPathname());
-        $count = preg_match_all("/load_library\(['\"](?:salt|md5|slug)['\"]\\)|slug_sc\s*\(/", $content);
+        $count = preg_match_all("/load_library\(['\"](?:salt|md5|slug)['\"]\\)|(?<![A-Za-z0-9_])slug_sc\s*\(/", $content);
         if ($count > 0) {
             $hits[] = [$file->getPathname(), $count];
         }
@@ -289,7 +316,7 @@ function upgrade_11_apply_util(array $hits): int
     foreach ($hits as [$path]) {
         $content = file_get_contents($path);
         $new = preg_replace("/load_library\(['\"](?:salt|md5|slug)['\"]\)/", "load_library('util')", $content);
-        $new = str_replace('slug_sc(', 'make_slug(', $new);
+        $new = preg_replace('/(?<![A-Za-z0-9_])slug_sc\s*\(/', 'make_slug(', $new);
         if ($new !== $content) {
             file_put_contents($path, $new);
             $migrated++;
@@ -308,6 +335,7 @@ $paths        = upgrade_11_paths_from_env($env);
 $htaccess     = upgrade_11_htaccess_state($env['PEPPER'] ?? '', $paths['base_path'], $paths['rewrite_base_path']);
 $tw_elements  = upgrade_11_tailwind_elements_files();
 $tw_entry     = upgrade_11_tailwind_entrypoint_state();
+$daisyui      = upgrade_11_daisyui_themes_state();
 $gitignore    = upgrade_11_gitignore_state();
 $get_key_hits = upgrade_11_get_key_collect();
 $jget_hits    = upgrade_11_jget_collect();
@@ -321,6 +349,7 @@ $has_work = migrate_10_has_work($migration)
     || in_array($htaccess['action'], ['write', 'recreate_mod_php'], true)
     || !empty($tw_elements)
     || $tw_entry['action'] === 'update'
+    || $daisyui['action'] === 'warn'
     || $gitignore['action'] === 'update'
     || !empty($get_key_hits)
     || !empty($jget_hits)
@@ -374,6 +403,12 @@ if ($htaccess['action'] === 'warn_base_mismatch') {
 if ($tw_entry['action'] !== 'none') {
     echo "\n[" . ++$step . "] Tailwind CSS 4 entrypoint migration\n\n";
     echo '  ' . $tw_entry['message'] . "\n";
+}
+
+if ($daisyui['action'] === 'warn') {
+    echo "\n[" . ++$step . "] DaisyUI theme export missing\n\n";
+    echo '  ' . $daisyui['message'] . "\n";
+    cli_tip("Add 'export const daisyuiThemes = [{ light: { primary: \"#...\", secondary: \"#...\", ... } }];' to ext/tailwind.theme.js. See NIMBLY.md §19 for the full example.");
 }
 
 if ($gitignore['action'] !== 'none') {

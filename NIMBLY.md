@@ -2506,6 +2506,7 @@ Apply this reasoning before adding any field, section, or link to a template.
 | Resource side effects | Automatic global `data-create` trigger handlers such as `member-on-data-create` | Explicit resource `.meta` `events`, optionally using `job:<type>` |
 | Email delivery | Configured in `.services` resource (SMTP credentials stored encrypted) | Configured via `.env`: `MAIL_SERVICE`, `MAIL_FROM`, `MAIL_FROM_NAME`, provider key (e.g. `RESEND_API_KEY`) |
 | Password reset email | Sent synchronously over SMTP during the web request | Enqueued as a `password-reset` job; processed by the job runner |
+| Frontend theme | `ext/tailwind.theme.js` — default export only (Tailwind colors) | `ext/tailwind.theme.js` — must also export named `daisyuiThemes` for DaisyUI CSS variables |
 
 **Core rule in 1.1.0:** the UUID is the primary key and it never changes. Slugs are stored as normal fields and looked up via indexes.
 
@@ -2541,7 +2542,63 @@ entrypoint. The command preserves any custom CSS below those directives.
 
 It also removes legacy Tailwind Elements bundles from `ext/static/`
 (`tw-elements*`). Core 1.1.0 uses Alpine.js and DaisyUI for admin interactivity,
-so these assets should not remain in upgraded projects.
+so these assets should not remain in upgraded projects. Remove Tailwind
+Elements from the project package manifests as well: delete `tw-elements` from
+`ext/package.json`, update `ext/package-lock.json`, and remove any
+`tw-elements/dist/plugin` or `node_modules/tw-elements` references from legacy
+Tailwind config files.
+
+#### Add `daisyuiThemes` export to `ext/tailwind.theme.js`
+
+In 1.0.0, `ext/tailwind.theme.js` only had a default export (Tailwind color
+tokens). In 1.1.0, the file must also export a named `daisyuiThemes` array that
+provides the DaisyUI CSS variables (such as `--color-base-content`, `--border`,
+`--depth`, `--radius-field`) used by DaisyUI components in the admin.
+
+Without this export, none of those CSS variables are injected into the compiled
+stylesheet. Admin form fields lose their correct DaisyUI styling — for example,
+input border colors fall back to `currentColor` instead of the expected subtle
+gray.
+
+Add the following to `ext/tailwind.theme.js` and map the project's brand colors
+to the DaisyUI `primary` and `secondary` slots:
+
+```js
+export const daisyuiThemes = [
+  {
+    light: {
+      primary: "#408ff6",   // project primary color
+      secondary: "#b1d1f2", // project secondary color
+    }
+  }
+];
+```
+
+The `tailwind.config.js` `to_daisyui_v5_theme()` function fills in all remaining
+defaults (`--color-base-content`, `--border`, `--depth`, etc.), so only the
+project-specific color overrides need to go in the theme object.
+
+#### Tailwind 4 scanner: quoted values in `[#set#]`
+
+Tailwind 4's class scanner is stricter than Tailwind 3. In Tailwind 3, any
+word-like pattern anywhere in a file was picked up as a candidate class name.
+In Tailwind 4, the scanner splits on whitespace and quote characters (`"`, `'`).
+This means a class name in an unquoted `[#set#]` value is not reliably detected:
+
+```
+[#set nav-bg=bg-cbeige#]   ← Tailwind 4 does NOT pick up bg-cbeige
+```
+
+The fix is to quote the value, which makes the class a cleanly delimited token:
+
+```
+[#set nav-bg="bg-cbeige"#]  ← Tailwind 4 picks up bg-cbeige correctly
+```
+
+**Rule:** always quote `[#set#]` values that contain Tailwind utility classes.
+This applies to all dynamic class patterns — any class that is set via a
+variable and injected into a `class="[#myvar#]"` slot must appear quoted
+somewhere in a scanned file, or it will be absent from the compiled CSS.
 
 Legacy `nb-open` / `nb-close` class toggles and `data-open` / `data-close`
 attributes are also pre-1.1 patterns. Replace them with local Alpine.js state
