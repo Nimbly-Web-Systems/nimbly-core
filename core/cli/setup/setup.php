@@ -260,7 +260,7 @@ if (!file_exists($env_file)) {
         $changed = true;
     }
 
-    if (!isset($env['PEPPER'])) {
+    if (!isset($env['PEPPER']) || trim($env['PEPPER']) === '') {
         $env_lines = nb_env_set($env_lines, 'PEPPER', $pepper);
         $changed = true;
     }
