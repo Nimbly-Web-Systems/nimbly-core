@@ -27,7 +27,8 @@ load_library('util');
 
 $env_file = BASE_DIR . '.env';
 if (!file_exists($env_file)) {
-    die("Error: .env not found.\n");
+    fwrite(STDERR, "Error: .env not found.\n");
+    exit(1);
 }
 foreach (file($env_file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) as $line) {
     if (str_starts_with(trim($line), '#')) continue;
@@ -36,7 +37,8 @@ foreach (file($env_file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) as $line
 }
 $_SERVER['PEPPER'] = $_ENV['PEPPER'] ?? '';
 if (empty($_SERVER['PEPPER'])) {
-    die("Error: PEPPER not set in .env.\n");
+    fwrite(STDERR, "Error: PEPPER not set in .env.\n");
+    exit(1);
 }
 
 load_library('data');

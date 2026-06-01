@@ -21,6 +21,7 @@ RUN apt-get -y update && \
 # Add scripts and configuration files
 ADD docker/apache2.conf /etc/apache2/apache2.conf
 ADD docker/nimbly.conf /etc/apache2/sites-available/nimbly.conf
+ADD docker/dev/entrypoint.sh /entrypoint.sh
 ADD docker/dev/run.sh /run.sh
 RUN chmod 755 /*.sh
 
@@ -47,4 +48,5 @@ EXPOSE 80
 VOLUME ["/var/www/nimbly"]
 
 # Execute the run.sh
+ENTRYPOINT ["/entrypoint.sh"]
 CMD ["/run.sh"]
