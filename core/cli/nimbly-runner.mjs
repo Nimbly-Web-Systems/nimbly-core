@@ -380,7 +380,10 @@ if (command === 'test') {
   }
 
   section('Install Playwright browsers');
-  const install_result = spawnSync('npx', ['playwright', 'install', '--with-deps', 'chromium'], { stdio: 'inherit' });
+  const pw_install_args = process.env.CI
+    ? ['playwright', 'install', '--with-deps', 'chromium']
+    : ['playwright', 'install', 'chromium'];
+  const install_result = spawnSync('npx', pw_install_args, { stdio: 'inherit' });
 
   let test_status = 1;
   if ((install_result.status ?? 1) === 0) {
