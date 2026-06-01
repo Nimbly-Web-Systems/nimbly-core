@@ -235,7 +235,7 @@ if ($parts === false) return;
 
 $slug = $parts[0];
 load_library('data');
-load_library('md5');
+load_library('util');
 
 $records = data_read_index('articles', 'title_slug', md5_uuid($slug));
 if (empty($records)) return;
@@ -324,15 +324,6 @@ Merges `data.a` and `data.b` into `data.join`. Each record gets a `resource_type
 #### `[#data-count resource#]`
 Outputs the number of records in a resource.
 
-#### `[#lookup resource.uuid.field#]`
-Reads a single field value from a record.
-
-```
-[#lookup users.abc123.name#]
-[#lookup categories.[#get item.category#].title#]
-[#lookup users.abc123.name empty="Unknown"#]
-```
-
 ---
 
 ### Variables
@@ -367,20 +358,25 @@ first. Only add `overwrite` when you explicitly want to replace an existing
 value (e.g. when passing data into a reusable template component).
 
 #### `[#get varname#]`
-Outputs a variable's value.
+Outputs a value. `[#get#]` is the unified value accessor in Nimbly 1.1.0.
+
+Resolution order:
+1. Flat variable lookup: session variables, system variables, cookies, then GET parameters
+2. Dot-path lookup into nested system variables, using the longest matching variable prefix
+3. Data lookup fallback for `resource.uuid.field` paths
+4. Automatic i18n resolution when the result is an object keyed by configured language codes
 
 ```
 [#get page-title#]
 [#get item.title default="Untitled"#]
 [#get language#]
+[#get data.settings.theme#]
+[#get users.abc123.name empty="Unknown"#]
+[#get item.title lang=nl#]
+[#get item json#]
 ```
 
-#### `[#get-key varname key#]`
-Returns a value from an array variable by key.
-
-```
-[#get-key data.settings theme#]
-```
+Legacy `[#get-key#]`, `[#jget#]`, `[#get-i18n#]`, and `[#lookup#]` patterns should be migrated to `[#get#]`.
 
 #### `[#fmt var=data.articles json#]`
 Formats a variable for output.
@@ -389,13 +385,16 @@ Formats a variable for output.
 [#fmt var=data.records json#]              → JSON encode
 [#fmt var=myvar empty={} json#]            → JSON with fallback
 [#fmt val=item.date type=date fmt="d-m-Y"#]
-[#fmt val=item.body type=html#]            → strips tags
+[#fmt val=item.body type=html#]            → strips all tags
+[#fmt val=item.body type=plain#]           → strips tags and decodes entities
 [#fmt val=item.size type=bytes#]           → human-readable bytes
 [#fmt val=item.created type=ago#]          → "3 days ago"
 [#fmt val=[#data-count users#] type=number round=-2 round_mode=floor#]
+[#fmt val=item.invoice type=file#]         → file download markup
+[#fmt val=item.order type=pad length=4#]   → zero-padded number
 ```
 
-Types: `text`, `html`, `date`, `ago`, `json`, `bytes`, `number`, `boolean`, `image`, `password`
+Types: `text`, `plain`, `html`, `date`, `ago`, `json`, `bytes`, `number`, `boolean`, `image`, `file`, `pad`
 
 #### `[#count varname#]`
 Outputs the number of items in an array variable.
@@ -446,7 +445,7 @@ Returns the base URL path of the installation. Use this for all internal links.
 
 ```html
 <a href="[#base-url#]/about">About</a>
-<link href="[#base-url#]/ext/static/app.css?v=[#app-modified#]">
+<link href="[#base-url#]/ext/static/app.css">
 ```
 
 #### `[#base-path#]`
@@ -465,16 +464,6 @@ Sets `is-url` to `true` if the current URL starts with the given segment. Use fo
 [#is-url (home) =#]   → exact match for homepage
 ```
 
-#### `[#app-modified#]`
-Returns a cache-busting version string for built assets.
-
-```html
-<link rel="stylesheet" href="[#base-url#]/ext/static/app.css?v=[#app-modified#]">
-<script src="[#base-url#]/ext/static/app.js?v=[#app-modified#]"></script>
-```
-
----
-
 ### Content
 
 #### `[#get-html field#]`
@@ -485,12 +474,12 @@ Outputs an editable HTML content field. Supports inline admin editing.
 [#get-html content.home.intro default="<p>Edit this text</p>"#]
 ```
 
-#### `[#get-i18n varname lang=en#]`
-Returns the translated value of an i18n field for the given language. Defaults to the active language.
+I18n fields are resolved automatically by `[#get#]` and `[#fmt#]` when the value is an object keyed by configured language codes. Use `lang=` to force a language.
 
 ```
-[#get-i18n item.title#]
-[#get-i18n item.title lang=en#]
+[#get item.title#]
+[#get item.title lang=en#]
+[#fmt var=item.title type=plain lang=nl#]
 ```
 
 #### `[#text Label_key#]`
@@ -503,9 +492,6 @@ Outputs a translated UI label from `.po` files. Use underscores for spaces in th
 ```
 
 Translations live in `ext/data/.i18n/text.<lang>.po`.
-
-#### `[#markdown#]`
-Renders Markdown content.
 
 #### `[#cfield field#]`
 Resolves the fully-qualified dot-path of a content field in the current template context. Used with `[#get-html#]` for static, inline-editable page content stored in the `.content` resource.
@@ -600,14 +586,17 @@ Includes a file server-side.
 [#include file=[#base-path#]ext/tpl/head-scripts/index.tpl#]
 ```
 
-#### `[#uuid#]`
-Generates a new UUID.
+UUID, salt, slug, MD5, resource-key normalization, and plain-text stripping are PHP helpers in `core/lib/util.php`, not template shortcodes. Use them from PHP libraries, route files, install scripts, and CLI scripts:
 
-#### `[#salt#]`
-Generates a random salt string.
+```php
+load_library('util');
 
-#### `[#md5 value#]`
-Returns MD5 hash of a value.
+$uuid = generate_uuid();
+$salt = generate_salt();
+$slug = slugify($title);
+$hash = md5_uuid($slug);
+$text = plain_text($html);
+```
 
 #### `[#env KEY default=value#]`
 Returns a value from `.env`, falling back to `default` when the key is missing.
@@ -654,29 +643,6 @@ Formats a date value. Input can be a Unix timestamp, a date string, or omitted (
 
 Uses PHP date format strings.
 
-#### `[#slug value#]`
-Converts a string to a URL-safe slug (lowercase, Unicode-aware, hyphens for non-alphanumeric).
-
-```
-[#slug item.title#]
-[#slug "Hello World!"#]   → hello-world
-```
-
-#### `[#strip value#]`
-Strips all HTML tags from a value.
-
-```
-[#strip item.body#]
-```
-
-#### `[#int varname#]`
-Returns the integer value of a variable.
-
-```
-[#int item.count#]
-[#int var=score#]
-```
-
 #### `[#get-first dataset#]`
 Stores the first item of a dataset into `first` (or a custom variable).
 
@@ -686,27 +652,6 @@ Stores the first item of a dataset into `first` (or a custom variable).
 
 [#get-first data.articles var=latest#]
 [#get latest.date#]
-```
-
-#### `[#implode varname#]`
-Joins an array variable into a string. For flat arrays returns a quoted, comma-separated list; for arrays of objects returns JSON.
-
-```
-[#implode item.tags sep=", "#]
-```
-
-#### `[#reverse-lookup resource value key#]`
-Looks up a record in a loaded resource by field value and returns a different field. Useful for resolving labels from stored IDs.
-
-```
-[#reverse-lookup categories [#get item.category_id#] title#]
-```
-
-#### `[#rkey value#]`
-Normalizes a string to a lowercase resource key (trims whitespace, lowercases).
-
-```
-[#rkey item.type#]
 ```
 
 #### `[#last-update#]`
@@ -722,20 +667,6 @@ Renders text using invisible Unicode characters and Alpine.js so it's invisible 
 
 ```
 [#obfuscate info@example.com#]
-```
-
-#### `[#host#]`
-Returns the HTTP host name.
-
-```
-[#host#]   → example.com
-```
-
-#### `[#get-ip#]`
-Returns the client IP address (respects `X-Forwarded-For` for proxied setups).
-
-```
-[#get-ip#]
 ```
 
 #### `[#uri-path#]`
@@ -770,9 +701,6 @@ Outputs a 1×1 transparent GIF as a data URI. Use as a placeholder `src` before 
 #### `[#max-upload-size#]`
 Outputs the PHP `upload_max_filesize` value in human-readable form. Useful in upload form hints.
 
-#### `[#json2post#]`
-Parses a raw JSON request body into `$_POST`. Place at the top of API route templates that receive JSON payloads.
-
 #### `[#unquote varname#]`
 Outputs a variable's value with quotes HTML-escaped (`"` → `&quot;`, `'` → `&apos;`). Safe for embedding variable values inside HTML attribute strings.
 
@@ -804,9 +732,6 @@ Returns the active language code. Detection order:
 4. Browser language header
 5. Fallback — first language defined in site config
 
-#### `[#language#]`
-Returns the currently active language code. Automatically set in the HTML template.
-
 #### `[#debug#]`
 Outputs debug information. Use during development only.
 
@@ -827,9 +752,9 @@ The inventory below is generated from `*_sc()` implementations in `core/lib` and
 
 | Classification | Shortcodes |
 |---|---|
-| Public core | `app-modified`, `base-path`, `base-url`, `cfield`, `collect-script`, `count`, `data`, `data-count`, `data-join`, `data-last-update`, `data-sort`, `date`, `debug`, `detect-language`, `empty-img`, `env`, `fmt`, `get`, `get-first`, `get-html`, `get-i18n`, `get-ip`, `get-key`, `host`, `http-header`, `if`, `implode`, `include`, `int`, `is-dev-env`, `is-url`, `jget`, `json2post`, `last-update`, `log`, `logged-in`, `lookup`, `markdown`, `max-upload-size`, `md5`, `module`, `nop`, `obfuscate`, `redirect`, `repeat`, `reverse-lookup`, `rkey`, `salt`, `set`, `slug`, `strip`, `system-messages`, `text`, `unquote`, `uri-path`, `url`, `url-key`, `uuid` |
-| Public module | `access`, `api-allow`, `build-form`, `feature-cond`, `first-img-uuid`, `form-key`, `get-form-errors`, `get-img-html`, `get-user`, `honeypot-field`, `img-url`, `key-access`, `logout`, `post`, `role-cond`, `role-switch`, `sanitize`, `sticky`, `sticky-post`, `userfield`, `username`, `validate` |
-| Internal/admin | `api-session`, `api-token`, `create-settings`, `disk-space-free`, `disk-space-resource`, `disk-space-thumbs`, `disk-space-total`, `empty-resource`, `exif`, `field-name`, `files`, `files-unused`, `find`, `get-gallery-json`, `get-meta-data`, `get-pages`, `get-resource-meta`, `get-resource-record`, `get-resource-records`, `get-resources`, `get-sessions`, `get-system-log`, `get-user-resources`, `git-pull`, `git-status`, `json`, `openai-complete`, `openai-translate`, `pages`, `render-field`, `resource-name`, `resources`, `sys-info`, `sys-libraries`, `sys-messages`, `thumbnail` |
+| Public core | `base-path`, `base-url`, `cfield`, `collect-script`, `count`, `data`, `data-count`, `data-join`, `data-last-update`, `data-sort`, `date`, `debug`, `detect-language`, `empty-img`, `env`, `fmt`, `get`, `get-first`, `get-html`, `http-header`, `if`, `include`, `is-url`, `last-update`, `log`, `logged-in`, `max-upload-size`, `module`, `nop`, `obfuscate`, `redirect`, `repeat`, `set`, `system-messages`, `text`, `unquote`, `uri-path`, `url`, `url-key` |
+| Public module | `access`, `api-allow`, `build-form`, `feature-cond`, `first-img-uuid`, `form-key`, `get-form-errors`, `get-img-html`, `get-user`, `honeypot-field`, `img-url`, `json2post`, `logout`, `post`, `role-cond`, `role-switch`, `sanitize`, `sticky`, `userfield`, `username`, `validate` |
+| Internal/admin | `api-session`, `api-token`, `disk-space-resource`, `exif`, `field-name`, `files`, `files-unused`, `find`, `get-resource-meta`, `get-resource-record`, `get-resource-records`, `get-system-log`, `get-user-resources`, `json`, `openai-complete`, `openai-translate`, `pages`, `render-field`, `resource-name`, `resources`, `sys-messages`, `thumbnail` |
 
 ---
 
@@ -863,8 +788,13 @@ Defines the structure and behavior of a resource. All fields must be explicitly 
   "fields": {
     "title": {
       "name": "Title",
-      "type": "name",
+      "type": "text",
       "required": true
+    },
+    "title_slug": {
+      "name": "URL slug",
+      "type": "slug",
+      "source": "title"
     },
     "published": {
       "name": "Published",
@@ -1090,8 +1020,8 @@ Add an `index` array to `.meta` listing the field names to index:
 ```json
 {
   "fields": {
-    "title": { "name": "Title", "type": "name", "required": true, "slug": true },
-    "title_slug": { "name": "Slug", "type": "text" }
+    "title": { "name": "Title", "type": "text", "required": true },
+    "title_slug": { "name": "URL slug", "type": "slug", "source": "title" }
   },
   "index": ["title_slug"]
 }
@@ -1135,7 +1065,7 @@ if ($parts === false || count($parts) !== 1) return;
 
 $slug = $parts[0];
 load_library('data');
-load_library('md5');
+load_library('util');
 
 $records = data_read_index('articles', 'title_slug', md5_uuid($slug));
 if (empty($records)) return;
@@ -1526,6 +1456,7 @@ Nimbly ships a CLI at `core/cli/nimbly.php`. The root `./nimbly` launcher is the
 ./nimbly deps
 ./nimbly build
 ./nimbly watch
+./nimbly test
 ./nimbly user:create
 ./nimbly module:install <name>
 ```
@@ -1543,7 +1474,9 @@ Equivalent direct invocations:
 php core/cli/nimbly.php site:setup
 php core/cli/nimbly.php user:create
 php core/cli/nimbly.php module:install <name>
+php core/cli/nimbly.php routes:add
 php core/cli/nimbly.php index:rebuild [resource]
+php core/cli/nimbly.php system:upgrade-11
 php core/cli/nimbly.php help
 ```
 
@@ -1578,17 +1511,24 @@ Prompts: **Site name**, **Admin email**, **Admin password**. Steps that are alre
 SITE_NAME="My Site" ADMIN_EMAIL=admin@example.com ADMIN_PASSWORD=secret123 ./nimbly site:setup
 ```
 
-#### `create-user`
+#### `user:create`
 Creates an additional user account. Prompts for email, role, and password interactively. Available roles are read from `ext/data/roles/`. The user is always also assigned the `user` role. Requires setup to have been run first.
 
-#### `install-module`
+#### `module:install`
 Runs a module's `.install.inc` script. Looks in `ext/modules/` first, then `core/modules/` as fallback. Requires setup to have been run first.
 
 ```bash
 ./nimbly module:install event
 ```
 
-#### `reindex`
+#### `routes:add`
+Scans `ext/uri/**/route.inc` and creates missing records in `.routes` for dynamic routes. Use this after adding a new route folder with `(param)` segments.
+
+```bash
+./nimbly routes:add
+```
+
+#### `index:rebuild`
 Rebuilds index entries for an indexed resource. Use this after adding `index` to an existing resource's `.meta`, or after importing records outside of the normal API flow.
 
 ```bash
@@ -1597,6 +1537,22 @@ php core/cli/nimbly.php index:rebuild articles    # direct: reindex the 'article
 ```
 
 The command scans all records in the resource and creates any missing index files. It is idempotent — existing entries are left untouched.
+
+#### `test`
+Runs the E2E suite. The command creates temporary test data with `test:setup`, installs the Chromium Playwright browser if needed, runs Playwright using `core/tests/playwright.config.js`, then removes the temporary data with `test:teardown`.
+
+```bash
+./nimbly test
+./nimbly --docker test
+```
+
+Use `--docker` in CI or whenever PHP data files must be written through the same Docker user model as the web runtime.
+
+#### `test:setup` / `test:teardown`
+Low-level commands used by `./nimbly test`. `test:setup` creates the `test` role, `test@nimbly.dev` user, `test-records` resource, and seed records. `test:teardown` removes those records and the temporary `.test` route config entries.
+
+#### `system:upgrade-11`
+Runs the guided Nimbly 1.0.0 → 1.1.0 migration checks and updates. See [Upgrading from core 1.0.0 to core 1.1.0](#19-upgrading-from-core-100-to-core-110).
 
 #### `schedule:run`
 Runs due scheduled commands. The default cron is:
@@ -2007,10 +1963,11 @@ Use `[#get-html#]` to output an editable html field. When a logged-in admin view
 </div>
 ```
 
-For multi-language content, wrap with `[#get-i18n#]` to get the active-language value before passing to `get-html`:
+For multi-language content, `[#get-html#]` resolves i18n field objects automatically. Add a language suffix when you explicitly need one language:
 
 ```
-[#get-html [#get-i18n article.body#]#]
+[#get-html article.body#]
+[#get-html article.body.nl#]
 ```
 
 ### Step 4 — Enable inline editing
@@ -2438,7 +2395,7 @@ The `[#module name#]` shortcode is a no-op and should not be used. Use `[#nop mo
 
 ### `.install.inc`
 
-The install script runs when `php nimbly.php install-module <name>` (or the admin install button) is executed. Use it to create the resource(s) and register any dynamic routes the module needs.
+The install script runs when `./nimbly module:install <name>` (or the admin install button) is executed. Use it to create the resource(s) and register any dynamic routes the module needs.
 
 ```php
 <?php
@@ -2448,7 +2405,8 @@ load_library("data");
 // Create the resource if it doesn't exist yet
 $result = data_create_resource("events", [
     "fields" => [
-        "title"     => ["name" => "Title", "type" => "name", "required" => true, "slug" => true],
+        "title"     => ["name" => "Title", "type" => "text", "required" => true],
+        "title_slug" => ["name" => "URL slug", "type" => "slug", "source" => "title"],
         "published" => ["name" => "Published", "type" => "boolean"],
         "date"      => ["name" => "Date", "type" => "date"],
         "body"      => ["name" => "Body", "type" => "html",
@@ -2457,6 +2415,7 @@ $result = data_create_resource("events", [
                         "admin_col" => false],
         "sort_order" => ["name" => "Sort order", "type" => "text", "admin_col" => false]
     ],
+    "index" => ["title_slug"],
     "sort" => ["field" => "sort_order", "flags" => "numeric", "order" => "asc"]
 ]);
 
@@ -2490,7 +2449,7 @@ if ($parts === false || count($parts) !== 1) return;
 
 $slug = $parts[0];
 load_library('data');
-load_library('md5');
+load_library('util');
 
 $records = data_read_index('events', 'title_slug', md5_uuid($slug));
 if (empty($records)) return;
@@ -2610,6 +2569,10 @@ already configured for the project (`sm`, `md`, `lg`, etc.) instead of inventing
 new one-off media query widths. For example, use `@media (min-width: 768px)`
 for Tailwind's default `md` breakpoint.
 
+The command also scans for legacy value shortcodes that were unified into
+`[#get#]`: `[#get-key#]`, `[#jget#]`, `[#get-i18n#]`, and `[#lookup#]`.
+Run the apply step to rewrite those templates to the 1.1.0 `[#get#]` form.
+
 Internally, the resource `pk` migration step is handled by:
 
 ```bash
@@ -2636,7 +2599,7 @@ Any route that used the old `data_exists` + `md5_uuid` lookup must be updated to
 ```php
 $slug = $parts[0];
 load_library('data');
-load_library('md5');
+load_library('util');
 
 if (!data_exists('articles', md5_uuid($slug))) return;
 set_variable('slug', $slug);
@@ -2649,7 +2612,7 @@ router_accept();
 ```php
 $slug = $parts[0];
 load_library('data');
-load_library('md5');
+load_library('util');
 
 $records = data_read_index('articles', 'url_slug', md5_uuid($slug));
 if (empty($records)) return;
