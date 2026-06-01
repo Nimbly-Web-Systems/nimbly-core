@@ -29,7 +29,7 @@ function migrate_10_bootstrap()
     $_SERVER['PEPPER'] = $env['PEPPER'] ?? '';
 
     load_library('data');
-    load_library('md5');
+    load_library('util');
 }
 
 function migrate_10_collect()

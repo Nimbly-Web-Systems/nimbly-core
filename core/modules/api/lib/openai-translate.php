@@ -59,8 +59,8 @@ function openai_translate_post()
             $translated_record[$field] = $response;
         }
         if (!empty($meta['fields'][$field]['slug'])) {
-            load_library('slug');
-            $translated_record[$field . '_slug'] = slug_sc($translated_record[$field]);
+            load_library('util');
+            $translated_record[$field . '_slug'] = make_slug($translated_record[$field]);
         }
     }
     $uuid = $record['translations'][$data['lang']] ?? null;

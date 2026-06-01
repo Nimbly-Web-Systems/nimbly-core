@@ -229,6 +229,40 @@ function upgrade_11_apply_lookup(array $hits): int
     return $migrated;
 }
 
+function upgrade_11_util_collect(): array
+{
+    $hits = [];
+    $it = new RecursiveIteratorIterator(
+        new RecursiveDirectoryIterator(BASE_DIR . 'ext', FilesystemIterator::SKIP_DOTS)
+    );
+    foreach ($it as $file) {
+        if (!in_array($file->getExtension(), ['php', 'inc'], true)) {
+            continue;
+        }
+        $content = file_get_contents($file->getPathname());
+        $count = preg_match_all("/load_library\(['\"](?:salt|md5|slug)['\"]\\)|slug_sc\s*\(/", $content);
+        if ($count > 0) {
+            $hits[] = [$file->getPathname(), $count];
+        }
+    }
+    return $hits;
+}
+
+function upgrade_11_apply_util(array $hits): int
+{
+    $migrated = 0;
+    foreach ($hits as [$path]) {
+        $content = file_get_contents($path);
+        $new = preg_replace("/load_library\(['\"](?:salt|md5|slug)['\"]\)/", "load_library('util')", $content);
+        $new = str_replace('slug_sc(', 'make_slug(', $new);
+        if ($new !== $content) {
+            file_put_contents($path, $new);
+            $migrated++;
+        }
+    }
+    return $migrated;
+}
+
 $yes = in_array('--yes', $argv, true) || in_array('-y', $argv, true);
 
 migrate_10_bootstrap();
@@ -244,6 +278,7 @@ $get_key_hits = upgrade_11_get_key_collect();
 $jget_hits    = upgrade_11_jget_collect();
 $i18n_hits    = upgrade_11_get_i18n_collect();
 $lookup_hits  = upgrade_11_lookup_collect();
+$util_hits    = upgrade_11_util_collect();
 
 $has_work = migrate_10_has_work($migration)
     || !empty($moves)
@@ -254,7 +289,8 @@ $has_work = migrate_10_has_work($migration)
     || !empty($get_key_hits)
     || !empty($jget_hits)
     || !empty($i18n_hits)
-    || !empty($lookup_hits);
+    || !empty($lookup_hits)
+    || !empty($util_hits);
 
 if (!$has_work) {
     echo "Nimbly 1.1.0 upgrade checks complete — no automatic upgrade steps are needed.\n";
@@ -323,6 +359,7 @@ foreach ([
     [$jget_hits,    '[#jget#] → [#get#]'],
     [$i18n_hits,    '[#get-i18n#] → [#get#]'],
     [$lookup_hits,  '[#lookup#] → [#get#]'],
+    [$util_hits,    'load_library(salt|md5|slug) → util; slug_sc() → make_slug()'],
 ] as [$hits, $label]) {
     if (!empty($hits)) {
         $total = array_sum(array_column($hits, 1));
@@ -411,4 +448,9 @@ if (!empty($i18n_hits)) {
 if (!empty($lookup_hits)) {
     echo "\n=== Replacing [#lookup#] with [#get#] ===\n";
     echo "Updated " . upgrade_11_apply_lookup($lookup_hits) . " file(s).\n";
+}
+
+if (!empty($util_hits)) {
+    echo "\n=== Migrating salt/md5/slug to util ===\n";
+    echo "Updated " . upgrade_11_apply_util($util_hits) . " file(s).\n";
 }

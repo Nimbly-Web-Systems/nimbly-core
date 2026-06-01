@@ -52,8 +52,8 @@ function api_token_post() {
         && ($user_data['api']['expires'] ?? 0) > $now) {
         $token = $user_data['api']['token'];
      } else {
-        load_library('salt');
-        $token = salt_sc();
+        load_library('util');
+        $token = generate_salt();
      }
      $_SESSION['token'] = $token;
      $_SESSION['token_created'] = $created;

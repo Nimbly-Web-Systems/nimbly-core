@@ -111,6 +111,29 @@ function _parse_size($size)
     return $unit ? round($size * pow(1024, stripos('bkmgtpezy', $unit[0]))) : round($size);
 }
 
+function generate_salt(): string
+{
+    return rtrim(strtr(base64_encode(random_bytes(32)), '+/', '._'), '=');
+}
+
+function is_md5($val): bool
+{
+    return strlen($val) === 32 && ctype_xdigit($val);
+}
+
+function md5_uuid(string $uuid): string
+{
+    return is_md5($uuid) ? $uuid : md5($uuid);
+}
+
+function make_slug($value): string
+{
+    $result = is_array($value) ? implode(' ', $value) : (string)$value;
+    $result = mb_strtolower($result, 'UTF-8');
+    $result = preg_replace('/[^\p{L}\p{Nd}]+/u', '-', $result);
+    return trim($result, '-');
+}
+
 function resolve_i18n($val, $lang)
 {
     if (!is_array($val)) {

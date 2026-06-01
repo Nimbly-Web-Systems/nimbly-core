@@ -28,7 +28,7 @@ $GLOBALS['SYSTEM'] = [
 ];
 
 require_once BASE_DIR . 'core/lib/find.php';
-load_library('salt');
+load_library('util');
 
 $env_file = BASE_DIR . '.env';
 if (!file_exists($env_file)) {

@@ -446,7 +446,7 @@ function data_read_index($resource, $index_name, $index_uuid)
         return $result;
     }
 
-    load_library('md5');
+    load_library('util');
     load_library('log');
 
     foreach ($index_files as $index_file) {
@@ -475,7 +475,7 @@ function data_read_index($resource, $index_name, $index_uuid)
 
 function data_index_uuids($value)
 {
-    load_library('md5');
+    load_library('util');
 
     $result = [];
     $stack = is_array($value) ? $value : [$value];
@@ -573,7 +573,7 @@ function data_update($resource, $uuid, $data_update_ls)
 
     $meta = data_meta($resource);
     // Update modification metadata
-    load_library('md5');
+    load_library('util');
     load_library('username');
     $data_merged_ls['_modified_by'] = md5_uuid(username_get());
     $data_merged_ls['_modified'] = time();
@@ -644,7 +644,7 @@ function data_create($resource, $uuid, $data_ls)
     }
 
     if (!isset($data_ls['_created_by'])) {
-        load_library('md5');
+        load_library('util');
         load_library('username');
         $data_ls['_created_by'] = md5_uuid(username_get());
     }
@@ -663,7 +663,7 @@ function data_create($resource, $uuid, $data_ls)
 
         $meta = data_meta($resource);
         if (isset($meta['index']) && is_array($meta['index'])) {
-            load_library('md5');
+            load_library('util');
             foreach ($meta['index'] as $index_name) {
                 if (empty($data_ls[$index_name])) {
                     continue;
@@ -769,7 +769,7 @@ function data_delete($resource, $uuid = null)
         $meta = data_meta($resource);
         if (isset($meta['index']) && is_array($meta['index'])) {
             $data_ls = data_read($resource, $uuid);
-            load_library('md5');
+            load_library('util');
             foreach ($meta['index'] as $index_name) {
                 if (empty($data_ls[$index_name])) {
                     continue;
@@ -1111,7 +1111,7 @@ function _data_validate_unique($resource, $uuid, $data_ls, $fields)
         }
 
         if (in_array($field, $indexed_fields, true)) {
-            load_library('md5');
+            load_library('util');
             $matches = data_read_index($resource, $field, md5_uuid($value));
         } else {
             $matches = [];
