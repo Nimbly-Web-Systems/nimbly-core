@@ -96,10 +96,10 @@ jobs:
           SITE_NAME: Nimbly
           ADMIN_EMAIL: admin@ci.test
           ADMIN_PASSWORD: Admin123!
-        run: ./nimbly site:setup
+        run: ./nimbly --docker site:setup
 
       - name: Run E2E tests
-        run: ./nimbly test
+        run: ./nimbly --docker test
 
       - name: Upload test report
         if: always()
