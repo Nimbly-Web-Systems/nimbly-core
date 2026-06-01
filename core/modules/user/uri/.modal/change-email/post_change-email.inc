@@ -6,7 +6,7 @@ load_libraries(["salt", "encrypt"]);
 load_libraries(['url', 'log', 'uuid', 'job', 'data']);
 $user = get_user();
 $email = filter_input(INPUT_POST, 'newemail');
-$token = $user['change_email_token'] ?? uuid_sc();
+$token = $user['change_email_token'] ?? generate_uuid();
 data_update('users', $user['uuid'], [
 	'new_email'          => $email,
 	'change_email_token' => $token,

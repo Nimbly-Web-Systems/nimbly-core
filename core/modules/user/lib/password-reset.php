@@ -22,7 +22,7 @@ function password_reset_request($email) {
 		return ['message' => $message, 'sent' => false];
 	}
 
-	$reset_token = $user['password_reset_token'] ?? uuid_sc();
+	$reset_token = $user['password_reset_token'] ?? generate_uuid();
 	data_update('users', $user['uuid'], ['password_reset_token' => $reset_token]);
 
 	job_enqueue('password-reset', [

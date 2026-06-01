@@ -35,8 +35,8 @@ set_variable('old_email', $user['email']);
 set_variable('new_email', $user['new_email']);
 set_variable('name', $user['name']);
 
-load_library('uuid');
-$user['change_email_token'] = uuid_sc();
+load_library('util');
+$user['change_email_token'] = generate_uuid();
 $user['old_email'] = $user['email'];
 $user['email'] = $user['new_email'];
 data_update('users', $uuid, $user);

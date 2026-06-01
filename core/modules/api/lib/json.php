@@ -26,8 +26,8 @@ function json_input($create_uuid = true) {
     $clean_data = strip_tags($data, "<h1><h2><h3><h4><h5><h6><b><strong><a><i><p><blockquote><ol><ul><li><br><img><figure><video><source><iframe>");
     $result = json_decode($clean_data, true);
     if ($create_uuid && empty($result['uuid'])) {
-        load_library('uuid');
-        $result['uuid'] = uuid_sc();
+        load_library('util');
+        $result['uuid'] = generate_uuid();
     }
     return $result;
 }   

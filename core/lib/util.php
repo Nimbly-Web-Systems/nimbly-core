@@ -111,6 +111,11 @@ function _parse_size($size)
     return $unit ? round($size * pow(1024, stripos('bkmgtpezy', $unit[0]))) : round($size);
 }
 
+function generate_uuid(): string
+{
+    return gmp_strval(gmp_init(bin2hex(random_bytes(10)), 16), 36);
+}
+
 function generate_salt(): string
 {
     return rtrim(strtr(base64_encode(random_bytes(32)), '+/', '._'), '=');

@@ -229,6 +229,41 @@ function upgrade_11_apply_lookup(array $hits): int
     return $migrated;
 }
 
+function upgrade_11_uuid_collect(): array
+{
+    $hits = [];
+    $it = new RecursiveIteratorIterator(
+        new RecursiveDirectoryIterator(BASE_DIR . 'ext', FilesystemIterator::SKIP_DOTS)
+    );
+    foreach ($it as $file) {
+        if (!in_array($file->getExtension(), ['tpl', 'php', 'inc'], true)) {
+            continue;
+        }
+        $content = file_get_contents($file->getPathname());
+        $count = preg_match_all("/load_library\(['\"]uuid['\"]\\)|uuid_sc\s*\(|\\[#uuid#\\]/", $content);
+        if ($count > 0) {
+            $hits[] = [$file->getPathname(), $count];
+        }
+    }
+    return $hits;
+}
+
+function upgrade_11_apply_uuid(array $hits): int
+{
+    $migrated = 0;
+    foreach ($hits as [$path]) {
+        $content = file_get_contents($path);
+        $new = preg_replace("/load_library\(['\"]uuid['\"]\)/", "load_library('util')", $content);
+        $new = str_replace('uuid_sc(', 'generate_uuid(', $new);
+        $new = str_replace('[#uuid#]', '[#get uuid#]', $new);
+        if ($new !== $content) {
+            file_put_contents($path, $new);
+            $migrated++;
+        }
+    }
+    return $migrated;
+}
+
 function upgrade_11_util_collect(): array
 {
     $hits = [];
@@ -278,6 +313,7 @@ $get_key_hits = upgrade_11_get_key_collect();
 $jget_hits    = upgrade_11_jget_collect();
 $i18n_hits    = upgrade_11_get_i18n_collect();
 $lookup_hits  = upgrade_11_lookup_collect();
+$uuid_hits    = upgrade_11_uuid_collect();
 $util_hits    = upgrade_11_util_collect();
 
 $has_work = migrate_10_has_work($migration)
@@ -290,6 +326,7 @@ $has_work = migrate_10_has_work($migration)
     || !empty($jget_hits)
     || !empty($i18n_hits)
     || !empty($lookup_hits)
+    || !empty($uuid_hits)
     || !empty($util_hits);
 
 if (!$has_work) {
@@ -359,6 +396,7 @@ foreach ([
     [$jget_hits,    '[#jget#] → [#get#]'],
     [$i18n_hits,    '[#get-i18n#] → [#get#]'],
     [$lookup_hits,  '[#lookup#] → [#get#]'],
+    [$uuid_hits,    'load_library(uuid) → util; uuid_sc() → generate_uuid(); [#uuid#] → [#get uuid#]'],
     [$util_hits,    'load_library(salt|md5|slug) → util; slug_sc() → make_slug()'],
 ] as [$hits, $label]) {
     if (!empty($hits)) {
@@ -448,6 +486,11 @@ if (!empty($i18n_hits)) {
 if (!empty($lookup_hits)) {
     echo "\n=== Replacing [#lookup#] with [#get#] ===\n";
     echo "Updated " . upgrade_11_apply_lookup($lookup_hits) . " file(s).\n";
+}
+
+if (!empty($uuid_hits)) {
+    echo "\n=== Migrating uuid to util ===\n";
+    echo "Updated " . upgrade_11_apply_uuid($uuid_hits) . " file(s).\n";
 }
 
 if (!empty($util_hits)) {

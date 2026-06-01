@@ -4,7 +4,7 @@ load_library("json");
 load_library("data");
 load_library("access");
 load_library("get");
-load_library('uuid');
+load_library('util');
 
 
 function map_header($key, $first = false)
@@ -147,7 +147,7 @@ function import_row($resource, $headers, $data, &$import_results, &$seen_pk_valu
     } else {
         $uuid = record_exists_by_pk($resource, $record);
         if ($uuid === false) {
-            $uuid = uuid_sc();
+            $uuid = generate_uuid();
             if (data_create($resource, $uuid, $record) !== false) {
                 $import_results['imported']++;
                 $import_results['created']++;
@@ -264,8 +264,8 @@ function api_import_resource_json($resource, $tmp_path)
 
         $uuid = $record['uuid'] ?? (!is_int($key) ? $key : null);
         if (empty($uuid)) {
-            load_library('uuid');
-            $uuid = uuid_sc();
+            load_library('util');
+            $uuid = generate_uuid();
         }
         $record['uuid'] = $uuid;
 
