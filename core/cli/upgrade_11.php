@@ -302,7 +302,7 @@ function upgrade_11_util_collect(): array
             continue;
         }
         $content = file_get_contents($file->getPathname());
-        $count = preg_match_all("/load_library\(['\"](?:salt|md5|slug)['\"]\\)|(?<![A-Za-z0-9_])slug_sc\s*\(/", $content);
+        $count = preg_match_all("/load_librar(?:y|ies)\s*\([^)]*['\"](?:salt|md5|slug)['\"][^)]*\)|(?<![A-Za-z0-9_])slug_sc\s*\(/s", $content);
         if ($count > 0) {
             $hits[] = [$file->getPathname(), $count];
         }
@@ -316,6 +316,13 @@ function upgrade_11_apply_util(array $hits): int
     foreach ($hits as [$path]) {
         $content = file_get_contents($path);
         $new = preg_replace("/load_library\(['\"](?:salt|md5|slug)['\"]\)/", "load_library('util')", $content);
+        $new = preg_replace_callback(
+            "/load_libraries\s*\((\[[^\]]*\])\)/s",
+            function ($matches) {
+                return 'load_libraries(' . preg_replace("/(['\"])(?:salt|md5|slug)\\1/", "'util'", $matches[1]) . ')';
+            },
+            $new
+        );
         $new = preg_replace('/(?<![A-Za-z0-9_])slug_sc\s*\(/', 'make_slug(', $new);
         if ($new !== $content) {
             file_put_contents($path, $new);
@@ -432,7 +439,7 @@ foreach ([
     [$i18n_hits,    '[#get-i18n#] → [#get#]'],
     [$lookup_hits,  '[#lookup#] → [#get#]'],
     [$uuid_hits,    'load_library(uuid) → util; uuid_sc() → generate_uuid(); [#uuid#] → [#get uuid#]'],
-    [$util_hits,    'load_library(salt|md5|slug) → util; slug_sc() → make_slug()'],
+    [$util_hits,    'load_library/load_libraries(salt|md5|slug) → util; slug_sc() → make_slug()'],
 ] as [$hits, $label]) {
     if (!empty($hits)) {
         $total = array_sum(array_column($hits, 1));
