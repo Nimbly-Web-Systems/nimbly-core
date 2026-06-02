@@ -2,6 +2,9 @@ See [NIMBLY.md](NIMBLY.md) for the complete Nimbly implementation reference.
 
 At a glance:
 
+- Commit messages must follow the Conventional Commits style documented in
+  `NIMBLY.md`: short, specific, professional, and usually one line. 
+  Don't add commercial noise like Co-Authored-By.
 - **`ext/` is a separate git repository.** Always run git commands inside
   `ext/` (e.g. `git -C ext status`) for application changes. The project root
   is the `core` repo and knows nothing about `ext/` changes.
@@ -31,5 +34,4 @@ At a glance:
   `overwrite` only when you explicitly need to replace an existing value (e.g.
   passing data into a reusable template component).
 
-Commit messages must follow the Conventional Commits style documented in
-`NIMBLY.md`: short, specific, professional, and usually one line.
+
