@@ -2630,6 +2630,22 @@ The command also scans for legacy value shortcodes that were unified into
 `[#get#]`: `[#get-key#]`, `[#jget#]`, `[#get-i18n#]`, and `[#lookup#]`.
 Run the apply step to rewrite those templates to the 1.1.0 `[#get#]` form.
 
+Direct variable shortcodes such as `[#record.uuid#]` still work when the exact
+variable has already been set. Use `[#get#]` when you need default values,
+language resolution, JSON output, or lookup/traversal behavior.
+
+The command also rewrites legacy utility library loads. Helpers such as
+`md5_uuid()` and `make_slug()` now live in `core/lib/util.php`, so both singular
+and plural loads must use `util`:
+
+```php
+load_library('util');
+load_libraries(['data', 'detect-language', 'util']);
+```
+
+The upgrade command rewrites `load_library('salt')`, `load_library('md5')`,
+`load_library('slug')`, and the same names inside `load_libraries([...])`.
+
 Internally, the resource `pk` migration step is handled by:
 
 ```bash
@@ -2655,8 +2671,7 @@ Any route that used the old `data_exists` + `md5_uuid` lookup must be updated to
 
 ```php
 $slug = $parts[0];
-load_library('data');
-load_library('util');
+load_libraries(['data', 'util']);
 
 if (!data_exists('articles', md5_uuid($slug))) return;
 set_variable('slug', $slug);
@@ -2668,8 +2683,7 @@ router_accept();
 
 ```php
 $slug = $parts[0];
-load_library('data');
-load_library('util');
+load_libraries(['data', 'util']);
 
 $records = data_read_index('articles', 'url_slug', md5_uuid($slug));
 if (empty($records)) return;
