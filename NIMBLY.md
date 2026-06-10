@@ -99,6 +99,29 @@ The frontend (both admin and public) uses **Tailwind CSS 4**, **DaisyUI 5**, and
 
 This constraint applies to all templates in `core/` and `ext/`.
 
+### Tailwind class detection in templates
+
+Tailwind CSS 4 only generates utilities it can detect in source files. When a
+Nimbly variable stores one or more CSS classes, always quote the value so the
+class names appear as a normal string in the template source.
+
+```html
+[#set menu-text="text-gray-500"#]
+[#set menu-bg="bg-white"#]
+[#set menu-divider="divide-gray-200"#]
+[#set logo-filter="grayscale brightness-200"#]
+```
+
+Do not write class-valued variables without quotes:
+
+```html
+[#set menu-text=text-gray-500#]  <!-- bad: Tailwind may not generate this class -->
+```
+
+This is especially important for theme variants, menus, dropdowns, language
+switchers, and any reusable component that assembles class names with
+`[#set#]` and later injects them into a `class` attribute.
+
 ### Theme colors
 
 Project-specific Nimbly theme colors and DaisyUI theme values are defined in `ext/tailwind.theme.js`.
