@@ -1279,7 +1279,8 @@ Once a user is inside a language scope, it persists automatically across navigat
 
 ### Step 3 — Configure resources for translation
 
-Add `languages` to every resource `.meta` that has translated content:
+Core 1.1.0 uses field-level i18n. Add `languages` to every resource `.meta`
+that stores translated values in the same record:
 
 ```json
 "languages": ["en", "nl"]
@@ -1305,6 +1306,30 @@ Fields without `i18n: true` are shared across all languages. Most technical
 fields should stay shared, but `i18n: true` is valid for any field whose value
 intentionally differs per language, such as a language-specific image,
 visibility flag, sort order, or date.
+
+### Old record-level i18n vs new field-level i18n
+
+Older Nimbly projects may still use record-level i18n:
+
+- Resource `.meta` has `translations`, not `languages`
+- Each record has a scalar `lang` field
+- Each language is a separate record
+- Records are linked through a `translations` object in the record data
+
+Core 1.1.0 field-level i18n is different:
+
+- Resource `.meta` has `languages`
+- Individual fields opt in with `"i18n": true`
+- One record stores all language values for that field
+- Translated field values are objects such as `{ "nl": "Titel", "en": "Title" }`
+
+Both models can use `/nl/` and `/en/` routes. The difference is the data shape
+and admin behavior, not the public URL shape.
+
+Do not add `.meta.languages` to an old record-level resource just because the
+site has multiple languages. That opts the admin into the 1.1 field-level data
+shape and can corrupt editing workflows unless the existing records are being
+intentionally migrated to `{nl,en,...}` field objects.
 
 ### Step 4 — Add static text translations
 
@@ -2825,7 +2850,7 @@ The `gallery` type in 1.1.0 stores its value as a JSON array in a single field. 
 
 Options:
 
-1. **Custom field type** — create `ext/tpl/field-{typename}/index.tpl` and register `"type": "{typename}"` in `.meta`. The template receives `_f.key` (the field key), and `form_data` contains all flat fields already initialized from the record. This avoids touching the stored data.
+1. **Custom field type** — create a `field-{typename}` template and register `"type": "{typename}"` in `.meta`. The template receives `_f.*` variables, and `form_data` contains all flat fields already initialized from the record. This avoids touching the stored data.
 
 2. **Data migration** — write a script that reads every record, collects the flat fields into a JSON array, writes it to the single gallery field, removes the flat keys, and saves the record. Then use `"type": "gallery"` normally.
 
@@ -3001,7 +3026,7 @@ On submit, `form_data` is spread into the API payload and POSTed to `/api/v1/{re
 1. Create the template:
    ```
    core/modules/forms/tpl/field-{type}/index.tpl   ← core types
-   ext/lib/field-{type}.php                         ← project-specific (shortcode wrapper only)
+   ext/tpl/field-{type}/index.tpl                   ← project-specific types
    ```
 
 2. In the template:
@@ -3013,3 +3038,15 @@ On submit, `form_data` is spread into the API payload and POSTed to `/api/v1/{re
 3. Register the type name in `.meta` — it is immediately usable once the template exists.
 
 4. If the field manages complex state (e.g. a file picker, a media browser trigger), nest its own `x-data` inside the form's `x-data`. The outer `form_data` remains accessible from nested scopes.
+
+1.1 custom fields must use the `field-{type}` template convention and the
+`_f.*` context (`_f.model`, `_f.key`, `_f.title`, `_f.bg`, etc.). Older
+templates that use `_fmodel`, `_fid`, `_ftitle`, `_fbg`,
+`_bf_render_field()`, or Tailwind Elements `data-te-*` attributes are legacy
+and should be rebuilt instead of carried forward.
+
+Nested and repeater fields must explicitly manage nested Alpine model paths.
+For example, a `group` field that stores `locations` should bind child fields
+to paths such as `form_data.locations[ix].location` or pass an explicit model
+override when reusing `render_field()`. Do not assume the core renderer can
+infer nested array paths from a flat field key.

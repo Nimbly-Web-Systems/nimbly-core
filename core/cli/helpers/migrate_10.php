@@ -40,6 +40,11 @@ function migrate_10_collect()
     }
 
     $pk_resources = [];
+    $name_fields = [];
+    $i18n_meta = [];
+    $custom_fields = [];
+    $core_field_types = migrate_10_core_field_types();
+
     foreach (glob($data_dir . '*/.meta') as $meta_file) {
         $resource = basename(dirname($meta_file));
         $meta = json_decode(file_get_contents($meta_file), true) ?? [];
@@ -50,10 +55,49 @@ function migrate_10_collect()
                 'pk'        => $meta['pk'],
             ];
         }
+
+        $has_translations = isset($meta['translations']);
+        $has_languages = isset($meta['languages']);
+        if ($has_translations || $has_languages) {
+            $i18n_meta[$resource] = [
+                'translations' => $has_translations,
+                'languages' => $has_languages,
+            ];
+        }
+
+        $fields = $meta['fields'] ?? [];
+        if (!is_array($fields)) {
+            $fields = [];
+        }
+
+        foreach (migrate_10_walk_fields($fields) as $field) {
+            if (($field['type'] ?? '') === 'name') {
+                $name_fields[] = [
+                    'resource' => $resource,
+                    'path' => $field['path'],
+                    'slug' => !empty($field['def']['slug']),
+                    'pk' => $meta['pk'] ?? null,
+                    'auto' => empty($field['def']['slug']),
+                ];
+                continue;
+            }
+
+            if (!empty($field['type']) && !isset($core_field_types[$field['type']])) {
+                $custom_fields[] = [
+                    'resource' => $resource,
+                    'path' => $field['path'],
+                    'type' => $field['type'],
+                ];
+            }
+        }
     }
 
     return [
         'pk_resources' => $pk_resources,
+        'name_fields' => $name_fields,
+        'i18n_meta' => $i18n_meta,
+        'custom_fields' => $custom_fields,
+        'legacy_field_templates' => migrate_10_find_legacy_field_templates(BASE_DIR . 'ext/'),
         'legacy_handlers' => migrate_10_find_legacy_trigger_handlers(BASE_DIR . 'ext/modules/'),
         'services' => migrate_10_find_services($data_dir),
     ];
@@ -61,12 +105,22 @@ function migrate_10_collect()
 
 function migrate_10_has_work($state)
 {
-    return !empty($state['pk_resources']) || !empty($state['legacy_handlers']) || !empty($state['services']);
+    return !empty($state['pk_resources'])
+        || !empty(array_filter($state['name_fields'], fn($field) => !empty($field['auto'])))
+        || !empty($state['i18n_meta'])
+        || !empty($state['custom_fields'])
+        || !empty($state['legacy_field_templates'])
+        || !empty($state['legacy_handlers'])
+        || !empty($state['services']);
 }
 
 function migrate_10_print_summary($state)
 {
     $pk_resources = $state['pk_resources'];
+    $name_fields = $state['name_fields'];
+    $i18n_meta = $state['i18n_meta'];
+    $custom_fields = $state['custom_fields'];
+    $legacy_field_templates = $state['legacy_field_templates'];
     $legacy_handlers = $state['legacy_handlers'];
     $services = $state['services'];
 
@@ -111,6 +165,45 @@ function migrate_10_print_summary($state)
         echo "  4. Convert 'name' fields with slug:true to 'text', and add a 'slug' field definition\n";
     } else {
         echo "\nNo resources with 'pk' found.\n";
+    }
+
+    if (!empty($name_fields)) {
+        echo "\nResources still using removed field type 'name':\n\n";
+        foreach ($name_fields as $field) {
+            $action = $field['auto']
+                ? 'will convert to text'
+                : (!empty($field['pk']) ? 'handled by pk slug migration' : 'manual slug-field migration needed');
+            printf("  %-24s %-28s slug=%-3s %s\n", $field['resource'], $field['path'], $field['slug'] ? 'yes' : 'no', $action);
+        }
+    }
+
+    if (!empty($i18n_meta)) {
+        echo "\nResource i18n metadata found:\n\n";
+        foreach ($i18n_meta as $resource => $info) {
+            if ($info['translations'] && $info['languages']) {
+                printf("  %-24s has both legacy translations and 1.1 languages metadata — review manually\n", $resource);
+            } elseif ($info['translations']) {
+                printf("  %-24s legacy record-level translations metadata — keep unless intentionally migrating data\n", $resource);
+            } else {
+                printf("  %-24s field-level 1.1 languages metadata\n", $resource);
+            }
+        }
+    }
+
+    if (!empty($custom_fields)) {
+        echo "\nCustom/non-core field types found:\n\n";
+        foreach ($custom_fields as $field) {
+            printf("  %-24s %-28s type=%s\n", $field['resource'], $field['path'], $field['type']);
+        }
+        echo "\nCustom field types must provide a 1.1-compatible field-{type} template and use _f.* variables.\n";
+    }
+
+    if (!empty($legacy_field_templates)) {
+        echo "\nLegacy custom field template patterns found:\n\n";
+        foreach ($legacy_field_templates as $hit) {
+            printf("  %-64s %s\n", $hit['file'], implode(', ', $hit['tokens']));
+        }
+        echo "\nThese are warnings only. Replace legacy _fmodel/_fid/_ftitle/_fbg/_bf_render_field/data-te-* usage manually.\n";
     }
 }
 
@@ -176,6 +269,8 @@ function migrate_10_apply($state)
         file_put_contents($meta_file, $json . "\n");
         echo "  Removed 'pk' from .meta and saved.\n";
     }
+
+    migrate_10_apply_name_fields($state['name_fields']);
 }
 
 function migrate_10_print_done($state)
@@ -229,4 +324,129 @@ function migrate_10_find_services($data_dir)
         ];
     }
     return $result;
+}
+
+function migrate_10_core_field_types(): array
+{
+    $types = [];
+    foreach ([
+        BASE_DIR . 'core/modules/forms/tpl/field-*',
+        BASE_DIR . 'core/modules/admin/tpl/field-*',
+    ] as $pattern) {
+        foreach (glob($pattern, GLOB_ONLYDIR) ?: [] as $dir) {
+            $types[substr(basename($dir), strlen('field-'))] = true;
+        }
+    }
+    return $types;
+}
+
+function migrate_10_walk_fields(array $fields, string $prefix = ''): array
+{
+    $result = [];
+    foreach ($fields as $name => $def) {
+        if (!is_array($def)) {
+            continue;
+        }
+        $path = $prefix === '' ? (string)$name : $prefix . '.' . $name;
+        $result[] = [
+            'path' => $path,
+            'type' => $def['type'] ?? '',
+            'def' => $def,
+        ];
+        if (!empty($def['fields']) && is_array($def['fields'])) {
+            $result = array_merge($result, migrate_10_walk_fields($def['fields'], $path));
+        }
+    }
+    return $result;
+}
+
+function migrate_10_find_legacy_field_templates(string $ext_dir): array
+{
+    if (!is_dir($ext_dir)) {
+        return [];
+    }
+
+    $patterns = [
+        '_fmodel' => '/\[#_fmodel#\]/',
+        '_fid' => '/\[#_fid#\]/',
+        '_ftitle' => '/\[#_ftitle#\]/',
+        '_fbg' => '/\[#_fbg#\]/',
+        '_bf_render_field' => '/\b_bf_render_field\s*\(/',
+        'data-te-*' => '/\bdata-te-[a-z0-9_-]+/i',
+    ];
+    $result = [];
+    $it = new RecursiveIteratorIterator(
+        new RecursiveDirectoryIterator($ext_dir, FilesystemIterator::SKIP_DOTS)
+    );
+    foreach ($it as $file) {
+        $path = $file->getPathname();
+        if (str_starts_with($path, BASE_DIR . 'ext/static/')) {
+            continue;
+        }
+        if (!in_array($file->getExtension(), ['tpl', 'php', 'inc', 'js'], true)) {
+            continue;
+        }
+        $content = file_get_contents($path);
+        $tokens = [];
+        foreach ($patterns as $label => $pattern) {
+            if (preg_match($pattern, $content)) {
+                $tokens[] = $label;
+            }
+        }
+        if (!empty($tokens)) {
+            $result[] = [
+                'file' => str_replace(BASE_DIR, '', $path),
+                'tokens' => $tokens,
+            ];
+        }
+    }
+    return $result;
+}
+
+function migrate_10_apply_name_fields(array $name_fields): void
+{
+    $resources = [];
+    foreach ($name_fields as $field) {
+        if (!empty($field['auto'])) {
+            $resources[$field['resource']] = true;
+        }
+    }
+
+    foreach (array_keys($resources) as $resource) {
+        $meta_file = BASE_DIR . 'ext/data/' . $resource . '/.meta';
+        if (!is_file($meta_file)) {
+            continue;
+        }
+        $meta = json_decode(file_get_contents($meta_file), true) ?? [];
+        if (empty($meta['fields']) || !is_array($meta['fields'])) {
+            continue;
+        }
+        $changed = migrate_10_convert_non_slug_name_fields($meta['fields']);
+        if ($changed === 0) {
+            continue;
+        }
+        $json = json_encode($meta, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        file_put_contents($meta_file, $json . "\n");
+        echo "\n--- $resource ---\n";
+        echo "  Converted {$changed} non-slug 'name' field" . ($changed === 1 ? '' : 's') . " to 'text'.\n";
+    }
+}
+
+function migrate_10_convert_non_slug_name_fields(array &$fields): int
+{
+    $changed = 0;
+    foreach ($fields as &$def) {
+        if (!is_array($def)) {
+            continue;
+        }
+        if (($def['type'] ?? '') === 'name' && empty($def['slug'])) {
+            $def['type'] = 'text';
+            $changed++;
+        }
+        if (!empty($def['fields']) && is_array($def['fields'])) {
+            $changed += migrate_10_convert_non_slug_name_fields($def['fields']);
+        }
+    }
+    unset($def);
+    return $changed;
 }
