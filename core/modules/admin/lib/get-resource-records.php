@@ -66,7 +66,7 @@ function _prep_record($record, $fields)
     $result = [];
     foreach ($fields as $k => $v) {
         $val = $record[$k] ?? '';
-        if (is_array($val)) {
+        if (is_array($val) && empty($v['i18n'])) {
             $val = implode(', ', array_filter(array_map(function($item) {
                 if (is_array($item)) {
                     return $item['date'] ?? $item['name'] ?? $item['title'] ?? '';

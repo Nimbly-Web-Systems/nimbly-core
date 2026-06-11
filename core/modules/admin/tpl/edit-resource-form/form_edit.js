@@ -94,11 +94,16 @@ document.addEventListener("alpine:init", () => {
         }
         delete this.form_data.keep_password;
       }
+      const payload = {
+        ...this.form_data,
+        ...this.get_editor_values(),
+      };
+      if (typeof _translation_mode !== "undefined" && _translation_mode === "field") {
+        delete payload.lang;
+        delete payload.translations;
+      }
       nb.api
-        .put(nb.base_url + "/api/v1/" + resource_id + "/" + record_id, {
-          ...this.form_data,
-          ...this.get_editor_values(),
-        })
+        .put(nb.base_url + "/api/v1/" + resource_id + "/" + record_id, payload)
         .then((data) => {
           this.busy = false;
           if (data.success) {
