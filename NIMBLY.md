@@ -130,6 +130,8 @@ This file exports the default Tailwind theme extension and a named `daisyuiTheme
 
 Use `ext/theme.css` for project-specific public-site CSS and component overrides. Do not use `ext/theme.css` as the primary place to redefine Nimbly/admin theme colors unless a narrow component override is required.
 
+`ext/theme.css` is intentionally imported as unlayered CSS. Keep it that way so project overrides can beat third-party unlayered stylesheets such as Leaflet, even when those stylesheets are loaded later on a specific page.
+
 **Always use theme colors instead of inventing colors.** Reach for the project's named tokens first — `primary`, `cnormal`, `clight`, `cdark`, `cdarkest`, `cbar`, `clink`, `secondary` — before using any Tailwind palette color (`red-700`, `blue-500`, etc.). Hard-coded palette colors bypass the theme and make redesigns harder. Only use a raw palette color when no theme token fits semantically and adding one to `ext/tailwind.theme.js` is not warranted.
 
 ### Frontend-first data loading

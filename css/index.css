@@ -1,4 +1,4 @@
 @layer theme, base, project, components, utilities;
 
 @import "tw/out.css";
-@import "../ext/theme.css" layer(project);
+@import "../ext/theme.css";
