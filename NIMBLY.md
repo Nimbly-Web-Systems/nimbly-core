@@ -1897,6 +1897,30 @@ ext/uri/api/v1/leads/index.tpl
 
 This allows anonymous submissions for that one method/resource pair while keeping the rest of the API protected.
 
+### Public submission form checklist
+
+Contact forms, questionnaires, signup forms, and lead forms all use the same resource-write pattern:
+
+1. Create a target resource for submitted records, e.g. `ext/data/questionnaire_entries/.meta`.
+2. Create the form definition JSON next to the route, e.g. `questionnaire.json`.
+3. Render it with `[#module forms#]` and `[#build-form questionnaire#]`.
+4. Open only anonymous `POST` for the target resource:
+
+```html
+[#module api#]
+[#api-allow post questionnaire_entries#]
+```
+
+5. If the submission should send an email or trigger other side effects, attach an explicit create event to the target resource `.meta`:
+
+```json
+"events": {
+  "create": ["questionnaire-entry-created"]
+}
+```
+
+Each submission is stored as a normal record in the target resource and appears in the admin like any other resource record.
+
 ### Field types in forms
 
 Same type names as resource fields: `text`, `textarea`, `email`, `url`, `select`, `upload`. Add `"help": "Hint text"` to any field for a help label below the input.
