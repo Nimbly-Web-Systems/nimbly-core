@@ -122,6 +122,7 @@ function load_user_features($name) {
 function persist_login_error() {
     $GLOBALS['SYSTEM']['validation_errors']['_global'][] = "[#text validate_invalid_email_or_password#]";
     $_SESSION['username'] = 'anonymous';
+    unset($_SESSION['user_uuid']);
     return false;
 }
 
@@ -145,6 +146,7 @@ function persist_login($email, $password) {
         //login success
         _persist_user_features($user_data['email']);
         $_SESSION['username'] = $user_data['email'];
+        $_SESSION['user_uuid'] = $user_data['uuid'];
         return true;
     }
     return persist_login_error();
@@ -152,15 +154,15 @@ function persist_login($email, $password) {
 
 function persist_oauth_login($email) {
     run_library('session');
-    $uuid = md5($email);
-    if (!data_exists('users', $uuid)) {
+    $user_data = find_user_by_email($email);
+    if (empty($user_data) || empty($user_data['uuid'])) {
         return persist_login_error();
     }
-    $user_data = data_read('users', $uuid);
-    if (_persist_user_roles($email)) {
+    if (_persist_user_roles($user_data['email'])) {
         //login success
-        _persist_user_features($email);
-        $_SESSION['username'] = $email;
+        _persist_user_features($user_data['email']);
+        $_SESSION['username'] = $user_data['email'];
+        $_SESSION['user_uuid'] = $user_data['uuid'];
         return true;
     }
     return persist_login_error();
@@ -192,7 +194,10 @@ function _persist_user_features($name) {
             $_SESSION['features'][$v] = true;
         }
     }
-    $_SESSION['features']['api_put_users_' . md5($name)] = true;
+    $user = find_user_by_email($name);
+    if (!empty($user['uuid'])) {
+        $_SESSION['features']['api_put_users_' . $user['uuid']] = true;
+    }
     if (user_has_role($name, 'admin')) {
         $_SESSION['features']['(none)'] = false;
         $_SESSION['features']['(all)'] = true;

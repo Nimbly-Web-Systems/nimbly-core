@@ -1526,6 +1526,7 @@ php core/cli/nimbly.php user:create
 php core/cli/nimbly.php module:install <name>
 php core/cli/nimbly.php routes:add
 php core/cli/nimbly.php index:rebuild [resource]
+php core/cli/nimbly.php users:email-index
 php core/cli/nimbly.php system:upgrade-11
 php core/cli/nimbly.php help
 ```
@@ -1587,6 +1588,24 @@ php core/cli/nimbly.php index:rebuild articles    # direct: reindex the 'article
 ```
 
 The command scans all records in the resource and creates any missing index files. It is idempotent — existing entries are left untouched.
+
+#### `users:email-index`
+Adds email lookup metadata to the `users` resource and rebuilds its email index.
+
+```bash
+php core/cli/nimbly.php users:email-index
+php core/cli/nimbly.php users:email-index --yes
+```
+
+This migration supports the Nimbly 1.1 user identity model, where the user
+record UUID is stable and email is an indexed lookup field. It adds `email` to
+`users/.meta.index`, adds `email` to `users/.meta.unique` when no duplicate
+emails exist, and creates index entries for all existing users, including
+legacy users whose UUID was originally `md5(email)`.
+
+If duplicate emails are found, the command reports them and skips adding
+`unique=email` until the duplicates are resolved. The email index is still
+rebuilt so login lookups remain fast where possible.
 
 #### `test`
 Runs the E2E suite. The command creates temporary test data with `test:setup`, installs the Chromium Playwright browser if needed, runs Playwright using `core/tests/playwright.config.js`, then removes the temporary data with `test:teardown`.
@@ -2613,6 +2632,14 @@ Tailwind 4 format:
 
 This matters because Tailwind 4 reads the project config from the CSS
 entrypoint. The command preserves any custom CSS below those directives.
+
+The upgrade command also migrates the `users` resource away from email-derived
+identity. Existing Nimbly 1.0 sites often stored users with `md5(email)` as the
+record UUID. In 1.1, user records should keep a stable UUID and treat email as
+an indexed lookup field. The upgrade adds `email` to `users/.meta.index`, adds
+`email` to `users/.meta.unique` when there are no duplicate emails, and rebuilds
+the users email index. If duplicate emails exist, the command lists them and
+leaves uniqueness disabled until an operator resolves the duplicate records.
 
 It also removes legacy Tailwind Elements bundles from `ext/static/`
 (`tw-elements*`). Core 1.1.0 uses Alpine.js and DaisyUI for admin interactivity,

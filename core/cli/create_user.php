@@ -50,6 +50,7 @@ if (empty($pepper)) {
 $_SERVER['PEPPER'] = $pepper;
 load_library('data');
 load_library('encrypt');
+load_library('get-user');
 
 // -----------------------------------------------------------------------
 // Helpers
@@ -128,13 +129,13 @@ while (strlen($password) < 8) {
 // Create user
 // -----------------------------------------------------------------------
 
-$user_uuid = md5($email);
-if (data_exists('users', $user_uuid)) {
+if (find_user_by_email($email)) {
     die("User $email already exists.\n");
 }
 
 cli_section('Result', true);
 
+$user_uuid = generate_uuid();
 $salt = generate_salt();
 data_create('users', $user_uuid, [
     'email'    => $email,

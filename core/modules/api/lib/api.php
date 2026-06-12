@@ -98,6 +98,7 @@ function api_token_access($feature, $resource = false) {
 
     _persist_user_features($user['email']);
     $_SESSION['username'] = $user['email'];
+    $_SESSION['user_uuid'] = $user['uuid'];
     return api_user_access($feature, $resource);
 }
 
