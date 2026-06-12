@@ -18,6 +18,7 @@ require_once BASE_DIR . 'core/cli/helpers/output.php';
 require_once BASE_DIR . 'core/cli/helpers/migrate_10.php';
 require_once BASE_DIR . 'core/cli/helpers/migrate_lib.php';
 require_once BASE_DIR . 'core/cli/helpers/htaccess.php';
+require_once BASE_DIR . 'core/cli/helpers/users_email_index.php';
 
 function upgrade_11_tailwind_elements_files(): array
 {
@@ -336,6 +337,7 @@ $yes = in_array('--yes', $argv, true) || in_array('-y', $argv, true);
 
 migrate_10_bootstrap();
 $migration    = migrate_10_collect();
+$users_email  = users_email_index_collect();
 [$moves, $skipped] = migrate_lib_collect();
 $env          = upgrade_11_read_env();
 $paths        = upgrade_11_paths_from_env($env);
@@ -352,6 +354,8 @@ $uuid_hits    = upgrade_11_uuid_collect();
 $util_hits    = upgrade_11_util_collect();
 
 $has_work = migrate_10_has_work($migration)
+    || users_email_index_has_work($users_email)
+    || !empty($users_email['duplicates'])
     || !empty($moves)
     || in_array($htaccess['action'], ['write', 'recreate_mod_php'], true)
     || !empty($tw_elements)
@@ -381,6 +385,11 @@ echo "Nimbly 1.1.0 upgrade plan:\n";
 if (migrate_10_has_work($migration)) {
     echo "\n[" . ++$step . "] Resource/data migration\n";
     migrate_10_print_summary($migration);
+}
+
+if (users_email_index_has_work($users_email) || !empty($users_email['duplicates'])) {
+    echo "\n[" . ++$step . "] Users email index migration\n";
+    users_email_index_print_summary($users_email);
 }
 
 if (!empty($moves) || !empty($skipped)) {
@@ -462,6 +471,12 @@ if (migrate_10_has_work($migration)) {
     echo "\n=== Running resource/data migration ===\n";
     migrate_10_apply($migration);
     migrate_10_print_done($migration);
+}
+
+if (users_email_index_has_work($users_email) || !empty($users_email['duplicates'])) {
+    echo "\n=== Updating users email index ===\n";
+    $users_email_result = users_email_index_apply($users_email);
+    users_email_index_print_done($users_email_result);
 }
 
 if (!empty($moves)) {

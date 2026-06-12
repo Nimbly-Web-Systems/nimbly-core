@@ -58,6 +58,8 @@ function api_token_post() {
      $_SESSION['token'] = $token;
      $_SESSION['token_created'] = $created;
      $_SESSION['token_expires'] = $expires;  
+     $_SESSION['username'] = $user_data['email'];
+     $_SESSION['user_uuid'] = $user_data['uuid'];
      data_update('users', $user_data['uuid'], ['api' => 
         ['access' => true, 'token' => $token, 'created' => $created, 'expires' => $expires]
     ]);   

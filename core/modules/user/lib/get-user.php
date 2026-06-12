@@ -10,15 +10,25 @@ function get_user_sc($params) {
 
 function get_user($uuid=false) {
 	static $users = [];
-	if (!empty($users[$uuid])) {
-		return $users[$uuid];
-	}
+
 	load_library('session');
 	if (empty($uuid) && session_resume() && !empty($_SESSION['username'])) {
-		$uuid = md5($_SESSION['username']);
+		if (!empty($_SESSION['user_uuid'])) {
+			$uuid = $_SESSION['user_uuid'];
+		} else {
+			$user = find_user_by_email($_SESSION['username']);
+			if (!empty($user['uuid'])) {
+				$_SESSION['user_uuid'] = $user['uuid'];
+				return $user;
+			}
+			$uuid = md5($_SESSION['username']);
+		}
 	}
 	if (empty($uuid)) {
 		return false;
+	}
+	if (!empty($users[$uuid])) {
+		return $users[$uuid];
 	}
 	load_library('data');
 	$users[$uuid] = data_read("users", $uuid);
@@ -43,6 +53,17 @@ function find_user_by_email($email) {
 	}
 
 	load_library('data');
+	load_library('util');
+
+	foreach (array_unique([$email, strtolower($email)]) as $candidate) {
+		$matches = data_read_index('users', 'email', md5_uuid($candidate));
+		foreach ($matches as $user) {
+			if (!empty($user['email']) && strcasecmp(trim((string)$user['email']), $email) === 0) {
+				$users_by_email[$cache_key] = $user;
+				return $user;
+			}
+		}
+	}
 
 	foreach (array_unique([$email, strtolower($email)]) as $candidate) {
 		$uuid = md5($candidate);

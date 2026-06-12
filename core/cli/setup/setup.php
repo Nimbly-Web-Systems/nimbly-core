@@ -609,6 +609,8 @@ if (!data_exists('users', '.meta')) {
             'name'     => ['type' => 'text',                          'name' => 'name'],
         ],
         'encrypt' => 'password',
+        'index' => ['email'],
+        'unique' => ['email'],
     ]);
     nb_status("Created: users/.meta");
 }
@@ -618,8 +620,9 @@ if (!data_exists('users', '.meta')) {
 // -----------------------------------------------------------------------
 
 if ($need_user) {
-    $user_uuid = md5($email);
-    if (!data_exists('users', $user_uuid)) {
+    load_library('get-user');
+    if (!find_user_by_email($email)) {
+        $user_uuid = generate_uuid();
         $salt = generate_salt();
         data_create('users', $user_uuid, [
             'email'    => $email,
