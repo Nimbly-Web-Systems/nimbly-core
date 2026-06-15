@@ -81,22 +81,15 @@ function _bf_class_suffix($raw_class_name)
 function _bf_field_wrapper_class($class_name, $params)
 {
     load_library('get');
+    $template_class = get_variable('form-field-wrapper-class');
+    $param_class = get_param_value($params, 'field-wrapper-class');
+    $style_class = $param_class ?: ($template_class ?: 'relative my-10');
+
     $classes = [
         'nb-field',
         "nb-form-field-{$class_name}",
-        'relative',
-        'my-10',
+        $style_class,
     ];
-
-    $template_class = get_variable('form-field-wrapper-class');
-    if (!empty($template_class)) {
-        $classes[] = $template_class;
-    }
-
-    $param_class = get_param_value($params, 'field-wrapper-class');
-    if (!empty($param_class)) {
-        $classes[] = $param_class;
-    }
 
     return trim(preg_replace('/\s+/', ' ', implode(' ', $classes)));
 }
