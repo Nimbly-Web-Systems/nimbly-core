@@ -1,4 +1,4 @@
-<div class="relative my-10">
+<div class="[#_f.wrapper_class#]">
     [#if _f.ai=(not-empty) tpl=ai-btn#]
     <textarea name="[#_f.key#]" rows="[#get _f.rows default=3#]" placeholder=""
         [#_f.x_init#]

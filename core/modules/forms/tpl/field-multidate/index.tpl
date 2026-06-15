@@ -1,5 +1,5 @@
 <script>var _nb_multidate_[#_f.key#] = [#fmt var=[#get _f.source default=record#].[#_f.key#] type=json empty=[]#];</script>
-<div class="relative my-10 border border-neutral-300 rounded bg-neutral-50 p-4"
+<div class="[#_f.wrapper_class#] border border-neutral-300 rounded bg-neutral-50 p-4"
     x-data="{ new_date: '' }"
     x-init="const _raw = window._nb_multidate_[#_f.key#]; form_data['[#_f.key#]'] = Array.isArray(_raw) ? _raw : (_raw ? [_raw] : []); delete window._nb_multidate_[#_f.key#]">
 

@@ -1,4 +1,4 @@
-<div class="relative my-10">
+<div class="[#_f.wrapper_class#]">
     [#if _f.ai=(not-empty) tpl=ai-btn#]
     [#if _f.multi=(not-empty) tpl=multi#]
     [#if _f.multi=(empty) tpl=single#]

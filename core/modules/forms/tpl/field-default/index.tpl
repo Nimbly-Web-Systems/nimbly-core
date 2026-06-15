@@ -1,4 +1,4 @@
-<div class="relative my-10">
+<div class="[#_f.wrapper_class#]">
     [#if _f.ai=(not-empty) tpl=ai-btn#]
     <input type="[#_f.type#]" value="[#_f.value#]" name="[#_f.key#]" placeholder="" [#_f.x_init#]
         x-model="[#_f.model#]" [#if _f.required=(not-empty) echo=required#] class="input input-bordered w-full" />

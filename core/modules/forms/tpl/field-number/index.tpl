@@ -1,4 +1,4 @@
-<div class="relative my-10">
+<div class="[#_f.wrapper_class#]">
     <input type="number" value="[#_f.value#]" name="[#_f.key#]" placeholder=""
         [#_f.x_init#]
         x-model="[#_f.model#]"
