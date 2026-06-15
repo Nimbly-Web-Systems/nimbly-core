@@ -1932,7 +1932,7 @@ forms. The value is treated as a class suffix, not a full class list:
 ```
 
 This renders `nb-form-truesim` on the form and `nb-form-field-truesim` on each
-field wrapper. The default field spacing remains `relative my-10`.
+field wrapper. The default field wrapper style remains `relative my-10`.
 
 To add classes for a specific render, set `form-field-wrapper-class` before
 calling `[#build-form#]`:
@@ -1948,8 +1948,13 @@ Or pass the class directly to the shortcode:
 [#build-form contact field-wrapper-class="my-2"#]
 ```
 
-These classes are appended to the default wrapper classes; they do not replace
-`nb-field`, `nb-form-field-{suffix}`, `relative`, or `my-10`.
+These classes replace the default wrapper style slot (`relative my-10`). The
+generated hook classes `nb-field` and `nb-form-field-{suffix}` are always kept.
+With `field-wrapper-class="my-2"`, the field wrapper becomes:
+
+```html
+<div class="nb-field nb-form-field-contact my-2">
+```
 
 For a public form, explicitly allow the API POST with a route such as:
 
