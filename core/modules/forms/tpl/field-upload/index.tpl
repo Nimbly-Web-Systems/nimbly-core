@@ -1,4 +1,4 @@
-<div class="relative my-10">
+<div class="[#_f.wrapper_class#]">
 	<input type="file" name="[#_f.key#]" x-init="[#_f.model#]=null" x-ref="[#_f.key#]" 
 		@change="[#_f.model#] = $refs.[#_f.key#].files[0]"
 		accept='[#get _f.accept default=""#]' 

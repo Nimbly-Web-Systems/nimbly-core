@@ -1904,6 +1904,53 @@ Form definition file (`ext/uri/contact/contact.json`):
 
 The `resource` field is the target resource that will receive the new record via the API. Make sure that resource exists in `ext/data/` with a matching `.meta`.
 
+### Form styling hooks
+
+`[#build-form#]` adds stable classes to the rendered form and field wrappers.
+By default the class suffix is the form definition's `name`:
+
+```html
+<form class="nb-form nb-form-contact ...">
+```
+
+Each rendered field wrapper receives:
+
+```html
+<div class="nb-field nb-form-field-contact relative my-10">
+```
+
+Set `class_name` in the form JSON to share one styling hook across multiple
+forms. The value is treated as a class suffix, not a full class list:
+
+```json
+{
+  "name": "contact",
+  "class_name": "truesim",
+  "resource": "leads",
+  "fields": {}
+}
+```
+
+This renders `nb-form-truesim` on the form and `nb-form-field-truesim` on each
+field wrapper. The default field spacing remains `relative my-10`.
+
+To add classes for a specific render, set `form-field-wrapper-class` before
+calling `[#build-form#]`:
+
+```html
+[#set form-field-wrapper-class="my-2"#]
+[#build-form contact#]
+```
+
+Or pass the class directly to the shortcode:
+
+```html
+[#build-form contact field-wrapper-class="my-2"#]
+```
+
+These classes are appended to the default wrapper classes; they do not replace
+`nb-field`, `nb-form-field-{suffix}`, `relative`, or `my-10`.
+
 For a public form, explicitly allow the API POST with a route such as:
 
 ```
@@ -3084,7 +3131,7 @@ On submit, `form_data` is spread into the API payload and POSTed to `/api/v1/{re
 `field-default/index.tpl` is the base for text-like fields:
 
 ```html
-<div class="relative my-10">
+<div class="[#_f.wrapper_class#]">
     <input type="[#_f.type#]" value="[#_f.value#]" name="[#_f.key#]"
         x-init="[#_f.model#]=`[#_f.value#]`"
         x-model="[#_f.model#]"

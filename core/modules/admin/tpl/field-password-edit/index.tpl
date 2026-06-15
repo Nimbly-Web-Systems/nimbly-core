@@ -1,4 +1,4 @@
-<div class="relative my-10" x-init="form_data.keep_password = true">
+<div class="[#_f.wrapper_class#]" x-init="form_data.keep_password = true">
     <label class="pointer-events-none absolute left-3 -top-2.5 px-1
             font-bold text-sm leading-tight [#get _f.bg default=bg-white#]
             text-neutral-800">

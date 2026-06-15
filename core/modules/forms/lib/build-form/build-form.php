@@ -14,16 +14,21 @@ function build_form_sc($params)
     if (empty($form_def) || empty($form_def['name']) || empty($form_def['resource']) || empty($form_def['fields'])) {
         return;
     }
-    build_form($form_def);
+    build_form($form_def, $params);
 }
 
-function build_form($form_def)
+function build_form($form_def, $params = [])
 {
     set_variable('_bf_name', $form_def['name']);
     set_variable('_bf_resource', $form_def['resource']);
     set_variable('_bf_upload_field', $form_def['upload_field'] ?? false);
     set_variable('_bf_success_message', $form_def['success_message'] ?? '[#text Send#]');
     set_variable('_bf_status', $form_def['status'] ?? 'new');
+    $class_name = _bf_class_suffix($form_def['class_name'] ?? $form_def['name']);
+    $field_wrapper_class = _bf_field_wrapper_class($class_name, $params);
+    set_variable('_bf_class_name', $class_name);
+    set_variable('_bf_form_class', "nb-form nb-form-{$class_name}");
+    set_variable('_bf_field_wrapper_class', $field_wrapper_class);
     echo '<script>' . run_buffered(dirname(__FILE__) . '/fscript.js') . '</script>';
     echo run_buffered(dirname(__FILE__) . '/fheader.tpl');
     echo run_buffered(dirname(__FILE__) . '/fbody.tpl');
@@ -42,7 +47,7 @@ function build_form($form_def)
             continue;
         }
 
-        _bf_render_field($key, $def);
+        _bf_render_field($key, $def, null, null, $field_wrapper_class);
     }
     $buttons = $form_def['buttons'] ?? [];
     foreach ($buttons as $button) {
@@ -52,10 +57,11 @@ function build_form($form_def)
     echo run_buffered(dirname(__FILE__) . '/ffooter.tpl');
 }
 
-function _bf_render_field($key, $def, $group = null, $ix = null)
+function _bf_render_field($key, $def, $group = null, $ix = null, $field_wrapper_class = '')
 {
     $type  = $def['type'] ?? 'text';
     $model = ($group && $ix) ? "form_data.{$group}[{$ix}].{$key}" : null;
+    $def['wrapper_class'] = $field_wrapper_class ?: 'nb-field relative my-10';
 
     echo '<div>';
     render_field($def, $key, null, 'form_data', null, $model);
@@ -63,4 +69,34 @@ function _bf_render_field($key, $def, $group = null, $ix = null)
         echo run_buffered(dirname(__FILE__) . '/fhelp.tpl');
     }
     echo '</div>';
+}
+
+function _bf_class_suffix($raw_class_name)
+{
+    load_library('sanitize');
+    $class_name = sanitize_id((string)$raw_class_name);
+    return $class_name ?: 'form';
+}
+
+function _bf_field_wrapper_class($class_name, $params)
+{
+    load_library('get');
+    $classes = [
+        'nb-field',
+        "nb-form-field-{$class_name}",
+        'relative',
+        'my-10',
+    ];
+
+    $template_class = get_variable('form-field-wrapper-class');
+    if (!empty($template_class)) {
+        $classes[] = $template_class;
+    }
+
+    $param_class = get_param_value($params, 'field-wrapper-class');
+    if (!empty($param_class)) {
+        $classes[] = $param_class;
+    }
+
+    return trim(preg_replace('/\s+/', ' ', implode(' ', $classes)));
 }

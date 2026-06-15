@@ -126,6 +126,7 @@ function render_field(array $def, string $field = '', $value = null, string $sto
     set_variable('_f.bg',       'bg-white');
     set_variable('_f.required', !empty($def['required']));
     set_variable('_f.ai',       !empty($def['ai_prompts']));
+    set_variable('_f.wrapper_class', $def['wrapper_class'] ?? 'nb-field relative my-10');
     $field_value = $value ?? $def['default'] ?? '';
     $i18n_seed = null;
 

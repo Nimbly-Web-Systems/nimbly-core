@@ -1,4 +1,4 @@
-<div class="relative my-10 flex items-center gap-3">
+<div class="[#_f.wrapper_class#] flex items-center gap-3">
     <input type="checkbox" name="[#_f.key#]" value="1"
         [#if _f.value=(not-empty) echo=checked#]
         x-model="[#_f.model#]"

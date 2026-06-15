@@ -1,4 +1,4 @@
-<div class="relative my-10">
+<div class="[#_f.wrapper_class#]">
     <input type="password"
         class="input input-bordered w-full"
         x-model="[#_f.model#]"

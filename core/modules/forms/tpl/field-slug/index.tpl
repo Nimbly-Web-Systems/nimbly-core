@@ -6,7 +6,7 @@
          }).join(' ');
          [#_f.model#] = slugify(_parts);
      "
-     class="relative my-10">
+     class="[#_f.wrapper_class#]">
     <input type="text"
         name="[#_f.key#]"
         x-model="[#_f.model#]"
