@@ -618,7 +618,7 @@ load_library('util');
 
 $uuid = generate_uuid();
 $salt = generate_salt();
-$slug = slugify($title);
+$slug = make_slug($title);
 $hash = md5_uuid($slug);
 $text = plain_text($html);
 ```
@@ -854,7 +854,7 @@ Defines the structure and behavior of a resource. All fields must be explicitly 
 | `text` | Single-line text |
 | `textarea` | Multi-line plain text |
 | `html` | Rich text (medium-editor) |
-| `slug` | URL-safe slug — auto-computed from source fields, manually overridable |
+| `slug` | URL-safe slug field computed from configured source fields |
 | `boolean` | True/false toggle |
 | `date` | Date picker |
 | `email` | Email address |
@@ -882,7 +882,6 @@ Common options per field:
 | `multi` | boolean | Allow multiple values |
 | `i18n` | boolean | Translate per language |
 | `accept` | string | File type restriction for image/file fields |
-| `slug` | boolean | Auto-generates a URL-safe slug from this field's value. Used on `name` fields that serve as routing keys. |
 
 **HTML fields** must explicitly use one of two configurations:
 
@@ -904,7 +903,14 @@ Never define an `html` field without choosing one of these. `media_sizes` is req
 
 **Slug fields:**
 
-Auto-computed from one or more source fields. The user can override the value manually. Clearing the field re-enables auto-computation.
+Slugs are explicit fields. Do not add `"slug": true` to another field in
+1.1.0. Define a separate field with `"type": "slug"` and a `source` that points
+to the field or fields it is derived from.
+
+The admin form computes the slug in the browser from its source fields before
+submit. The API does not invent missing slug fields on save; it stores the slug
+field value it receives. If code creates or imports records outside the admin
+form, it must also set the slug field value.
 
 ```json
 "url_slug": {
@@ -927,6 +933,11 @@ Multiple sources are comma-separated — values are joined with a space before s
 ```
 
 With `"source": "title,date"` and title `"Jazz Night"`, date `"2026-04-09"`, the slug becomes `jazz-night-2026-04-09`. Always add `url_slug` to the resource `index` array so it can be looked up in `route.inc`.
+
+If the source field is i18n, the slug field is treated as i18n too. For example,
+`title.nl`, `title.en`, and `title.fr` produce matching values under
+`title_slug.nl`, `title_slug.en`, and `title_slug.fr`. Do not hand-translate
+slugs; let the slug field derive them from the language-specific source values.
 
 **Select fields:**
 
@@ -1102,19 +1113,21 @@ router_accept();
 
 `data_read_index($resource, $index_name, $index_uuid)` returns an associative array of `uuid => record` for all records matching the indexed value. For slug lookups this is always one record.
 
-#### Rebuilding indexes (reindex CLI)
+#### Rebuilding indexes
 
 If you add `index` to an existing resource's `.meta`, existing records won't have index entries yet. Rebuild them with:
 
 ```bash
-php core/cli/nimbly.php reindex
+php core/cli/nimbly.php index:rebuild
 # prompts — lists all indexed resources and asks you to choose
 
-php core/cli/nimbly.php reindex articles
+php core/cli/nimbly.php index:rebuild articles
 # direct — reindexes the 'articles' resource immediately
 ```
 
-The reindex command is idempotent — safe to run multiple times.
+The command is idempotent — safe to run multiple times. `reindex` still exists
+as a legacy alias, but new documentation and scripts should use
+`index:rebuild`.
 
 ### Data caching
 
@@ -1466,7 +1479,8 @@ Rules for HTML translation:
 - Always define `languages` in both site config and resource `.meta`
 - Always use 2-letter language codes, consistently everywhere
 - Add `"i18n": true` only when the field value should intentionally differ per language
-- Never translate slug fields or UUIDs
+- Never hand-translate slug fields or UUIDs. I18n slug fields are valid when
+  they are generated from i18n source fields.
 - Keep resource structure identical across languages
 - Use `[#text#]` for UI labels; use `i18n` fields for structured content
 - Always include HTML safety instructions in `ai_prompts._all` for html fields
@@ -2917,13 +2931,13 @@ After migration, each previously pk-driven resource should look like this:
 ```
 
 - No `pk` key
-- A `slug` type field for the URL slug (auto-computed, manually overridable)
+- A `slug` type field for the URL slug, with `source` pointing to the field it is derived from
 - The slug field listed in `index`
 
-If you already had a plain `text` field acting as the slug, change its `type` to `slug` and add `"source": "source_field"` so the admin auto-computes it. Then re-run reindex:
+If you already had a plain `text` field acting as the slug, change its `type` to `slug` and add `"source": "source_field"` so the admin auto-computes it. Then rebuild the index:
 
 ```bash
-php core/cli/nimbly.php reindex articles
+php core/cli/nimbly.php index:rebuild articles
 ```
 
 #### 6. Remove any direct calls to `data_update_pk()`
