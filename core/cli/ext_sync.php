@@ -41,6 +41,12 @@ if ($remote['code'] !== 0 || empty(trim($remote['output']))) {
     exit(0);
 }
 
+$branch = trim(git('branch --show-current')['output']);
+if ($branch === '') {
+    echo "ext:sync error: ext is not on a branch\n";
+    exit(1);
+}
+
 // Skip if a rebase or merge is in progress
 if (
     is_dir($ext_dir . '/.git/rebase-merge') ||
@@ -54,7 +60,6 @@ if (
 $status = git('status --porcelain');
 
 if (!empty(trim($status['output']))) {
-    $branch = trim(git('branch --show-current')['output']);
     $date   = date('Y-m-d H:i');
 
     $add = git('add -A');
@@ -70,7 +75,7 @@ if (!empty(trim($status['output']))) {
     }
 }
 
-$pull = git('pull --rebase --autostash');
+$pull = git('pull --rebase --autostash origin ' . escapeshellarg($branch));
 if ($pull['code'] !== 0) {
     echo "ext:sync error: git pull --rebase failed\n{$pull['output']}\n";
     exit(1);
