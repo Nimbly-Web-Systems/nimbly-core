@@ -870,6 +870,25 @@ Defines the structure and behavior of a resource. All fields must be explicitly 
 
 Field type names must match exactly.
 
+### Page settings fields
+
+Page settings render inside the shared Nimbly bar modal, but custom page-settings templates still use the normal form field pipeline. Do not call ad hoc field names such as `[#boolean-field#]`, `[#image-field#]`, `[#url-field#]`, or `[#text-field#]`; those are not field templates and will render as raw shortcode text.
+
+Use the real `field-{type}` template names and set the `_f.*` context expected by the field templates:
+
+```html
+[#set _f.key=panorama overwrite#]
+[#set _f.type=boolean overwrite#]
+[#set _f.value="[#get page_settings.panorama#]" overwrite#]
+[#set _f.title="[#text Toon panorama header#]" overwrite#]
+[#set _f.model="settings.panorama" overwrite#]
+[#set _f.wrapper_class="nb-field relative my-6" overwrite#]
+[#set _f.x_init="x-init='settings.panorama=[#fmt var=page_settings.panorama type=boolean boolean=true|false#]'" overwrite#]
+[#field-boolean#]
+```
+
+When changing route URLs, migrate the matching `.content` records as part of the same change. Page settings are stored under the route key, so renaming `/nl/deelnemers` to `/nl/community` means `ext/data/.content/nl_deelnemers` must be copied or migrated to `ext/data/.content/nl_community`; otherwise page title, panorama settings, and editable page content appear to be lost.
+
 ### Field configuration
 
 Common options per field:
