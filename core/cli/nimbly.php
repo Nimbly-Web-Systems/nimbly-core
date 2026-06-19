@@ -30,6 +30,7 @@ $commands = [
     'users:email-index' => ['file' => 'core/cli/users_email_index.php', 'desc' => 'Add and rebuild users email lookup index', 'public' => true],
     'system:upgrade-11' => ['file' => 'core/cli/upgrade_11.php',    'desc' => 'Upgrade project to Nimbly 1.1.0', 'public' => true],
     'docker:init'       => ['file' => 'core/cli/docker_init.php',   'desc' => 'Generate Dockerfile and CI workflow in ext/ for Docker image builds', 'public' => true],
+    'architecture:check' => ['file' => 'core/cli/architecture_check.php', 'desc' => 'Warn about project architecture anti-patterns', 'public' => true],
     'ext:sync'          => ['file' => 'core/cli/ext_sync.php',      'desc' => 'Commit and push ext/ changes to the remote repository', 'public' => false],
     'test:setup'        => ['file' => 'core/cli/test_setup.php',     'desc' => 'Create test role, user, and resource for automated tests', 'public' => true],
     'test:teardown'     => ['file' => 'core/cli/test_teardown.php',  'desc' => 'Remove test role, user, and resource created by test:setup', 'public' => true],
