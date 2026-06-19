@@ -319,6 +319,7 @@ Iterates over a data variable, rendering the template with the same name for eac
 [#repeat data.articles tpl=article-card#]
 [#repeat data.articles limit=3#]
 [#repeat data.articles filter=published:yes#]
+[#repeat record.related_items csv tpl=related-item#]
 [#repeat data.articles var=post#]   → item variable named "post" instead of "item"
 ```
 
@@ -333,6 +334,22 @@ Also available per iteration:
 - `item.ix` — numeric index (0-based)
 - `item.x` — record key
 - `item.key` — record key (string)
+
+For comma-separated UUID reference fields, do not create a library just to load a subset. Load the target resource once with `[#data#]`, then repeat the UUID list with `csv` and read from the loaded resource variable:
+
+```html
+[#data participants#]
+[#repeat stories.participants csv tpl=story-participant-item#]
+```
+
+```html
+<!-- ext/tpl/story-participant-item/index.tpl -->
+<a href="[#get data.participants.[#item.key#].link#]">
+    [#get data.participants.[#item.key#].name#]
+</a>
+```
+
+This uses the core data layer and its caching behavior, preserves the source record's UUID order, and avoids custom backend code for simple relationship rendering.
 
 #### `[#data-sort data.articles sort=title|string|asc#]`
 Sorts an existing data variable in place.
@@ -2460,6 +2477,13 @@ Called in templates exactly like any other shortcode:
 ### Libraries are for business logic, not simple value lookup
 
 Use a library only when the work involves real business logic or data preparation that cannot be expressed cleanly with existing shortcodes. Simple lookup, conditionals, date formatting, and direct field output belong in templates using `[#get#]`, `[#if#]`, `[#fmt#]`, `[#date#]`, `[#data#]`, and similar shortcodes.
+
+Before creating anything in `ext/lib/`, answer these questions in order:
+
+1. **Can core already do this?** Prefer existing Nimbly shortcodes, core libraries, resource configuration, `[#data#]`, `[#repeat#]`, `[#if#]`, `[#fmt#]`, and local templates. For comma-separated UUID reference fields, load the target resource once and `[#repeat ... csv#]` over the UUIDs before considering PHP. Do not create a project library because you missed an existing core facility.
+2. **Is backend PHP the right place?** If the work is filtering, searching, sorting, toggling UI state, expanding/collapsing content, map/list synchronization, or other browser interaction, prefer Alpine.js with `[#fmt var=... json#]`. Backend PHP should prepare canonical server data, not manage client interaction state.
+3. **Can the data model or template structure solve it?** If the code only works around awkward data shape, consider whether the resource field, route template, or reusable `.tpl` component should change instead.
+4. **If a library is still needed, is it minimal?** A justified library should do the smallest server-only job: normalize input, read records, compute values, and set template variables. It must not own markup, styling, layout, UI state, or copy that belongs in templates/content.
 
 Do not create a library just to copy fields into new variables, rename values for display, or wrap a template call. That adds indirection without behavior.
 
