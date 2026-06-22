@@ -2247,6 +2247,19 @@ Response:
 
 Tokens expire after **10 minutes**. Refresh before expiry with a GET to the same endpoint:
 
+> **PHP-FPM and the Authorization header**
+> On servers running PHP-FPM (rather than mod_php), Apache strips the `Authorization` header before it reaches PHP. The Nimbly API validates Bearer tokens via `getallheaders()["Authorization"]`, so without the header, every authenticated API call returns `403 ACCESS_DENIED` even with a valid token.
+>
+> Fix: add these two lines to the project's `.htaccess`, before the rewrite rules that send requests to `index.php`:
+>
+> ```apache
+> CGIPassAuth On
+> RewriteCond %{HTTP:Authorization} ^(.*)
+> RewriteRule .* - [E=HTTP_AUTHORIZATION:%1]
+> ```
+>
+> `CGIPassAuth On` tells Apache to forward the Authorization header to the FPM process. The `RewriteRule` additionally exposes it as `$_SERVER['HTTP_AUTHORIZATION']` for any code that reads that directly. Both lines are needed for full compatibility. Any project that exposes the Nimbly API to external clients on a PHP-FPM host requires this.
+
 ```bash
 curl -X GET "/api/v1/auth/token" \
   -H "Authorization: Bearer YOUR_VALID_TOKEN"
