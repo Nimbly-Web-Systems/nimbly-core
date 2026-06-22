@@ -490,6 +490,16 @@ Returns the base URL path of the installation. Use this for all internal links.
 <link href="[#base-url#]/ext/static/app.css">
 ```
 
+**In JavaScript**, `[#base-url#]` is not available as a template tag. Use `nb.base_url` instead — it is set by core before any page scripts run. This is critical when building image URLs or API paths dynamically, especially when the site runs under an alias/subdirectory (e.g. staging). Never hardcode `/img/` or `/api/` as a bare path in JS.
+
+```js
+// wrong — breaks on staging aliases
+return '/img/' + uuid + '/240w';
+
+// correct
+return nb.base_url + '/img/' + uuid + '/240w';
+```
+
 #### `[#base-path#]`
 Returns the filesystem path to the installation root. For server-side file includes.
 
