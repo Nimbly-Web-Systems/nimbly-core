@@ -233,6 +233,36 @@ Template components do **not** receive parameters directly. To pass data to a te
 
 Inside the template, read the variable with `[#get back_url default=/#]`. Lib shortcodes (`ext/lib/<name>/`) are different — they receive `$params` and can be called with inline parameters.
 
+### Template naming convention
+
+Name every reusable template with the **partial type first**, followed by the route or subject it belongs to:
+
+```
+{type}-{route-or-subject}
+```
+
+Types and examples:
+
+| Type | Used for | Example |
+|------|----------|---------|
+| `page-` | Full-page template (one per route) | `page-community-gamechangers`, `page-accelerator` |
+| `section-` | A section or block rendered inside a page | `section-home-header`, `section-page-header` |
+| `card-` | A repeatable card component | `card-alumni`, `card-network-partner` |
+| `logo-` | A logo display component | `logo-partner`, `logo-partner-image` |
+| `icon-` | An inline icon snippet | `icon-arrow-right`, `icon-chevron-right` |
+| `form-` | A form component | `form-registration` |
+
+Sub-templates inside a page directory follow the same rule — type first:
+
+```
+ext/tpl/page-community-networkpartners/
+  card-cluster.tpl
+  card-network-partner.tpl
+  card-network-partner-logo.tpl
+```
+
+**Never** put the type at the end (`alumni-card`, `coalition-page`). Type-first keeps all cards, all sections, and all page templates sorted together in the filesystem.
+
 ### URI-scoped templates
 
 Templates can also live flat inside a URI folder (not in a subfolder). These are not routes — they are partial templates included from within that route's `index.tpl` or `main.tpl`.
