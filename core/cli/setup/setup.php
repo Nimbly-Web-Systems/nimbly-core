@@ -1,9 +1,9 @@
 <?php
 
 /**
- * Nimbly CLI — site:setup command
+ * Nimbly CLI — system:setup command
  *
- * Usage: php core/cli/nimbly.php site:setup [alias=oddone|base_path=/oddone] [app_env=stage]
+ * Usage: php core/cli/nimbly.php system:setup [alias=oddone|base_path=/oddone] [app_env=stage]
  *
  * Safe to re-run — existing records and files are never overwritten.
  */
@@ -667,5 +667,5 @@ if (empty(getenv('NIMBLY_INIT'))) {
     cli_tip("This single cron entry runs due scheduled commands, including queued jobs.");
     cli_tip("To customize the schedule, run: ./nimbly schedule:publish");
 } else {
-    echo "Site setup complete.\n";
+    echo "System setup complete.\n";
 }

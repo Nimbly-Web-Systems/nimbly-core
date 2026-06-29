@@ -28,7 +28,7 @@ require_once BASE_DIR . 'core/cli/helpers/output.php';
 
 $env_file = BASE_DIR . '.env';
 if (!file_exists($env_file)) {
-    die("Error: .env not found. Run './nimbly site:setup' first.\n");
+    die("Error: .env not found. Run './nimbly system:setup' first.\n");
 }
 
 $env = [];

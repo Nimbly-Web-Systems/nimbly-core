@@ -18,7 +18,7 @@ $command = $argv[1] ?? null;
 
 $commands = [
     'help'              => ['file' => '',                           'desc' => 'Show command help', 'public' => true],
-    'site:setup'       => ['file' => 'core/cli/setup/setup.php',    'desc' => 'Create or repair local site files, resources, and first user', 'public' => true],
+    'system:setup'     => ['file' => 'core/cli/setup/setup.php',    'desc' => 'Set up local system files, resources, roles, routes, and first user', 'public' => true],
     'user:create'      => ['file' => 'core/cli/create_user.php',    'desc' => 'Create a new user account', 'public' => true],
     'module:install'   => ['file' => 'core/cli/install_module.php', 'desc' => 'Install a module (runs its .install.inc)', 'public' => true],
     'jobs:run'         => ['file' => 'core/cli/jobs.php',           'desc' => 'Run queued background jobs', 'public' => false],
@@ -38,7 +38,6 @@ $commands = [
     'install-module'   => ['file' => 'core/cli/install_module.php', 'desc' => 'Alias of module:install', 'public' => false],
     'reindex'          => ['file' => 'core/cli/reindex.php',        'desc' => 'Alias of index:rebuild', 'public' => false],
     'upgrade-11'       => ['file' => 'core/cli/upgrade_11.php',     'desc' => 'Alias of system:upgrade-11', 'public' => false],
-    'setup'            => ['file' => 'core/cli/setup/setup.php',    'desc' => 'Alias of site:setup', 'public' => false],
     'migrate-pk-index' => ['file' => 'core/cli/migrate_10.php',     'desc' => 'Migrate 1.0.0 pk resources to indexed 1.1.0 resources', 'public' => false],
     'migrate-lib-flat' => ['file' => 'core/cli/migrate_lib.php',    'desc' => 'Flatten single-file library directories to lib/name.php', 'public' => false],
     'migrate-10'       => ['file' => 'core/cli/migrate_10.php',     'desc' => 'Alias of migrate-pk-index', 'public' => false],
