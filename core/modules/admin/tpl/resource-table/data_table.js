@@ -158,6 +158,9 @@ document.addEventListener("alpine:init", () => {
         ).filter(Boolean).join(', ');
       }
       const s = txt != null ? String(txt) : '';
+      if (s.trim() === '' || s === '(empty)') {
+        return '<span class="select-none text-neutral-300" title="[#text No value#]" aria-label="[#text No value#]">&mdash;</span>';
+      }
       if (!this.search_regex) {
         return s;
       }

@@ -78,6 +78,7 @@ function _prep_record($record, $fields)
             'val' => $val,
             'type' => $v['type'],
             'max_length' => $v['max_length'] ?? 32,
+            'empty' => '',
         ];
         if (!empty($v['fmt'])) {
             $fmt_params['fmt'] = $v['fmt'];
