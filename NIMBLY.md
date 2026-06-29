@@ -1596,7 +1596,7 @@ Nimbly ships a CLI at `core/cli/nimbly.php`. The root `./nimbly` launcher is the
 ./nimbly deps
 ./nimbly build
 ./nimbly watch
-./nimbly test
+./nimbly test:run
 ./nimbly user:create
 ./nimbly module:install <name>
 ```
@@ -1604,14 +1604,14 @@ Nimbly ships a CLI at `core/cli/nimbly.php`. The root `./nimbly` launcher is the
 `init`, `deps`, `build`, and `watch` use npm internally. PHP-backed commands use host PHP when available and fall back to Docker automatically. Explicit variants are also available:
 
 ```bash
-php core/cli/nimbly.php site:setup     # require host PHP
-./nimbly --docker site:setup           # force Docker Compose
+php core/cli/nimbly.php system:setup   # require host PHP
+./nimbly --docker system:setup         # force Docker Compose
 ```
 
 Equivalent direct invocations:
 
 ```bash
-php core/cli/nimbly.php site:setup
+php core/cli/nimbly.php system:setup
 php core/cli/nimbly.php user:create
 php core/cli/nimbly.php module:install <name>
 php core/cli/nimbly.php routes:add
@@ -1623,8 +1623,8 @@ php core/cli/nimbly.php help
 
 ### Commands
 
-#### `site:setup`
-First-time site initialisation. Safe to re-run — existing files and records are never overwritten.
+#### `system:setup`
+Sets up the local system. Safe to re-run — existing files and records are never overwritten.
 
 What it does:
 - Creates `.env` with `APP_ENV`, a generated `PEPPER`, and `BASE_PATH` only for subdirectory installs
@@ -1649,7 +1649,7 @@ Prompts: **Site name**, **Admin email**, **Admin password**. Steps that are alre
 | `ADMIN_PASSWORD` | Initial admin user password (min 8 chars) |
 
 ```bash
-SITE_NAME="My Site" ADMIN_EMAIL=admin@example.com ADMIN_PASSWORD=secret123 ./nimbly site:setup
+SITE_NAME="My Site" ADMIN_EMAIL=admin@example.com ADMIN_PASSWORD=secret123 ./nimbly system:setup
 ```
 
 #### `user:create`
@@ -1697,18 +1697,18 @@ If duplicate emails are found, the command reports them and skips adding
 `unique=email` until the duplicates are resolved. The email index is still
 rebuilt so login lookups remain fast where possible.
 
-#### `test`
+#### `test:run`
 Runs the E2E suite. The command creates temporary test data with `test:setup`, installs the Chromium Playwright browser if needed, runs Playwright using `core/tests/playwright.config.js`, then removes the temporary data with `test:teardown`.
 
 ```bash
-./nimbly test
-./nimbly --docker test
+./nimbly test:run
+./nimbly --docker test:run
 ```
 
 Use `--docker` in CI or whenever PHP data files must be written through the same Docker user model as the web runtime.
 
 #### `test:setup` / `test:teardown`
-Low-level commands used by `./nimbly test`. `test:setup` creates the `test` role, `test@nimbly.dev` user, `test-records` resource, and seed records. `test:teardown` removes those records and the temporary `.test` route config entries.
+Low-level commands used by `./nimbly test:run`. `test:setup` creates the `test` role, `test@nimbly.dev` user, `test-records` resource, and seed records. `test:teardown` removes those records and the temporary `.test` route config entries.
 
 #### `system:upgrade-11`
 Runs the guided Nimbly 1.0.0 → 1.1.0 migration checks and updates. See [Upgrading from core 1.0.0 to core 1.1.0](#19-upgrading-from-core-100-to-core-110).
@@ -1865,7 +1865,7 @@ lost on the next image deployment.
 
 Container updates are image updates: push `ext/`, let the workflow publish a
 new image, pull the image on the host, and restart the container. The container
-runs `site:setup` at startup and runs the scheduler every minute. In live
+runs `system:setup` at startup and runs the scheduler every minute. In live
 editing mode, make sure `ext:sync` has pushed current production data before
 replacing the container.
 
@@ -1885,11 +1885,11 @@ find core -name '*.php' -print0 | xargs -0 -n1 php -l
 When host PHP is not available, use the Docker-backed CLI and PHP lint:
 
 ```bash
-APP_ENV=prod SITE_NAME="My Site" ADMIN_EMAIL=admin@example.com ADMIN_PASSWORD="change-me" PEPPER="$PEPPER" ./nimbly --docker site:setup
+APP_ENV=prod SITE_NAME="My Site" ADMIN_EMAIL=admin@example.com ADMIN_PASSWORD="change-me" PEPPER="$PEPPER" ./nimbly --docker system:setup
 docker compose -f docker/docker-compose.yml run --rm --build nimbly sh -lc "find core -name '*.php' -print0 | xargs -0 -n1 php -l"
 ```
 
-Keep `.env` on the target host and ensure it contains the production `APP_ENV`, stable `PEPPER`, canonical `SITE_URL`, and mail settings. Re-running `site:setup` is idempotent and is safe when a deployment needs to create missing directories, routes, roles, `.jobs`, or `.htaccess`.
+Keep `.env` on the target host and ensure it contains the production `APP_ENV`, stable `PEPPER`, canonical `SITE_URL`, and mail settings. Re-running `system:setup` is idempotent and is safe when a deployment needs to create missing directories, routes, roles, `.jobs`, or `.htaccess`.
 
 ### Scheduler and jobs
 

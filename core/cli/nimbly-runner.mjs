@@ -71,10 +71,10 @@ function command_label(name) {
     up: 'Docker up',
     init: 'Setup',
     setup: 'Setup',
-    'site:setup': 'Setup',
+    'system:setup': 'Setup',
     help: 'Help',
     'user:create': 'Create user',
-    'test': 'Test',
+    'test:run': 'Test',
     'test:setup': 'Test setup',
     'test:teardown': 'Test teardown',
     'module:install': 'Install module',
@@ -224,7 +224,7 @@ async function run_init() {
   step(3, 5, 'Set up site');
   run_step(
     process.execPath,
-    ['core/cli/nimbly-runner.mjs', ...(force_docker ? ['--docker'] : []), 'site:setup'],
+    ['core/cli/nimbly-runner.mjs', ...(force_docker ? ['--docker'] : []), 'system:setup'],
     { env: { ...process.env, NIMBLY_INIT: '1', NIMBLY_COMPACT_OUTPUT: '1' } }
   );
   step(4, 5, 'Build assets');
@@ -245,6 +245,7 @@ function show_common_help(show_all_hint = true, show_usage = true) {
   console.log('  init               Prepare a checkout for first use');
   console.log('  build              Build project assets');
   console.log('  watch              Watch and rebuild assets during development');
+  console.log('  test:run           Set up, run, and tear down the E2E test suite');
   console.log('  up                 Start the local Docker environment');
   if (show_all_hint) {
     console.log('');
@@ -339,7 +340,7 @@ if (command === 'init') {
   process.exit(0);
 }
 
-if (command === 'test') {
+if (command === 'test:run') {
   banner(command_label(command));
 
   const env_keys_test = [
