@@ -190,11 +190,27 @@ Templates use shortcodes enclosed in `[#` and `#]`.
 [#shortcode key=value key2=value2#]
 ```
 
-Shortcodes can be nested:
+Shortcodes can be nested — any parameter value or shortcode name can itself contain a shortcode:
 
 ```
 [#get data.users.[#get selected-id#]#]
 ```
+
+This also works inside `tpl=` parameters and shortcode names, which lets you **compose template names dynamically**:
+
+```
+[#if current_image=(not-empty) tpl=card-image[#if current_image=(empty) echo=-placeholder#]#]
+```
+
+Resolves to `tpl=card-image` when an image exists, `tpl=card-image-placeholder` when it doesn't.
+
+A particularly powerful application is **role-based template variants** — embed `[#role#]` directly in the shortcode name to dispatch to a role-specific include without any explicit branching:
+
+```
+[#extra-content-for[#role#]#]
+```
+
+Resolves to `[#extra-content-forguest#]`, `[#extra-content-foradmin#]`, etc. Each role gets its own template file; missing role files simply render nothing. This pattern eliminates chains of `[#if role=X tpl=Y#]` conditions and scales cleanly as roles are added.
 
 Templates are plain files in the target output format (HTML, JSON, CSS, etc.). They have a `.tpl` extension.
 
