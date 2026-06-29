@@ -204,13 +204,21 @@ This also works inside `tpl=` parameters and shortcode names, which lets you **c
 
 Resolves to `tpl=card-image` when an image exists, `tpl=card-image-placeholder` when it doesn't.
 
-A particularly powerful application is **role-based template variants** — embed `[#role#]` directly in the shortcode name to dispatch to a role-specific include without any explicit branching:
+A particularly powerful application is **content-type dispatch** — embed a type field directly in the shortcode name to route to a type-specific template without any branching:
 
 ```
-[#extra-content-for[#role#]#]
+[#card-[#get item.type#]#]
 ```
 
-Resolves to `[#extra-content-forguest#]`, `[#extra-content-foradmin#]`, etc. Each role gets its own template file; missing role files simply render nothing. This pattern eliminates chains of `[#if role=X tpl=Y#]` conditions and scales cleanly as roles are added.
+Resolves to `[#card-news#]`, `[#card-event#]`, `[#card-download#]`, etc. based on the item's type. This pattern eliminates chains of `[#if item.type=X tpl=Y#]` conditions and scales cleanly as new types are added.
+
+Use `default=` to guarantee a valid shortcode name when the value may be missing or unrecognised — an unresolved shortcode renders as literal text in the output:
+
+```
+[#card-[#get item.type default=unknown#]#]
+```
+
+Implement `[#card-unknown#]` as a generic fallback (or leave it empty to render nothing).
 
 Templates are plain files in the target output format (HTML, JSON, CSS, etc.). They have a `.tpl` extension.
 
