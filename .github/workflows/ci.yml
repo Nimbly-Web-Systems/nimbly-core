@@ -91,12 +91,12 @@ jobs:
             sleep 2
           done
 
-      - name: Site setup
+      - name: System setup
         env:
           SITE_NAME: Nimbly
           ADMIN_EMAIL: admin@ci.test
           ADMIN_PASSWORD: Admin123!
-        run: ./nimbly --docker site:setup
+        run: ./nimbly --docker system:setup
 
       - name: Run E2E tests
         run: ./nimbly --docker test

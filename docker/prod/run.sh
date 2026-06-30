@@ -38,7 +38,7 @@ elif [ "${APP_ENV:-dev}" = "prod" ] || [ "${APP_ENV:-dev}" = "stage" ]; then
 fi
 
 # Idempotent: generates .htaccess, creates missing directories and resources
-php /var/www/nimbly/core/cli/nimbly.php site:setup
+php /var/www/nimbly/core/cli/nimbly.php system:setup
 chown -R www-data:www-data /var/www/nimbly
 
 mkdir -p /run/php
