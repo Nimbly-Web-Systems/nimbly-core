@@ -31,11 +31,12 @@ function get_resource_records_sc($params)
     }
 
     $fields = _prep_fields($meta);
+    $resource_maps = _build_resource_maps($fields);
 
     $data_records = [];
 
     foreach ($raw_records as $ix => $record) {
-        $data_records[$ix] = _prep_record($record, $fields);
+        $data_records[$ix] = _prep_record($record, $fields, $resource_maps);
         if (!empty($meta['actions']['url'])) {
             $data_records[$ix]['_action_url'] = _prep_action_url($meta['actions']['url'], $record, $ix);
         }
@@ -58,14 +59,57 @@ function _prep_action_url($url, $record, $uuid)
 }
 
 /**
+ * Load each related resource referenced by a select+resource field once,
+ * keyed by UUID to display name.
+ */
+function _build_resource_maps($fields)
+{
+    $maps = [];
+    foreach ($fields as $v) {
+        if (($v['type'] ?? '') !== 'select' || empty($v['resource'])) {
+            continue;
+        }
+        $resource = $v['resource'];
+        if (isset($maps[$resource])) {
+            continue;
+        }
+        if (!data_exists($resource)) {
+            $maps[$resource] = [];
+            continue;
+        }
+        $display = $v['display_field'] ?? 'name';
+        $map = [];
+        foreach (data_read($resource) as $uuid => $rec) {
+            $map[$uuid] = $rec[$display] ?? $rec['name'] ?? $rec['title'] ?? $uuid;
+        }
+        $maps[$resource] = $map;
+    }
+    return $maps;
+}
+
+/**
  * Prepare record for frontend display:
  * - format the value (web safe, shortened, proper reference values)
+ * - resolve select+resource UUIDs to their display name
  */
-function _prep_record($record, $fields)
+function _prep_record($record, $fields, $resource_maps = [])
 {
     $result = [];
     foreach ($fields as $k => $v) {
         $val = $record[$k] ?? '';
+        if (($v['type'] ?? '') === 'select' && !empty($v['resource'])) {
+            $map = $resource_maps[$v['resource']] ?? [];
+            if (is_array($val) && empty($v['i18n'])) {
+                $val = array_map(function($item) use ($map) {
+                    if (is_string($item) && $item !== '') {
+                        return $map[$item] ?? $item;
+                    }
+                    return $item;
+                }, $val);
+            } elseif (is_string($val) && $val !== '') {
+                $val = $map[$val] ?? $val;
+            }
+        }
         if (is_array($val) && empty($v['i18n'])) {
             $val = implode(', ', array_filter(array_map(function($item) {
                 if (is_array($item)) {
