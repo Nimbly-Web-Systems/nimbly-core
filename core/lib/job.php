@@ -224,6 +224,9 @@ function job_run_queued($limit = 1)
                 'available_at' => $retry ? time() + min(3600, 60 * $attempts) : 0,
                 'last_error' => $e->getMessage(),
             ]);
+            if (!$retry) {
+                job_enqueue_failure_alert($uuid, $job, $attempts, $e->getMessage());
+            }
             $failed++;
         }
 
@@ -233,6 +236,25 @@ function job_run_queued($limit = 1)
     }
 
     return ['processed' => $processed, 'done' => $done, 'failed' => $failed];
+}
+
+function job_enqueue_failure_alert($uuid, $job, $attempts, $error)
+{
+    $type = trim((string)($job['type'] ?? ''));
+    if ($type === '' || in_array($type, ['job-failure-alert', 'fatal-error-alert'], true)) {
+        return false;
+    }
+
+    return job_enqueue('job-failure-alert', [
+        'failed_uuid' => $uuid,
+        'failed_type' => $type,
+        'failed_attempts' => $attempts,
+        'failed_error' => $error,
+        'failed_payload' => $job['payload'] ?? [],
+    ], [
+        'uuid' => md5($uuid . '-job-failure-alert'),
+        'max_attempts' => 1,
+    ]);
 }
 
 function job_dispatch($job)
