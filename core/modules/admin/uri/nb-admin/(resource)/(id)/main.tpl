@@ -5,7 +5,6 @@
             data-nb-edit-options='{"buttons":""}'>
             [#text Edit [#resource-name [#resource-id#]#]#]
         </h1>
-        [#if resource-id=roles tpl=btn-role-permissions#]
     </div>
 
     [#edit-resource-form#]
