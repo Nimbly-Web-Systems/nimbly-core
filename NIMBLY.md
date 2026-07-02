@@ -1756,7 +1756,7 @@ Use environment-specific schedule files when staging or development must run bac
 
 Scheduler last-run state is stored in `ext/data/.state/schedule`. Existing installs with older `ext/data/.config/schedule` state are read as a migration fallback until the scheduler writes the new state file.
 
-#### `scheduler:orchestrator:*`
+#### `scheduler:*`
 Runs multiple project schedulers from one server-level cron. The project schedule
 files remain project-local in `ext/cli/`; the server registry is the only source
 of truth for which projects are orchestrated.
@@ -1773,21 +1773,21 @@ The orchestrator uses these server-managed files by default:
 Install it once per server from any current Nimbly core checkout:
 
 ```bash
-sudo php core/cli/nimbly.php scheduler:orchestrator:install
-sudo php core/cli/nimbly.php scheduler:orchestrator:add site-name /var/www/site-name
-sudo php core/cli/nimbly.php scheduler:orchestrator:cron:install --user=www-data
+sudo php core/cli/nimbly.php scheduler:install
+sudo php core/cli/nimbly.php scheduler:add-project site-name /var/www/site-name
+sudo php core/cli/nimbly.php scheduler:cron:install --user=www-data
 ```
 
 Useful management commands:
 
 ```bash
-php core/cli/nimbly.php scheduler:orchestrator:list
-sudo -u www-data php core/cli/nimbly.php scheduler:orchestrator:run --dry-run
+php core/cli/nimbly.php scheduler:list-projects
+sudo -u www-data php core/cli/nimbly.php scheduler:run --dry-run
 sudo -u www-data /usr/local/bin/nimbly-scheduler-orchestrator
-php core/cli/nimbly.php scheduler:orchestrator:cron:status
+php core/cli/nimbly.php scheduler:cron:status
 ```
 
-`scheduler:orchestrator:run` takes a global lock, reads enabled projects from
+`scheduler:run` takes a global lock, reads enabled projects from
 `/etc/nimbly/scheduler-projects.json`, runs
 `php <project>/core/cli/nimbly.php schedule:run` for each project, logs project
 name, path, duration, and exit code, and continues after project failures.
@@ -1957,9 +1957,9 @@ For manual VPS deployments, install the scheduler orchestrator once per server.
 Register each project that should run scheduled work:
 
 ```bash
-sudo php /var/www/site/core/cli/nimbly.php scheduler:orchestrator:install
-sudo php /var/www/site/core/cli/nimbly.php scheduler:orchestrator:add site /var/www/site
-sudo php /var/www/site/core/cli/nimbly.php scheduler:orchestrator:cron:install --user=www-data
+sudo php /var/www/site/core/cli/nimbly.php scheduler:install
+sudo php /var/www/site/core/cli/nimbly.php scheduler:add-project site /var/www/site
+sudo php /var/www/site/core/cli/nimbly.php scheduler:cron:install --user=www-data
 ```
 
 This creates `/etc/cron.d/nimbly-scheduler`, which runs
@@ -1967,10 +1967,10 @@ This creates `/etc/cron.d/nimbly-scheduler`, which runs
 orchestrator then runs registered project schedulers sequentially. In Docker
 containers the scheduler runs automatically, so no host cron setup is required.
 
-Run `schedule:publish` once to copy the core defaults into `ext/cli/`:
+Run `schedule:init` once to create project schedule files in `ext/cli/`:
 
 ```bash
-./nimbly schedule:publish
+./nimbly schedule:init
 ```
 
 This generates three files:
@@ -1984,7 +1984,7 @@ This generates three files:
 The prod and stage schedules include `ext:sync`, which commits and pushes data changes in `ext/` back to the repository every hour. The dev schedule does not. Customize each file independently for environment-specific tasks.
 
 When migrating an existing VPS, first install the orchestrator, register the
-projects, run `scheduler:orchestrator:run --dry-run`, run the wrapper once
+projects, run `scheduler:run --dry-run`, run the wrapper once
 manually as `www-data`, and confirm `/var/log/nimbly-scheduler.log`. Back up the
 old `www-data` crontab under `/etc/nimbly/backups/`, then remove only migrated
 per-project `schedule:run` lines. Do not remove unrelated cron jobs.

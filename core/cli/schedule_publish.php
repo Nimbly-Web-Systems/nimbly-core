@@ -1,11 +1,11 @@
 <?php
 
 /**
- * Publishes the core schedule defaults into ext for app customization.
+ * Initializes project schedule files in ext for app customization.
  *
  * Usage:
- *   php core/cli/nimbly.php schedule:publish
- *   php core/cli/nimbly.php schedule:publish --force
+ *   php core/cli/nimbly.php schedule:init
+ *   php core/cli/nimbly.php schedule:init --force
  */
 
 if (php_sapi_name() !== 'cli') {
