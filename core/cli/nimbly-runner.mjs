@@ -75,6 +75,7 @@ function command_label(name) {
     help: 'Help',
     'user:create': 'Create user',
     'test:run': 'Test',
+    'test:architecture': 'Architecture test',
     'test:setup': 'Test setup',
     'test:teardown': 'Test teardown',
     'module:install': 'Install module',

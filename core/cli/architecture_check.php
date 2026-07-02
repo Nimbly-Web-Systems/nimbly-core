@@ -1,10 +1,10 @@
 <?php
 
 /**
- * Nimbly CLI - architecture:check command
+ * Nimbly CLI - test:architecture command
  *
  * Usage:
- *   php core/cli/nimbly.php architecture:check [--strict] [--path=ext]
+ *   php core/cli/nimbly.php test:architecture [--strict] [--path=ext]
  *   php core/cli/architecture_check.php [--strict] [--path=/tmp/project/ext]
  */
 
@@ -49,7 +49,7 @@ function architecture_check_options(array $argv): array
     ];
 
     $args = array_slice($argv, 1);
-    if (($args[0] ?? '') === 'architecture:check') {
+    if (in_array(($args[0] ?? ''), ['test:architecture', 'architecture:check'], true)) {
         array_shift($args);
     }
 
