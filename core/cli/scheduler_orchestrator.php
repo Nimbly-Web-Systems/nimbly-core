@@ -8,7 +8,7 @@
  *   php core/cli/nimbly.php scheduler:orchestrator:add <name> [path]
  *   php core/cli/nimbly.php scheduler:orchestrator:remove <name>
  *   php core/cli/nimbly.php scheduler:orchestrator:list
- *   php core/cli/nimbly.php scheduler:orchestrator:run
+ *   php core/cli/nimbly.php scheduler:orchestrator:run [--dry-run]
  *   php core/cli/nimbly.php scheduler:orchestrator:cron:install --user=www-data
  *   php core/cli/nimbly.php scheduler:orchestrator:cron:remove
  *   php core/cli/nimbly.php scheduler:orchestrator:cron:status
@@ -38,7 +38,7 @@ switch ($scheduler_command) {
         scheduler_orchestrator_list();
         break;
     case 'scheduler:orchestrator:run':
-        scheduler_orchestrator_run();
+        scheduler_orchestrator_run($argv);
         break;
     case 'scheduler:orchestrator:cron:install':
         scheduler_orchestrator_cron_install($argv);
@@ -232,8 +232,9 @@ function scheduler_orchestrator_list(): void
     }
 }
 
-function scheduler_orchestrator_run(): void
+function scheduler_orchestrator_run(array $argv): void
 {
+    $dry_run = in_array('--dry-run', $argv, true);
     $lock = fopen(scheduler_orchestrator_lock_path(), 'c');
     if (!$lock || !flock($lock, LOCK_EX | LOCK_NB)) {
         echo scheduler_orchestrator_log_line('orchestrator', '', 0.0, 0, 'already running');
@@ -256,13 +257,13 @@ function scheduler_orchestrator_run(): void
         $index++;
         $path = rtrim((string)($project['path'] ?? ''), '/');
         $started_at = microtime(true);
-        $exit_code = scheduler_orchestrator_run_project($path);
+        $exit_code = $dry_run ? scheduler_orchestrator_check_project($path) : scheduler_orchestrator_run_project($path);
         $duration = microtime(true) - $started_at;
         if ($exit_code !== 0) {
             $failed++;
         }
 
-        echo scheduler_orchestrator_log_line($name, $path, $duration, $exit_code);
+        echo scheduler_orchestrator_log_line($name, $path, $duration, $exit_code, $dry_run ? 'dry-run' : '');
 
         if ($delay > 0 && $index < $total) {
             sleep($delay);
@@ -287,8 +288,9 @@ function scheduler_orchestrator_enabled_projects(array $config): array
 function scheduler_orchestrator_run_project(string $path): int
 {
     $cli_path = $path . '/core/cli/nimbly.php';
-    if ($path === '' || !is_file($cli_path)) {
-        return 127;
+    $check_exit_code = scheduler_orchestrator_check_project($path);
+    if ($check_exit_code !== 0) {
+        return $check_exit_code;
     }
 
     $command = array_map('escapeshellarg', [
@@ -298,6 +300,15 @@ function scheduler_orchestrator_run_project(string $path): int
     ]);
     passthru(implode(' ', $command), $exit_code);
     return (int)$exit_code;
+}
+
+function scheduler_orchestrator_check_project(string $path): int
+{
+    $cli_path = $path . '/core/cli/nimbly.php';
+    if ($path === '' || !is_file($cli_path)) {
+        return 127;
+    }
+    return 0;
 }
 
 function scheduler_orchestrator_log_line(string $name, string $path, float $duration, int $exit_code, string $message = ''): string
