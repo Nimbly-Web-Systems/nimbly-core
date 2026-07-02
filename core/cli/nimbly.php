@@ -25,6 +25,14 @@ $commands = [
     'jobs:prune'       => ['file' => 'core/cli/jobs_prune.php',     'desc' => 'Delete completed jobs older than N days (--days=30)', 'public' => false],
     'schedule:run'     => ['file' => 'core/cli/schedule.php',       'desc' => 'Run due scheduled commands', 'public' => false],
     'schedule:publish' => ['file' => 'core/cli/schedule_publish.php', 'desc' => 'Copy core schedule defaults to ext/cli/schedule.inc', 'public' => false],
+    'scheduler:orchestrator:install' => ['file' => 'core/cli/scheduler_orchestrator.php', 'desc' => 'Install the server scheduler orchestrator wrapper', 'public' => true],
+    'scheduler:orchestrator:add' => ['file' => 'core/cli/scheduler_orchestrator.php', 'desc' => 'Register a project with the server scheduler orchestrator', 'public' => true],
+    'scheduler:orchestrator:remove' => ['file' => 'core/cli/scheduler_orchestrator.php', 'desc' => 'Remove a project from the server scheduler orchestrator', 'public' => true],
+    'scheduler:orchestrator:list' => ['file' => 'core/cli/scheduler_orchestrator.php', 'desc' => 'List server scheduler orchestrator projects', 'public' => true],
+    'scheduler:orchestrator:run' => ['file' => 'core/cli/scheduler_orchestrator.php', 'desc' => 'Run registered project schedulers sequentially', 'public' => false],
+    'scheduler:orchestrator:cron:install' => ['file' => 'core/cli/scheduler_orchestrator.php', 'desc' => 'Install the scheduler orchestrator cron file', 'public' => true],
+    'scheduler:orchestrator:cron:remove' => ['file' => 'core/cli/scheduler_orchestrator.php', 'desc' => 'Remove the scheduler orchestrator cron file', 'public' => true],
+    'scheduler:orchestrator:cron:status' => ['file' => 'core/cli/scheduler_orchestrator.php', 'desc' => 'Show scheduler orchestrator cron status', 'public' => true],
     'routes:add'      => ['file' => 'core/cli/routes_add.php',   'desc' => 'Scan route.inc files and create missing dynamic route records', 'public' => true],
     'index:rebuild'    => ['file' => 'core/cli/reindex.php',        'desc' => 'Rebuild index entries for a resource', 'public' => true],
     'users:email-index' => ['file' => 'core/cli/users_email_index.php', 'desc' => 'Add and rebuild users email lookup index', 'public' => true],
@@ -64,7 +72,7 @@ if (!$command || $command === 'help' || !isset($commands[$command])) {
         if (!$is_public || in_array($name, $main_commands, true)) {
             continue;
         }
-        printf("  %-18s %s\n", $name, $meta['desc']);
+        printf("  %-38s %s\n", $name, $meta['desc']);
     }
     echo "\n";
     exit($command && $command !== 'help' ? 1 : 0);
