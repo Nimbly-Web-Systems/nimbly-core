@@ -1,9 +1,9 @@
 <?php
 
 /**
- * Nimbly CLI - users:email-index command
+ * Nimbly CLI - user:email-index:rebuild command
  *
- * Usage: php core/cli/nimbly.php users:email-index [--yes]
+ * Usage: php core/cli/nimbly.php user:email-index:rebuild [--yes]
  *
  * Adds email lookup metadata to the users resource and rebuilds its email index.
  */

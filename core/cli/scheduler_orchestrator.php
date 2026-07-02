@@ -5,9 +5,9 @@
  *
  * Usage:
  *   php core/cli/nimbly.php scheduler:install
- *   php core/cli/nimbly.php scheduler:add-project <name> [path]
- *   php core/cli/nimbly.php scheduler:remove-project <name>
- *   php core/cli/nimbly.php scheduler:list-projects
+ *   php core/cli/nimbly.php scheduler:project:add <name> [path]
+ *   php core/cli/nimbly.php scheduler:project:remove <name>
+ *   php core/cli/nimbly.php scheduler:project:list
  *   php core/cli/nimbly.php scheduler:run [--dry-run]
  *   php core/cli/nimbly.php scheduler:cron:install --user=www-data
  *   php core/cli/nimbly.php scheduler:cron:remove
@@ -29,14 +29,17 @@ switch ($scheduler_command) {
     case 'scheduler:orchestrator:install':
         scheduler_orchestrator_install();
         break;
+    case 'scheduler:project:add':
     case 'scheduler:add-project':
     case 'scheduler:orchestrator:add':
         scheduler_orchestrator_add($argv);
         break;
+    case 'scheduler:project:remove':
     case 'scheduler:remove-project':
     case 'scheduler:orchestrator:remove':
         scheduler_orchestrator_remove($argv);
         break;
+    case 'scheduler:project:list':
     case 'scheduler:list-projects':
     case 'scheduler:orchestrator:list':
         scheduler_orchestrator_list();
@@ -184,7 +187,7 @@ function scheduler_orchestrator_add(array $argv): void
 {
     $name = trim((string)($argv[2] ?? ''));
     if ($name === '' || !preg_match('/^[A-Za-z0-9._-]+$/', $name)) {
-        fwrite(STDERR, "Usage: php core/cli/nimbly.php scheduler:add-project <name> [path]\n");
+        fwrite(STDERR, "Usage: php core/cli/nimbly.php scheduler:project:add <name> [path]\n");
         exit(1);
     }
 
@@ -209,7 +212,7 @@ function scheduler_orchestrator_remove(array $argv): void
 {
     $name = trim((string)($argv[2] ?? ''));
     if ($name === '') {
-        fwrite(STDERR, "Usage: php core/cli/nimbly.php scheduler:remove-project <name>\n");
+        fwrite(STDERR, "Usage: php core/cli/nimbly.php scheduler:project:remove <name>\n");
         exit(1);
     }
 

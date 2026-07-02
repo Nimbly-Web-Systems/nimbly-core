@@ -19,24 +19,24 @@ $command = $argv[1] ?? null;
 $commands = [
     'help'              => ['file' => '',                           'desc' => 'Show command help', 'public' => true],
     'system:setup'     => ['file' => 'core/cli/setup/setup.php',    'desc' => 'Set up local system files, resources, roles, routes, and first user', 'public' => true],
+    'system:upgrade-11' => ['file' => 'core/cli/upgrade_11.php',    'desc' => 'Upgrade project to Nimbly 1.1.0', 'public' => true],
     'user:create'      => ['file' => 'core/cli/create_user.php',    'desc' => 'Create a new user account', 'public' => true],
+    'user:email-index:rebuild' => ['file' => 'core/cli/users_email_index.php', 'desc' => 'Add and rebuild users email lookup index', 'public' => true],
     'module:install'   => ['file' => 'core/cli/install_module.php', 'desc' => 'Install a module (runs its .install.inc)', 'public' => true],
     'jobs:run'         => ['file' => 'core/cli/jobs.php',           'desc' => 'Run queued background jobs', 'public' => false],
     'jobs:prune'       => ['file' => 'core/cli/jobs_prune.php',     'desc' => 'Delete completed jobs older than N days (--days=30)', 'public' => false],
     'schedule:run'     => ['file' => 'core/cli/schedule.php',       'desc' => 'Run due scheduled commands', 'public' => false],
     'schedule:init'    => ['file' => 'core/cli/schedule_publish.php', 'desc' => 'Create project schedule files in ext/cli', 'public' => true],
     'scheduler:install' => ['file' => 'core/cli/scheduler_orchestrator.php', 'desc' => 'Install the server scheduler wrapper', 'public' => true],
-    'scheduler:add-project' => ['file' => 'core/cli/scheduler_orchestrator.php', 'desc' => 'Register a project with the server scheduler', 'public' => true],
-    'scheduler:remove-project' => ['file' => 'core/cli/scheduler_orchestrator.php', 'desc' => 'Remove a project from the server scheduler', 'public' => true],
-    'scheduler:list-projects' => ['file' => 'core/cli/scheduler_orchestrator.php', 'desc' => 'List server scheduler projects', 'public' => true],
+    'scheduler:project:add' => ['file' => 'core/cli/scheduler_orchestrator.php', 'desc' => 'Register a project with the server scheduler', 'public' => true],
+    'scheduler:project:remove' => ['file' => 'core/cli/scheduler_orchestrator.php', 'desc' => 'Remove a project from the server scheduler', 'public' => true],
+    'scheduler:project:list' => ['file' => 'core/cli/scheduler_orchestrator.php', 'desc' => 'List server scheduler projects', 'public' => true],
     'scheduler:run' => ['file' => 'core/cli/scheduler_orchestrator.php', 'desc' => 'Run registered project schedulers sequentially', 'public' => true],
     'scheduler:cron:install' => ['file' => 'core/cli/scheduler_orchestrator.php', 'desc' => 'Install the server scheduler cron file', 'public' => true],
     'scheduler:cron:remove' => ['file' => 'core/cli/scheduler_orchestrator.php', 'desc' => 'Remove the server scheduler cron file', 'public' => true],
     'scheduler:cron:status' => ['file' => 'core/cli/scheduler_orchestrator.php', 'desc' => 'Show server scheduler cron status', 'public' => true],
-    'routes:add'      => ['file' => 'core/cli/routes_add.php',   'desc' => 'Scan route.inc files and create missing dynamic route records', 'public' => true],
+    'routes:sync'     => ['file' => 'core/cli/routes_add.php',   'desc' => 'Scan route.inc files and create missing dynamic route records', 'public' => true],
     'index:rebuild'    => ['file' => 'core/cli/reindex.php',        'desc' => 'Rebuild index entries for a resource', 'public' => true],
-    'users:email-index' => ['file' => 'core/cli/users_email_index.php', 'desc' => 'Add and rebuild users email lookup index', 'public' => true],
-    'system:upgrade-11' => ['file' => 'core/cli/upgrade_11.php',    'desc' => 'Upgrade project to Nimbly 1.1.0', 'public' => true],
     'docker:init'       => ['file' => 'core/cli/docker_init.php',   'desc' => 'Generate Dockerfile and CI workflow in ext/ for Docker image builds', 'public' => true],
     'test:architecture'  => ['file' => 'core/cli/architecture_check.php', 'desc' => 'Warn about project architecture anti-patterns', 'public' => true],
     'ext:sync'          => ['file' => 'core/cli/ext_sync.php',      'desc' => 'Commit and push ext/ changes to the remote repository', 'public' => false],
@@ -49,15 +49,20 @@ $commands = [
     'architecture:check' => ['file' => 'core/cli/architecture_check.php', 'desc' => 'Alias of test:architecture', 'public' => false],
     'schedule:publish' => ['file' => 'core/cli/schedule_publish.php', 'desc' => 'Alias of schedule:init', 'public' => false],
     'scheduler:orchestrator:install' => ['file' => 'core/cli/scheduler_orchestrator.php', 'desc' => 'Alias of scheduler:install', 'public' => false],
-    'scheduler:orchestrator:add' => ['file' => 'core/cli/scheduler_orchestrator.php', 'desc' => 'Alias of scheduler:add-project', 'public' => false],
-    'scheduler:orchestrator:remove' => ['file' => 'core/cli/scheduler_orchestrator.php', 'desc' => 'Alias of scheduler:remove-project', 'public' => false],
-    'scheduler:orchestrator:list' => ['file' => 'core/cli/scheduler_orchestrator.php', 'desc' => 'Alias of scheduler:list-projects', 'public' => false],
+    'scheduler:add-project' => ['file' => 'core/cli/scheduler_orchestrator.php', 'desc' => 'Alias of scheduler:project:add', 'public' => false],
+    'scheduler:remove-project' => ['file' => 'core/cli/scheduler_orchestrator.php', 'desc' => 'Alias of scheduler:project:remove', 'public' => false],
+    'scheduler:list-projects' => ['file' => 'core/cli/scheduler_orchestrator.php', 'desc' => 'Alias of scheduler:project:list', 'public' => false],
+    'scheduler:orchestrator:add' => ['file' => 'core/cli/scheduler_orchestrator.php', 'desc' => 'Alias of scheduler:project:add', 'public' => false],
+    'scheduler:orchestrator:remove' => ['file' => 'core/cli/scheduler_orchestrator.php', 'desc' => 'Alias of scheduler:project:remove', 'public' => false],
+    'scheduler:orchestrator:list' => ['file' => 'core/cli/scheduler_orchestrator.php', 'desc' => 'Alias of scheduler:project:list', 'public' => false],
     'scheduler:orchestrator:run' => ['file' => 'core/cli/scheduler_orchestrator.php', 'desc' => 'Alias of scheduler:run', 'public' => false],
     'scheduler:orchestrator:cron:install' => ['file' => 'core/cli/scheduler_orchestrator.php', 'desc' => 'Alias of scheduler:cron:install', 'public' => false],
     'scheduler:orchestrator:cron:remove' => ['file' => 'core/cli/scheduler_orchestrator.php', 'desc' => 'Alias of scheduler:cron:remove', 'public' => false],
     'scheduler:orchestrator:cron:status' => ['file' => 'core/cli/scheduler_orchestrator.php', 'desc' => 'Alias of scheduler:cron:status', 'public' => false],
     'migrate-pk-index' => ['file' => 'core/cli/migrate_10.php',     'desc' => 'Migrate 1.0.0 pk resources to indexed 1.1.0 resources', 'public' => false],
     'migrate-lib-flat' => ['file' => 'core/cli/migrate_lib.php',    'desc' => 'Flatten single-file library directories to lib/name.php', 'public' => false],
+    'routes:add'      => ['file' => 'core/cli/routes_add.php',   'desc' => 'Alias of routes:sync', 'public' => false],
+    'users:email-index' => ['file' => 'core/cli/users_email_index.php', 'desc' => 'Alias of user:email-index:rebuild', 'public' => false],
     'migrate-10'       => ['file' => 'core/cli/migrate_10.php',     'desc' => 'Alias of migrate-pk-index', 'public' => false],
     'migrate-lib'      => ['file' => 'core/cli/migrate_lib.php',    'desc' => 'Alias of migrate-lib-flat', 'public' => false],
 ];
@@ -77,12 +82,18 @@ if (!$command || $command === 'help' || !isset($commands[$command])) {
         echo "Unknown command: {$command}\n\n";
     }
     cli_section('Commands');
+    $last_scope = null;
     foreach ($commands as $name => $meta) {
         $is_public = $meta['public'] ?? true;
         if (!$is_public || in_array($name, $main_commands, true)) {
             continue;
         }
+        $scope = explode(':', $name, 2)[0];
+        if ($last_scope !== null && $scope !== $last_scope) {
+            echo "\n";
+        }
         printf("  %-38s %s\n", $name, $meta['desc']);
+        $last_scope = $scope;
     }
     echo "\n";
     exit($command && $command !== 'help' ? 1 : 0);

@@ -1,9 +1,9 @@
 <?php
 
 /**
- * Nimbly CLI - routes:add command
+ * Nimbly CLI - routes:sync command
  *
- * Usage: php core/cli/nimbly.php routes:add [--order=200] [--dry-run] [path]
+ * Usage: php core/cli/nimbly.php routes:sync [--order=200] [--dry-run] [path]
  *
  * Scans route.inc files in ext/uri and ext/modules module URI folders, then creates missing
  * .routes records for dynamic routes.

@@ -173,7 +173,7 @@ function architecture_check_dynamic_routes(string $ext_path, array &$warnings): 
         }
 
         if (!isset($existing_routes[$route])) {
-            $warnings[] = "{$relative} defines dynamic route `{$route}` but ext/data/.routes has no matching record. Run `./nimbly routes:add`.";
+            $warnings[] = "{$relative} defines dynamic route `{$route}` but ext/data/.routes has no matching record. Run `./nimbly routes:sync`.";
         }
     }
 }
