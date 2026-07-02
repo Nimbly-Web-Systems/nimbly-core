@@ -4,6 +4,7 @@ load_library("session");
 load_library('data');
 load_library("redirect");
 load_library('get-user');
+load_library('permissions');
 
 function access_sc($params) {
 
@@ -49,12 +50,9 @@ function access_by_feature($feature) {
     if ($has_session === false || !isset($_SESSION['features'])) {
         return false;
     }
-    if (isset($_SESSION['features']['(all)']) && $_SESSION['features']['(all)'] === true) {
-        return true;        
-    }
     $features = explode(',', $feature);
     foreach ($features as $f) {
-        if (!empty($_SESSION['features'][$f]) && $_SESSION['features'][$f] === true) {
+        if (permission_session_has($f)) {
             return true;
         }
     }
@@ -185,7 +183,7 @@ function _persist_user_roles($name) {
 }
 
 function _persist_user_features($name) {
-    $features = load_user_features($name);
+    $features = permission_expand_features(load_user_features($name));
     $_SESSION['features'] = array();
     if (empty($features)) {
         $_SESSION['features']['(none)'] = true;

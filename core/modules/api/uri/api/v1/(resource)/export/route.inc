@@ -19,7 +19,7 @@ if ($method !== 'GET') {
 }
 
 load_library('api');
-$access_feature = _api_access_str('get', $resource, null) . sprintf(',export-%1$s,manage-%1$s,(any)_%1$s', $resource);
+$access_feature = sprintf('export-%1$s,manage-%1$s,api_get_%1$s_export,api_get_%1$s,api_(any)_%1$s,api_get_(any),api_(any)', $resource);
 if (!api_access($access_feature, $resource)) {
     return json_result(array('message' => 'ACCESS_DENIED', 'needs' => $access_feature), 403);
 }

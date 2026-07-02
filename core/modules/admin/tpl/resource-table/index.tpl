@@ -13,9 +13,9 @@
             x-init="search_term=''"
             @input.debounce.150ms="$dispatch('search', $event.target.value)"
         />
-        [#feature-cond add-[#resource-id#] tpl=btn_add#]
+        [#feature-cond create-[#resource-id#] tpl=btn_add#]
         [#feature-cond import-[#resource-id#] tpl=btn_import#]
-        [#feature-cond features="manage-content,manage-[#resource-id#],export-[#resource-id#],(any)_[#resource-id#]" tpl=btn_export#]
+        [#feature-cond features="export-[#resource-id#]" tpl=btn_export#]
     </div>
     <h3 class="text-sm md:text-base pt-1 pb-2 text-neutral-700 font-medium">[#count data.records#] [#text records#]</h3>
 

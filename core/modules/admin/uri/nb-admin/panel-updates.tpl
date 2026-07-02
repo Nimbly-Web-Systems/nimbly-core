@@ -12,7 +12,7 @@
                 <path d="M2 12C2 6.47715 6.47715 2 12 2V5C8.13401 5 5 8.13401 5 12H2Z" fill="#000000" />
             </svg>
         </div>
-        <div class="dropdown dropdown-end relative [#feature-cond manage-system echo_else=hidden#]">
+        <div class="dropdown dropdown-end relative [#feature-cond pull-ext-updates,pull-core-updates echo_else=hidden#]">
             <button type="button" tabindex="0" class="rounded-full hover:bg-neutral-100 p-2 -mt-1">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5">
                     <path
@@ -21,7 +21,7 @@
 
             </button>
             <ul tabindex="0" class="dropdown-content absolute right-0 top-full z-[1000] mt-1 m-0 min-w-max list-none overflow-hidden rounded-lg border-none bg-orange-500 bg-clip-padding text-left text-base shadow-lg">
-                <li>
+                <li class="[#feature-cond pull-ext-updates echo_else=hidden#]">
                     <button
                         class="block w-full whitespace-nowrap bg-transparent px-4 py-2 
                         text-sm font-normal text-neutral-50 hover:bg-orange-400 disabled:cursor-auto
@@ -29,7 +29,7 @@
                         @click="pull_site" :disabled="site_updates==0">
                         [#text Get site updates#] (<span x-text="site_updates"></span>)</button>
                 </li>
-                <li>
+                <li class="[#feature-cond pull-core-updates echo_else=hidden#]">
                     <button
                         class="block w-full whitespace-nowrap bg-transparent disabled:cursor-auto px-4 py-2 text-sm font-normal text-neutral-50 hover:bg-orange-400 active:text-white active:no-underline disabled:pointer-events-none disabled:bg-transparent disabled:text-neutral-200"
                         @click="pull_core" :disabled="core_updates==0">

@@ -53,7 +53,7 @@ if (data_exists('roles', 'test')) {
     data_create('roles', 'test', [
         'name'        => 'Test',
         'description' => 'Automated test role — created and removed by test:setup / test:teardown',
-        'features'    => 'edit,manage-test-records,api_(any)_test-records,test',
+        'features'    => 'manage-test-records,test',
     ]);
     echo "ok    created role 'test'\n";
 }

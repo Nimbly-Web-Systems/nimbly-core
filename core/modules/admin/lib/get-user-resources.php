@@ -19,14 +19,8 @@ function get_user_resources_sc($params) {
 }
 
 function get_user_resources_access($k) {
-	if (access_by_feature('get_' . $k)) {
+	if (access_by_feature('view-' . $k)) {
 		return true;
-	}
-	if (access_by_feature('(any)_' . $k)) {
-		return true;
-	}
-	if (access_by_feature('manage-content')) {
-		return $k[0] !== '.' && !in_array($k, ['roles', 'users']);
 	}
 	return false;
 }

@@ -24,7 +24,31 @@ function api_method_switch($func_prefix, $resource = null, $uuid = null) {
 }
 
 function _api_access_str($method, $perm, $uuid) {
-    return sprintf('api_%1$s_%2$s_%3$s,api_%1$s_%2$s,api_(any)_%2$s,api_%1$s_(any),api_(any)', strtolower($method), $perm, $uuid);
+    $method = strtolower($method);
+    $operation = api_method_operation($method);
+    $features = [
+        sprintf('api_%1$s_%2$s_%3$s', $method, $perm, $uuid),
+        sprintf('api_%1$s_%2$s', $method, $perm),
+        sprintf('api_(any)_%1$s', $perm),
+        sprintf('api_%1$s_(any)', $method),
+        'api_(any)',
+    ];
+    if ($operation !== null) {
+        $features[] = $operation . '-' . $perm;
+        $features[] = 'manage-' . $perm;
+    }
+    return implode(',', $features);
+}
+
+function api_method_operation($method): ?string {
+    $map = [
+        'get' => 'view',
+        'post' => 'create',
+        'put' => 'edit',
+        'patch' => 'edit',
+        'delete' => 'delete',
+    ];
+    return $map[strtolower($method)] ?? null;
 }
 
 function api_access($feature='api', $resource=false) {
@@ -53,9 +77,6 @@ function api_public_access($feature) {
 
 function api_user_access($feature, $resource = false) {
      if (access_by_feature($feature)) {
-        return true;
-    }
-    if (access_by_feature('manage-content') && $resource && !in_array($resource, ['users', 'roles'])) {
         return true;
     }
     return false;

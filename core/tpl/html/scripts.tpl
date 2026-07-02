@@ -17,7 +17,7 @@ window.nb = {
 };
 </script>
 
-[#feature-cond manage-content echo="<script src='[#base-url#]/medium-editor.min.js'></script>"#]
+[#feature-cond edit-inline-content echo="<script src='[#base-url#]/medium-editor.min.js'></script>"#]
 
 <script src="[#base-url#]/app.js?v=[#app-modified#]"></script>
 

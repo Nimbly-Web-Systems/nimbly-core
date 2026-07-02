@@ -9,7 +9,7 @@
     </div>
     [#media-pagination#]
     <div>
-      [#feature-cond features="manage-content,delete_.files,(any)_.files" tpl=btn_delete_all#]
+      [#feature-cond features="delete-.files" tpl=btn_delete_all#]
     </div>
   </section>
 

@@ -1,4 +1,4 @@
-[#access feature=manage-content,manage-.files,get_.files,(any)_.files#]
+[#access feature=view-.files#]
 [#set page-title="[#text Media Library#]"#]
 [#set nb-skip-insert-media=true#]
 [#html#]
