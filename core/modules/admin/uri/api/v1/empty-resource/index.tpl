@@ -1,4 +1,4 @@
 [#http-header json#]
-[#access feature=api_delete_all_records#]
 [#json2post#]
+[#access feature=delete-[#resource#]#]
 [#empty-resource#]

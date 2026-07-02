@@ -1,4 +1,4 @@
-[#access feature=system-maintenance#]
+[#access feature=view-system-log#]
 [#set page-title="[#text System log#]"#]
 [#set nb-skip-insert-media=true#]
 [#post#]

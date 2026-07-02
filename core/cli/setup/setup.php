@@ -279,6 +279,7 @@ $_SERVER['APP_ENV'] = $app_env;
 
 // Load data/encrypt now that PEPPER is set
 load_library('data');
+load_library('permissions');
 load_library('encrypt');
 
 // -----------------------------------------------------------------------
@@ -549,6 +550,7 @@ $routes = [
     ['route' => 'nb-admin/(resource)/(id)',            'order' => 500],
     ['route' => 'nb-admin/(resource)/add',            'order' => 300],
     ['route' => 'nb-admin/(resource)/import',         'order' => 300],
+    ['route' => 'nb-admin/roles/(id)/permissions',     'order' => 200],
     ['route' => 'nb-admin/pages/(id)',                 'order' => 200],
     ['route' => 'nb-admin/files/(id)',                 'order' => 200],
     ['route' => 'img/(id)',                            'order' => 500],
@@ -589,7 +591,7 @@ if (!data_exists('roles', 'editor')) {
     data_create('roles', 'editor', [
         'name'        => 'Editor',
         'description' => 'Content writers, site maintainers',
-        'features'    => 'manage-content',
+        'features'    => implode(',', permission_editor_features()),
     ]);
     nb_status("Created: roles/editor");
 }

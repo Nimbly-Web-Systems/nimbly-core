@@ -24,7 +24,7 @@
         <li class='relative'>
             [#if nb-skip-insert-media=(empty) tpl=media-btn#]
 
-            [#nop #feature-cond manage-content tpl=html-btn#]
+            [#nop #feature-cond edit-inline-content tpl=html-btn#]
 
             <button id="nb_edit_save" disabled type="button"
                 class="flex h-8 w-full cursor-pointer items-center truncate rounded-[5px] pr-2 text-[0.8rem] leading-none text-neutral-100 outline-none transition hover:disabled:bg-transparent disabled:text-white/50 duration-300 ease-linear hover:bg-clight/40 hover:text-neutral-50 focus:bg-slate-50 focus:text-neutral-50 focus:outline-none active:bg-clight active:text-neutral-50 active:outline-none motion-reduce:transition-none">

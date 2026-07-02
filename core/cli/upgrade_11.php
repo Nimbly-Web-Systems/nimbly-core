@@ -541,10 +541,77 @@ function upgrade_11_removed_library_collect(): array
     );
 }
 
+function upgrade_11_role_permissions_collect(): array
+{
+    load_library('permissions');
+    $roles = data_read('roles');
+    if (!is_array($roles)) {
+        return [];
+    }
+    $result = [];
+    foreach ($roles as $role_id => $role) {
+        if (!is_array($role)) {
+            continue;
+        }
+        $features = $role['features'] ?? '';
+        if (trim((string)$features) === '(all)') {
+            continue;
+        }
+        $tokens = permission_token_list($features);
+        $expanded = permission_expand_features($tokens);
+        if ($tokens === $expanded) {
+            continue;
+        }
+        $result[$role_id] = [
+            'from' => implode(',', $tokens),
+            'to' => implode(',', $expanded),
+        ];
+    }
+    return $result;
+}
+
+function upgrade_11_role_permissions_apply(array $roles): int
+{
+    $updated = 0;
+    foreach ($roles as $role_id => $change) {
+        if (data_update('roles', $role_id, ['features' => $change['to']]) !== false) {
+            $updated++;
+        }
+    }
+    return $updated;
+}
+
+function upgrade_11_core_routes_collect(): array
+{
+    $routes = [
+        ['route' => 'nb-admin/roles/(id)/permissions', 'order' => 200],
+    ];
+    $missing = [];
+    foreach ($routes as $route) {
+        if (!data_exists('.routes', md5($route['route']))) {
+            $missing[] = $route;
+        }
+    }
+    return $missing;
+}
+
+function upgrade_11_core_routes_apply(array $routes): int
+{
+    $created = 0;
+    foreach ($routes as $route) {
+        if (data_create('.routes', md5($route['route']), $route)) {
+            $created++;
+        }
+    }
+    return $created;
+}
+
 $yes = in_array('--yes', $argv, true) || in_array('-y', $argv, true);
 
 migrate_10_bootstrap();
 $migration    = migrate_10_collect();
+$role_permissions = upgrade_11_role_permissions_collect();
+$core_routes = upgrade_11_core_routes_collect();
 $users_email  = users_email_index_collect();
 [$moves, $skipped] = migrate_lib_collect();
 $env          = upgrade_11_read_env();
@@ -565,6 +632,8 @@ $manual_helper_hits = upgrade_11_manual_helper_collect();
 $removed_library_hits = upgrade_11_removed_library_collect();
 
 $has_work = migrate_10_has_work($migration)
+    || !empty($role_permissions)
+    || !empty($core_routes)
     || users_email_index_has_work($users_email)
     || !empty($users_email['duplicates'])
     || !empty($moves)
@@ -599,6 +668,22 @@ echo "Nimbly 1.1.0 upgrade plan:\n";
 if (migrate_10_has_work($migration)) {
     echo "\n[" . ++$step . "] Resource/data migration\n";
     migrate_10_print_summary($migration);
+}
+
+if (!empty($role_permissions)) {
+    echo "\n[" . ++$step . "] Role permission migration\n\n";
+    foreach ($role_permissions as $role_id => $change) {
+        echo "  roles/{$role_id}\n";
+        echo "    " . $change['from'] . "\n";
+        echo "    -> " . $change['to'] . "\n";
+    }
+}
+
+if (!empty($core_routes)) {
+    echo "\n[" . ++$step . "] Core route registration\n\n";
+    foreach ($core_routes as $route) {
+        echo '  Create .routes/' . md5($route['route']) . ' for ' . $route['route'] . "\n";
+    }
 }
 
 if (users_email_index_has_work($users_email) || !empty($users_email['duplicates'])) {
@@ -704,6 +789,18 @@ if (migrate_10_has_work($migration)) {
     echo "\n=== Running resource/data migration ===\n";
     migrate_10_apply($migration);
     migrate_10_print_done($migration);
+}
+
+if (!empty($role_permissions)) {
+    echo "\n=== Updating role permissions ===\n";
+    $updated = upgrade_11_role_permissions_apply($role_permissions);
+    echo "Updated {$updated} role" . ($updated === 1 ? '' : 's') . ".\n";
+}
+
+if (!empty($core_routes)) {
+    echo "\n=== Registering core routes ===\n";
+    $created = upgrade_11_core_routes_apply($core_routes);
+    echo "Created {$created} route" . ($created === 1 ? '' : 's') . ".\n";
 }
 
 if (users_email_index_has_work($users_email) || !empty($users_email['duplicates'])) {

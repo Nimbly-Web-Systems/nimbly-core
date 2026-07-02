@@ -1,6 +1,7 @@
 <?php
 
 load_library("session");
+load_library("permissions");
 
 /*
  * Implements feature based template loading
@@ -32,14 +33,11 @@ function feature_cond_sc($params) {
         return;
     }
 
-    $access = isset($_SESSION['features']['(all)']) && $_SESSION['features']['(all)'] === true;
-
-    if ($access !== true) {
-        foreach ($features_ls as $f) {
-            if (!empty($_SESSION['features'][$f]) && $_SESSION['features'][$f] === true) {
-                $access = true;
-                break;
-            }
+    $access = false;
+    foreach ($features_ls as $f) {
+        if (permission_session_has($f)) {
+            $access = true;
+            break;
         }
     }
 

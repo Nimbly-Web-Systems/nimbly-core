@@ -62,8 +62,8 @@
                 </svg>
             </a>
 
-            [#feature-cond manage-content tpl=btn-dashboard#]
-            [#feature-cond manage-content tpl=btn-page-settings#]
+            [#feature-cond view-admin-dashboard tpl=btn-dashboard#]
+            [#feature-cond edit-.config tpl=btn-page-settings#]
 
             <div x-show="!collapsed" class="relative ml-auto" @click.outside="account_open = false" id="nb-bar-account-menu">
                 <button id="nb_account_btn" type="button" @click="account_open = !account_open"
@@ -111,8 +111,8 @@
         </div>
 
         <ul class="mt-8 flex flex-col gap-2" x-show="!collapsed">
-            [#feature-cond manage-content tpl=menu-resources#]
-            [#feature-cond manage-content tpl=menu-edit#]
+            [#feature-cond view-admin-dashboard tpl=menu-resources#]
+            [#feature-cond edit-inline-content tpl=menu-edit#]
             [#set menu-ext=#]
             [#menu-ext#]
         </ul>
@@ -133,8 +133,8 @@
     </a>
 </nav>
 
-[#feature-cond manage-content tpl=media-modal-cond#]
-[#feature-cond manage-content tpl=modal-settings#]
+[#feature-cond view-.files tpl=media-modal-cond#]
+[#feature-cond edit-.config tpl=modal-settings#]
 
 <script>
     [#include file=[#base-path#]core/tpl/nimblybar/index.js#]

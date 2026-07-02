@@ -1,6 +1,6 @@
 [#get-system-log#]
 <section class="bg-neutral-100 p-2 sm:p-4 md:p-6 lg:p-8 font-primary flex justify-between flex-wrap md:flex-nowrap">
-	<div>
+	<div class="[#feature-cond clear-system-log echo_else=hidden#]">
 		<h1 class="text-2xl md:text-3xl font-semibold text-neutral-800 ">[#text System log#]</h1>
 		<h3 class="text-sm md:text-base pt-1 pb-2 text-neutral-700 font-medium">[#count system_log#] [#text entries#]</h3>
 	</div>

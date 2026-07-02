@@ -42,7 +42,7 @@
                     </td>
                     <td class="text-neutral-600 py-3 border-b border-neutral-200">
                         <template x-if="Object.keys(_records).length < 1">
-                            [#feature-cond add-[#resource-id#] tpl=action_add#]
+                            [#feature-cond create-[#resource-id#] tpl=action_add#]
                         </template>
                     </td>
                 </tr>
@@ -73,7 +73,7 @@
                 <p x-text="search_regex? '[#text No search results#]': '[#text No records yet#]'"></p>
                 <template x-if="Object.keys(_records).length < 1">
                     <div class="pt-3">
-                        [#feature-cond add-[#resource-id#] tpl=action_add#]
+                        [#feature-cond create-[#resource-id#] tpl=action_add#]
                     </div>
                 </template>
             </div>

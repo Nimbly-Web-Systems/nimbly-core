@@ -723,10 +723,10 @@ Returns `"logged-in"` if a user session is active.
 Conditionally renders content based on whether the current user has a specific feature/permission.
 
 ```
-[#feature-cond features=manage-content tpl=edit-button#]
-[#feature-cond features=manage-content echo="<a href='/admin'>Admin</a>"#]
-[#feature-cond features=manage-content tpl=admin-panel tpl_else=access-denied#]
-[#feature-cond features=manage-content,view-reports tpl=dashboard#]
+[#feature-cond features=edit-articles tpl=edit-button#]
+[#feature-cond features=view-admin-dashboard echo="<a href='/nb-admin'>Admin</a>"#]
+[#feature-cond features=view-admin-dashboard tpl=admin-panel tpl_else=access-denied#]
+[#feature-cond features=edit-articles,view-reports tpl=dashboard#]
 ```
 
 Parameters:
@@ -736,7 +736,9 @@ Parameters:
 - `echo` — string to output if access is granted
 - `echo_else` — string to output if access is denied
 
-Features are assigned to roles in `/nb-admin/roles/`. The admin role always has `(all)` which bypasses all feature checks.
+Canonical permissions use `<operation>-<resource_id>`, for example `view-articles`, `create-products`, `edit-.content`, or `delete-users`. Hidden resource ids keep their leading dot in stored permissions. `manage-<resource_id>` grants all standard operations for that one resource. The admin role always has `(all)` which bypasses all feature checks.
+
+Permissions are assigned to roles in `/nb-admin/roles/`. Use the role permissions screen to edit checkbox-based permissions; custom tokens can still be stored for project-specific checks. Legacy tokens such as `manage-content`, `(any)`, `get_<resource>`, `add-<resource>`, and `(any)_<resource>` are normalized during session loading and upgrade migration, but new code should use canonical permissions.
 
 #### `[#date input fmt=Y-m-d#]`
 Formats a date value. Input can be a Unix timestamp, a date string, or omitted (defaults to today).
@@ -2441,10 +2443,10 @@ Common error codes:
 Access is role-based. When a request is denied, the `needs` field lists the permission patterns that would grant access:
 
 ```json
-"needs": "api_delete_users,api_delete_(any),api_(any)"
+"needs": "api_delete_users_123,api_delete_users,api_(any)_users,api_delete_(any),api_(any),delete-users,manage-users"
 ```
 
-Patterns follow the format `api_{method}_{resource}`. Roles and their permissions are managed in the admin under `/nb-admin/roles/`.
+User roles should use canonical resource permissions: `view-<resource>` for GET, `create-<resource>` for POST, `edit-<resource>` for PUT/PATCH, `delete-<resource>` for DELETE, plus `import-<resource>` and `export-<resource>` for import/export routes. Legacy `api_*` tokens are still accepted for compatibility. Roles and their permissions are managed in the admin under `/nb-admin/roles/`.
 
 ### Custom UUID
 
