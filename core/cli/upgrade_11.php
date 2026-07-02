@@ -178,6 +178,173 @@ function upgrade_11_collect_sc(string $pattern): array
     return $hits;
 }
 
+function upgrade_11_php_usage_count(string $content, array $function_names = [], array $library_names = []): int
+{
+    $tokens = token_get_all($content);
+    $function_lookup = array_fill_keys($function_names, true);
+    $library_lookup = array_fill_keys($library_names, true);
+    $count = 0;
+
+    foreach ($tokens as $i => $token) {
+        if (!is_array($token) || $token[0] !== T_STRING) {
+            continue;
+        }
+
+        $name = $token[1];
+
+        if (isset($function_lookup[$name])) {
+            for ($j = $i + 1; $j < count($tokens); $j++) {
+                $next = $tokens[$j];
+                if (is_array($next) && in_array($next[0], [T_WHITESPACE, T_COMMENT, T_DOC_COMMENT], true)) {
+                    continue;
+                }
+                if ($next === '(') {
+                    $count++;
+                }
+                break;
+            }
+            continue;
+        }
+
+        if (!in_array($name, ['load_library', 'load_libraries'], true)) {
+            continue;
+        }
+
+        $depth = 0;
+        $inside = false;
+        for ($j = $i + 1; $j < count($tokens); $j++) {
+            $next = $tokens[$j];
+            if ($next === '(') {
+                $depth++;
+                $inside = true;
+                continue;
+            }
+            if ($next === ')') {
+                $depth--;
+                if ($inside && $depth <= 0) {
+                    break;
+                }
+                continue;
+            }
+            if (!$inside || !is_array($next) || $next[0] !== T_CONSTANT_ENCAPSED_STRING) {
+                continue;
+            }
+
+            $value = trim($next[1], "'\"");
+            if (isset($library_lookup[$value])) {
+                $count++;
+            }
+        }
+    }
+
+    return $count;
+}
+
+function upgrade_11_collect_php_usage(array $function_names = [], array $library_names = []): array
+{
+    $hits = [];
+    $it = new RecursiveIteratorIterator(
+        new RecursiveDirectoryIterator(BASE_DIR . 'ext', FilesystemIterator::SKIP_DOTS)
+    );
+    foreach ($it as $file) {
+        if (!in_array($file->getExtension(), ['php', 'inc'], true)) {
+            continue;
+        }
+        $content = file_get_contents($file->getPathname());
+        $count = upgrade_11_php_usage_count($content, $function_names, $library_names);
+        if ($count > 0) {
+            $hits[] = [$file->getPathname(), $count];
+        }
+    }
+    return $hits;
+}
+
+function upgrade_11_merge_hits(array ...$hit_sets): array
+{
+    $by_path = [];
+    foreach ($hit_sets as $hits) {
+        foreach ($hits as [$path, $count]) {
+            if (!isset($by_path[$path])) {
+                $by_path[$path] = 0;
+            }
+            $by_path[$path] += $count;
+        }
+    }
+
+    $result = [];
+    foreach ($by_path as $path => $count) {
+        $result[] = [$path, $count];
+    }
+    return $result;
+}
+
+function upgrade_11_rewrite_php_usage(string $content, array $function_map = [], array $library_map = []): string
+{
+    $tokens = token_get_all($content);
+    $out = '';
+    $library_pending = false;
+    $library_depth = null;
+
+    foreach ($tokens as $i => $token) {
+        $text = is_array($token) ? $token[1] : $token;
+
+        if ($library_pending) {
+            if (is_array($token) && in_array($token[0], [T_WHITESPACE, T_COMMENT, T_DOC_COMMENT], true)) {
+                $out .= $text;
+                continue;
+            }
+            if ($text === '(') {
+                $library_pending = false;
+                $library_depth = 1;
+                $out .= $text;
+                continue;
+            }
+            $library_pending = false;
+        }
+
+        if ($library_depth !== null) {
+            if ($text === '(') {
+                $library_depth++;
+            } elseif ($text === ')') {
+                $library_depth--;
+            } elseif (is_array($token) && $token[0] === T_CONSTANT_ENCAPSED_STRING) {
+                $quote = $text[0];
+                $value = trim($text, "'\"");
+                if (isset($library_map[$value])) {
+                    $text = $quote . $library_map[$value] . $quote;
+                }
+            }
+
+            $out .= $text;
+            if ($library_depth <= 0) {
+                $library_depth = null;
+            }
+            continue;
+        }
+
+        if (is_array($token) && $token[0] === T_STRING) {
+            if (isset($function_map[$token[1]])) {
+                for ($j = $i + 1; $j < count($tokens); $j++) {
+                    $next = $tokens[$j];
+                    if (is_array($next) && in_array($next[0], [T_WHITESPACE, T_COMMENT, T_DOC_COMMENT], true)) {
+                        continue;
+                    }
+                    if ($next === '(') {
+                        $text = $function_map[$token[1]];
+                    }
+                    break;
+                }
+            } elseif (in_array($token[1], ['load_library', 'load_libraries'], true)) {
+                $library_pending = true;
+            }
+        }
+
+        $out .= $text;
+    }
+
+    return $out;
+}
+
 function upgrade_11_get_key_collect(): array
 {
     return upgrade_11_collect_sc('/\[#get-key\s/');
@@ -243,6 +410,11 @@ function upgrade_11_lookup_collect(): array
     return upgrade_11_collect_sc('/\[#lookup\s/');
 }
 
+function upgrade_11_lookup_helper_collect(): array
+{
+    return upgrade_11_collect_php_usage(['lookup_data'], ['lookup']);
+}
+
 function upgrade_11_apply_lookup(array $hits): int
 {
     $migrated = 0;
@@ -257,23 +429,26 @@ function upgrade_11_apply_lookup(array $hits): int
     return $migrated;
 }
 
-function upgrade_11_uuid_collect(): array
+function upgrade_11_apply_lookup_helper(array $hits): int
 {
-    $hits = [];
-    $it = new RecursiveIteratorIterator(
-        new RecursiveDirectoryIterator(BASE_DIR . 'ext', FilesystemIterator::SKIP_DOTS)
-    );
-    foreach ($it as $file) {
-        if (!in_array($file->getExtension(), ['tpl', 'php', 'inc'], true)) {
-            continue;
-        }
-        $content = file_get_contents($file->getPathname());
-        $count = preg_match_all("/load_library\(['\"]uuid['\"]\\)|(?<![A-Za-z0-9_])uuid_sc\s*\(|\\[#uuid#\\]/", $content);
-        if ($count > 0) {
-            $hits[] = [$file->getPathname(), $count];
+    $migrated = 0;
+    foreach ($hits as [$path]) {
+        $content = file_get_contents($path);
+        $new = upgrade_11_rewrite_php_usage($content, ['lookup_data' => 'data_lookup'], ['lookup' => 'data']);
+        if ($new !== $content) {
+            file_put_contents($path, $new);
+            $migrated++;
         }
     }
-    return $hits;
+    return $migrated;
+}
+
+function upgrade_11_uuid_collect(): array
+{
+    return upgrade_11_merge_hits(
+        upgrade_11_collect_php_usage(['uuid_sc'], ['uuid']),
+        upgrade_11_collect_sc('/\[#uuid#\]/')
+    );
 }
 
 function upgrade_11_apply_uuid(array $hits): int
@@ -281,8 +456,7 @@ function upgrade_11_apply_uuid(array $hits): int
     $migrated = 0;
     foreach ($hits as [$path]) {
         $content = file_get_contents($path);
-        $new = preg_replace("/load_library\(['\"]uuid['\"]\)/", "load_library('util')", $content);
-        $new = preg_replace('/(?<![A-Za-z0-9_])uuid_sc\s*\(/', 'generate_uuid(', $new);
+        $new = upgrade_11_rewrite_php_usage($content, ['uuid_sc' => 'generate_uuid'], ['uuid' => 'util']);
         $new = str_replace('[#uuid#]', '[#get uuid#]', $new);
         if ($new !== $content) {
             file_put_contents($path, $new);
@@ -294,21 +468,7 @@ function upgrade_11_apply_uuid(array $hits): int
 
 function upgrade_11_util_collect(): array
 {
-    $hits = [];
-    $it = new RecursiveIteratorIterator(
-        new RecursiveDirectoryIterator(BASE_DIR . 'ext', FilesystemIterator::SKIP_DOTS)
-    );
-    foreach ($it as $file) {
-        if (!in_array($file->getExtension(), ['php', 'inc'], true)) {
-            continue;
-        }
-        $content = file_get_contents($file->getPathname());
-        $count = preg_match_all("/load_librar(?:y|ies)\s*\([^)]*['\"](?:salt|md5|slug)['\"][^)]*\)|(?<![A-Za-z0-9_])slug_sc\s*\(/s", $content);
-        if ($count > 0) {
-            $hits[] = [$file->getPathname(), $count];
-        }
-    }
-    return $hits;
+    return upgrade_11_collect_php_usage(['salt_sc', 'slug_sc'], ['salt', 'md5', 'slug']);
 }
 
 function upgrade_11_apply_util(array $hits): int
@@ -316,21 +476,69 @@ function upgrade_11_apply_util(array $hits): int
     $migrated = 0;
     foreach ($hits as [$path]) {
         $content = file_get_contents($path);
-        $new = preg_replace("/load_library\(['\"](?:salt|md5|slug)['\"]\)/", "load_library('util')", $content);
-        $new = preg_replace_callback(
-            "/load_libraries\s*\((\[[^\]]*\])\)/s",
-            function ($matches) {
-                return 'load_libraries(' . preg_replace("/(['\"])(?:salt|md5|slug)\\1/", "'util'", $matches[1]) . ')';
-            },
-            $new
+        $new = upgrade_11_rewrite_php_usage(
+            $content,
+            ['salt_sc' => 'generate_salt', 'slug_sc' => 'make_slug'],
+            ['salt' => 'util', 'md5' => 'util', 'slug' => 'util']
         );
-        $new = preg_replace('/(?<![A-Za-z0-9_])slug_sc\s*\(/', 'make_slug(', $new);
         if ($new !== $content) {
             file_put_contents($path, $new);
             $migrated++;
         }
     }
     return $migrated;
+}
+
+function upgrade_11_manual_helper_collect(): array
+{
+    $removed_helpers = [
+        'get_gallery_json_sc',
+        'get_meta_data_sc',
+        'get_pages_sc',
+        'host_sc',
+        'implode_sc',
+        'int_sc',
+        'is_dev_env_sc',
+        'jget_value',
+        'jget_variable',
+        'key_access_sc',
+        'md5_sc',
+        'reverse_lookup_data',
+        'reverse_lookup_sc',
+        'rkey_sc',
+        'sticky_post_sc',
+        'strip_sc',
+        'sys_libraries_sc',
+        'unquote_sc',
+    ];
+
+    return upgrade_11_collect_php_usage($removed_helpers);
+}
+
+function upgrade_11_removed_library_collect(): array
+{
+    $removed_libraries = [
+        'get-gallery-json',
+        'get-meta-data',
+        'get-pages',
+        'host',
+        'implode',
+        'int',
+        'is-dev-env',
+        'key-access',
+        'reverse-lookup',
+        'rkey',
+        'sticky-post',
+        'strip',
+        'sys-libraries',
+        'unquote',
+    ];
+    $library_pattern = implode('|', array_map('preg_quote', $removed_libraries));
+
+    return upgrade_11_merge_hits(
+        upgrade_11_collect_php_usage([], $removed_libraries),
+        upgrade_11_collect_sc("/\[#(?:{$library_pattern})(?:\s|#)/s")
+    );
 }
 
 $yes = in_array('--yes', $argv, true) || in_array('-y', $argv, true);
@@ -350,8 +558,11 @@ $get_key_hits = upgrade_11_get_key_collect();
 $jget_hits    = upgrade_11_jget_collect();
 $i18n_hits    = upgrade_11_get_i18n_collect();
 $lookup_hits  = upgrade_11_lookup_collect();
+$lookup_helper_hits = upgrade_11_lookup_helper_collect();
 $uuid_hits    = upgrade_11_uuid_collect();
 $util_hits    = upgrade_11_util_collect();
+$manual_helper_hits = upgrade_11_manual_helper_collect();
+$removed_library_hits = upgrade_11_removed_library_collect();
 
 $has_work = migrate_10_has_work($migration)
     || users_email_index_has_work($users_email)
@@ -366,8 +577,11 @@ $has_work = migrate_10_has_work($migration)
     || !empty($jget_hits)
     || !empty($i18n_hits)
     || !empty($lookup_hits)
+    || !empty($lookup_helper_hits)
     || !empty($uuid_hits)
-    || !empty($util_hits);
+    || !empty($util_hits)
+    || !empty($manual_helper_hits)
+    || !empty($removed_library_hits);
 
 if (!$has_work) {
     echo "Nimbly 1.1.0 upgrade checks complete — no automatic upgrade steps are needed.\n";
@@ -447,8 +661,9 @@ foreach ([
     [$jget_hits,    '[#jget#] → [#get#]'],
     [$i18n_hits,    '[#get-i18n#] → [#get#]'],
     [$lookup_hits,  '[#lookup#] → [#get#]'],
+    [$lookup_helper_hits, 'load_library(lookup) → data; lookup_data() → data_lookup()'],
     [$uuid_hits,    'load_library(uuid) → util; uuid_sc() → generate_uuid(); [#uuid#] → [#get uuid#]'],
-    [$util_hits,    'load_library/load_libraries(salt|md5|slug) → util; slug_sc() → make_slug()'],
+    [$util_hits,    'load_library/load_libraries(salt|md5|slug) → util; salt_sc() → generate_salt(); slug_sc() → make_slug()'],
 ] as [$hits, $label]) {
     if (!empty($hits)) {
         $total = array_sum(array_column($hits, 1));
@@ -457,6 +672,24 @@ foreach ([
             echo '  ' . str_replace(BASE_DIR, '', $path) . " ({$count})\n";
         }
     }
+}
+
+if (!empty($manual_helper_hits)) {
+    $total = array_sum(array_column($manual_helper_hits, 1));
+    echo "\n[" . ++$step . "] Manual migration required for removed PHP helpers ({$total} occurrence" . ($total === 1 ? '' : 's') . " in " . count($manual_helper_hits) . " file" . (count($manual_helper_hits) === 1 ? '' : 's') . ")\n\n";
+    foreach ($manual_helper_hits as [$path, $count]) {
+        echo '  ' . str_replace(BASE_DIR, '', $path) . " ({$count})\n";
+    }
+    cli_tip("Review each call site. These helpers were removed in core 1.1.0 and do not all have a safe automatic rewrite.");
+}
+
+if (!empty($removed_library_hits)) {
+    $total = array_sum(array_column($removed_library_hits, 1));
+    echo "\n[" . ++$step . "] Manual migration required for removed core libraries/shortcodes ({$total} occurrence" . ($total === 1 ? '' : 's') . " in " . count($removed_library_hits) . " file" . (count($removed_library_hits) === 1 ? '' : 's') . ")\n\n";
+    foreach ($removed_library_hits as [$path, $count]) {
+        echo '  ' . str_replace(BASE_DIR, '', $path) . " ({$count})\n";
+    }
+    cli_tip("These zero-use core libraries were removed before 1.1.0; replace them with project code or current core APIs.");
 }
 
 if (!$yes) {
@@ -543,6 +776,11 @@ if (!empty($i18n_hits)) {
 if (!empty($lookup_hits)) {
     echo "\n=== Replacing [#lookup#] with [#get#] ===\n";
     echo "Updated " . upgrade_11_apply_lookup($lookup_hits) . " file(s).\n";
+}
+
+if (!empty($lookup_helper_hits)) {
+    echo "\n=== Migrating lookup helper calls ===\n";
+    echo "Updated " . upgrade_11_apply_lookup_helper($lookup_helper_hits) . " file(s).\n";
 }
 
 if (!empty($uuid_hits)) {
