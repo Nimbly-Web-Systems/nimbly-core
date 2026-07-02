@@ -235,8 +235,12 @@ function scheduler_orchestrator_list(): void
 function scheduler_orchestrator_run(array $argv): void
 {
     $dry_run = in_array('--dry-run', $argv, true);
-    $lock = fopen(scheduler_orchestrator_lock_path(), 'c');
-    if (!$lock || !flock($lock, LOCK_EX | LOCK_NB)) {
+    $lock = @fopen(scheduler_orchestrator_lock_path(), 'c');
+    if (!$lock) {
+        echo scheduler_orchestrator_log_line('orchestrator', '', 0.0, 1, 'lock unavailable');
+        exit(1);
+    }
+    if (!flock($lock, LOCK_EX | LOCK_NB)) {
         echo scheduler_orchestrator_log_line('orchestrator', '', 0.0, 0, 'already running');
         exit(0);
     }
