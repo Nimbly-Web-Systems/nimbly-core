@@ -88,7 +88,7 @@ function render_field_sc($params)
  * Sets all _f.* template variables then dispatches to [#field-{type}#].
  *
  * The entire field definition is spread into _f.* so templates can access
- * any custom attribute (resource, options, buttons, media, ai_prompts, etc.)
+ * any custom attribute (resource, options, actions, media, ai_prompts, etc.)
  * without this function needing to enumerate them.
  *
  * @param array       $def    Fields hash (keyed by name) or a single field definition
@@ -125,7 +125,11 @@ function render_field(array $def, string $field = '', $value = null, string $sto
     set_variable('_f.title',    $def['name'] ?? ucfirst(str_replace(['-', '_'], ' ', $field)));
     set_variable('_f.bg',       'bg-white');
     set_variable('_f.required', !empty($def['required']));
+    $actions = _field_actions_normalize($def);
+
     set_variable('_f.ai',       !empty($def['ai_prompts']));
+    set_variable('_f.actions',  $actions);
+    set_variable('_f.has_actions', !empty($actions));
     set_variable('_f.wrapper_class', $def['wrapper_class'] ?? 'nb-field relative my-10');
     $field_value = $value ?? $def['default'] ?? '';
     $i18n_seed = null;
@@ -171,4 +175,24 @@ function _get_field_value(string $var_name)
 {
     load_library('get');
     return get_variable($var_name);
+}
+
+function _field_actions_normalize(array $def): array
+{
+    $actions = $def['actions'] ?? [];
+    if (empty($actions)) {
+        $actions = [];
+    } else if (isset($actions['type'])) {
+        $actions = [$actions];
+    }
+
+    if (!empty($def['ai_prompts'])) {
+        $actions[] = [
+            'type' => 'ai',
+            'label' => 'Generate with AI',
+            'icon' => 'sparkles',
+        ];
+    }
+
+    return array_values(array_filter($actions, 'is_array'));
 }

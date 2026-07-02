@@ -1,4 +1,4 @@
-<select class="select select-bordered w-full" name="[#_f.key#]"
+<select class="select select-bordered w-full [#if _f.has_actions=(not-empty) echo=pr-12#]" name="[#_f.key#]"
     [#if _f.required=(not-empty) echo=required#]
     [#_f.x_init#]
     x-model="[#_f.model#]">
