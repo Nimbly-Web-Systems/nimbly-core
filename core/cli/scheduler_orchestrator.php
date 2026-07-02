@@ -4,14 +4,14 @@
  * Server-level scheduler orchestrator.
  *
  * Usage:
- *   php core/cli/nimbly.php scheduler:orchestrator:install
- *   php core/cli/nimbly.php scheduler:orchestrator:add <name> [path]
- *   php core/cli/nimbly.php scheduler:orchestrator:remove <name>
- *   php core/cli/nimbly.php scheduler:orchestrator:list
- *   php core/cli/nimbly.php scheduler:orchestrator:run [--dry-run]
- *   php core/cli/nimbly.php scheduler:orchestrator:cron:install --user=www-data
- *   php core/cli/nimbly.php scheduler:orchestrator:cron:remove
- *   php core/cli/nimbly.php scheduler:orchestrator:cron:status
+ *   php core/cli/nimbly.php scheduler:install
+ *   php core/cli/nimbly.php scheduler:add-project <name> [path]
+ *   php core/cli/nimbly.php scheduler:remove-project <name>
+ *   php core/cli/nimbly.php scheduler:list-projects
+ *   php core/cli/nimbly.php scheduler:run [--dry-run]
+ *   php core/cli/nimbly.php scheduler:cron:install --user=www-data
+ *   php core/cli/nimbly.php scheduler:cron:remove
+ *   php core/cli/nimbly.php scheduler:cron:status
  */
 
 if (php_sapi_name() !== 'cli') {
@@ -25,27 +25,35 @@ if (!defined('BASE_DIR')) {
 $scheduler_command = $argv[1] ?? '';
 
 switch ($scheduler_command) {
+    case 'scheduler:install':
     case 'scheduler:orchestrator:install':
         scheduler_orchestrator_install();
         break;
+    case 'scheduler:add-project':
     case 'scheduler:orchestrator:add':
         scheduler_orchestrator_add($argv);
         break;
+    case 'scheduler:remove-project':
     case 'scheduler:orchestrator:remove':
         scheduler_orchestrator_remove($argv);
         break;
+    case 'scheduler:list-projects':
     case 'scheduler:orchestrator:list':
         scheduler_orchestrator_list();
         break;
+    case 'scheduler:run':
     case 'scheduler:orchestrator:run':
         scheduler_orchestrator_run($argv);
         break;
+    case 'scheduler:cron:install':
     case 'scheduler:orchestrator:cron:install':
         scheduler_orchestrator_cron_install($argv);
         break;
+    case 'scheduler:cron:remove':
     case 'scheduler:orchestrator:cron:remove':
         scheduler_orchestrator_cron_remove();
         break;
+    case 'scheduler:cron:status':
     case 'scheduler:orchestrator:cron:status':
         scheduler_orchestrator_cron_status();
         break;
@@ -157,7 +165,7 @@ function scheduler_orchestrator_install(): void
     $script = "#!/bin/sh\n"
         . "exec env " . implode(' ', array_map('escapeshellarg', $env_args))
         . ' ' . escapeshellarg($php_binary) . ' ' . escapeshellarg($cli_path)
-        . " scheduler:orchestrator:run >> " . escapeshellarg($log_path) . " 2>&1\n";
+        . " scheduler:run >> " . escapeshellarg($log_path) . " 2>&1\n";
 
     if (file_put_contents($bin_path, $script) === false) {
         fwrite(STDERR, "Could not write orchestrator wrapper: {$bin_path}\n");
@@ -176,7 +184,7 @@ function scheduler_orchestrator_add(array $argv): void
 {
     $name = trim((string)($argv[2] ?? ''));
     if ($name === '' || !preg_match('/^[A-Za-z0-9._-]+$/', $name)) {
-        fwrite(STDERR, "Usage: php core/cli/nimbly.php scheduler:orchestrator:add <name> [path]\n");
+        fwrite(STDERR, "Usage: php core/cli/nimbly.php scheduler:add-project <name> [path]\n");
         exit(1);
     }
 
@@ -201,7 +209,7 @@ function scheduler_orchestrator_remove(array $argv): void
 {
     $name = trim((string)($argv[2] ?? ''));
     if ($name === '') {
-        fwrite(STDERR, "Usage: php core/cli/nimbly.php scheduler:orchestrator:remove <name>\n");
+        fwrite(STDERR, "Usage: php core/cli/nimbly.php scheduler:remove-project <name>\n");
         exit(1);
     }
 
@@ -415,5 +423,5 @@ function scheduler_orchestrator_option(array $argv, string $name): string
 
 function scheduler_orchestrator_usage(): void
 {
-    echo "Usage: php core/cli/nimbly.php scheduler:orchestrator:<command>\n";
+    echo "Usage: php core/cli/nimbly.php scheduler:<command>\n";
 }

@@ -665,7 +665,7 @@ if (empty(getenv('NIMBLY_INIT'))) {
     echo "\nScheduler cron\n";
     echo "  $cron_command\n";
     cli_tip("This single cron entry runs due scheduled commands, including queued jobs.");
-    cli_tip("To customize the schedule, run: ./nimbly schedule:publish");
+    cli_tip("To customize the schedule, run: ./nimbly schedule:init");
 } else {
     echo "System setup complete.\n";
 }
