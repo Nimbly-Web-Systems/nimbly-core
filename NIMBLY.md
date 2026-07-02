@@ -303,7 +303,7 @@ Important: a subfolder inside `ext/uri/` **always** creates a new route. A flat 
 
 `route.inc` is only used for **dynamic routes** — routes with `(param)` segments in the URL that need to be matched, validated, and accepted or rejected. Static routes (plain URL paths with no parameters) do not use `route.inc`; their `index.tpl` is loaded directly.
 
-Dynamic routes are **not auto-discovered**. Every route with a `(param)` segment must also have a record in the `.routes` resource, otherwise the request will never reach its `route.inc` and will 404. For example, `ext/uri/en/blog/(slug)/route.inc` needs a `.routes` record with `route: "en/blog/(slug)"` and an appropriate `order`, usually `200`. Run `php core/cli/nimbly.php routes:add` to scan `ext/uri/**/route.inc` files and create missing `.routes` records.
+Dynamic routes are **not auto-discovered**. Every route with a `(param)` segment must also have a record in the `.routes` resource, otherwise the request will never reach its `route.inc` and will 404. For example, `ext/uri/en/blog/(slug)/route.inc` needs a `.routes` record with `route: "en/blog/(slug)"` and an appropriate `order`, usually `200`. Run `php core/cli/nimbly.php routes:sync` to scan `ext/uri/**/route.inc` files and create missing `.routes` records.
 
 A `route.inc` sits alongside `index.tpl` and decides whether this route owns the request:
 
@@ -1598,7 +1598,7 @@ ext/uri/blog/(slug)/index.tpl     → /blog/<anything>/
 ext/uri/user/(id)/index.tpl       → /user/<anything>/
 ```
 
-Dynamic routes are not registered from the folder structure alone. If the route contains a `(param)` segment, add a matching `.routes` record or run `php core/cli/nimbly.php routes:add` after creating the route files. Static routes do not need `.routes` records.
+Dynamic routes are not registered from the folder structure alone. If the route contains a `(param)` segment, add a matching `.routes` record or run `php core/cli/nimbly.php routes:sync` after creating the route files. Static routes do not need `.routes` records.
 
 ### Route-scoped JavaScript
 
@@ -1638,9 +1638,9 @@ Equivalent direct invocations:
 php core/cli/nimbly.php system:setup
 php core/cli/nimbly.php user:create
 php core/cli/nimbly.php module:install <name>
-php core/cli/nimbly.php routes:add
+php core/cli/nimbly.php routes:sync
 php core/cli/nimbly.php index:rebuild [resource]
-php core/cli/nimbly.php users:email-index
+php core/cli/nimbly.php user:email-index:rebuild
 php core/cli/nimbly.php system:upgrade-11
 php core/cli/nimbly.php help
 ```
@@ -1686,11 +1686,11 @@ Runs a module's `.install.inc` script. Looks in `ext/modules/` first, then `core
 ./nimbly module:install event
 ```
 
-#### `routes:add`
+#### `routes:sync`
 Scans `ext/uri/**/route.inc` and creates missing records in `.routes` for dynamic routes. Use this after adding a new route folder with `(param)` segments.
 
 ```bash
-./nimbly routes:add
+./nimbly routes:sync
 ```
 
 #### `index:rebuild`
@@ -1703,12 +1703,12 @@ php core/cli/nimbly.php index:rebuild articles    # direct: reindex the 'article
 
 The command scans all records in the resource and creates any missing index files. It is idempotent — existing entries are left untouched.
 
-#### `users:email-index`
+#### `user:email-index:rebuild`
 Adds email lookup metadata to the `users` resource and rebuilds its email index.
 
 ```bash
-php core/cli/nimbly.php users:email-index
-php core/cli/nimbly.php users:email-index --yes
+php core/cli/nimbly.php user:email-index:rebuild
+php core/cli/nimbly.php user:email-index:rebuild --yes
 ```
 
 This migration supports the Nimbly 1.1 user identity model, where the user
@@ -1774,14 +1774,14 @@ Install it once per server from any current Nimbly core checkout:
 
 ```bash
 sudo php core/cli/nimbly.php scheduler:install
-sudo php core/cli/nimbly.php scheduler:add-project site-name /var/www/site-name
+sudo php core/cli/nimbly.php scheduler:project:add site-name /var/www/site-name
 sudo php core/cli/nimbly.php scheduler:cron:install --user=www-data
 ```
 
 Useful management commands:
 
 ```bash
-php core/cli/nimbly.php scheduler:list-projects
+php core/cli/nimbly.php scheduler:project:list
 sudo -u www-data php core/cli/nimbly.php scheduler:run --dry-run
 sudo -u www-data /usr/local/bin/nimbly-scheduler-orchestrator
 php core/cli/nimbly.php scheduler:cron:status
@@ -1958,7 +1958,7 @@ Register each project that should run scheduled work:
 
 ```bash
 sudo php /var/www/site/core/cli/nimbly.php scheduler:install
-sudo php /var/www/site/core/cli/nimbly.php scheduler:add-project site /var/www/site
+sudo php /var/www/site/core/cli/nimbly.php scheduler:project:add site /var/www/site
 sudo php /var/www/site/core/cli/nimbly.php scheduler:cron:install --user=www-data
 ```
 
