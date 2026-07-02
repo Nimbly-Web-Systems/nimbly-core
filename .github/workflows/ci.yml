@@ -99,7 +99,7 @@ jobs:
         run: ./nimbly --docker system:setup
 
       - name: Run E2E tests
-        run: ./nimbly --docker test
+        run: ./nimbly --docker test:run
 
       - name: Upload test report
         if: always()
