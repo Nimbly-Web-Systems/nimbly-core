@@ -17,14 +17,13 @@ function role_permissions_sc($params)
     $known_features = role_permissions_known_features();
     $custom_features = array_values(array_diff($stored_features, $known_features, ['manage-content']));
 
-    echo '<form method="post" class="mx-auto max-w-6xl bg-neutral-50 rounded-md border border-neutral-200 shadow-sm">';
-    echo form_key_sc(['role_permissions']);
+    echo '<form x-data="role_permissions(\'' . htmlspecialchars($role_id, ENT_QUOTES, 'UTF-8') . '\')" @submit.prevent="submit" class="mx-auto max-w-6xl bg-neutral-50 rounded-md border border-neutral-200 shadow-sm">';
     echo '<div class="sticky top-0 z-20 flex flex-wrap items-center justify-between gap-4 border-b border-neutral-200 bg-neutral-50/95 px-5 py-4 backdrop-blur">';
     echo '<div>';
     echo '<h2 class="text-xl font-semibold leading-tight text-neutral-800">' . htmlspecialchars($role['name'] ?? $role_id) . '</h2>';
     echo '<p class="mt-1 text-sm text-neutral-600">Choose what this role can see and change.</p>';
     echo '</div>';
-    echo '<button type="submit" class="btn btn-primary btn-sm">Save permissions</button>';
+    echo '<button type="submit" class="btn btn-primary btn-sm" x-bind:disabled="busy">Save permissions</button>';
     echo '</div>';
 
     echo '<div class="space-y-7 p-5">';
@@ -46,6 +45,33 @@ function role_permissions_sc($params)
     echo '</div>';
     echo role_permissions_script();
     echo '</form>';
+}
+
+function role_permissions_api_sc(): void
+{
+    $role_id = trim((string)($_POST['role'] ?? ''));
+    if ($role_id === '' || !data_exists('roles', $role_id)) {
+        json_result(['message' => 'ROLE_NOT_FOUND'], 404);
+    }
+
+    $features = $_POST['features'] ?? [];
+    if (!is_array($features)) {
+        $features = permission_token_list($features);
+    }
+
+    $custom_features = permission_token_list($_POST['custom_features'] ?? '');
+    $features = permission_expand_features(array_merge($features, $custom_features));
+    $features = role_permissions_compact_features($features);
+
+    if (!data_update('roles', $role_id, ['features' => implode(',', $features)])) {
+        json_result(['message' => 'ROLE_UPDATE_FAILED'], 500);
+    }
+
+    json_result([
+        'message' => 'ROLE_PERMISSIONS_SAVED',
+        'features' => $features,
+        'count' => count($features),
+    ]);
 }
 
 function role_permissions_resource_rows(): array
@@ -201,6 +227,33 @@ function role_permissions_compact_features(array $features): array
 function role_permissions_script(): string
 {
     return '<script>
+document.addEventListener("alpine:init", () => {
+    Alpine.data("role_permissions", (role_id) => ({
+        role_id,
+        busy: false,
+        submit() {
+            this.busy = true;
+            const form = this.$el;
+            const features = [...form.querySelectorAll("input[name=\'features[]\']:checked")].map((input) => input.value);
+            const custom = form.querySelector("[name=custom_features]")?.value || "";
+            nb.api.post(nb.base_url + "/api/v1/role-permissions", {
+                role: this.role_id,
+                features,
+                custom_features: custom,
+            }).then((data) => {
+                this.busy = false;
+                if (data.success) {
+                    nb.notify("Permissions saved");
+                } else {
+                    nb.notify(data.message || "Could not save permissions");
+                }
+            }).catch((err) => {
+                this.busy = false;
+                nb.notify(err.message || "Could not save permissions");
+            });
+        },
+    }));
+});
 document.currentScript.closest("form").querySelectorAll("[data-permission-row]").forEach((row) => {
     const manage = row.querySelector("[data-permission-manage]");
     const operations = [...row.querySelectorAll("[data-permission-operation]")];
