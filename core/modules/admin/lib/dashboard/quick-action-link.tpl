@@ -1,4 +1,4 @@
 <a href="[#base-url#][#_action.url#]"
-    class="inline-flex items-center rounded-full border border-neutral-300 bg-white px-3 py-1.5 text-sm font-medium text-neutral-700 hover:bg-neutral-100">
+    class="cursor-pointer text-sm font-medium text-neutral-600 underline decoration-neutral-300 hover:text-neutral-800 hover:decoration-neutral-500">
     [#_action.label#]
 </a>
