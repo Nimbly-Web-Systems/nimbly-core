@@ -51,7 +51,7 @@ After this, the project is fully operational. Core and ext evolve independently.
 
 ### Updating core or ext from the admin
 
-Both repos can be updated without touching the terminal. In the admin (`/nb-admin/`), navigate to **Settings** — there are separate **Update Core** and **Update Ext** buttons that run `git pull` on the respective repository. Treat this as a simple self-managed update option for small installations. Production deployments should normally come from CI/CD so the same checkout, setup, build, and lint path has already passed before files reach the server.
+Both repos can be updated without touching the terminal. The admin dashboard (`/nb-admin/`) shows when core and ext were each last updated, and — for roles with `pull-core-updates`/`pull-ext-updates` — an inline **Update now** action per repo once a pending update is detected, running `git pull` on the respective repository. Treat this as a simple self-managed update option for small installations. Production deployments should normally come from CI/CD so the same checkout, setup, build, and lint path has already passed before files reach the server.
 
 ### Directory layout
 
@@ -2318,6 +2318,33 @@ The admin (1.1.0+) uses DaisyUI components. The following shortcodes from `core/
 
 The legacy `_dep_` admin UI has been removed. Active admin routes and templates live in the non-`_dep_` admin paths.
 
+### Dashboard
+
+`/nb-admin/` (`[#dashboard#]`, `core/modules/admin/lib/dashboard/`) is organized around what a user needs to act on, not one card per subsystem. It renders up to four bands, each present only when it has something to show for the current user's role:
+
+- **Needs attention** — failed jobs, a recent fatal error, or low disk space. Absent entirely if the role has none of the relevant `view-*` features.
+- **Your data** — the resources the current role can see, with record counts, disk usage, and last-updated time per resource — a glance-level answer to "is this site still active."
+- **Quick actions** — a role-gated row of buttons for the actions that used to be buried in per-card menus (add user, add role, site settings, clear media cache, clear sessions, delete unused media).
+- **System, quietly** — a one-line summary per fact (core/ext last updated — with an inline **Update now** once a pending update is detected, for `pull-core-updates`/`pull-ext-updates` — accounts/sessions, RAM/disk free, scheduler last-run), each shown only to roles with the matching `view-*`/`pull-*` feature, kept visually quiet except for the update line, which gains contrast once there is actually something to pull.
+
+### Roles and permissions editor
+
+`/nb-admin/roles/(id)` and `/nb-admin/roles/add` share one permissions matrix component (`core/modules/admin/lib/role-permissions/`, `[#role-permissions [#role-id#]#]` / `[#role-permissions new#]`) so the add and edit flows never drift apart. The matrix renders one row per resource (including the hidden `.content`, `.config`, `.files`, `.jobs` resources) with per-operation checkboxes plus a `manage-<resource>` column, and a separate `(all)` toggle for super-admin roles. Unchecking `(all)` never clears the individual checkboxes underneath — they are only hidden while `(all)` is active, so switching it off restores whatever was set before.
+
+Identity (name/description) and permissions are saved together from a single form (`core/modules/admin/lib/role-identity/`) via one PUT/POST to the generic `/api/v1/roles` endpoint — there is no separate role-permissions API. The client (`matrix-sync.js`) collapses a row's checked operations into `manage-<resource>` when every operation is checked, and builds the final comma-joined `features` string sent as a plain field alongside the role's name/description.
+
+`.files_meta` and `files_unused` are not resources with their own row in the matrix — they are internal, derived data. `permission_normalize_hidden_alias()` (`core/modules/user/lib/permissions.php`) aliases both to `.files`, so granting a role any operation on the **Files** row also covers file metadata lookups and the unused-file check the media picker relies on. Do not add separate matrix rows or permission tokens for them.
+
+### Jobs and Site settings
+
+`/nb-admin/jobs` (`core/modules/admin/lib/jobs-panel/`) is a diagnostic view over the job queue and scheduler — queued/running/done/failed counts, a table of jobs with their last error, and "Run due jobs now" / "Prune completed" actions, gated on `view-.jobs` / `manage-.jobs`.
+
+`/nb-admin/settings` (`core/modules/admin/lib/site-settings/`) edits the single site-wide `.config/site` record (name, description, admin sidebar position), gated on `edit-.config`. This is distinct from the per-page title editor behind the nimblybar gear icon, which edits `page_settings.page_title` for the current page only.
+
+### Resource record switcher
+
+Generic resource edit pages (`/nb-admin/(resource)/(id)`) include a record switcher (`core/modules/admin/lib/resource-switcher/`) so an editor can jump between records without going back to the list. It picks a UI based on record count: a handful of records render as pills, up to ~100 render as a native `<select>` (browsers already support type-ahead-to-jump), and beyond that it switches to a debounced live-search input backed by `resource_get()`'s `search`/`limit` GET params (`core/modules/api/lib/api.php`) rather than loading every record client-side.
+
 ---
 
 ## 14. API
@@ -2841,7 +2868,7 @@ Apply this reasoning before adding any field, section, or link to a template.
 
 #### 1. Update core
 
-Deploy the latest core through the normal CI/CD path for the project. For simple self-managed installations, the admin update button (**Settings → Update Core**) or a manual pull is also available:
+Deploy the latest core through the normal CI/CD path for the project. For simple self-managed installations, the admin dashboard's **Needs attention** band surfaces an **Update now** action when a core update is pending, or pull manually:
 
 ```bash
 git pull   # run from the project root (core repo)
@@ -2995,6 +3022,11 @@ For each resource whose `.meta` still has a `pk` key it will:
 3. Remove `pk` from `.meta` and save the file
 
 It also reports legacy `*-on-data-create` trigger handlers so they can be migrated manually to `.meta` events.
+
+The command also normalizes role permissions and registers new core routes needed by the canonical roles/permissions editor introduced in 1.1.0:
+
+- **Role permission normalization** — any role whose stored `features` uses a shorthand macro (such as `manage-content`) is rewritten to the fully expanded, concrete feature list (`permission_expand_features()`), since the permissions matrix UI edits concrete per-resource checkboxes rather than macros. Roles already stored as `(all)` are left untouched.
+- **Core route registration** — creates the `.routes` record for the dynamic `nb-admin/roles/(id)` route if missing, matching the same registration `routes:sync` performs for any other dynamic admin route.
 
 The command is interactive and asks for confirmation before making any changes.
 
