@@ -91,12 +91,33 @@ function dashboard_site_status_section(bool $can_pull_ext, bool $can_pull_core):
         );
     }
 
+    if (access_by_feature('view-debug')) {
+        $items[] = dashboard_system_status_item();
+    }
+
     if (empty($items)) {
         return '';
     }
 
     set_variable('_dash.status_items', implode('', $items));
     return run_buffered(dirname(__FILE__) . '/site-status.tpl');
+}
+
+function dashboard_system_status_item(): string
+{
+    load_library('sys-info');
+    $mem = get_mem_info();
+    load_library('disk-space-free');
+    load_library('disk-space-total');
+    $fact = fmt_bytes_short((int)($mem['MemAvailable'] ?? 0)) . ' RAM free'
+        . ' · ' . fmt_bytes_short(disk_space_free_sc()) . ' disk free of ' . fmt_bytes_short(disk_space_total_sc());
+
+    load_library('base-url');
+    return '<li class="min-w-[140px]">'
+        . '<div class="text-sm font-medium text-neutral-700">System</div>'
+        . '<div class="text-xs text-neutral-500">' . htmlspecialchars($fact, ENT_QUOTES, 'UTF-8') . '</div>'
+        . '<a href="' . base_url_sc() . '/nb-admin/debug" class="text-xs font-medium underline text-neutral-700">View debug</a>'
+        . '</li>';
 }
 
 function dashboard_data_section(): string
@@ -111,10 +132,8 @@ function dashboard_manage_section(): string
 {
     $groups = [
         dashboard_manage_users_group(),
-        dashboard_manage_roles_group(),
         dashboard_manage_media_group(),
         dashboard_manage_jobs_group(),
-        dashboard_manage_system_group(),
         dashboard_manage_settings_group(),
     ];
     $groups = array_filter($groups, fn($group) => $group !== '');
@@ -129,14 +148,18 @@ function dashboard_manage_section(): string
 
 function dashboard_manage_users_group(): string
 {
-    $entry = null;
+    $entries = [];
     $caption = null;
+
     if (access_by_feature('view-users')) {
-        $entry = ['label' => 'Users (' . count(data_list('users')) . ')', 'url' => '/nb-admin/users'];
+        $entries[] = ['label' => 'Users (' . count(data_list('users')) . ')', 'url' => '/nb-admin/users'];
         load_library('get-sessions');
         get_sessions_sc();
         $active = count(get_variable('logged_in', []));
         $caption = $active . ' active ' . ($active === 1 ? 'session' : 'sessions');
+    }
+    if (access_by_feature('view-roles')) {
+        $entries[] = ['label' => 'Roles (' . count(data_list('roles')) . ')', 'url' => '/nb-admin/roles'];
     }
 
     $actions = [];
@@ -147,23 +170,14 @@ function dashboard_manage_users_group(): string
         $actions[] = ['type' => 'post', 'label' => 'Clear all sessions', 'form_id' => 'ccache_sessions', 'action' => '/nb-admin'];
     }
 
-    return dashboard_manage_group($entry, $actions, $caption);
-}
-
-function dashboard_manage_roles_group(): string
-{
-    $entry = null;
-    if (access_by_feature('view-roles')) {
-        $entry = ['label' => 'Roles (' . count(data_list('roles')) . ')', 'url' => '/nb-admin/roles'];
-    }
-    return dashboard_manage_group($entry, [], null);
+    return dashboard_manage_group($entries, $actions, $caption);
 }
 
 function dashboard_manage_media_group(): string
 {
-    $entry = null;
+    $entries = [];
     if (access_by_feature('view-.files')) {
-        $entry = ['label' => 'Media Library (' . count(data_list('.files_meta')) . ')', 'url' => '/nb-admin/media'];
+        $entries[] = ['label' => 'Media Library (' . count(data_list('.files_meta')) . ')', 'url' => '/nb-admin/media'];
     }
 
     $actions = [];
@@ -176,15 +190,26 @@ function dashboard_manage_media_group(): string
         $actions[] = ['type' => 'post', 'label' => 'Delete unused media', 'form_id' => 'delete_unusued_media', 'action' => '/nb-admin'];
     }
 
-    return dashboard_manage_group($entry, $actions, null);
+    return dashboard_manage_group($entries, $actions, null);
 }
 
 function dashboard_manage_jobs_group(): string
 {
-    $entry = null;
+    $entries = [];
     $caption = null;
+
     if (access_by_feature('view-.jobs')) {
-        $entry = ['label' => 'Jobs', 'url' => '/nb-admin/jobs'];
+        $queued = 0;
+        foreach (data_read('.jobs') as $uuid => $job) {
+            if ($uuid === '.meta') {
+                continue;
+            }
+            if (($job['status'] ?? '') === 'queued') {
+                $queued++;
+            }
+        }
+        $entries[] = ['label' => "Jobs ($queued)", 'url' => '/nb-admin/jobs'];
+
         $schedule = data_read('.state', 'schedule');
         $last_run = 0;
         if (!empty($schedule['tasks']) && is_array($schedule['tasks'])) {
@@ -200,43 +225,27 @@ function dashboard_manage_jobs_group(): string
         $actions[] = ['type' => 'post', 'label' => 'Run due jobs now', 'form_id' => 'run_jobs', 'action' => '/nb-admin/jobs'];
     }
 
-    return dashboard_manage_group($entry, $actions, $caption);
-}
-
-function dashboard_manage_system_group(): string
-{
-    $entry = null;
-    $caption = null;
-    if (access_by_feature('view-debug')) {
-        $entry = ['label' => 'Debug', 'url' => '/nb-admin/debug'];
-        load_library('sys-info');
-        $mem = get_mem_info();
-        load_library('disk-space-free');
-        load_library('disk-space-total');
-        $caption = fmt_bytes_short((int)($mem['MemAvailable'] ?? 0)) . ' RAM free'
-            . ' · ' . fmt_bytes_short(disk_space_free_sc()) . ' disk free of ' . fmt_bytes_short(disk_space_total_sc());
-    }
-    return dashboard_manage_group($entry, [], $caption);
+    return dashboard_manage_group($entries, $actions, $caption);
 }
 
 function dashboard_manage_settings_group(): string
 {
-    $entry = null;
+    $entries = [];
     if (access_by_feature('edit-.config')) {
-        $entry = ['label' => 'Site settings', 'url' => '/nb-admin/settings'];
+        $entries[] = ['label' => 'Site settings', 'url' => '/nb-admin/settings'];
     }
-    return dashboard_manage_group($entry, [], null);
+    return dashboard_manage_group($entries, [], null);
 }
 
-function dashboard_manage_group(?array $entry, array $actions, ?string $caption): string
+function dashboard_manage_group(array $entries, array $actions, ?string $caption): string
 {
-    if ($entry === null && empty($actions) && $caption === null) {
+    if (empty($entries) && empty($actions) && $caption === null) {
         return '';
     }
 
     load_library('base-url');
     $items_html = '';
-    if ($entry !== null) {
+    foreach ($entries as $entry) {
         $items_html .= '<a href="' . base_url_sc() . htmlspecialchars($entry['url'], ENT_QUOTES, 'UTF-8') . '"'
             . ' class="inline-flex items-center rounded-full bg-neutral-800 px-3 py-1.5 text-sm font-medium text-white hover:bg-neutral-700">'
             . htmlspecialchars($entry['label'], ENT_QUOTES, 'UTF-8') . '</a>';
