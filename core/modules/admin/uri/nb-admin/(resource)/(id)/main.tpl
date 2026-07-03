@@ -5,6 +5,7 @@
             data-nb-edit-options='{"buttons":""}'>
             [#text Edit [#resource-name [#resource-id#]#]#]
         </h1>
+        <a class="[#btn-class-secondary#]" href="[#base-url#]/nb-admin/[#resource-id#]">[#text Back to overview#]</a>
     </div>
 
     [#edit-resource-form#]
