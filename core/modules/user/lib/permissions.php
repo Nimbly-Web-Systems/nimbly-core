@@ -105,6 +105,8 @@ function permission_normalize_hidden_alias(string $resource): string
         'content' => '.content',
         'config' => '.config',
         'files' => '.files',
+        '.files_meta' => '.files',
+        'files_unused' => '.files',
     ];
     return $hidden_aliases[$resource] ?? $resource;
 }
