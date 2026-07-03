@@ -221,6 +221,21 @@ function resource_get($resource) { // get all
     $modified = data_modified($resource);
     http_header_not_modified($modified);
     $result = data_read($resource);
+
+    $search = trim((string)filter_input(INPUT_GET, 'search', FILTER_SANITIZE_SPECIAL_CHARS));
+    if ($search !== '') {
+        load_library('resource-title');
+        $title_field = resource_title_field($resource);
+        $result = $title_field !== null
+            ? array_filter($result, fn($record) => stripos((string)($record[$title_field] ?? ''), $search) !== false)
+            : data_search($result, $search);
+    }
+
+    $limit = (int)filter_input(INPUT_GET, 'limit', FILTER_VALIDATE_INT);
+    if ($limit > 0 && count($result) > $limit) {
+        $result = array_slice($result, 0, $limit, true);
+    }
+
     return json_result([$resource => $result, 'count' => count($result)], 200, $modified);
 }
 

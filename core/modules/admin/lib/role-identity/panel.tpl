@@ -1,5 +1,5 @@
 <form x-data="role_identity('[#_ri.role_id#]', [#_ri.name_json#], [#_ri.description_json#])" @submit.prevent="submit"
-    class="mx-auto max-w-6xl overflow-hidden rounded-2xl bg-neutral-50 shadow-md">
+    class="overflow-hidden rounded-2xl bg-neutral-50 shadow-md">
     <div class="space-y-7 p-5">
         <div class="max-w-lg space-y-2">
             [#render-field def="roles.name" var="record.name"#]
