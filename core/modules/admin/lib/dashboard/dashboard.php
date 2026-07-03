@@ -76,9 +76,7 @@ function dashboard_site_status_section(bool $can_pull_ext, bool $can_pull_core):
             'Core',
             dashboard_repo_last_update(['core/lib', 'core/modules', 'core/tpl', 'core/uri']),
             'core_updates',
-            'pull_core',
-            'cube',
-            'bg-indigo-50 text-indigo-500'
+            'pull_core'
         );
     }
 
@@ -87,9 +85,7 @@ function dashboard_site_status_section(bool $can_pull_ext, bool $can_pull_core):
             'Ext',
             dashboard_repo_last_update(['ext/lib', 'ext/modules', 'ext/tpl', 'ext/uri']),
             'site_updates',
-            'pull_site',
-            'code-bracket',
-            'bg-teal-50 text-teal-500'
+            'pull_site'
         );
     }
 
@@ -110,24 +106,22 @@ function dashboard_system_status_item(): string
     load_library('sys-info');
     $mem = get_mem_info();
     load_library('disk-space-free');
-    load_library('disk-space-total');
     $ram_free = (int)($mem['MemAvailable'] ?? 0);
     $disk_free = disk_space_free_sc();
-    $disk_total = disk_space_total_sc();
 
     $ram_ok = $ram_free >= 1 * 1024 * 1024 * 1024;
     $disk_ok = $disk_free >= 500 * 1024 * 1024;
     $ok = $ram_ok && $disk_ok;
 
     $fact = fmt_bytes_short($ram_free) . ' RAM free'
-        . ' · ' . fmt_bytes_short($disk_free) . ' disk free of ' . fmt_bytes_short($disk_total);
+        . ' · ' . fmt_bytes_short($disk_free) . ' disk free';
 
     load_library('base-url');
     $status_class = $ok ? 'text-neutral-500' : 'text-amber-500';
     $status_text = $ok ? 'OK' : 'Low resources';
 
     return '<li class="min-w-[140px]">'
-        . dashboard_status_heading('System', 'server', 'bg-slate-100 text-slate-500')
+        . dashboard_status_heading('System')
         . '<div class="text-xl font-semibold ' . $status_class . '">' . $status_text . '</div>'
         . '<div class="text-xs text-neutral-500">' . htmlspecialchars($fact, ENT_QUOTES, 'UTF-8') . '</div>'
         . '<a href="' . base_url_sc() . '/nb-admin/debug" class="cursor-pointer text-xs font-medium text-neutral-600 underline decoration-neutral-300 hover:text-neutral-800 hover:decoration-neutral-500">View debug</a>'
@@ -185,7 +179,7 @@ function dashboard_manage_users_group(): string
         $actions[] = ['type' => 'post', 'label' => 'Clear all sessions', 'form_id' => 'ccache_sessions', 'action' => '/nb-admin'];
     }
 
-    return dashboard_manage_group('Users & roles', 'user', 'bg-sky-50 text-sky-500', $pill_entries, $link_entries, $actions, $caption);
+    return dashboard_manage_group('Users & roles', $pill_entries, $link_entries, $actions, $caption);
 }
 
 function dashboard_manage_media_group(): string
@@ -214,7 +208,7 @@ function dashboard_manage_media_group(): string
         $actions[] = ['type' => 'post', 'label' => 'Delete unused media', 'form_id' => 'delete_unusued_media', 'action' => '/nb-admin'];
     }
 
-    return dashboard_manage_group('Media library', 'photo', 'bg-violet-50 text-violet-500', $pill_entries, [], $actions, $caption);
+    return dashboard_manage_group('Media library', $pill_entries, [], $actions, $caption);
 }
 
 function dashboard_data_cache_size(): int
@@ -256,10 +250,10 @@ function dashboard_manage_jobs_group(): string
         $actions[] = ['type' => 'post', 'label' => 'Run due jobs now', 'form_id' => 'run_jobs', 'action' => '/nb-admin/jobs'];
     }
 
-    return dashboard_manage_group('Jobs', 'bolt', 'bg-emerald-50 text-emerald-500', $pill_entries, [], $actions, $caption);
+    return dashboard_manage_group('Jobs', $pill_entries, [], $actions, $caption);
 }
 
-function dashboard_manage_group(string $heading, string $icon, string $color, array $pill_entries, array $link_entries, array $actions, ?string $caption): string
+function dashboard_manage_group(string $heading, array $pill_entries, array $link_entries, array $actions, ?string $caption): string
 {
     if (empty($pill_entries) && empty($link_entries) && empty($actions) && $caption === null) {
         return '';
@@ -291,7 +285,7 @@ function dashboard_manage_group(string $heading, string $icon, string $color, ar
     }
 
     return '<div class="flex flex-col rounded-xl border border-neutral-200 p-3">'
-        . dashboard_status_heading($heading, $icon, $color)
+        . '<div class="mb-2">' . dashboard_status_heading($heading) . '</div>'
         . $caption_html
         . ($pill_html !== '' ? '<div class="mt-2 flex flex-wrap items-center gap-2">' . $pill_html . '</div>' : '')
         . ($secondary_html !== '' ? '<div class="mt-2 flex flex-wrap items-center gap-3">' . $secondary_html . '</div>' : '')
@@ -355,18 +349,18 @@ function dashboard_data_status_item(string $resource_label, int $last_update): s
     $sub = $resource_label !== '' ? htmlspecialchars($resource_label, ENT_QUOTES, 'UTF-8') . ' updated' : 'No records yet';
 
     return '<li class="min-w-[150px]">'
-        . dashboard_status_heading('Data', 'stack', 'bg-blue-50 text-blue-500')
+        . dashboard_status_heading('Data')
         . '<div class="text-xl font-semibold text-neutral-500">' . htmlspecialchars($ago, ENT_QUOTES, 'UTF-8') . '</div>'
         . '<div class="text-xs text-neutral-500">' . $sub . '</div>'
         . '</li>';
 }
 
-function dashboard_repo_status_item(string $label, int $last_update, string $count_var, string $pull_fn, string $icon, string $color): string
+function dashboard_repo_status_item(string $label, int $last_update, string $count_var, string $pull_fn): string
 {
     $ago = $last_update > 0 ? fmt_ago_short($last_update) : 'never';
 
     return '<li class="min-w-[160px]">'
-        . dashboard_status_heading($label, $icon, $color)
+        . dashboard_status_heading($label)
         . ' <div class="text-xl font-semibold text-neutral-400" x-cloak x-show="' . $count_var . ' === null">Checking…</div>'
         . ' <div class="text-xl font-semibold" x-cloak x-show="' . $count_var . ' !== null"'
         . ' :class="' . $count_var . ' > 0 ? \'text-amber-500\' : \'text-neutral-500\'"'
@@ -376,32 +370,7 @@ function dashboard_repo_status_item(string $label, int $last_update, string $cou
         . '</li>';
 }
 
-function dashboard_status_heading(string $label, string $icon, string $color): string
+function dashboard_status_heading(string $label): string
 {
-    return '<div class="mb-1 flex items-center gap-2">'
-        . dashboard_badge($icon, $color)
-        . '<span class="text-xs font-semibold uppercase tracking-wide text-neutral-700">' . htmlspecialchars($label, ENT_QUOTES, 'UTF-8') . '</span>'
-        . '</div>';
-}
-
-function dashboard_badge(string $icon, string $color): string
-{
-    return '<span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full ' . $color . '">'
-        . dashboard_icon($icon)
-        . '</span>';
-}
-
-function dashboard_icon(string $name): string
-{
-    $path = match ($name) {
-        'stack' => 'M20.25 6.375c0 2.278-3.694 4.125-8.25 4.125S3.75 8.653 3.75 6.375m16.5 0c0-2.278-3.694-4.125-8.25-4.125S3.75 4.097 3.75 6.375m16.5 0v11.25c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125V6.375m16.5 0v3.75m-16.5-3.75v3.75m16.5 0v3.75C20.25 16.153 16.556 18 12 18s-8.25-1.847-8.25-4.125v-3.75m16.5 0c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125',
-        'cube' => 'M21 7.5l-9-5.25L3 7.5m18 0l-9 5.25m9-5.25v9l-9 5.25M3 7.5l9 5.25M3 7.5v9l9 5.25m0-9v9',
-        'code-bracket' => 'M17.25 6.75L22.5 12l-5.25 5.25m-10.5 0L1.5 12l5.25-5.25m7.5-3-4.5 16.5',
-        'server' => 'M21.75 17.25v-.228a4.5 4.5 0 0 0-.12-1.03l-2.268-9.64a3.375 3.375 0 0 0-3.285-2.602H7.923a3.375 3.375 0 0 0-3.285 2.602l-2.268 9.64a4.5 4.5 0 0 0-.12 1.03v.228m19.5 0a3 3 0 0 1-3 3H5.25a3 3 0 0 1-3-3m19.5 0a3 3 0 0 0-3-3H5.25a3 3 0 0 0-3 3m16.5 0h.008v.008h-.008v-.008Zm-3 0h.008v.008h-.008v-.008Z',
-        'user' => 'M17.982 18.725A7.488 7.488 0 0 0 12 15.75a7.488 7.488 0 0 0-5.982 2.975m11.963 0a9 9 0 1 0-11.963 0m11.963 0A8.966 8.966 0 0 1 12 21a8.966 8.966 0 0 1-5.982-2.275M15 9.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z',
-        'photo' => 'M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z',
-        'bolt' => 'M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75Z',
-        default => '',
-    };
-    return '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-3.5 w-3.5"><path stroke-linecap="round" stroke-linejoin="round" d="' . $path . '" /></svg>';
+    return '<div class="text-xs font-semibold uppercase tracking-wide text-primary">' . htmlspecialchars($label, ENT_QUOTES, 'UTF-8') . '</div>';
 }
