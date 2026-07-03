@@ -62,6 +62,7 @@ function role_permissions_hidden_rows(): array
         '.content' => 'Content',
         '.config' => 'Config',
         '.files' => 'Files',
+        '.jobs' => 'Jobs',
     ];
 }
 

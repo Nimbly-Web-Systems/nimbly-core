@@ -1,9 +1,9 @@
 <section class="bg-neutral-100 pb-10">
     <form autocomplete="false" x-data="form_add('[#resource-id#]')" @submit.prevent="submit"
-        class="bg-neutral-50 rounded-md p-2 sm:p-4 md:p-6 lg:p-8 xl:p-10 shadow-md mx-auto">
+        class="bg-neutral-50 rounded-md p-2 sm:p-4 md:p-6 lg:p-8 xl:p-10 shadow-md">
         [#set nb_form_edit=false overwrite#]
         [#form-key add_resource_[#resource-id#]#]
-        <div class="max-w-lg mx-auto">
+        <div class="max-w-lg">
             [#repeat data.fields var=_f#]
 
             <div class="mt-8"></div>
