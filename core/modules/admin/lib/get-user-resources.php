@@ -12,7 +12,7 @@ function get_user_resources_sc($params) {
 			continue;
 		}
     	if (get_user_resources_access($k)) {
-    		$result[$k] = ['key' => $k, 'name' => ucfirst(trim($k, '. '))];
+    		$result[$k] = ['key' => $k, 'name' => ucwords(str_replace(['-', '_', '.'], [' ', ' ', ''], $k))];
     	}
     }
     set_variable("data.user-resources", $result);

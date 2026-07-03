@@ -1,6 +1,6 @@
 <div class="mb-6 flex flex-wrap items-center gap-2">
     <select onchange="if (this.value) window.location.href='[#base-url#]' + this.value"
-        class="rounded border border-neutral-300 bg-white px-3 py-1.5 text-sm text-neutral-700 focus:outline-2 focus:outline-cnormal">
+        class="select select-bordered select-sm text-neutral-700">
         [#_rs.options#]
     </select>
     <a href="[#base-url#][#_rs.add_url#]"
