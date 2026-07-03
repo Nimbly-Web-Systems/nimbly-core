@@ -157,6 +157,7 @@ function dashboard_manage_users_group(): string
 {
     $link_entries = [];
     $caption = null;
+    $active = null;
 
     if (access_by_feature('view-users')) {
         $link_entries[] = ['label' => 'Users (' . count(data_list('users')) . ')', 'url' => '/nb-admin/users'];
@@ -176,7 +177,12 @@ function dashboard_manage_users_group(): string
 
     $actions = [];
     if (access_by_feature('clear-cache')) {
-        $actions[] = ['type' => 'post', 'label' => 'Clear all sessions', 'form_id' => 'ccache_sessions', 'action' => '/nb-admin'];
+        if ($active === null) {
+            load_library('get-sessions');
+            get_sessions_sc();
+            $active = count(get_variable('logged_in', []));
+        }
+        $actions[] = ['type' => 'post', 'label' => "Clear sessions ($active)", 'form_id' => 'ccache_sessions', 'action' => '/nb-admin'];
     }
 
     return dashboard_manage_group('Users & roles', $pill_entries, $link_entries, $actions, $caption);
@@ -200,9 +206,6 @@ function dashboard_manage_media_group(): string
         load_library('disk-space-thumbs');
         $size = fmt_bytes_short(disk_space_thumbs_sc());
         $actions[] = ['type' => 'post', 'label' => "Clear thumbnail cache ($size)", 'form_id' => 'ccache_thumbs', 'action' => '/nb-admin'];
-
-        $data_cache_size = fmt_bytes_short(dashboard_data_cache_size());
-        $actions[] = ['type' => 'post', 'label' => "Clear data cache ($data_cache_size)", 'form_id' => 'ccache_data', 'action' => '/nb-admin'];
     }
     if (access_by_feature('delete-.files')) {
         $actions[] = ['type' => 'post', 'label' => 'Delete unused media', 'form_id' => 'delete_unusued_media', 'action' => '/nb-admin'];
@@ -247,10 +250,14 @@ function dashboard_manage_jobs_group(): string
 
     $actions = [];
     if (access_by_feature('manage-.jobs')) {
-        $actions[] = ['type' => 'post', 'label' => 'Run due jobs now', 'form_id' => 'run_jobs', 'action' => '/nb-admin/jobs'];
+        $actions[] = ['type' => 'post', 'label' => 'Run jobs now', 'form_id' => 'run_jobs', 'action' => '/nb-admin/jobs'];
+    }
+    if (access_by_feature('clear-cache')) {
+        $data_cache_size = fmt_bytes_short(dashboard_data_cache_size());
+        $actions[] = ['type' => 'post', 'label' => "Clear data cache ($data_cache_size)", 'form_id' => 'ccache_data', 'action' => '/nb-admin'];
     }
 
-    return dashboard_manage_group('Jobs', $pill_entries, [], $actions, $caption);
+    return dashboard_manage_group('System', $pill_entries, [], $actions, $caption);
 }
 
 function dashboard_manage_group(string $heading, array $pill_entries, array $link_entries, array $actions, ?string $caption): string
