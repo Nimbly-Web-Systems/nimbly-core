@@ -584,7 +584,7 @@ function upgrade_11_role_permissions_apply(array $roles): int
 function upgrade_11_core_routes_collect(): array
 {
     $routes = [
-        ['route' => 'nb-admin/roles/(id)/permissions', 'order' => 200],
+        ['route' => 'nb-admin/roles/(id)', 'order' => 200],
     ];
     $missing = [];
     foreach ($routes as $route) {
