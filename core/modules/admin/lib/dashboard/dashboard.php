@@ -107,12 +107,24 @@ function dashboard_system_status_item(): string
     $mem = get_mem_info();
     load_library('disk-space-free');
     load_library('disk-space-total');
-    $fact = fmt_bytes_short((int)($mem['MemAvailable'] ?? 0)) . ' RAM free'
-        . ' · ' . fmt_bytes_short(disk_space_free_sc()) . ' disk free of ' . fmt_bytes_short(disk_space_total_sc());
+    $ram_free = (int)($mem['MemAvailable'] ?? 0);
+    $disk_free = disk_space_free_sc();
+    $disk_total = disk_space_total_sc();
+
+    $ram_ok = $ram_free >= 1 * 1024 * 1024 * 1024;
+    $disk_ok = $disk_free >= 500 * 1024 * 1024;
+    $ok = $ram_ok && $disk_ok;
+
+    $fact = fmt_bytes_short($ram_free) . ' RAM free'
+        . ' · ' . fmt_bytes_short($disk_free) . ' disk free of ' . fmt_bytes_short($disk_total);
 
     load_library('base-url');
+    $status_class = $ok ? 'text-neutral-500' : 'text-amber-500';
+    $status_text = $ok ? 'OK' : 'Low resources';
+
     return '<li class="min-w-[140px]">'
-        . '<div class="text-xs font-semibold uppercase tracking-wide text-neutral-400">System</div>'
+        . '<div class="text-xs font-semibold uppercase tracking-wide text-neutral-700">System</div>'
+        . '<div class="text-xl font-semibold ' . $status_class . '">' . $status_text . '</div>'
         . '<div class="text-xs text-neutral-500">' . htmlspecialchars($fact, ENT_QUOTES, 'UTF-8') . '</div>'
         . '<a href="' . base_url_sc() . '/nb-admin/debug" class="cursor-pointer text-xs font-medium underline text-neutral-700">View debug</a>'
         . '</li>';
@@ -310,9 +322,9 @@ function dashboard_data_status_item(string $resource_label, int $last_update): s
     $sub = $resource_label !== '' ? htmlspecialchars($resource_label, ENT_QUOTES, 'UTF-8') . ' updated' : 'No records yet';
 
     return '<li class="min-w-[150px]">'
-        . '<div class="text-xs font-semibold uppercase tracking-wide text-neutral-400">Data</div>'
+        . '<div class="text-xs font-semibold uppercase tracking-wide text-neutral-700">Data</div>'
+        . '<div class="text-xl font-semibold text-neutral-500">' . htmlspecialchars($ago, ENT_QUOTES, 'UTF-8') . '</div>'
         . '<div class="text-xs text-neutral-500">' . $sub . '</div>'
-        . '<div class="text-xl font-semibold text-neutral-800">' . htmlspecialchars($ago, ENT_QUOTES, 'UTF-8') . '</div>'
         . '</li>';
 }
 
@@ -321,10 +333,10 @@ function dashboard_repo_status_item(string $label, int $last_update, string $cou
     $ago = $last_update > 0 ? fmt_ago_short($last_update) : 'never';
 
     return '<li class="min-w-[160px]">'
-        . '<div class="text-xs font-semibold uppercase tracking-wide text-neutral-400">' . htmlspecialchars($label, ENT_QUOTES, 'UTF-8') . '</div>'
-        . ' <div class="text-sm text-neutral-400" x-cloak x-show="' . $count_var . ' === null">Checking…</div>'
+        . '<div class="text-xs font-semibold uppercase tracking-wide text-neutral-700">' . htmlspecialchars($label, ENT_QUOTES, 'UTF-8') . '</div>'
+        . ' <div class="text-xl font-semibold text-neutral-400" x-cloak x-show="' . $count_var . ' === null">Checking…</div>'
         . ' <div class="text-xl font-semibold" x-cloak x-show="' . $count_var . ' !== null"'
-        . ' :class="' . $count_var . ' > 0 ? \'text-amber-600\' : \'text-neutral-800\'"'
+        . ' :class="' . $count_var . ' > 0 ? \'text-amber-500\' : \'text-neutral-500\'"'
         . ' x-text="' . $count_var . ' > 0 ? (' . $count_var . ' + (' . $count_var . ' === 1 ? \' update\' : \' updates\')) : \'Up to date\'"></div>'
         . '<div class="text-xs text-neutral-500">Updated ' . htmlspecialchars($ago, ENT_QUOTES, 'UTF-8') . '</div>'
         . ' <button type="button" class="cursor-pointer text-xs font-medium underline text-neutral-700 disabled:cursor-not-allowed disabled:opacity-50" x-cloak x-show="' . $count_var . ' > 0" @click="' . $pull_fn . '" :disabled="busy">Update now</button>'
