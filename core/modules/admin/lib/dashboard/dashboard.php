@@ -68,13 +68,12 @@ function dashboard_site_status_section(bool $can_pull_ext, bool $can_pull_core):
     $resources = get_variable('data.user-resources', []);
     if (!empty($resources)) {
         [$data_ts, $data_label] = dashboard_data_freshness($resources);
-        $items[] = dashboard_site_status_item('Data', $data_label ?? '', $data_ts, null, null);
+        $items[] = dashboard_data_status_item($data_label ?? '', $data_ts);
     }
 
     if ($can_pull_core) {
-        $items[] = dashboard_site_status_item(
+        $items[] = dashboard_repo_status_item(
             'Core',
-            '',
             dashboard_repo_last_update(['core/lib', 'core/modules', 'core/tpl', 'core/uri']),
             'core_updates',
             'pull_core'
@@ -82,9 +81,8 @@ function dashboard_site_status_section(bool $can_pull_ext, bool $can_pull_core):
     }
 
     if ($can_pull_ext) {
-        $items[] = dashboard_site_status_item(
+        $items[] = dashboard_repo_status_item(
             'Ext',
-            '',
             dashboard_repo_last_update(['ext/lib', 'ext/modules', 'ext/tpl', 'ext/uri']),
             'site_updates',
             'pull_site'
@@ -114,9 +112,9 @@ function dashboard_system_status_item(): string
 
     load_library('base-url');
     return '<li class="min-w-[140px]">'
-        . '<div class="text-sm font-medium text-neutral-700">System</div>'
+        . '<div class="text-xs font-semibold uppercase tracking-wide text-neutral-400">System</div>'
         . '<div class="text-xs text-neutral-500">' . htmlspecialchars($fact, ENT_QUOTES, 'UTF-8') . '</div>'
-        . '<a href="' . base_url_sc() . '/nb-admin/debug" class="text-xs font-medium underline text-neutral-700">View debug</a>'
+        . '<a href="' . base_url_sc() . '/nb-admin/debug" class="cursor-pointer text-xs font-medium underline text-neutral-700">View debug</a>'
         . '</li>';
 }
 
@@ -134,7 +132,6 @@ function dashboard_manage_section(): string
         dashboard_manage_users_group(),
         dashboard_manage_media_group(),
         dashboard_manage_jobs_group(),
-        dashboard_manage_settings_group(),
     ];
     $groups = array_filter($groups, fn($group) => $group !== '');
 
@@ -170,7 +167,7 @@ function dashboard_manage_users_group(): string
         $actions[] = ['type' => 'post', 'label' => 'Clear all sessions', 'form_id' => 'ccache_sessions', 'action' => '/nb-admin'];
     }
 
-    return dashboard_manage_group($entries, $actions, $caption);
+    return dashboard_manage_group('Users & roles', $entries, $actions, $caption);
 }
 
 function dashboard_manage_media_group(): string
@@ -190,7 +187,7 @@ function dashboard_manage_media_group(): string
         $actions[] = ['type' => 'post', 'label' => 'Delete unused media', 'form_id' => 'delete_unusued_media', 'action' => '/nb-admin'];
     }
 
-    return dashboard_manage_group($entries, $actions, null);
+    return dashboard_manage_group('Media library', $entries, $actions, null);
 }
 
 function dashboard_manage_jobs_group(): string
@@ -225,44 +222,38 @@ function dashboard_manage_jobs_group(): string
         $actions[] = ['type' => 'post', 'label' => 'Run due jobs now', 'form_id' => 'run_jobs', 'action' => '/nb-admin/jobs'];
     }
 
-    return dashboard_manage_group($entries, $actions, $caption);
+    return dashboard_manage_group('Jobs', $entries, $actions, $caption);
 }
 
-function dashboard_manage_settings_group(): string
-{
-    $entries = [];
-    if (access_by_feature('edit-.config')) {
-        $entries[] = ['label' => 'Site settings', 'url' => '/nb-admin/settings'];
-    }
-    return dashboard_manage_group($entries, [], null);
-}
-
-function dashboard_manage_group(array $entries, array $actions, ?string $caption): string
+function dashboard_manage_group(string $heading, array $entries, array $actions, ?string $caption): string
 {
     if (empty($entries) && empty($actions) && $caption === null) {
         return '';
     }
 
     load_library('base-url');
-    $items_html = '';
+    $entries_html = '';
     foreach ($entries as $entry) {
-        $items_html .= '<a href="' . base_url_sc() . htmlspecialchars($entry['url'], ENT_QUOTES, 'UTF-8') . '"'
-            . ' class="inline-flex items-center rounded-full bg-neutral-800 px-3 py-1.5 text-sm font-medium text-white hover:bg-neutral-700">'
+        $entries_html .= '<a href="' . base_url_sc() . htmlspecialchars($entry['url'], ENT_QUOTES, 'UTF-8') . '"'
+            . ' class="inline-flex items-center rounded-full border border-neutral-300 bg-neutral-100 px-3 py-1 text-sm font-medium text-neutral-800 hover:bg-neutral-200">'
             . htmlspecialchars($entry['label'], ENT_QUOTES, 'UTF-8') . '</a>';
     }
 
+    $actions_html = '';
     foreach ($actions as $action) {
         set_variable_dot('_action', $action);
-        $items_html .= run_buffered(dirname(__FILE__) . '/quick-action-' . $action['type'] . '.tpl');
+        $actions_html .= run_buffered(dirname(__FILE__) . '/quick-action-' . $action['type'] . '.tpl');
         clear_variable_dot('_action');
     }
 
     $caption_html = $caption !== null
-        ? '<div class="mt-1 text-xs text-neutral-500">' . htmlspecialchars($caption, ENT_QUOTES, 'UTF-8') . '</div>'
+        ? '<div class="mt-1.5 text-xs text-neutral-500">' . htmlspecialchars($caption, ENT_QUOTES, 'UTF-8') . '</div>'
         : '';
 
     return '<div class="rounded-xl border border-neutral-200 p-3">'
-        . '<div class="flex flex-wrap items-center gap-2">' . $items_html . '</div>'
+        . '<div class="mb-2 text-xs font-semibold uppercase tracking-wide text-neutral-400">' . htmlspecialchars($heading, ENT_QUOTES, 'UTF-8') . '</div>'
+        . '<div class="flex flex-wrap items-center gap-2">' . $entries_html . '</div>'
+        . ($actions_html !== '' ? '<div class="mt-2 flex flex-wrap items-center gap-3">' . $actions_html . '</div>' : '')
         . $caption_html
         . '</div>';
 }
@@ -313,21 +304,29 @@ function dashboard_data_freshness(array $resources): array
     return [$latest, $latest_label];
 }
 
-function dashboard_site_status_item(string $label, string $fact_prefix, int $last_update, ?string $count_var, ?string $pull_fn): string
+function dashboard_data_status_item(string $resource_label, int $last_update): string
 {
     $ago = $last_update > 0 ? fmt_ago_short($last_update) : 'never';
-    $fact = ($fact_prefix !== '' ? $fact_prefix . ' updated ' : 'Updated ') . $ago;
+    $sub = $resource_label !== '' ? htmlspecialchars($resource_label, ENT_QUOTES, 'UTF-8') . ' updated' : 'No records yet';
 
-    $action = '';
-    if ($count_var !== null && $pull_fn !== null) {
-        $action = ' <div class="text-xs text-neutral-400" x-cloak x-show="' . $count_var . ' === null">Checking for updates…</div>'
-            . ' <div class="text-xs" x-cloak x-show="' . $count_var . ' !== null" :class="' . $count_var . ' > 0 ? \'font-medium text-neutral-700\' : \'text-neutral-500\'" x-text="' . $count_var . ' + (' . $count_var . ' === 1 ? \' update\' : \' updates\') + \' available\'"></div>'
-            . ' <button type="button" class="text-xs font-medium underline text-neutral-700 disabled:opacity-50" x-cloak x-show="' . $count_var . ' > 0" @click="' . $pull_fn . '" :disabled="busy">Update now</button>';
-    }
+    return '<li class="min-w-[150px]">'
+        . '<div class="text-xs font-semibold uppercase tracking-wide text-neutral-400">Data</div>'
+        . '<div class="text-xs text-neutral-500">' . $sub . '</div>'
+        . '<div class="text-xl font-semibold text-neutral-800">' . htmlspecialchars($ago, ENT_QUOTES, 'UTF-8') . '</div>'
+        . '</li>';
+}
 
-    return '<li class="min-w-[140px]">'
-        . '<div class="text-sm font-medium text-neutral-700">' . htmlspecialchars($label, ENT_QUOTES, 'UTF-8') . '</div>'
-        . '<div class="text-xs text-neutral-500">' . htmlspecialchars($fact, ENT_QUOTES, 'UTF-8') . '</div>'
-        . $action
+function dashboard_repo_status_item(string $label, int $last_update, string $count_var, string $pull_fn): string
+{
+    $ago = $last_update > 0 ? fmt_ago_short($last_update) : 'never';
+
+    return '<li class="min-w-[160px]">'
+        . '<div class="text-xs font-semibold uppercase tracking-wide text-neutral-400">' . htmlspecialchars($label, ENT_QUOTES, 'UTF-8') . '</div>'
+        . ' <div class="text-sm text-neutral-400" x-cloak x-show="' . $count_var . ' === null">Checking…</div>'
+        . ' <div class="text-xl font-semibold" x-cloak x-show="' . $count_var . ' !== null"'
+        . ' :class="' . $count_var . ' > 0 ? \'text-amber-600\' : \'text-neutral-800\'"'
+        . ' x-text="' . $count_var . ' > 0 ? (' . $count_var . ' + (' . $count_var . ' === 1 ? \' update\' : \' updates\')) : \'Up to date\'"></div>'
+        . '<div class="text-xs text-neutral-500">Updated ' . htmlspecialchars($ago, ENT_QUOTES, 'UTF-8') . '</div>'
+        . ' <button type="button" class="cursor-pointer text-xs font-medium underline text-neutral-700 disabled:cursor-not-allowed disabled:opacity-50" x-cloak x-show="' . $count_var . ' > 0" @click="' . $pull_fn . '" :disabled="busy">Update now</button>'
         . '</li>';
 }
