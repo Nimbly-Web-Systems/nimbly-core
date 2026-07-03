@@ -50,8 +50,7 @@ function dashboard_sc($params)
     $body = dashboard_attention_section();
     $body .= dashboard_site_status_section($can_pull_ext, $can_pull_core);
     $body .= dashboard_data_section();
-    $body .= dashboard_quick_actions_section();
-    $body .= dashboard_system_section();
+    $body .= dashboard_manage_section();
     set_variable('_dash.body', $body);
 
     return run_buffered(dirname(__FILE__) . '/dashboard.tpl');
@@ -68,12 +67,14 @@ function dashboard_site_status_section(bool $can_pull_ext, bool $can_pull_core):
 
     $resources = get_variable('data.user-resources', []);
     if (!empty($resources)) {
-        $items[] = dashboard_site_status_item('Data', dashboard_data_last_update($resources), null, null);
+        [$data_ts, $data_label] = dashboard_data_freshness($resources);
+        $items[] = dashboard_site_status_item('Data', $data_label ?? '', $data_ts, null, null);
     }
 
     if ($can_pull_core) {
         $items[] = dashboard_site_status_item(
             'Core',
+            '',
             dashboard_repo_last_update(['core/lib', 'core/modules', 'core/tpl', 'core/uri']),
             'core_updates',
             'pull_core'
@@ -83,6 +84,7 @@ function dashboard_site_status_section(bool $can_pull_ext, bool $can_pull_core):
     if ($can_pull_ext) {
         $items[] = dashboard_site_status_item(
             'Ext',
+            '',
             dashboard_repo_last_update(['ext/lib', 'ext/modules', 'ext/tpl', 'ext/uri']),
             'site_updates',
             'pull_site'
@@ -105,71 +107,84 @@ function dashboard_data_section(): string
     return run_buffered(dirname(__FILE__) . '/data-band.tpl');
 }
 
-function dashboard_quick_actions_section(): string
+function dashboard_manage_section(): string
 {
-    $actions = [];
+    $groups = [
+        dashboard_manage_users_group(),
+        dashboard_manage_roles_group(),
+        dashboard_manage_media_group(),
+        dashboard_manage_jobs_group(),
+        dashboard_manage_system_group(),
+        dashboard_manage_settings_group(),
+    ];
+    $groups = array_filter($groups, fn($group) => $group !== '');
 
-    if (access_by_feature('create-users')) {
-        $actions[] = ['type' => 'link', 'label' => 'Add user', 'url' => '/nb-admin/users/add'];
-    }
-    if (access_by_feature('view-users')) {
-        $count = count(data_list('users'));
-        $actions[] = ['type' => 'link', 'label' => "Users ($count)", 'url' => '/nb-admin/users'];
-    }
-    if (access_by_feature('view-roles')) {
-        $actions[] = ['type' => 'link', 'label' => 'Roles', 'url' => '/nb-admin/roles'];
-    }
-    if (access_by_feature('view-.files')) {
-        $actions[] = ['type' => 'link', 'label' => 'Media Library', 'url' => '/nb-admin/media'];
-    }
-    if (access_by_feature('edit-.config')) {
-        $actions[] = ['type' => 'link', 'label' => 'Site settings', 'url' => '/nb-admin/settings'];
-    }
-    if (access_by_feature('clear-cache')) {
-        load_library('disk-space-thumbs');
-        $size = fmt_bytes_short(disk_space_thumbs_sc());
-        $actions[] = ['type' => 'post', 'label' => "Clear media cache ($size)", 'form_id' => 'ccache_thumbs'];
-        $actions[] = ['type' => 'post', 'label' => 'Clear all sessions', 'form_id' => 'ccache_sessions'];
-    }
-    if (access_by_feature('delete-.files')) {
-        $actions[] = ['type' => 'post', 'label' => 'Delete unused media', 'form_id' => 'delete_unusued_media'];
-    }
-
-    if (empty($actions)) {
+    if (empty($groups)) {
         return '';
     }
 
-    $items_html = '';
-    foreach ($actions as $action) {
-        set_variable_dot('_action', $action);
-        $items_html .= run_buffered(dirname(__FILE__) . '/quick-action-' . $action['type'] . '.tpl');
-        clear_variable_dot('_action');
-    }
-    set_variable('_dash.actions', $items_html);
-    return run_buffered(dirname(__FILE__) . '/quick-actions.tpl');
+    set_variable('_dash.manage_groups', implode('', $groups));
+    return run_buffered(dirname(__FILE__) . '/manage.tpl');
 }
 
-function dashboard_system_section(): string
+function dashboard_manage_users_group(): string
 {
-    $lines = [];
-
+    $entry = null;
+    $caption = null;
     if (access_by_feature('view-users')) {
+        $entry = ['label' => 'Users (' . count(data_list('users')) . ')', 'url' => '/nb-admin/users'];
         load_library('get-sessions');
         get_sessions_sc();
         $active = count(get_variable('logged_in', []));
-        $lines[] = $active . ' active ' . ($active === 1 ? 'session' : 'sessions');
+        $caption = $active . ' active ' . ($active === 1 ? 'session' : 'sessions');
     }
 
-    if (access_by_feature('view-debug')) {
-        load_library('sys-info');
-        $mem = get_mem_info();
-        load_library('disk-space-free');
-        load_library('disk-space-total');
-        $lines[] = fmt_bytes_short((int)($mem['MemAvailable'] ?? 0)) . ' RAM free'
-            . ' &middot; ' . fmt_bytes_short(disk_space_free_sc()) . ' disk free of ' . fmt_bytes_short(disk_space_total_sc());
+    $actions = [];
+    if (access_by_feature('create-users')) {
+        $actions[] = ['type' => 'link', 'label' => 'Add user', 'url' => '/nb-admin/users/add', 'action' => '/nb-admin'];
+    }
+    if (access_by_feature('clear-cache')) {
+        $actions[] = ['type' => 'post', 'label' => 'Clear all sessions', 'form_id' => 'ccache_sessions', 'action' => '/nb-admin'];
     }
 
+    return dashboard_manage_group($entry, $actions, $caption);
+}
+
+function dashboard_manage_roles_group(): string
+{
+    $entry = null;
+    if (access_by_feature('view-roles')) {
+        $entry = ['label' => 'Roles (' . count(data_list('roles')) . ')', 'url' => '/nb-admin/roles'];
+    }
+    return dashboard_manage_group($entry, [], null);
+}
+
+function dashboard_manage_media_group(): string
+{
+    $entry = null;
+    if (access_by_feature('view-.files')) {
+        $entry = ['label' => 'Media Library (' . count(data_list('.files_meta')) . ')', 'url' => '/nb-admin/media'];
+    }
+
+    $actions = [];
+    if (access_by_feature('clear-cache')) {
+        load_library('disk-space-thumbs');
+        $size = fmt_bytes_short(disk_space_thumbs_sc());
+        $actions[] = ['type' => 'post', 'label' => "Clear media cache ($size)", 'form_id' => 'ccache_thumbs', 'action' => '/nb-admin'];
+    }
+    if (access_by_feature('delete-.files')) {
+        $actions[] = ['type' => 'post', 'label' => 'Delete unused media', 'form_id' => 'delete_unusued_media', 'action' => '/nb-admin'];
+    }
+
+    return dashboard_manage_group($entry, $actions, null);
+}
+
+function dashboard_manage_jobs_group(): string
+{
+    $entry = null;
+    $caption = null;
     if (access_by_feature('view-.jobs')) {
+        $entry = ['label' => 'Jobs', 'url' => '/nb-admin/jobs'];
         $schedule = data_read('.state', 'schedule');
         $last_run = 0;
         if (!empty($schedule['tasks']) && is_array($schedule['tasks'])) {
@@ -177,21 +192,70 @@ function dashboard_system_section(): string
                 $last_run = max($last_run, (int)($task['last_run_at'] ?? 0));
             }
         }
-        $lines[] = $last_run > 0
-            ? 'Scheduler last ran ' . fmt_ago_short($last_run)
-            : 'Scheduler has not run yet';
+        $caption = $last_run > 0 ? 'Scheduler last ran ' . fmt_ago_short($last_run) : 'Scheduler has not run yet';
     }
 
-    if (empty($lines)) {
+    $actions = [];
+    if (access_by_feature('manage-.jobs')) {
+        $actions[] = ['type' => 'post', 'label' => 'Run due jobs now', 'form_id' => 'run_jobs', 'action' => '/nb-admin/jobs'];
+    }
+
+    return dashboard_manage_group($entry, $actions, $caption);
+}
+
+function dashboard_manage_system_group(): string
+{
+    $entry = null;
+    $caption = null;
+    if (access_by_feature('view-debug')) {
+        $entry = ['label' => 'Debug', 'url' => '/nb-admin/debug'];
+        load_library('sys-info');
+        $mem = get_mem_info();
+        load_library('disk-space-free');
+        load_library('disk-space-total');
+        $caption = fmt_bytes_short((int)($mem['MemAvailable'] ?? 0)) . ' RAM free'
+            . ' · ' . fmt_bytes_short(disk_space_free_sc()) . ' disk free of ' . fmt_bytes_short(disk_space_total_sc());
+    }
+    return dashboard_manage_group($entry, [], $caption);
+}
+
+function dashboard_manage_settings_group(): string
+{
+    $entry = null;
+    if (access_by_feature('edit-.config')) {
+        $entry = ['label' => 'Site settings', 'url' => '/nb-admin/settings'];
+    }
+    return dashboard_manage_group($entry, [], null);
+}
+
+function dashboard_manage_group(?array $entry, array $actions, ?string $caption): string
+{
+    if ($entry === null && empty($actions) && $caption === null) {
         return '';
     }
 
+    load_library('base-url');
     $items_html = '';
-    foreach ($lines as $line) {
-        $items_html .= '<li>' . $line . '</li>';
+    if ($entry !== null) {
+        $items_html .= '<a href="' . base_url_sc() . htmlspecialchars($entry['url'], ENT_QUOTES, 'UTF-8') . '"'
+            . ' class="inline-flex items-center rounded-full bg-neutral-800 px-3 py-1.5 text-sm font-medium text-white hover:bg-neutral-700">'
+            . htmlspecialchars($entry['label'], ENT_QUOTES, 'UTF-8') . '</a>';
     }
-    set_variable('_dash.system_lines', $items_html);
-    return run_buffered(dirname(__FILE__) . '/system-summary.tpl');
+
+    foreach ($actions as $action) {
+        set_variable_dot('_action', $action);
+        $items_html .= run_buffered(dirname(__FILE__) . '/quick-action-' . $action['type'] . '.tpl');
+        clear_variable_dot('_action');
+    }
+
+    $caption_html = $caption !== null
+        ? '<div class="mt-1 text-xs text-neutral-500">' . htmlspecialchars($caption, ENT_QUOTES, 'UTF-8') . '</div>'
+        : '';
+
+    return '<div class="rounded-xl border border-neutral-200 p-3">'
+        . '<div class="flex flex-wrap items-center gap-2">' . $items_html . '</div>'
+        . $caption_html
+        . '</div>';
 }
 
 function fmt_bytes_short(int $bytes): string
@@ -221,30 +285,40 @@ function dashboard_repo_last_update(array $dirs): int
     return $latest;
 }
 
-function dashboard_data_last_update(array $resources): int
+function dashboard_data_freshness(array $resources): array
 {
     load_library('last-update');
     $latest = 0;
+    $latest_label = null;
     foreach ($resources as $resource) {
         $path = $GLOBALS['SYSTEM']['data_base'] . '/' . $resource['key'];
-        if (is_dir($path)) {
-            $latest = max($latest, (int)find_latest_time($path));
+        if (!is_dir($path)) {
+            continue;
+        }
+        $ts = (int)find_latest_time($path);
+        if ($ts > $latest) {
+            $latest = $ts;
+            $latest_label = $resource['name'];
         }
     }
-    return $latest;
+    return [$latest, $latest_label];
 }
 
-function dashboard_site_status_item(string $label, int $last_update, ?string $count_var, ?string $pull_fn): string
+function dashboard_site_status_item(string $label, string $fact_prefix, int $last_update, ?string $count_var, ?string $pull_fn): string
 {
     $ago = $last_update > 0 ? fmt_ago_short($last_update) : 'never';
+    $fact = ($fact_prefix !== '' ? $fact_prefix . ' updated ' : 'Updated ') . $ago;
+
     $action = '';
     if ($count_var !== null && $pull_fn !== null) {
-        $action = ' <span class="block font-medium text-neutral-700" x-cloak x-show="' . $count_var . ' > 0" x-text="' . $count_var . ' + (' . $count_var . ' === 1 ? \' update\' : \' updates\') + \' available\'"></span>'
+        $action = ' <div class="text-xs text-neutral-400" x-cloak x-show="' . $count_var . ' === null">Checking for updates…</div>'
+            . ' <div class="text-xs" x-cloak x-show="' . $count_var . ' !== null" :class="' . $count_var . ' > 0 ? \'font-medium text-neutral-700\' : \'text-neutral-500\'" x-text="' . $count_var . ' + (' . $count_var . ' === 1 ? \' update\' : \' updates\') + \' available\'"></div>'
             . ' <button type="button" class="text-xs font-medium underline text-neutral-700 disabled:opacity-50" x-cloak x-show="' . $count_var . ' > 0" @click="' . $pull_fn . '" :disabled="busy">Update now</button>';
     }
+
     return '<li class="min-w-[140px]">'
         . '<div class="text-sm font-medium text-neutral-700">' . htmlspecialchars($label, ENT_QUOTES, 'UTF-8') . '</div>'
-        . '<div class="text-xs text-neutral-500">Updated ' . htmlspecialchars($ago, ENT_QUOTES, 'UTF-8') . '</div>'
+        . '<div class="text-xs text-neutral-500">' . htmlspecialchars($fact, ENT_QUOTES, 'UTF-8') . '</div>'
         . $action
         . '</li>';
 }

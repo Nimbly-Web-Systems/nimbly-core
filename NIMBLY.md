@@ -2320,15 +2320,22 @@ The legacy `_dep_` admin UI has been removed. Active admin routes and templates 
 
 ### Dashboard
 
-`/nb-admin/` (`[#dashboard#]`, `core/modules/admin/lib/dashboard/`) is organized around what a user needs to act on, not one card per subsystem. It renders up to five bands, each present only when it has something to show for the current user's role:
+`/nb-admin/` (`[#dashboard#]`, `core/modules/admin/lib/dashboard/`) is organized around what a user needs to act on, not one card per subsystem. It renders up to four bands, each present only when it has something to show for the current user's role:
 
 - **Needs attention** — failed jobs, a recent fatal error, or low disk space. Absent entirely if the role has none of the relevant `view-*` features.
-- **Site status** — is the site current, in one glance: when the visible data was last touched, and when core/ext were each last updated — with an inline **Update now** once a pending update is detected, for roles with `pull-core-updates`/`pull-ext-updates`. This is a real card (same visual weight as Your data), not a footer line — it's the answer to "is this site current or dead," not ambient trivia.
+- **Site status** — is the *code and data* current, in one glance: which resource was most recently touched and when (e.g. "Projects updated 15 hours ago" — names the resource so it's directly checkable against the row below in Your data, not an anonymous number), and when core/ext were each last updated, with the update count always shown (including "0 updates available", not just when there's something pending) plus an inline **Update now** for roles with `pull-core-updates`/`pull-ext-updates`. Scoped deliberately to *currency* facts only — see Manage below for where scheduler/system-resource facts live instead.
 - **Your data** — the resources the current role can see, with record counts, disk usage, and last-updated time per resource.
-- **Quick actions** — a role-gated row of buttons: real actions (add user, clear media cache, clear sessions, delete unused media) alongside plain navigation links (Users — with a live user count, since "how many people have access" is glance-worthy — Roles, Media Library, Site settings). Deliberately excludes "add role": not a daily action, so it's a plain link into the roles list instead.
-- **System, quietly** — a one-line summary per genuinely ambient fact (active sessions, RAM/disk free, scheduler last-run), each shown only to roles with the matching `view-*` feature. No numbers here compete for attention — anything actionable lives in Site status or Needs attention instead.
+- **Manage** — grouped clusters, one per resource, each pairing a bold entry-point link (with a record count, e.g. `Users (3)`) with the actions/facts that belong to it, so related things stay visually together instead of one flat undifferentiated pill row:
+  - **Users**: `Users (N)` link, `Add user` action, `Clear all sessions` action, "N active sessions" caption.
+  - **Roles**: `Roles (N)` link only.
+  - **Media Library**: `Media Library (N)` link, `Clear media cache` action, `Delete unused media` action.
+  - **Jobs**: `Jobs` link, `Run due jobs now` action (posts to `/nb-admin/jobs`'s own handler, not the dashboard's), "Scheduler last ran" caption.
+  - **System**: `Debug` link, RAM/disk-free caption.
+  - **Site settings**: standalone link.
 
-Users, Roles, and Media Library are **not** in the nimblybar's Resources sidebar dropdown (`core/tpl/nimblybar/menu-resources.tpl`) — that list shows only the project's own ext-defined resources. Users/Roles/Media Library are reachable from the dashboard's Quick actions instead, keeping the sidebar scoped to "this project's data."
+  "Add role" is deliberately not a cluster action — not a daily action, so Roles is a plain link. The Jobs and System clusters double as the only entry points into `/nb-admin/jobs` and `/nb-admin/debug` anywhere in the admin.
+
+Users, Roles, and Media Library are **not** in the nimblybar's Resources sidebar dropdown (`core/tpl/nimblybar/menu-resources.tpl`) — that list shows only the project's own ext-defined resources. Users/Roles/Media Library are reachable from the dashboard's Manage clusters instead, keeping the sidebar scoped to "this project's data."
 
 ### Roles and permissions editor
 
