@@ -2320,12 +2320,15 @@ The legacy `_dep_` admin UI has been removed. Active admin routes and templates 
 
 ### Dashboard
 
-`/nb-admin/` (`[#dashboard#]`, `core/modules/admin/lib/dashboard/`) is organized around what a user needs to act on, not one card per subsystem. It renders up to four bands, each present only when it has something to show for the current user's role:
+`/nb-admin/` (`[#dashboard#]`, `core/modules/admin/lib/dashboard/`) is organized around what a user needs to act on, not one card per subsystem. It renders up to five bands, each present only when it has something to show for the current user's role:
 
 - **Needs attention** — failed jobs, a recent fatal error, or low disk space. Absent entirely if the role has none of the relevant `view-*` features.
-- **Your data** — the resources the current role can see, with record counts, disk usage, and last-updated time per resource — a glance-level answer to "is this site still active."
-- **Quick actions** — a role-gated row of buttons for the actions that used to be buried in per-card menus (add user, add role, site settings, clear media cache, clear sessions, delete unused media).
-- **System, quietly** — a one-line summary per fact (core/ext last updated — with an inline **Update now** once a pending update is detected, for `pull-core-updates`/`pull-ext-updates` — accounts/sessions, RAM/disk free, scheduler last-run), each shown only to roles with the matching `view-*`/`pull-*` feature, kept visually quiet except for the update line, which gains contrast once there is actually something to pull.
+- **Site status** — is the site current, in one glance: when the visible data was last touched, and when core/ext were each last updated — with an inline **Update now** once a pending update is detected, for roles with `pull-core-updates`/`pull-ext-updates`. This is a real card (same visual weight as Your data), not a footer line — it's the answer to "is this site current or dead," not ambient trivia.
+- **Your data** — the resources the current role can see, with record counts, disk usage, and last-updated time per resource.
+- **Quick actions** — a role-gated row of buttons: real actions (add user, clear media cache, clear sessions, delete unused media) alongside plain navigation links (Users — with a live user count, since "how many people have access" is glance-worthy — Roles, Media Library, Site settings). Deliberately excludes "add role": not a daily action, so it's a plain link into the roles list instead.
+- **System, quietly** — a one-line summary per genuinely ambient fact (active sessions, RAM/disk free, scheduler last-run), each shown only to roles with the matching `view-*` feature. No numbers here compete for attention — anything actionable lives in Site status or Needs attention instead.
+
+Users, Roles, and Media Library are **not** in the nimblybar's Resources sidebar dropdown (`core/tpl/nimblybar/menu-resources.tpl`) — that list shows only the project's own ext-defined resources. Users/Roles/Media Library are reachable from the dashboard's Quick actions instead, keeping the sidebar scoped to "this project's data."
 
 ### Roles and permissions editor
 
@@ -2868,7 +2871,7 @@ Apply this reasoning before adding any field, section, or link to a template.
 
 #### 1. Update core
 
-Deploy the latest core through the normal CI/CD path for the project. For simple self-managed installations, the admin dashboard's **Needs attention** band surfaces an **Update now** action when a core update is pending, or pull manually:
+Deploy the latest core through the normal CI/CD path for the project. For simple self-managed installations, the admin dashboard's **Site status** band surfaces an **Update now** action when a core update is pending, or pull manually:
 
 ```bash
 git pull   # run from the project root (core repo)

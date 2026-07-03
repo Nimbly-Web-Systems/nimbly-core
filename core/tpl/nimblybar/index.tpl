@@ -77,8 +77,7 @@
                     </svg>
                 </button>
                 <div x-cloak x-show="account_open" x-transition
-                    class="absolute top-9 z-[1100] w-[180px] overflow-hidden rounded-lg bg-neutral-50 text-neutral-700 shadow-lg"
-                    :class="side === 'left' ? 'left-0' : 'right-0'">
+                    class="absolute top-9 right-0 z-[1100] w-[180px] overflow-hidden rounded-lg bg-neutral-50 text-neutral-700 shadow-lg">
                     <p class="px-4 pb-2 pt-4 text-xs text-neutral-500">
                         [#text Logged in as#] <br />
                         <span class="text-neutral-700">[#username#]</span>
