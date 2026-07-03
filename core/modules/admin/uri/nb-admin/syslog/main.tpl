@@ -1,5 +1,11 @@
 [#get-system-log#]
-<section class="bg-neutral-100 p-2 sm:p-4 md:p-6 lg:p-8 font-primary flex justify-between flex-wrap md:flex-nowrap">
+<section class="bg-neutral-100 p-2 sm:p-4 md:p-6 lg:p-8 font-primary">
+	<nav class="mb-2 flex items-center gap-1.5 text-xs font-medium text-neutral-500" aria-label="Breadcrumb">
+		[#breadcrumb-home#]
+		<span aria-hidden="true">/</span>
+		<span class="text-neutral-700">[#text System log#]</span>
+	</nav>
+	<div class="flex justify-between flex-wrap md:flex-nowrap">
 	<div class="[#feature-cond clear-system-log echo_else=hidden#]">
 		<h1 class="text-2xl md:text-3xl font-semibold text-neutral-800 ">[#text System log#]</h1>
 		<h3 class="text-sm md:text-base pt-1 pb-2 text-neutral-700 font-medium">[#count system_log#] [#text entries#]</h3>
@@ -11,6 +17,7 @@
 				[#text Clear log#]
 			</button>
 		</form>
+	</div>
 	</div>
 </section>
 

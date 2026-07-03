@@ -1,5 +1,11 @@
 <div x-data="media_library">
-  <section class="bg-neutral-100 p-2 sm:p-4 md:p-6 lg:p-8 font-primary flex justify-between flex-wrap md:flex-nowrap">
+  <section class="bg-neutral-100 p-2 sm:p-4 md:p-6 lg:p-8 font-primary">
+    <nav class="mb-2 flex items-center gap-1.5 text-xs font-medium text-neutral-500" aria-label="Breadcrumb">
+      [#breadcrumb-home#]
+      <span aria-hidden="true">/</span>
+      <span class="text-neutral-700">[#text Media Library#]</span>
+    </nav>
+    <div class="flex justify-between flex-wrap md:flex-nowrap">
     <div>
       <h1 class="text-2xl md:text-3xl font-semibold text-neutral-800 ">[#text Media Library#]</h1>
       <h3 class="text-sm md:text-base pt-1 pb-2 text-neutral-700 font-medium">
@@ -10,6 +16,7 @@
     [#media-pagination#]
     <div>
       [#feature-cond features="delete-.files" tpl=btn_delete_all#]
+    </div>
     </div>
   </section>
 

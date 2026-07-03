@@ -1,6 +1,11 @@
 [#init-resource-table#]
 <section class="bg-neutral-100 p-2 sm:p-4 md:p-6 lg:p-8 font-primary">
 
+    <nav class="mb-2 flex items-center gap-1.5 text-xs font-medium text-neutral-500" aria-label="Breadcrumb">
+        [#breadcrumb-home#]
+        <span aria-hidden="true">/</span>
+        <span class="text-neutral-700">[#resource-name [#resource-id#] plural#]</span>
+    </nav>
     <div class="flex flex-wrap md:flex-nowrap items-center gap-2">
         <h1 class="w-full md:w-auto text-2xl md:text-3xl font-semibold text-neutral-800"
             data-nb-edit-options='{"buttons":""}'>
