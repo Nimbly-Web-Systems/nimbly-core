@@ -126,7 +126,7 @@ function dashboard_system_status_item(): string
         . '<div class="text-xs font-semibold uppercase tracking-wide text-neutral-700">System</div>'
         . '<div class="text-xl font-semibold ' . $status_class . '">' . $status_text . '</div>'
         . '<div class="text-xs text-neutral-500">' . htmlspecialchars($fact, ENT_QUOTES, 'UTF-8') . '</div>'
-        . '<a href="' . base_url_sc() . '/nb-admin/debug" class="cursor-pointer text-xs font-medium underline text-neutral-700">View debug</a>'
+        . '<a href="' . base_url_sc() . '/nb-admin/debug" class="cursor-pointer text-xs font-medium text-neutral-600 underline decoration-neutral-300 hover:text-neutral-800 hover:decoration-neutral-500">View debug</a>'
         . '</li>';
 }
 
@@ -157,62 +157,62 @@ function dashboard_manage_section(): string
 
 function dashboard_manage_users_group(): string
 {
-    $entries = [];
+    $link_entries = [];
     $caption = null;
 
     if (access_by_feature('view-users')) {
-        $entries[] = ['label' => 'Users (' . count(data_list('users')) . ')', 'url' => '/nb-admin/users'];
+        $link_entries[] = ['label' => 'Users (' . count(data_list('users')) . ')', 'url' => '/nb-admin/users'];
         load_library('get-sessions');
         get_sessions_sc();
         $active = count(get_variable('logged_in', []));
         $caption = $active . ' active ' . ($active === 1 ? 'session' : 'sessions');
     }
     if (access_by_feature('view-roles')) {
-        $entries[] = ['label' => 'Roles (' . count(data_list('roles')) . ')', 'url' => '/nb-admin/roles'];
+        $link_entries[] = ['label' => 'Roles (' . count(data_list('roles')) . ')', 'url' => '/nb-admin/roles'];
     }
 
-    $primary = [];
+    $pill_entries = [];
     if (access_by_feature('create-users')) {
-        $primary[] = ['type' => 'primary-link', 'label' => 'Add user', 'url' => '/nb-admin/users/add', 'action' => '/nb-admin'];
+        $pill_entries[] = ['label' => 'Add user', 'url' => '/nb-admin/users/add'];
     }
 
-    $secondary = [];
+    $actions = [];
     if (access_by_feature('clear-cache')) {
-        $secondary[] = ['type' => 'post', 'label' => 'Clear all sessions', 'form_id' => 'ccache_sessions', 'action' => '/nb-admin'];
+        $actions[] = ['type' => 'post', 'label' => 'Clear all sessions', 'form_id' => 'ccache_sessions', 'action' => '/nb-admin'];
     }
 
-    return dashboard_manage_group('Users & roles', $entries, $primary, $secondary, $caption);
+    return dashboard_manage_group('Users & roles', $pill_entries, $link_entries, $actions, $caption);
 }
 
 function dashboard_manage_media_group(): string
 {
-    $entries = [];
+    $pill_entries = [];
     $caption = null;
 
     if (access_by_feature('view-.files')) {
-        $entries[] = ['label' => 'Media Library (' . count(data_list('.files_meta')) . ')', 'url' => '/nb-admin/media'];
+        $pill_entries[] = ['label' => 'Media Library (' . count(data_list('.files_meta')) . ')', 'url' => '/nb-admin/media'];
         load_library('last-update');
         $path = $GLOBALS['SYSTEM']['data_base'] . '/.files_meta';
         $last_update = is_dir($path) ? (int)find_latest_time($path) : 0;
         $caption = $last_update > 0 ? 'Updated ' . fmt_ago_short($last_update) : 'No files yet';
     }
 
-    $secondary = [];
+    $actions = [];
     if (access_by_feature('clear-cache')) {
         load_library('disk-space-thumbs');
         $size = fmt_bytes_short(disk_space_thumbs_sc());
-        $secondary[] = ['type' => 'post', 'label' => "Clear media cache ($size)", 'form_id' => 'ccache_thumbs', 'action' => '/nb-admin'];
+        $actions[] = ['type' => 'post', 'label' => "Clear media cache ($size)", 'form_id' => 'ccache_thumbs', 'action' => '/nb-admin'];
     }
     if (access_by_feature('delete-.files')) {
-        $secondary[] = ['type' => 'post', 'label' => 'Delete unused media', 'form_id' => 'delete_unusued_media', 'action' => '/nb-admin'];
+        $actions[] = ['type' => 'post', 'label' => 'Delete unused media', 'form_id' => 'delete_unusued_media', 'action' => '/nb-admin'];
     }
 
-    return dashboard_manage_group('Media library', $entries, [], $secondary, $caption);
+    return dashboard_manage_group('Media library', $pill_entries, [], $actions, $caption);
 }
 
 function dashboard_manage_jobs_group(): string
 {
-    $entries = [];
+    $pill_entries = [];
     $caption = null;
 
     if (access_by_feature('view-.jobs')) {
@@ -225,7 +225,7 @@ function dashboard_manage_jobs_group(): string
                 $queued++;
             }
         }
-        $entries[] = ['label' => "Jobs ($queued)", 'url' => '/nb-admin/jobs'];
+        $pill_entries[] = ['label' => "Jobs ($queued)", 'url' => '/nb-admin/jobs'];
 
         $schedule = data_read('.state', 'schedule');
         $last_run = 0;
@@ -237,17 +237,17 @@ function dashboard_manage_jobs_group(): string
         $caption = $last_run > 0 ? 'Scheduler last ran ' . fmt_ago_short($last_run) : 'Scheduler has not run yet';
     }
 
-    $secondary = [];
+    $actions = [];
     if (access_by_feature('manage-.jobs')) {
-        $secondary[] = ['type' => 'post', 'label' => 'Run due jobs now', 'form_id' => 'run_jobs', 'action' => '/nb-admin/jobs'];
+        $actions[] = ['type' => 'post', 'label' => 'Run due jobs now', 'form_id' => 'run_jobs', 'action' => '/nb-admin/jobs'];
     }
 
-    return dashboard_manage_group('Jobs', $entries, [], $secondary, $caption);
+    return dashboard_manage_group('Jobs', $pill_entries, [], $actions, $caption);
 }
 
-function dashboard_manage_group(string $heading, array $entries, array $primary_actions, array $secondary_actions, ?string $caption): string
+function dashboard_manage_group(string $heading, array $pill_entries, array $link_entries, array $actions, ?string $caption): string
 {
-    if (empty($entries) && empty($primary_actions) && empty($secondary_actions) && $caption === null) {
+    if (empty($pill_entries) && empty($link_entries) && empty($actions) && $caption === null) {
         return '';
     }
 
@@ -257,20 +257,20 @@ function dashboard_manage_group(string $heading, array $entries, array $primary_
         ? '<div class="text-xs text-neutral-500">' . htmlspecialchars($caption, ENT_QUOTES, 'UTF-8') . '</div>'
         : '';
 
-    $primary_html = '';
-    foreach ($primary_actions as $action) {
-        set_variable_dot('_action', $action);
-        $primary_html .= run_buffered(dirname(__FILE__) . '/quick-action-' . $action['type'] . '.tpl');
-        clear_variable_dot('_action');
-    }
-
-    $secondary_html = '';
-    foreach ($entries as $entry) {
-        $secondary_html .= '<a href="' . base_url_sc() . htmlspecialchars($entry['url'], ENT_QUOTES, 'UTF-8') . '"'
+    $pill_html = '';
+    foreach ($pill_entries as $entry) {
+        $pill_html .= '<a href="' . base_url_sc() . htmlspecialchars($entry['url'], ENT_QUOTES, 'UTF-8') . '"'
             . ' class="inline-flex items-center rounded-full border border-neutral-300 bg-neutral-100 px-3 py-1 text-sm font-medium text-neutral-800 hover:bg-neutral-200">'
             . htmlspecialchars($entry['label'], ENT_QUOTES, 'UTF-8') . '</a>';
     }
-    foreach ($secondary_actions as $action) {
+
+    $secondary_html = '';
+    foreach ($link_entries as $entry) {
+        $secondary_html .= '<a href="' . base_url_sc() . htmlspecialchars($entry['url'], ENT_QUOTES, 'UTF-8') . '"'
+            . ' class="' . dashboard_secondary_link_class() . '">'
+            . htmlspecialchars($entry['label'], ENT_QUOTES, 'UTF-8') . '</a>';
+    }
+    foreach ($actions as $action) {
         set_variable_dot('_action', $action);
         $secondary_html .= run_buffered(dirname(__FILE__) . '/quick-action-' . $action['type'] . '.tpl');
         clear_variable_dot('_action');
@@ -279,9 +279,14 @@ function dashboard_manage_group(string $heading, array $entries, array $primary_
     return '<div class="flex flex-col rounded-xl border border-neutral-200 p-3">'
         . '<div class="mb-2 text-xs font-semibold uppercase tracking-wide text-neutral-700">' . htmlspecialchars($heading, ENT_QUOTES, 'UTF-8') . '</div>'
         . $caption_html
-        . ($primary_html !== '' ? '<div class="mt-2 flex flex-wrap items-center gap-2">' . $primary_html . '</div>' : '')
+        . ($pill_html !== '' ? '<div class="mt-2 flex flex-wrap items-center gap-2">' . $pill_html . '</div>' : '')
         . ($secondary_html !== '' ? '<div class="mt-2 flex flex-wrap items-center gap-3">' . $secondary_html . '</div>' : '')
         . '</div>';
+}
+
+function dashboard_secondary_link_class(): string
+{
+    return 'cursor-pointer text-sm font-medium text-neutral-600 underline decoration-neutral-300 hover:text-neutral-800 hover:decoration-neutral-500';
 }
 
 function fmt_bytes_short(int $bytes): string
@@ -353,6 +358,6 @@ function dashboard_repo_status_item(string $label, int $last_update, string $cou
         . ' :class="' . $count_var . ' > 0 ? \'text-amber-500\' : \'text-neutral-500\'"'
         . ' x-text="' . $count_var . ' > 0 ? (' . $count_var . ' + (' . $count_var . ' === 1 ? \' update\' : \' updates\')) : \'Up to date\'"></div>'
         . '<div class="text-xs text-neutral-500">Updated ' . htmlspecialchars($ago, ENT_QUOTES, 'UTF-8') . '</div>'
-        . ' <button type="button" class="cursor-pointer text-xs font-medium underline text-neutral-700 disabled:cursor-not-allowed disabled:opacity-50" x-cloak x-show="' . $count_var . ' > 0" @click="' . $pull_fn . '" :disabled="busy">Update now</button>'
+        . ' <button type="button" class="cursor-pointer text-xs font-medium text-neutral-600 underline decoration-neutral-300 hover:text-neutral-800 hover:decoration-neutral-500 disabled:cursor-not-allowed disabled:opacity-50" x-cloak x-show="' . $count_var . ' > 0" @click="' . $pull_fn . '" :disabled="busy">Update now</button>'
         . '</li>';
 }
