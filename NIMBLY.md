@@ -2323,17 +2323,15 @@ The legacy `_dep_` admin UI has been removed. Active admin routes and templates 
 `/nb-admin/` (`[#dashboard#]`, `core/modules/admin/lib/dashboard/`) is organized around what a user needs to act on, not one card per subsystem. It renders up to four bands, each present only when it has something to show for the current user's role:
 
 - **Needs attention** — failed jobs, a recent fatal error, or low disk space. Absent entirely if the role has none of the relevant `view-*` features.
-- **Site status** — is the *code and data* current, in one glance: which resource was most recently touched and when (e.g. "Projects updated 15 hours ago" — names the resource so it's directly checkable against the row below in Your data, not an anonymous number), and when core/ext were each last updated, with the update count always shown (including "0 updates available", not just when there's something pending) plus an inline **Update now** for roles with `pull-core-updates`/`pull-ext-updates`. Scoped deliberately to *currency* facts only — see Manage below for where scheduler/system-resource facts live instead.
+- **Site status** — is the site current and healthy, in one glance: which resource was most recently touched and when (e.g. "Projects updated 15 hours ago" — names the resource so it's directly checkable against the row below in Your data, not an anonymous number), when core/ext were each last updated, with the update count always shown (including "0 updates available", not just when there's something pending) plus an inline **Update now** for roles with `pull-core-updates`/`pull-ext-updates`, and — for `view-debug` — a System fact (RAM/disk free) with a **View debug** link into `/nb-admin/debug`. Everything here is a fact (with an action attached where one applies), never bare navigation — that's what Manage below is for.
 - **Your data** — the resources the current role can see, with record counts, disk usage, and last-updated time per resource.
-- **Manage** — grouped clusters, one per resource, each pairing a bold entry-point link (with a record count, e.g. `Users (3)`) with the actions/facts that belong to it, so related things stay visually together instead of one flat undifferentiated pill row:
-  - **Users**: `Users (N)` link, `Add user` action, `Clear all sessions` action, "N active sessions" caption.
-  - **Roles**: `Roles (N)` link only.
+- **Manage** — grouped clusters, one per resource, each pairing bold entry-point link(s) (with a record count, e.g. `Users (3)`) with the actions/facts that belong to them, so related things stay visually together instead of one flat undifferentiated pill row:
+  - **Users & Roles**: `Users (N)` and `Roles (N)` links in one cluster — they're managed together — plus `Add user` action, `Clear all sessions` action, "N active sessions" caption.
   - **Media Library**: `Media Library (N)` link, `Clear media cache` action, `Delete unused media` action.
-  - **Jobs**: `Jobs` link, `Run due jobs now` action (posts to `/nb-admin/jobs`'s own handler, not the dashboard's), "Scheduler last ran" caption.
-  - **System**: `Debug` link, RAM/disk-free caption.
+  - **Jobs**: `Jobs (N)` link (N = currently queued jobs), `Run due jobs now` action (posts to `/nb-admin/jobs`'s own handler, not the dashboard's), "Scheduler last ran" caption.
   - **Site settings**: standalone link.
 
-  "Add role" is deliberately not a cluster action — not a daily action, so Roles is a plain link. The Jobs and System clusters double as the only entry points into `/nb-admin/jobs` and `/nb-admin/debug` anywhere in the admin.
+  "Add role" is deliberately not a cluster action — not a daily action, so Roles is a plain link, not a create button. The Jobs cluster doubles as the only entry point into `/nb-admin/jobs` anywhere in the admin.
 
 Users, Roles, and Media Library are **not** in the nimblybar's Resources sidebar dropdown (`core/tpl/nimblybar/menu-resources.tpl`) — that list shows only the project's own ext-defined resources. Users/Roles/Media Library are reachable from the dashboard's Manage clusters instead, keeping the sidebar scoped to "this project's data."
 
