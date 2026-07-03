@@ -173,7 +173,7 @@ function dashboard_manage_users_group(): string
 
     $actions = [];
     if (access_by_feature('create-users')) {
-        $actions[] = ['type' => 'link', 'label' => 'Add user', 'url' => '/nb-admin/users/add', 'action' => '/nb-admin'];
+        $actions[] = ['type' => 'primary-link', 'label' => 'Add user', 'url' => '/nb-admin/users/add', 'action' => '/nb-admin'];
     }
     if (access_by_feature('clear-cache')) {
         $actions[] = ['type' => 'post', 'label' => 'Clear all sessions', 'form_id' => 'ccache_sessions', 'action' => '/nb-admin'];
@@ -185,8 +185,14 @@ function dashboard_manage_users_group(): string
 function dashboard_manage_media_group(): string
 {
     $entries = [];
+    $caption = null;
+
     if (access_by_feature('view-.files')) {
         $entries[] = ['label' => 'Media Library (' . count(data_list('.files_meta')) . ')', 'url' => '/nb-admin/media'];
+        load_library('last-update');
+        $path = $GLOBALS['SYSTEM']['data_base'] . '/.files_meta';
+        $last_update = is_dir($path) ? (int)find_latest_time($path) : 0;
+        $caption = $last_update > 0 ? 'Updated ' . fmt_ago_short($last_update) : 'No files yet';
     }
 
     $actions = [];
@@ -199,7 +205,7 @@ function dashboard_manage_media_group(): string
         $actions[] = ['type' => 'post', 'label' => 'Delete unused media', 'form_id' => 'delete_unusued_media', 'action' => '/nb-admin'];
     }
 
-    return dashboard_manage_group('Media library', $entries, $actions, null);
+    return dashboard_manage_group('Media library', $entries, $actions, $caption);
 }
 
 function dashboard_manage_jobs_group(): string
@@ -262,11 +268,11 @@ function dashboard_manage_group(string $heading, array $entries, array $actions,
         ? '<div class="mt-1.5 text-xs text-neutral-500">' . htmlspecialchars($caption, ENT_QUOTES, 'UTF-8') . '</div>'
         : '';
 
-    return '<div class="rounded-xl border border-neutral-200 p-3">'
-        . '<div class="mb-2 text-xs font-semibold uppercase tracking-wide text-neutral-400">' . htmlspecialchars($heading, ENT_QUOTES, 'UTF-8') . '</div>'
+    return '<div class="flex flex-col rounded-xl border border-neutral-200 p-3">'
+        . '<div class="mb-2 text-xs font-semibold uppercase tracking-wide text-neutral-700">' . htmlspecialchars($heading, ENT_QUOTES, 'UTF-8') . '</div>'
         . '<div class="flex flex-wrap items-center gap-2">' . $entries_html . '</div>'
-        . ($actions_html !== '' ? '<div class="mt-2 flex flex-wrap items-center gap-3">' . $actions_html . '</div>' : '')
         . $caption_html
+        . ($actions_html !== '' ? '<div class="mt-2 flex flex-wrap items-center gap-3">' . $actions_html . '</div>' : '')
         . '</div>';
 }
 
