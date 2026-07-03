@@ -171,15 +171,17 @@ function dashboard_manage_users_group(): string
         $entries[] = ['label' => 'Roles (' . count(data_list('roles')) . ')', 'url' => '/nb-admin/roles'];
     }
 
-    $actions = [];
+    $primary = [];
     if (access_by_feature('create-users')) {
-        $actions[] = ['type' => 'primary-link', 'label' => 'Add user', 'url' => '/nb-admin/users/add', 'action' => '/nb-admin'];
-    }
-    if (access_by_feature('clear-cache')) {
-        $actions[] = ['type' => 'post', 'label' => 'Clear all sessions', 'form_id' => 'ccache_sessions', 'action' => '/nb-admin'];
+        $primary[] = ['type' => 'primary-link', 'label' => 'Add user', 'url' => '/nb-admin/users/add', 'action' => '/nb-admin'];
     }
 
-    return dashboard_manage_group('Users & roles', $entries, $actions, $caption);
+    $secondary = [];
+    if (access_by_feature('clear-cache')) {
+        $secondary[] = ['type' => 'post', 'label' => 'Clear all sessions', 'form_id' => 'ccache_sessions', 'action' => '/nb-admin'];
+    }
+
+    return dashboard_manage_group('Users & roles', $entries, $primary, $secondary, $caption);
 }
 
 function dashboard_manage_media_group(): string
@@ -195,17 +197,17 @@ function dashboard_manage_media_group(): string
         $caption = $last_update > 0 ? 'Updated ' . fmt_ago_short($last_update) : 'No files yet';
     }
 
-    $actions = [];
+    $secondary = [];
     if (access_by_feature('clear-cache')) {
         load_library('disk-space-thumbs');
         $size = fmt_bytes_short(disk_space_thumbs_sc());
-        $actions[] = ['type' => 'post', 'label' => "Clear media cache ($size)", 'form_id' => 'ccache_thumbs', 'action' => '/nb-admin'];
+        $secondary[] = ['type' => 'post', 'label' => "Clear media cache ($size)", 'form_id' => 'ccache_thumbs', 'action' => '/nb-admin'];
     }
     if (access_by_feature('delete-.files')) {
-        $actions[] = ['type' => 'post', 'label' => 'Delete unused media', 'form_id' => 'delete_unusued_media', 'action' => '/nb-admin'];
+        $secondary[] = ['type' => 'post', 'label' => 'Delete unused media', 'form_id' => 'delete_unusued_media', 'action' => '/nb-admin'];
     }
 
-    return dashboard_manage_group('Media library', $entries, $actions, $caption);
+    return dashboard_manage_group('Media library', $entries, [], $secondary, $caption);
 }
 
 function dashboard_manage_jobs_group(): string
@@ -235,44 +237,50 @@ function dashboard_manage_jobs_group(): string
         $caption = $last_run > 0 ? 'Scheduler last ran ' . fmt_ago_short($last_run) : 'Scheduler has not run yet';
     }
 
-    $actions = [];
+    $secondary = [];
     if (access_by_feature('manage-.jobs')) {
-        $actions[] = ['type' => 'post', 'label' => 'Run due jobs now', 'form_id' => 'run_jobs', 'action' => '/nb-admin/jobs'];
+        $secondary[] = ['type' => 'post', 'label' => 'Run due jobs now', 'form_id' => 'run_jobs', 'action' => '/nb-admin/jobs'];
     }
 
-    return dashboard_manage_group('Jobs', $entries, $actions, $caption);
+    return dashboard_manage_group('Jobs', $entries, [], $secondary, $caption);
 }
 
-function dashboard_manage_group(string $heading, array $entries, array $actions, ?string $caption): string
+function dashboard_manage_group(string $heading, array $entries, array $primary_actions, array $secondary_actions, ?string $caption): string
 {
-    if (empty($entries) && empty($actions) && $caption === null) {
+    if (empty($entries) && empty($primary_actions) && empty($secondary_actions) && $caption === null) {
         return '';
     }
 
     load_library('base-url');
-    $entries_html = '';
-    foreach ($entries as $entry) {
-        $entries_html .= '<a href="' . base_url_sc() . htmlspecialchars($entry['url'], ENT_QUOTES, 'UTF-8') . '"'
-            . ' class="inline-flex items-center rounded-full border border-neutral-300 bg-neutral-100 px-3 py-1 text-sm font-medium text-neutral-800 hover:bg-neutral-200">'
-            . htmlspecialchars($entry['label'], ENT_QUOTES, 'UTF-8') . '</a>';
-    }
 
-    $actions_html = '';
-    foreach ($actions as $action) {
+    $caption_html = $caption !== null
+        ? '<div class="text-xs text-neutral-500">' . htmlspecialchars($caption, ENT_QUOTES, 'UTF-8') . '</div>'
+        : '';
+
+    $primary_html = '';
+    foreach ($primary_actions as $action) {
         set_variable_dot('_action', $action);
-        $actions_html .= run_buffered(dirname(__FILE__) . '/quick-action-' . $action['type'] . '.tpl');
+        $primary_html .= run_buffered(dirname(__FILE__) . '/quick-action-' . $action['type'] . '.tpl');
         clear_variable_dot('_action');
     }
 
-    $caption_html = $caption !== null
-        ? '<div class="mt-1.5 text-xs text-neutral-500">' . htmlspecialchars($caption, ENT_QUOTES, 'UTF-8') . '</div>'
-        : '';
+    $secondary_html = '';
+    foreach ($entries as $entry) {
+        $secondary_html .= '<a href="' . base_url_sc() . htmlspecialchars($entry['url'], ENT_QUOTES, 'UTF-8') . '"'
+            . ' class="inline-flex items-center rounded-full border border-neutral-300 bg-neutral-100 px-3 py-1 text-sm font-medium text-neutral-800 hover:bg-neutral-200">'
+            . htmlspecialchars($entry['label'], ENT_QUOTES, 'UTF-8') . '</a>';
+    }
+    foreach ($secondary_actions as $action) {
+        set_variable_dot('_action', $action);
+        $secondary_html .= run_buffered(dirname(__FILE__) . '/quick-action-' . $action['type'] . '.tpl');
+        clear_variable_dot('_action');
+    }
 
     return '<div class="flex flex-col rounded-xl border border-neutral-200 p-3">'
         . '<div class="mb-2 text-xs font-semibold uppercase tracking-wide text-neutral-700">' . htmlspecialchars($heading, ENT_QUOTES, 'UTF-8') . '</div>'
-        . '<div class="flex flex-wrap items-center gap-2">' . $entries_html . '</div>'
         . $caption_html
-        . ($actions_html !== '' ? '<div class="mt-2 flex flex-wrap items-center gap-3">' . $actions_html . '</div>' : '')
+        . ($primary_html !== '' ? '<div class="mt-2 flex flex-wrap items-center gap-2">' . $primary_html . '</div>' : '')
+        . ($secondary_html !== '' ? '<div class="mt-2 flex flex-wrap items-center gap-3">' . $secondary_html . '</div>' : '')
         . '</div>';
 }
 
