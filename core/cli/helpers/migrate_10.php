@@ -140,9 +140,13 @@ function migrate_10_print_summary($state)
         echo "\n.services records found — this resource is removed in core 1.1.0:\n\n";
         foreach ($services as $s) {
             printf("  %-40s  service=%-16s  tpl=%s\n", $s['uuid'], $s['service'], $s['tpl']);
+            foreach ($s['decrypted'] as $field => $value) {
+                printf("      decrypted %-6s = %s\n", $field, $value);
+            }
         }
         echo "\nAll service configuration now lives in .env.\n";
-        echo "Move any credentials or API keys to .env and delete these records.\n\n";
+        echo "Copy the decrypted values above into .env, then delete these records.\n";
+        echo "Deleting a record without first copying its value into .env loses the credential permanently.\n\n";
         echo "For email services, add:\n";
         echo "  MAIL_SERVICE=resend          # or: smtp, mailgun, system\n";
         echo "  MAIL_FROM=no-reply@yourdomain.com\n";
@@ -150,7 +154,21 @@ function migrate_10_print_summary($state)
         echo "  RESEND_API_KEY=re_xxxxxxxxxxxx\n\n";
         echo "For OpenAI:\n";
         echo "  OPENAI_API_KEY=sk-xxxxxxxxxxxx\n\n";
-        cli_tip("See §18 step 7 of NIMBLY.md for details.");
+
+        $env_keys = migrate_10_read_env_keys(BASE_DIR . '.env');
+        foreach ($services as $s) {
+            if (stripos($s['tpl'], 'openai') === false) {
+                continue;
+            }
+            if (empty($env_keys['OPENAI_API_KEY'])) {
+                echo "  WARNING: OPENAI_API_KEY is still missing or empty in .env for '{$s['tpl']}' — do not delete this record yet.\n";
+            } else {
+                echo "  OK: OPENAI_API_KEY is already set in .env for '{$s['tpl']}'.\n";
+            }
+        }
+        echo "\n";
+
+        cli_tip("See §19 step 2 of NIMBLY.md for details.");
     }
 
     if (!empty($pk_resources)) {
@@ -310,6 +328,16 @@ function migrate_10_find_services($data_dir)
         return [];
     }
 
+    $meta = [];
+    $meta_file = $services_dir . '.meta';
+    if (is_file($meta_file)) {
+        $meta = json_decode(file_get_contents($meta_file), true) ?? [];
+    }
+    $encrypt_fields = !empty($meta['encrypt2way']) ? explode(',', $meta['encrypt2way']) : [];
+    if (!empty($encrypt_fields)) {
+        load_library('encrypt');
+    }
+
     $result = [];
     foreach (glob($services_dir . '*') ?: [] as $file) {
         $basename = basename($file);
@@ -317,13 +345,45 @@ function migrate_10_find_services($data_dir)
             continue;
         }
         $record = json_decode(file_get_contents($file), true) ?? [];
+
+        // Decrypt now, while the record still exists and PEPPER is available,
+        // so the operator can copy the real value straight into .env instead
+        // of having to remember to do it before deleting this record.
+        $decrypted = [];
+        foreach ($encrypt_fields as $field) {
+            if (empty($record[$field]) || empty($_SERVER['PEPPER'])) {
+                continue;
+            }
+            $value = decrypt_2way($record[$field], $record['salt'] ?? '');
+            if ($value !== false) {
+                $decrypted[$field] = $value;
+            }
+        }
+
         $result[] = [
-            'uuid'    => $basename,
-            'service' => $record['service'] ?? '(unknown)',
-            'tpl'     => $record['tpl'] ?? '(no tpl)',
+            'uuid'      => $basename,
+            'service'   => $record['service'] ?? '(unknown)',
+            'tpl'       => $record['tpl'] ?? '(no tpl)',
+            'decrypted' => $decrypted,
         ];
     }
     return $result;
+}
+
+function migrate_10_read_env_keys($env_file)
+{
+    $keys = [];
+    if (!is_file($env_file)) {
+        return $keys;
+    }
+    foreach (file($env_file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) ?: [] as $line) {
+        if ($line[0] === '#' || strpos($line, '=') === false) {
+            continue;
+        }
+        [$k, $v] = array_map('trim', explode('=', $line, 2));
+        $keys[$k] = $v;
+    }
+    return $keys;
 }
 
 function migrate_10_core_field_types(): array

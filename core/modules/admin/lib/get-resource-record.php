@@ -40,7 +40,7 @@ function get_resource_record_sc($params)
     // new way: setting meta[languages] and i18n info per field
     if (isset($meta['languages']) && !isset($meta['translations'])) {
         $meta['translations'] = ['languages' => $meta['languages']];
-        $record['lang'] = $record['lang'] ?? current($meta['languages']);
+        $record['lang'] = !empty($record['lang']) ? $record['lang'] : current($meta['languages']);
         foreach ($meta['languages'] as $lang) {
             foreach ($meta['fields'] as $fk => $field) {
                 if (empty($field['i18n'])) {
@@ -64,10 +64,12 @@ function get_resource_record_sc($params)
         set_variable('translation_mode', 'record');
     }
 
-    if (isset($meta['translations'])) { 
+    if (isset($meta['translations'])) {
         $languages = $meta['translations']['languages'];
-        $lang = $record['lang'];
-        $ix = array_search($lang, $languages);
+        if (empty($record['lang']) || !in_array($record['lang'], $languages, true)) {
+            $record['lang'] = current($languages);
+        }
+        $ix = array_search($record['lang'], $languages);
         if ($ix !== false) {
             unset($languages[$ix]);
         }
