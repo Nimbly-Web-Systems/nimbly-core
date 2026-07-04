@@ -130,6 +130,17 @@ function render_field(array $def, string $field = '', $value = null, string $sto
     set_variable('_f.ai',       !empty($def['ai_prompts']));
     set_variable('_f.actions',  $actions);
     set_variable('_f.has_actions', !empty($actions));
+    if (isset($def['options']) && is_array($def['options'])) {
+        // Re-shape into a sequential list so option keys can never collide with
+        // a configured language code and get silently collapsed by get_sc()'s
+        // automatic i18n resolution (e.g. a `lang` select field whose options
+        // are themselves "nl"/"en").
+        $safe_options = [];
+        foreach ($def['options'] as $opt_key => $opt_label) {
+            $safe_options[] = ['code' => (string)$opt_key, 'label' => $opt_label];
+        }
+        set_variable('_f.options', $safe_options);
+    }
     set_variable('_f.wrapper_class', $def['wrapper_class'] ?? 'nb-field relative my-10');
     $field_value = $value ?? $def['default'] ?? '';
     $i18n_seed = null;
