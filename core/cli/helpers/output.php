@@ -59,3 +59,11 @@ function cli_tip(string $message): void
     }
     echo cli_color('→', 'green') . ' ' . cli_color($message, 'dim') . "\n";
 }
+
+function cli_status(string $message): void
+{
+    if (cli_compact_output()) {
+        return;
+    }
+    echo cli_color('✓', 'green') . ' ' . $message . "\n";
+}
