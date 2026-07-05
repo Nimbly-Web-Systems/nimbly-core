@@ -27,6 +27,15 @@ my-project/          ← core repo root
 
 This means `git status` at the project root reflects core changes; `git status` inside `ext/` reflects application changes. They are independent repos with independent histories, branches, and remotes.
 
+### Deciding core vs. ext
+
+The "never modify core" rule is about not bending core's *existing* framework code to fit one app. It is not a rule about where *new* framework-level features belong. Ask: would every Nimbly app need this, not just this project?
+
+- **Yes → core.** Built-in admin screens, generic resource CRUD, auth/roles/permissions, shortcodes any project could use. If getting basic functionality working in a new project would mean copy-pasting the same files into every ext repo, that's a sign the feature is stranded in the wrong place.
+- **No → ext.** This project's own resources, routes, business logic, branding, and config — anything that only makes sense for this specific application.
+
+Concrete example of getting it wrong: the role editor (`/nb-admin/roles/(id)` and `/nb-admin/roles/add`) was originally built entirely in `ext/uri/nb-admin/roles/`, even though every other admin resource page (users, media, jobs, ...) is served generically from `core/modules/admin/uri/nb-admin/(resource)/...` with no per-project override at all. Roles/permissions are core to Nimbly's own permission system, not app data — so that route belonged beside `debug/`, `media/`, `profile/` etc. under `core/modules/admin/uri/nb-admin/`, not in ext. Leaving it in ext meant every new project would have to hand-copy those files just to manage roles.
+
 ### Setting up a new project
 
 ```bash
