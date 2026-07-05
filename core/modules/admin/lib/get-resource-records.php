@@ -19,8 +19,12 @@ function get_resource_records_sc($params)
 
     $meta = data_meta($resource);
 
-    if (empty($meta['fields']) || !is_array($meta['fields'])) {
-        return;
+    // Legacy/special resources (e.g. `roles`) may define no field schema at
+    // all (`fields: false`). Fall back to system columns only instead of
+    // showing zero records, which otherwise contradicts counts shown
+    // elsewhere (e.g. the dashboard's own resource counts).
+    if (!is_array($meta['fields'] ?? null)) {
+        $meta['fields'] = [];
     }
 
     $raw_records = data_read($resource);
