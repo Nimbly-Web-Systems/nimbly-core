@@ -14,35 +14,43 @@ For every task, follow this workflow unless explicitly instructed otherwise.
    - Do not develop directly on the live/production branch.
    - Remember that `ext/` is a separate git repository. Application changes use git inside `ext/`.
 
-2. Plan the work.
+2. Decide core vs. ext before touching files.
+   - Ask: would every Nimbly app need this, not just this project? If yes, it's
+     framework work and belongs in `core/`. If it's this project's own
+     resources, routes, business logic, or config, it belongs in `ext/`.
+   - See "Deciding core vs. ext" in `NIMBLY.md` for the full test and a worked
+     example (the role editor pages that were originally stranded in `ext/`).
+   - If genuinely ambiguous, ask rather than defaulting to `ext/`.
+
+3. Plan the work.
    - Inspect the relevant code first.
    - Break the task into small, logical steps.
    - Do not start with broad rewrites.
 
-3. Implement one logical step.
+4. Implement one logical step.
    - Keep the change focused.
    - Prefer existing Nimbly building blocks.
    - Follow the conventions in `NIMBLY.md`.
 
-4. Sanity test the step.
+5. Sanity test the step.
    - Run relevant local checks.
    - Use Playwright for UI/browser sanity testing when frontend behavior is affected.
    - Compare the result against the requested outcome, not only against whether the code compiles.
 
-5. Adjust until correct.
+6. Adjust until correct.
    - If the sanity test or visual result is not correct, fix it before moving on.
    - Re-run the relevant check after adjustments.
 
-6. Commit the completed step.
+7. Commit the completed step.
    - Commit only after the step is implemented and sanity-tested.
    - Use Conventional Commits.
    - Keep commit messages short, specific, professional, and usually one line.
    - Do not add commercial noise like `Co-Authored-By`.
 
-7. Repeat.
+8. Repeat.
    - Continue step by step until the task is complete.
 
-8. Final handoff.
+9. Final handoff.
    - Summarize what changed.
    - List commits created.
    - List tests/checks performed.
@@ -54,15 +62,19 @@ For every task, follow this workflow unless explicitly instructed otherwise.
 - Never create, merge, or close pull requests unless explicitly instructed.
 - Never run destructive git commands such as `reset --hard`, `clean`, forced push, rebase, or branch deletion unless explicitly instructed.
 - Do not discard, overwrite, or remove existing local changes unless explicitly instructed.
-- Do not modify `core/` unless the task is explicitly framework work.
+- Do not modify `core/` unless the task is explicitly framework work — the
+  test: would every Nimbly app need this, not just this project? See
+  "Deciding core vs. ext" in `NIMBLY.md`.
 
 ## At a glance
 
 - **`ext/` is a separate git repository.** Always run git commands inside
   `ext/` for application changes, for example `git -C ext status`. The project
   root is the `core` repo and knows nothing about `ext/` changes.
-- Work in `ext/` for project customizations. Do not modify `core/` unless the
-  task is explicitly framework work.
+- Work in `ext/` for project customizations. Work in `core/` for framework
+  work — anything every Nimbly app would need, not just this one (see
+  "Deciding core vs. ext" in `NIMBLY.md`). Don't default to `ext/` just
+  because it's the safer-looking choice.
 - Follow the PHP naming convention documented in `NIMBLY.md`: snake_case
   everywhere for functions, variables, parameters, and file names. Do not use
   camelCase or PascalCase in PHP.
