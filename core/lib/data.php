@@ -543,6 +543,14 @@ function array_merge_recursive_distinct(array &$array1, array &$array2)
 function data_update($resource, $uuid, $data_update_ls)
 {
     data_error_clear();
+
+    if ((string)$uuid !== '' && !empty($data_update_ls) && !data_exists($resource, $uuid)) {
+        $meta = data_meta($resource);
+        if (!empty($meta['upsert'])) {
+            data_create($resource, $uuid, []);
+        }
+    }
+
     if (empty($data_update_ls) || !data_exists($resource, $uuid)) {
         return false;
     }

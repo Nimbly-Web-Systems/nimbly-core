@@ -371,6 +371,16 @@ foreach ($dirs_create as $dir) {
     }
 }
 
+// .config is a per-page key-value store (page settings, site config) —
+// records are expected to be created on first save, not pre-created on
+// every page view. "upsert" lets data_update() create a missing record
+// instead of failing, so callers never need to pre-create it themselves.
+if (!data_exists('.config', '.meta')) {
+    data_create_resource('.config', ['fields' => false, 'upsert' => true]);
+    $project_files_changed = true;
+    nb_status("Created: .config resource (upsert)");
+}
+
 foreach ($dirs_deny as $dir) {
     $dst = BASE_DIR . $dir . '/.htaccess';
     if (!file_exists($dst)) {

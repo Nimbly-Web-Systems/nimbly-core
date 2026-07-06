@@ -116,6 +116,40 @@ function upgrade_11_daisyui_themes_state(): array
     ];
 }
 
+function upgrade_11_config_upsert_state(): array
+{
+    if (!data_exists('.config', '.meta')) {
+        return [
+            'action' => 'none',
+            'message' => '.config resource does not exist yet; system:setup will create it with upsert support.',
+        ];
+    }
+
+    $meta = data_read('.config', '.meta');
+    if (!empty($meta['upsert'])) {
+        return [
+            'action' => 'none',
+            'message' => '.config/.meta already has upsert enabled.',
+        ];
+    }
+
+    return [
+        'action' => 'update',
+        'meta' => $meta,
+        'message' => 'Add "upsert": true to .config/.meta so page settings are created on first save instead of pre-created on every page view.',
+    ];
+}
+
+function upgrade_11_apply_config_upsert(array $state): bool
+{
+    if (($state['action'] ?? '') !== 'update') {
+        return false;
+    }
+    $meta = $state['meta'];
+    $meta['upsert'] = true;
+    return data_create('.config', '.meta', $meta) !== false;
+}
+
 function upgrade_11_gitignore_rules(): array
 {
     return [
@@ -653,6 +687,7 @@ $htaccess     = upgrade_11_htaccess_state($env['PEPPER'] ?? '', $paths['base_pat
 $tw_elements  = upgrade_11_tailwind_elements_files();
 $tw_entry     = upgrade_11_tailwind_entrypoint_state();
 $daisyui      = upgrade_11_daisyui_themes_state();
+$config_upsert = upgrade_11_config_upsert_state();
 $gitignore    = upgrade_11_gitignore_state();
 $get_key_hits = upgrade_11_get_key_collect();
 $jget_hits    = upgrade_11_jget_collect();
@@ -674,6 +709,7 @@ $has_work = migrate_10_has_work($migration)
     || !empty($tw_elements)
     || $tw_entry['action'] === 'update'
     || $daisyui['action'] === 'warn'
+    || $config_upsert['action'] === 'update'
     || $gitignore['action'] === 'update'
     || !empty($get_key_hits)
     || !empty($jget_hits)
@@ -757,6 +793,11 @@ if ($daisyui['action'] === 'warn') {
     echo "\n[" . ++$step . "] DaisyUI theme export missing\n\n";
     echo '  ' . $daisyui['message'] . "\n";
     cli_tip("Add 'export const daisyuiThemes = [{ light: { primary: \"#...\", secondary: \"#...\", ... } }];' to ext/tailwind.theme.js. See NIMBLY.md §19 for the full example.");
+}
+
+if ($config_upsert['action'] === 'update') {
+    echo "\n[" . ++$step . "] .config upsert migration\n\n";
+    echo '  ' . $config_upsert['message'] . "\n";
 }
 
 if ($gitignore['action'] !== 'none') {
@@ -871,6 +912,15 @@ if ($tw_entry['action'] === 'update') {
         echo "Updated: css/tw/in.css\n";
     } else {
         echo "ERROR: failed to update css/tw/in.css\n";
+    }
+}
+
+if ($config_upsert['action'] === 'update') {
+    echo "\n=== Updating .config/.meta ===\n";
+    if (upgrade_11_apply_config_upsert($config_upsert)) {
+        echo "Updated: .config/.meta (upsert enabled)\n";
+    } else {
+        echo "ERROR: failed to update .config/.meta\n";
     }
 }
 
