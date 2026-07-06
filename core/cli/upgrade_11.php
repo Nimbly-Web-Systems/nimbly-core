@@ -705,7 +705,7 @@ $has_work = migrate_10_has_work($migration)
     || users_email_index_has_work($users_email)
     || !empty($users_email['duplicates'])
     || !empty($moves)
-    || in_array($htaccess['action'], ['write', 'recreate_mod_php'], true)
+    || in_array($htaccess['action'], ['write', 'recreate_mod_php', 'recreate_cgi_pass_auth'], true)
     || !empty($tw_elements)
     || $tw_entry['action'] === 'update'
     || $daisyui['action'] === 'warn'
@@ -891,11 +891,13 @@ if (!empty($moves)) {
     echo "\nMigrated {$migrated} library entr" . ($migrated === 1 ? 'y' : 'ies') . ".\n";
 }
 
-if (in_array($htaccess['action'], ['write', 'recreate_mod_php'], true)) {
+if (in_array($htaccess['action'], ['write', 'recreate_mod_php', 'recreate_cgi_pass_auth'], true)) {
     echo "\n=== Repairing .htaccess ===\n";
     upgrade_11_apply_htaccess($htaccess);
     if ($htaccess['action'] === 'write') {
         echo "Written: .htaccess\n";
+    } elseif ($htaccess['action'] === 'recreate_cgi_pass_auth') {
+        echo "Recreated: .htaccess (added CGIPassAuth for Bearer token API support under PHP-FPM)\n";
     } else {
         echo "Recreated: .htaccess (removed mod_php directives, not supported under PHP-FPM)\n";
     }

@@ -2410,7 +2410,7 @@ Tokens expire after **10 minutes**. Refresh before expiry with a GET to the same
 > **PHP-FPM and the Authorization header**
 > On servers running PHP-FPM (rather than mod_php), Apache strips the `Authorization` header before it reaches PHP. The Nimbly API validates Bearer tokens via `getallheaders()["Authorization"]`, so without the header, every authenticated API call returns `403 ACCESS_DENIED` even with a valid token.
 >
-> Fix: add these two lines to the project's `.htaccess`, before the rewrite rules that send requests to `index.php`:
+> `core/cli/setup/htaccess.tpl` includes the fix by default (`system:setup` for new installs; `system:upgrade-11` detects and repairs an existing project's `.htaccess` if it predates this and is missing it):
 >
 > ```apache
 > CGIPassAuth On
@@ -2418,7 +2418,7 @@ Tokens expire after **10 minutes**. Refresh before expiry with a GET to the same
 > RewriteRule .* - [E=HTTP_AUTHORIZATION:%1]
 > ```
 >
-> `CGIPassAuth On` tells Apache to forward the Authorization header to the FPM process. The `RewriteRule` additionally exposes it as `$_SERVER['HTTP_AUTHORIZATION']` for any code that reads that directly. Both lines are needed for full compatibility. Any project that exposes the Nimbly API to external clients on a PHP-FPM host requires this.
+> `CGIPassAuth On` tells Apache to forward the Authorization header to the FPM process. The `RewriteRule` additionally exposes it as `$_SERVER['HTTP_AUTHORIZATION']` for any code that reads that directly. Both lines are needed for full compatibility. Any project that exposes the Nimbly API to external clients on a PHP-FPM host requires this — if `.htaccess` was hand-edited after generation and lost this block, re-run `system:upgrade-11` to restore it.
 
 ```bash
 curl -X GET "/api/v1/auth/token" \
