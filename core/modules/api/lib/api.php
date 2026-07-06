@@ -98,9 +98,10 @@ function api_token_access($feature, $resource = false) {
     $users = data_filter(data_read('users', null, ['email', 'api']), 'api:(exists)');
     $user = null;
 
-    foreach ($users as $u) {
+    foreach ($users as $uuid => $u) {
         if ($u['api']['access'] && $u['api']['token'] === $token) {
             $user = $u;
+            $user['uuid'] = $uuid;
             break;
         }
     }
