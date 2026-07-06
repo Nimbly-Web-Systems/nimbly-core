@@ -79,6 +79,8 @@ function role_permissions_system_features(): array
         'pull-core-updates' => ['label' => 'Pull core updates', 'description' => 'Update Nimbly itself to the latest version.'],
         'pull-ext-updates' => ['label' => 'Pull site updates', 'description' => 'Update this site\'s code to the latest version.'],
         'manage-system' => ['label' => 'Manage system', 'description' => 'Full control over system settings and maintenance.'],
+        'manage-openai_translate' => ['label' => 'AI translate records', 'description' => 'Use the AI button to translate a record into another language.'],
+        'manage-openai_complete' => ['label' => 'AI complete fields', 'description' => 'Use the AI button to generate or rewrite a single field.'],
     ];
 }
 

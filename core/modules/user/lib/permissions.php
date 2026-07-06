@@ -74,6 +74,8 @@ function permission_any_features(): array
         'pull-core-updates',
         'pull-ext-updates',
         'manage-system',
+        'manage-openai_translate',
+        'manage-openai_complete',
     ]);
     return permission_unique($result);
 }
