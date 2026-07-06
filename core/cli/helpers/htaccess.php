@@ -53,6 +53,7 @@ function upgrade_11_htaccess_state($pepper, $base_path, $rewrite_base_path)
 
     $htaccess_content = file_get_contents($htaccess_file);
     $has_mod_php = (bool) preg_match('/^php_(flag|value)\s/m', $htaccess_content);
+    $has_cgi_pass_auth = str_contains($htaccess_content, 'CGIPassAuth');
     $existing_base = null;
     if (preg_match('/^RewriteBase\s+(.+)$/m', $htaccess_content, $m)) {
         $existing_base = trim($m[1]);
@@ -63,6 +64,15 @@ function upgrade_11_htaccess_state($pepper, $base_path, $rewrite_base_path)
         return [
             'action' => 'recreate_mod_php',
             'message' => '.htaccess contains mod_php directives — will recreate it for PHP-FPM compatibility.',
+            'path' => $htaccess_file,
+            'content' => upgrade_11_render_htaccess($pepper, $base_path, $rewrite_base_path),
+        ];
+    }
+
+    if (!$has_cgi_pass_auth) {
+        return [
+            'action' => 'recreate_cgi_pass_auth',
+            'message' => '.htaccess is missing CGIPassAuth — Bearer token API requests will fail on PHP-FPM. Will recreate it.',
             'path' => $htaccess_file,
             'content' => upgrade_11_render_htaccess($pepper, $base_path, $rewrite_base_path),
         ];

@@ -56,6 +56,12 @@ AddOutputFilterByType DEFLATE application/x-javascript
 RewriteEngine on
 RewriteBase %%REWRITE_BASE%%
 
+# pass the Authorization header through to PHP-FPM (Apache strips it by
+# default; the API's Bearer token auth reads it via getallheaders())
+CGIPassAuth On
+RewriteCond %{HTTP:Authorization} ^(.*)
+RewriteRule .* - [E=HTTP_AUTHORIZATION:%1]
+
 # rewrite: use EXT static/_thumb_  if available for requested img file
 RewriteCond %{REQUEST_URI} ^/%%REWRITE_BASE_PATH%%img/.*
 RewriteCond %{QUERY_STRING} ^ratio=(.*)$
