@@ -1080,6 +1080,7 @@ Options from another resource:
 | `events` | Resource lifecycle event declarations. Supported keys: `create`, `update`, `delete`. Values are arrays of named events or `job:<type>` queue entries. See below. |
 | `splitdir` | Boolean. When `true`, records are stored in a two-level subdirectory tree by UUID prefix for filesystem performance at scale (> ~10,000 records). See §12 API — Scalability. |
 | `index` | Array of field names to index. Creates fast lookup paths for those fields. See §4 Indexes below. |
+| `upsert` | Boolean. When `true`, `data_update()` (and therefore `PUT /api/v1/{resource}/{uuid}`) creates a missing record instead of failing. Use only for key-value-style resources where "record may not exist yet" is the normal, expected state (e.g. core's `.config`, used for per-page settings) — not for regular content resources, where updating a non-existent record should stay an error. |
 
 ### Resource lifecycle events
 
@@ -2993,6 +2994,22 @@ alone does not stop already-tracked files from being committed:
 git -C ext rm -r --cached data/.jobs
 git -C ext rm -r --cached data/.state
 ```
+
+#### `.config`: create page settings on save, not on every page view
+
+Earlier core versions pre-created an empty `.config/<url_key>` record on
+**every page view** (`[#create-settings#]`, called from `core/tpl/html/init.tpl`),
+purely so that the per-page settings modal (nimblybar gear icon) had something
+to `PUT` an update onto later — `data_update()` fails on a record that doesn't
+exist yet, and this was the workaround. In practice this meant every route
+ever visited by anyone got a permanent empty `.config` record, whether or not
+its settings were ever touched.
+
+1.1.0 fixes this at the data layer instead: `.config`'s `.meta` sets
+`"upsert": true` (see §4 root-level `.meta` config), and `data_update()`
+creates the missing record itself, on save, only for resources that opt in.
+`[#create-settings#]` and `init.tpl`'s call to it are removed. `system:upgrade-11`
+adds `"upsert": true` to an existing project's `.config/.meta` if missing.
 
 #### Tailwind 4 scanner: quoted values in `[#set#]`
 
