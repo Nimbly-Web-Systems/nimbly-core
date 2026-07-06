@@ -2960,6 +2960,40 @@ The `tailwind.config.js` `to_daisyui_v5_theme()` function fills in all remaining
 defaults (`--color-base-content`, `--border`, `--depth`, etc.), so only the
 project-specific color overrides need to go in the theme object.
 
+#### `ext/.gitignore`: ignore scheduler state and job queue
+
+Core 1.1.0 introduced the scheduler (`ext/data/.state/schedule`) and job queue
+(`ext/data/.jobs/`) resources. Both are runtime state, not real content — the
+job queue churns constantly and the scheduler state file is rewritten on
+**every** `jobs:run` tick (every minute by default). Projects set up before
+these features existed may still have an `ext/.gitignore` that predates them
+and does not exclude these paths, which silently starts tracking them.
+
+If `.state/schedule` ends up git-tracked, it becomes a file that changes every
+minute and gets committed by `ext:sync` on every auto-sync cycle. Any push to
+the tracked branch that lands between two auto-syncs (a manual fix, a merge
+from `main`, another environment's sync) creates near-guaranteed conflicts on
+that single file when `ext:sync`'s `git pull --rebase` runs next — and because
+`ext_sync.php` does not resolve conflicts itself, a failed rebase leaves the
+production `ext/` repo stuck mid-rebase (detached HEAD) until someone manually
+resolves and completes it. While stuck, `ext:sync` skips silently on every
+subsequent run (it checks for `.git/rebase-merge`/`rebase-apply` and bails), so
+the repo quietly stops syncing in both directions — new fixes pushed to the
+tracked branch never reach production, and production's own data changes never
+reach git — until the stuck rebase is noticed and fixed by hand.
+
+`system:upgrade-11` checks `ext/.gitignore` for the current template's rules
+(`/data/.jobs/*` / `!/data/.jobs/.meta` and `/data/.state/*` /
+`!/data/.state/.meta`, alongside the existing `/static/_thumb_/` thumbnail
+cache rule) and appends any that are missing. If either path was already
+tracked before the rule existed, also untrack it — adding the ignore rule
+alone does not stop already-tracked files from being committed:
+
+```bash
+git -C ext rm -r --cached data/.jobs
+git -C ext rm -r --cached data/.state
+```
+
 #### Tailwind 4 scanner: quoted values in `[#set#]`
 
 Tailwind 4's class scanner is stricter than Tailwind 3. In Tailwind 3, any
