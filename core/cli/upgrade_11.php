@@ -116,35 +116,66 @@ function upgrade_11_daisyui_themes_state(): array
     ];
 }
 
+function upgrade_11_gitignore_rules(): array
+{
+    return [
+        [
+            'lines' => ['/static/_thumb_/'],
+            'untrack' => 'static/_thumb_',
+            'label' => 'generated thumbnail cache',
+        ],
+        [
+            'lines' => ['/data/.jobs/*', '!/data/.jobs/.meta'],
+            'untrack' => 'data/.jobs',
+            'label' => 'job queue records (churns constantly, not real content)',
+        ],
+        [
+            'lines' => ['/data/.state/*', '!/data/.state/.meta'],
+            'untrack' => 'data/.state',
+            'label' => 'scheduler run state (mutates every minute; tracking it causes recurring ext:sync rebase conflicts — see NIMBLY.md §19)',
+        ],
+    ];
+}
+
 function upgrade_11_gitignore_state(): array
 {
     $file = BASE_DIR . 'ext/.gitignore';
-    $rule = '/static/_thumb_/';
+    $rules = upgrade_11_gitignore_rules();
 
     if (!is_file($file)) {
         return [
             'action' => 'missing',
             'file' => $file,
-            'rule' => $rule,
-            'message' => 'ext/.gitignore does not exist; skipping thumbnail cache ignore rule migration.',
+            'missing' => $rules,
+            'message' => 'ext/.gitignore does not exist; skipping generated/runtime data ignore rule migration.',
         ];
     }
 
     $content = file_get_contents($file);
-    if (preg_match('/^\s*\/static\/_thumb_\/\s*$/m', $content)) {
+    $missing = [];
+    foreach ($rules as $rule) {
+        foreach ($rule['lines'] as $line) {
+            if (!preg_match('/^\s*' . preg_quote($line, '/') . '\s*$/m', $content)) {
+                $missing[] = $rule;
+                continue 2;
+            }
+        }
+    }
+
+    if (empty($missing)) {
         return [
             'action' => 'none',
             'file' => $file,
-            'rule' => $rule,
-            'message' => 'ext/.gitignore already ignores the generated thumbnail cache.',
+            'missing' => [],
+            'message' => 'ext/.gitignore already ignores generated/runtime data (thumbnail cache, job queue, scheduler state).',
         ];
     }
 
     return [
         'action' => 'update',
         'file' => $file,
-        'rule' => $rule,
-        'message' => 'Add /static/_thumb_/ to ext/.gitignore for the generated thumbnail cache.',
+        'missing' => $missing,
+        'message' => 'Add missing ignore rules to ext/.gitignore for: ' . implode(', ', array_column($missing, 'label')) . '.',
     ];
 }
 
@@ -154,8 +185,10 @@ function upgrade_11_apply_gitignore(array $state): bool
         return false;
     }
 
-    $content = file_get_contents($state['file']);
-    $content = rtrim($content, "\r\n") . "\n" . $state['rule'] . "\n";
+    $content = rtrim(file_get_contents($state['file']), "\r\n") . "\n";
+    foreach ($state['missing'] as $rule) {
+        $content .= implode("\n", $rule['lines']) . "\n";
+    }
     return file_put_contents($state['file'], $content) !== false;
 }
 
@@ -730,7 +763,9 @@ if ($gitignore['action'] !== 'none') {
     echo "\n[" . ++$step . "] ext/.gitignore migration\n\n";
     echo '  ' . $gitignore['message'] . "\n";
     if ($gitignore['action'] === 'update') {
-        echo "  If ext/static/_thumb_/ was already tracked, remove it from the git index after this migration.\n";
+        foreach ($gitignore['missing'] as $rule) {
+            echo "  If ext/{$rule['untrack']} is already tracked, remove it from the git index after this migration.\n";
+        }
     }
 }
 
@@ -843,7 +878,9 @@ if ($gitignore['action'] === 'update') {
     echo "\n=== Updating ext/.gitignore ===\n";
     if (upgrade_11_apply_gitignore($gitignore)) {
         echo "Updated: ext/.gitignore\n";
-        cli_tip("If ext/static/_thumb_/ is already tracked, run: git -C ext rm -r --cached static/_thumb_");
+        foreach ($gitignore['missing'] as $rule) {
+            cli_tip("If ext/{$rule['untrack']} is already tracked, run: git -C ext rm -r --cached {$rule['untrack']}");
+        }
     } else {
         echo "ERROR: failed to update ext/.gitignore\n";
     }
