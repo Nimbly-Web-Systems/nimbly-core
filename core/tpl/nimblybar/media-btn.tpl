@@ -1,11 +1,11 @@
-<button id="nb_edit_insert_media" disabled type="button"
-    class="flex h-8 w-full cursor-pointer items-center truncate rounded-[5px] pr-2 text-[0.8rem] leading-none text-neutral-100
+<button data-nb-edit-insert-media disabled type="button"
+    class="flex min-h-11 w-full cursor-pointer items-center truncate rounded-[5px] pr-2 text-sm leading-none text-neutral-100 md:min-h-8 md:text-[0.8rem]
                 outline-none transition
                 hover:disabled:bg-transparent
                 disabled:text-white/50
                 duration-300 ease-linear hover:bg-clight/40 hover:text-neutral-50 hover:outline-none focus:bg-slate-50
                 focus:text-neutral-50 focus:outline-none active:bg-clight active:text-neutral-50 active:outline-none motion-reduce:transition-none">
-    <span class="flex h-8 w-8 shrink-0 items-center justify-center">
+    <span class="flex h-11 w-11 shrink-0 items-center justify-center md:h-8 md:w-8">
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.0" stroke="currentColor"
             class="h-5 w-5">
             <title>[#text Insert media#]</title>

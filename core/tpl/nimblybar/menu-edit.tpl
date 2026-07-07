@@ -1,6 +1,6 @@
 <li class="relative hidden" id="nb_edit_menu">
     <button type="button" class="flex h-8 w-full cursor-pointer items-center rounded text-[0.875rem] leading-none text-neutral-100 outline-none transition duration-300 ease-linear hover:bg-clight hover:text-neutral-50 focus:bg-clight focus:text-neutral-50 focus:outline-none"
-        id="nb_edit_toggler" :aria-expanded="edit_open.toString()">
+        data-nb-edit-toggle :aria-expanded="edit_open.toString()">
 
         <span class="flex h-8 w-8 shrink-0 items-center justify-center">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.0" stroke="currentColor"
@@ -26,7 +26,7 @@
 
             [#nop #feature-cond edit-inline-content tpl=html-btn#]
 
-            <button id="nb_edit_save" disabled type="button"
+            <button data-nb-edit-save disabled type="button"
                 class="flex h-8 w-full cursor-pointer items-center truncate rounded-[5px] pr-2 text-[0.8rem] leading-none text-neutral-100 outline-none transition hover:disabled:bg-transparent disabled:text-white/50 duration-300 ease-linear hover:bg-clight/40 hover:text-neutral-50 focus:bg-slate-50 focus:text-neutral-50 focus:outline-none active:bg-clight active:text-neutral-50 active:outline-none motion-reduce:transition-none">
                 <span class="flex h-8 w-8 shrink-0 items-center justify-center">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.0"
