@@ -1,4 +1,4 @@
-<a x-show="!collapsed" class="flex h-8 w-8 items-center justify-center rounded text-white hover:bg-clight"
+<a x-show="!collapsed || is_mobile" class="flex h-12 w-12 items-center justify-center rounded text-white hover:bg-clight md:h-8 md:w-8"
     href="[#page-settings-link#]" title="[#text Page settings#]">
     <svg class="h-5 w-5 shrink-0 fill-white" fill="#ffffff" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
         <title>[#text Page settings#]</title>

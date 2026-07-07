@@ -1,4 +1,4 @@
-<a x-show="!collapsed" class="flex h-8 w-8 items-center justify-center rounded text-white hover:bg-clight"
+<a x-show="!collapsed || is_mobile" class="flex h-12 w-12 items-center justify-center rounded text-white hover:bg-clight md:h-8 md:w-8"
     href="[#base-url#]/nb-admin" title="[#text Admin dashboard#]">
     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.0" stroke="currentColor"
         class="h-5 w-5 shrink-0">

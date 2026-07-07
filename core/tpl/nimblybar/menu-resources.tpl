@@ -1,7 +1,7 @@
 <li class="relative">
-    <button type="button" class="flex h-8 w-full cursor-pointer items-center rounded text-[0.875rem] leading-none text-neutral-100 outline-none transition duration-300 ease-linear hover:bg-clight hover:text-neutral-50 focus:bg-clight focus:text-neutral-50 focus:outline-none"
+    <button type="button" class="flex min-h-11 w-full cursor-pointer items-center rounded text-[0.875rem] leading-none text-neutral-100 outline-none transition duration-300 ease-linear hover:bg-clight hover:text-neutral-50 focus:bg-clight focus:text-neutral-50 focus:outline-none md:min-h-8"
         @click="resources_open = !resources_open" :aria-expanded="resources_open.toString()">
-        <span class="flex h-8 w-8 shrink-0 items-center justify-center">
+        <span class="flex h-11 w-11 shrink-0 items-center justify-center md:h-8 md:w-8">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.0" stroke="currentColor"
                 class="h-5 w-5">
                 <path stroke-linecap="round" stroke-linejoin="round"
@@ -9,7 +9,7 @@
             </svg>
         </span>
         <span class="ml-2">[#text Resources#]</span>
-        <span class="ml-auto flex h-8 w-8 shrink-0 items-center justify-center transition-transform duration-200" :class="resources_open ? 'rotate-180' : ''">
+        <span class="ml-auto flex h-11 w-11 shrink-0 items-center justify-center transition-transform duration-200 md:h-8 md:w-8" :class="resources_open ? 'rotate-180' : ''">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="h-5 w-5 shrink-0">
                 <path fill-rule="evenodd"
                     d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z"

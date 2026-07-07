@@ -3,11 +3,16 @@ const nb_modal_insert_media = document.getElementById("nb-modal-insert-media");
 const nb_edit_insert_media = document.getElementById("nb_edit_insert_media");
 const nb_modal_settings = document.getElementById("nb-modal-settings");
 
+function nb_bar_is_mobile() {
+  return window.matchMedia("(max-width: 767px)").matches;
+}
+
 function nb_bar_set_page_layout(side, collapsed) {
   const page = document.getElementById("page");
   const expanded = "15rem";
   const compact = "2rem";
   const offset = collapsed ? compact : expanded;
+  const mobile = nb_bar_is_mobile();
   if (page) {
     page.style.width = "";
     page.style.marginLeft = "";
@@ -15,8 +20,9 @@ function nb_bar_set_page_layout(side, collapsed) {
   }
   document.body.classList.add("nb-bar-layout");
   document.body.style.boxSizing = "border-box";
-  document.body.style.paddingLeft = side === "left" ? offset : "";
-  document.body.style.paddingRight = side === "right" ? offset : "";
+  document.body.style.paddingLeft = !mobile && side === "left" ? offset : "";
+  document.body.style.paddingRight = !mobile && side === "right" ? offset : "";
+  document.body.style.paddingBottom = mobile ? "4rem" : "";
 }
 
 function nb_bar_edit_menu(show = true) {
@@ -62,11 +68,22 @@ const alpine_nimblybar = function () {
   Alpine.data("nimblybar", (side, initial_collapsed) => ({
     side: side === "left" ? "left" : "right",
     collapsed: initial_collapsed === true,
+    is_mobile: false,
+    mobile_open: false,
     account_open: false,
     resources_open: true,
     edit_open: false,
     init() {
+      this.is_mobile = nb_bar_is_mobile();
       nb_bar_set_page_layout(this.side, this.collapsed);
+      window.addEventListener("resize", () => {
+        const mobile = nb_bar_is_mobile();
+        this.is_mobile = mobile;
+        if (!mobile) {
+          this.mobile_open = false;
+        }
+        nb_bar_set_page_layout(this.side, this.collapsed);
+      });
       this.$watch("collapsed", (value) => {
         nb_bar_set_page_layout(this.side, value);
         nb.api.post(nb.base_url + "/api/v1/session", { nb_bar_slim: value });
@@ -79,6 +96,11 @@ const alpine_nimblybar = function () {
       });
     },
     toggle() {
+      if (this.is_mobile) {
+        this.mobile_open = !this.mobile_open;
+        this.account_open = false;
+        return;
+      }
       this.collapsed = !this.collapsed;
       if (this.collapsed) {
         this.account_open = false;
@@ -89,6 +111,7 @@ const alpine_nimblybar = function () {
     },
     close_dropdowns() {
       this.account_open = false;
+      this.mobile_open = false;
     },
   }));
 };

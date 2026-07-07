@@ -1,4 +1,4 @@
-<div class="w-full px-4 py-2 rounded-md shadow-md bg-neutral-50 mt-4" 
+<div class="mt-4 w-full rounded-md bg-neutral-50 px-3 py-2 shadow-md sm:px-4"
     x-data="data_table()"
     @search.window="search($event.detail || '')">
         <div class="hidden md:block">
@@ -95,19 +95,19 @@
                         </div>
                     </template>
                 </div>
-                <div class="mt-3 flex items-center border-t border-neutral-100 pt-3">
+                <div class="mt-3 flex items-center gap-2 border-t border-neutral-100 pt-3">
                     [#actions#]
                 </div>
             </article>
         </template>
     </div>
 
-    <div class="flex flex-wrap md:flex-nowrap items-center gap-3 py-4">
+    <div class="flex flex-wrap items-center gap-3 py-4 md:flex-nowrap">
         <div></div>
         <div class="w-full md:w-auto md:ml-auto text-sm text-neutral-700">
             [#text Rows per page:#]
             <select x-model="page_size"
-                class="px-2 pt-1 pb-2 ml-2 border border-neutral-200 focus:border-primary rounded"
+                class="ml-2 min-h-10 rounded border border-neutral-200 px-2 pb-2 pt-1 focus:border-primary md:min-h-0"
                 @change="store_page_size()">
                 <option value="10">10</option>
                 <option value="25">25</option>
@@ -122,7 +122,7 @@
         </div>
         <div class="ml-auto md:ml-1">
             <button
-                class="pt-1.5 text-neutral-700 disabled:text-neutral-300 disabled:pointer-events-none hover:bg-neutral-100"
+                class="flex h-11 w-11 items-center justify-center rounded text-neutral-700 hover:bg-neutral-100 disabled:pointer-events-none disabled:text-neutral-300 md:h-8 md:w-8"
                 @click="prev()" :disabled="page < 2" x-ref="btn_prev_page">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="size-4">
                     <path fill-rule="evenodd"
@@ -133,7 +133,7 @@
         </div>
         <div>
             <button
-                class="pt-1.5 text-neutral-700 disabled:text-neutral-300 disabled:pointer-events-none hover:bg-neutral-100"
+                class="flex h-11 w-11 items-center justify-center rounded text-neutral-700 hover:bg-neutral-100 disabled:pointer-events-none disabled:text-neutral-300 md:h-8 md:w-8"
                 :disabled="(offset + page_size) >= Object.keys(_records).length" x-ref="btn_next_page"
                 @click="next()">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="size-4">

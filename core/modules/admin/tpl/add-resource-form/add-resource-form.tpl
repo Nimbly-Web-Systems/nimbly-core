@@ -1,14 +1,14 @@
 <section class="bg-neutral-100 pb-10">
     <form autocomplete="false" x-data="form_add('[#resource-id#]')" @submit.prevent="submit"
-        class="bg-neutral-50 rounded-md p-2 sm:p-4 md:p-6 lg:p-8 xl:p-10 shadow-md">
+        class="rounded-md bg-neutral-50 p-3 shadow-md sm:p-4 md:p-6 lg:p-8 xl:p-10">
         [#set nb_form_edit=false overwrite#]
         [#form-key add_resource_[#resource-id#]#]
         <div class="max-w-lg">
             [#repeat data.fields var=_f#]
 
-            <div class="mt-8"></div>
+            <div class="mt-6 md:mt-8"></div>
 
-            <button type="submit" class="[#btn-class-primary#] flex flex-row align-middle" disabled="true"
+            <button type="submit" class="[#btn-class-primary#] flex min-h-11 w-full flex-row items-center justify-center align-middle sm:w-auto" disabled="true"
                 x-bind:disabled="busy">
                 <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="animate-spin w-5 h-5"
                     x-cloak x-show="busy">
