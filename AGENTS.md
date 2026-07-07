@@ -1,4 +1,6 @@
-See [NIMBLY.md](NIMBLY.md) for the complete Nimbly implementation reference.
+Nimbly is a full-stack design system. It is required to read
+[NIMBLY.md](NIMBLY.md), the complete Nimbly implementation reference, before
+making any significant change.
 
 ## Workflow
 
@@ -24,6 +26,7 @@ For every task, follow this workflow unless explicitly instructed otherwise.
 
 3. Plan the work.
    - Inspect the relevant code first.
+   - Consult `NIMBLY.md` for how the relevant mechanism actually works.
    - Break the task into small, logical steps.
    - Do not start with broad rewrites.
 
