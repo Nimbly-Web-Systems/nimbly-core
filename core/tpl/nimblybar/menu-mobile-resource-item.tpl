@@ -4,7 +4,5 @@
         href="[#base-url#]/nb-admin/[#item.key#]">
         [#text [#item.name#]#]
     </a>
-    [#set resource-id=[#item.key#] overwrite#]
-    [#set resource-name=[#item.name#] overwrite#]
     [#feature-cond create-[#item.key#] tpl=menu-mobile-resource-add#]
 </li>
