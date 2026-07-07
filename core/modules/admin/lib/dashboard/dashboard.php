@@ -120,11 +120,11 @@ function dashboard_system_status_item(): string
     $status_class = $ok ? 'text-neutral-500' : 'text-amber-500';
     $status_text = $ok ? 'OK' : 'Low resources';
 
-    return '<li class="min-w-[140px]">'
+    return '<li class="min-w-0 rounded-lg border border-neutral-200 p-3 sm:min-w-[140px] sm:border-0 sm:p-0">'
         . dashboard_status_heading('System')
         . '<div class="text-xl font-semibold ' . $status_class . '">' . $status_text . '</div>'
         . '<div class="text-xs text-neutral-500">' . htmlspecialchars($fact, ENT_QUOTES, 'UTF-8') . '</div>'
-        . '<a href="' . base_url_sc() . '/nb-admin/debug" class="cursor-pointer text-xs font-medium text-neutral-600 underline decoration-neutral-300 hover:text-neutral-800 hover:decoration-neutral-500">View debug</a>'
+        . '<a href="' . base_url_sc() . '/nb-admin/debug" class="' . dashboard_touch_link_class() . '">View debug</a>'
         . '</li>';
 }
 
@@ -275,7 +275,7 @@ function dashboard_manage_group(string $heading, array $pill_entries, array $lin
     $pill_html = '';
     foreach ($pill_entries as $entry) {
         $pill_html .= '<a href="' . base_url_sc() . htmlspecialchars($entry['url'], ENT_QUOTES, 'UTF-8') . '"'
-            . ' class="inline-flex items-center rounded-full border border-neutral-300 bg-neutral-100 px-3 py-1 text-sm font-medium text-neutral-800 hover:bg-neutral-200">'
+            . ' class="inline-flex min-h-11 w-full items-center justify-center rounded-md border border-neutral-300 bg-neutral-100 px-3 py-2 text-sm font-medium text-neutral-800 hover:bg-neutral-200 sm:min-h-0 sm:w-auto sm:rounded-full sm:py-1">'
             . htmlspecialchars($entry['label'], ENT_QUOTES, 'UTF-8') . '</a>';
     }
 
@@ -291,17 +291,22 @@ function dashboard_manage_group(string $heading, array $pill_entries, array $lin
         clear_variable_dot('_action');
     }
 
-    return '<div class="flex flex-col rounded-xl border border-neutral-200 p-3">'
+    return '<div class="flex min-w-0 flex-col rounded-lg border border-neutral-200 p-3">'
         . '<div class="mb-2">' . dashboard_status_heading($heading) . '</div>'
         . $caption_html
-        . ($pill_html !== '' ? '<div class="mt-2 flex flex-wrap items-center gap-2">' . $pill_html . '</div>' : '')
-        . ($secondary_html !== '' ? '<div class="mt-2 flex flex-wrap items-center gap-3">' . $secondary_html . '</div>' : '')
+        . ($pill_html !== '' ? '<div class="mt-2 grid grid-cols-1 gap-2 sm:flex sm:flex-wrap sm:items-center">' . $pill_html . '</div>' : '')
+        . ($secondary_html !== '' ? '<div class="mt-2 grid grid-cols-1 gap-2 sm:flex sm:flex-wrap sm:items-center sm:gap-3">' . $secondary_html . '</div>' : '')
         . '</div>';
 }
 
 function dashboard_secondary_link_class(): string
 {
-    return 'cursor-pointer text-sm font-medium text-neutral-600 underline decoration-neutral-300 hover:text-neutral-800 hover:decoration-neutral-500';
+    return 'inline-flex min-h-11 w-full cursor-pointer items-center justify-center rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-100 sm:min-h-0 sm:w-auto sm:border-0 sm:bg-transparent sm:p-0 sm:underline sm:decoration-neutral-300 sm:hover:bg-transparent sm:hover:text-neutral-800 sm:hover:decoration-neutral-500';
+}
+
+function dashboard_touch_link_class(): string
+{
+    return 'mt-2 inline-flex min-h-10 items-center rounded-md border border-neutral-300 bg-white px-3 py-2 text-xs font-medium text-neutral-700 hover:bg-neutral-100 sm:mt-0 sm:min-h-0 sm:border-0 sm:bg-transparent sm:p-0 sm:underline sm:decoration-neutral-300 sm:hover:bg-transparent sm:hover:text-neutral-800 sm:hover:decoration-neutral-500';
 }
 
 function fmt_bytes_short(int $bytes): string
@@ -355,7 +360,7 @@ function dashboard_data_status_item(string $resource_label, int $last_update): s
     $ago = $last_update > 0 ? fmt_ago_short($last_update) : 'never';
     $sub = $resource_label !== '' ? htmlspecialchars($resource_label, ENT_QUOTES, 'UTF-8') . ' updated' : 'No records yet';
 
-    return '<li class="min-w-[150px]">'
+    return '<li class="min-w-0 rounded-lg border border-neutral-200 p-3 sm:min-w-[150px] sm:border-0 sm:p-0">'
         . dashboard_status_heading('Data')
         . '<div class="text-xl font-semibold text-neutral-500">' . htmlspecialchars($ago, ENT_QUOTES, 'UTF-8') . '</div>'
         . '<div class="text-xs text-neutral-500">' . $sub . '</div>'
@@ -366,14 +371,14 @@ function dashboard_repo_status_item(string $label, int $last_update, string $cou
 {
     $ago = $last_update > 0 ? fmt_ago_short($last_update) : 'never';
 
-    return '<li class="min-w-[160px]">'
+    return '<li class="min-w-0 rounded-lg border border-neutral-200 p-3 sm:min-w-[160px] sm:border-0 sm:p-0">'
         . dashboard_status_heading($label)
         . ' <div class="text-xl font-semibold text-neutral-400" x-cloak x-show="' . $count_var . ' === null">Checking…</div>'
         . ' <div class="text-xl font-semibold" x-cloak x-show="' . $count_var . ' !== null"'
         . ' :class="' . $count_var . ' > 0 ? \'text-amber-500\' : \'text-neutral-500\'"'
         . ' x-text="' . $count_var . ' > 0 ? (' . $count_var . ' + (' . $count_var . ' === 1 ? \' update\' : \' updates\')) : \'Up to date\'"></div>'
         . '<div class="text-xs text-neutral-500">Updated ' . htmlspecialchars($ago, ENT_QUOTES, 'UTF-8') . '</div>'
-        . ' <button type="button" class="cursor-pointer text-xs font-medium text-neutral-600 underline decoration-neutral-300 hover:text-neutral-800 hover:decoration-neutral-500 disabled:cursor-not-allowed disabled:opacity-50" x-cloak x-show="' . $count_var . ' > 0" @click="' . $pull_fn . '" :disabled="busy">Update now</button>'
+        . ' <button type="button" class="' . dashboard_touch_link_class() . ' disabled:cursor-not-allowed disabled:opacity-50" x-cloak x-show="' . $count_var . ' > 0" @click="' . $pull_fn . '" :disabled="busy">Update now</button>'
         . '</li>';
 }
 

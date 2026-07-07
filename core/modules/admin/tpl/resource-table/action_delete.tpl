@@ -1,4 +1,4 @@
-<button class="[#btn-class-icon#]" title="[#text Delete#]" 
+<button class="[#btn-class-icon#] flex h-11 w-11 items-center justify-center md:h-auto md:w-auto" title="[#text Delete#]"
     @click="confirm('[#text Delete record. Are you sure?#]') && delete_record(record_id)">
     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"
         class="w-4 h-4">

@@ -6,6 +6,7 @@
         function set_page_layout() {
             var side = "[#nbar_side#]" === "left" ? "left" : "right";
             var collapsed = [#nbar_collapsed#];
+            var mobile = window.matchMedia("(max-width: 767px)").matches;
             var offset = collapsed ? "2rem" : "15rem";
             var page = document.getElementById("page");
             if (!document.body) {
@@ -18,30 +19,35 @@
             }
             document.body.classList.add("nb-bar-layout");
             document.body.style.boxSizing = "border-box";
-            document.body.style.paddingLeft = side === "left" ? offset : "";
-            document.body.style.paddingRight = side === "right" ? offset : "";
+            document.body.style.paddingLeft = !mobile && side === "left" ? offset : "";
+            document.body.style.paddingRight = !mobile && side === "right" ? offset : "";
+            document.body.style.paddingBottom = mobile ? "4rem" : "";
             return true;
         }
         if (!set_page_layout()) {
             window.addEventListener("DOMContentLoaded", set_page_layout);
         }
+        window.addEventListener("resize", set_page_layout);
     })();
 </script>
 
 <style>
     body.nb-bar-layout {
-        transition: padding-left 200ms ease-in-out, padding-right 200ms ease-in-out;
+        transition: padding-left 200ms ease-in-out, padding-right 200ms ease-in-out, padding-bottom 200ms ease-in-out;
     }
 </style>
 
 <nav id="nb-bar" x-data="nimblybar('[#nbar_side#]', [#nbar_collapsed#])"
-    class="fixed top-0 z-[1035] h-screen overflow-visible bg-cbar text-white font-primary shadow-[0_4px_12px_0_rgba(0,0,0,0.07),_0_2px_4px_rgba(0,0,0,0.05)] transition-all duration-200 ease-in-out [#if nbar_side=left echo=left-0#][#if nbar_side=left echo_else=right-0#] [#if nbar_side=left echo=border-r#][#if nbar_side=left echo_else=border-l#] border-cbar"
-    :class="collapsed ? 'w-8' : 'w-60 px-2'">
+    class="fixed bottom-0 left-0 right-0 z-[1035] overflow-visible border-t border-cbar bg-cbar text-white font-primary shadow-[0_4px_12px_0_rgba(0,0,0,0.07),_0_2px_4px_rgba(0,0,0,0.05)] transition-all duration-200 ease-in-out md:top-0 md:bottom-auto md:h-screen [#if nbar_side=left echo=md:left-0 md:right-auto md:border-r#][#if nbar_side=left echo_else=md:right-0 md:left-auto md:border-l#]"
+    :class="collapsed ? 'md:w-8' : 'md:w-60 md:px-2'">
 
-    <div class="flex h-full flex-col overflow-hidden" :class="collapsed ? 'items-center pt-3' : 'items-stretch pt-3'">
-        <div class="flex h-8 items-center gap-2" :class="collapsed ? 'justify-center' : ''">
+    <div class="flex h-16 flex-col overflow-hidden md:h-full" :class="[
+        collapsed ? 'md:items-center md:pt-3' : 'md:items-stretch md:pt-3',
+        mobile_open ? 'h-[min(80vh,32rem)] pb-3' : ''
+    ]">
+        <div class="flex h-16 shrink-0 items-center gap-2 px-2 md:h-8 md:px-0" :class="collapsed ? 'md:justify-center' : ''">
             <button id="nb_nav_toggler"
-                class="flex h-8 w-8 cursor-pointer items-center justify-center rounded text-white hover:bg-clight focus:bg-clight focus:outline-none"
+                class="flex h-12 w-12 cursor-pointer items-center justify-center rounded text-white hover:bg-clight focus:bg-clight focus:outline-none md:h-8 md:w-8"
                 type="button" @click="toggle" :title="collapsed ? '[#text Expand menu#]' : '[#text Collapse menu#]'">
                 <svg aria-hidden="true" focusable="false" class="h-5 w-5 shrink-0 fill-white" role="img"
                     xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512">
@@ -52,7 +58,7 @@
                 </svg>
             </button>
 
-            <a x-show="!collapsed" class="flex h-8 w-8 items-center justify-center rounded text-white hover:bg-clight"
+            <a x-show="!collapsed || is_mobile" class="flex h-12 w-12 items-center justify-center rounded text-white hover:bg-clight md:h-8 md:w-8"
                 href="[#base-url#]/" title="[#text Site home#]">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.0"
                     stroke="currentColor" class="h-5 w-5 shrink-0">
@@ -65,9 +71,9 @@
             [#feature-cond view-admin-dashboard tpl=btn-dashboard#]
             [#feature-cond edit-.config tpl=btn-page-settings#]
 
-            <div x-show="!collapsed" class="relative ml-auto" @click.outside="account_open = false" id="nb-bar-account-menu">
+            <div x-show="!collapsed || is_mobile" class="relative ml-auto" @click.outside="account_open = false" id="nb-bar-account-menu">
                 <button id="nb_account_btn" type="button" @click="account_open = !account_open"
-                    class="flex h-8 w-8 cursor-pointer items-center justify-center rounded text-white hover:bg-clight focus:bg-clight focus:outline-none"
+                    class="flex h-12 w-12 cursor-pointer items-center justify-center rounded text-white hover:bg-clight focus:bg-clight focus:outline-none md:h-8 md:w-8"
                     aria-haspopup="true" :aria-expanded="account_open.toString()" title="[#text Account#]">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
                         stroke="currentColor" class="h-5 w-5 shrink-0">
@@ -77,7 +83,7 @@
                     </svg>
                 </button>
                 <div x-cloak x-show="account_open" x-transition
-                    class="absolute top-9 right-0 z-[1100] w-[180px] overflow-hidden rounded-lg bg-neutral-50 text-neutral-700 shadow-lg">
+                    class="fixed bottom-16 right-2 z-[1100] w-[min(18rem,calc(100vw-1rem))] overflow-hidden rounded-lg bg-neutral-50 text-neutral-700 shadow-lg md:absolute md:top-9 md:right-0 md:bottom-auto md:w-[180px]">
                     <p class="px-4 pb-2 pt-4 text-xs text-neutral-500">
                         [#text Logged in as#] <br />
                         <span class="text-neutral-700">[#username#]</span>
@@ -109,7 +115,7 @@
             </div>
         </div>
 
-        <ul class="mt-8 flex flex-col gap-2" x-show="!collapsed">
+        <ul class="mt-2 flex flex-1 flex-col gap-2 overflow-y-auto px-2 pb-2 md:mt-8 md:flex-none md:overflow-visible md:px-0 md:pb-0" x-show="mobile_open || (!collapsed && !is_mobile)" x-transition>
             [#feature-cond view-admin-dashboard tpl=menu-resources#]
             [#feature-cond edit-inline-content tpl=menu-edit#]
             [#set menu-ext=#]
@@ -118,7 +124,7 @@
 
     </div>
 
-    <a href="[#base-url#]/nb-admin" class="absolute bottom-10 z-[1090] block h-6 w-auto text-neutral-300"
+    <a href="[#base-url#]/nb-admin" class="absolute bottom-10 z-[1090] hidden h-6 w-auto text-neutral-300 md:block"
         :class="side === 'left' ? '-right-5 rotate-[-90deg]' : '-left-5 rotate-90'" title="[#text Nimbly dashboard#]">
         <svg width="137px" height="47px" viewBox="0 0 137 47" version="1.1" class="h-6 w-auto"
             xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">

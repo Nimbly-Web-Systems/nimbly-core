@@ -1,6 +1,6 @@
 <section class="bg-neutral-100 pb-10">
     <form autocomplete="false" x-ref="edit_resource_form" x-data="form_edit('[#data.resource#]', '[#data.uuid#]')" :data-lang="lang" @submit.prevent="submit"
-        class="bg-neutral-50 rounded-md p-2 sm:p-4 md:p-6 lg:p-8 xl:p-10 shadow-md">
+        class="rounded-md bg-neutral-50 p-3 shadow-md sm:p-4 md:p-6 lg:p-8 xl:p-10">
 
         <div class="max-w-lg">
             [#if has_translations=(not-empty) tpl=tabs-translations#]
@@ -9,11 +9,11 @@
             [#form-key edit_resource_[#data.resource#]#]
             [#repeat data.fields var=_f#]
             [#set nb_form_edit=false overwrite#]
-            <div class="mt-8"></div>
+            <div class="mt-6 md:mt-8"></div>
 
-            <div class="flex flex-row items-center gap-4">
+            <div class="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:gap-4">
 
-                <button type="submit" class="[#btn-class-primary#] flex flex-row align-middle" disabled="true"
+                <button type="submit" class="[#btn-class-primary#] flex min-h-11 w-full flex-row items-center justify-center align-middle sm:w-auto" disabled="true"
                     @click="redirect_on_submit=true"
                     x-bind:disabled="busy">
                     <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="animate-spin w-5 h-5"
@@ -25,7 +25,7 @@
                     </svg>
                     <div class="text-sm font-bold px-2">[#text Save#]</div>
                 </button>
-                <button type="button" class="[#btn-class-secondary#]" 
+                <button type="button" class="[#btn-class-secondary#] min-h-11 sm:min-h-0"
                     disabled="true" 
                     x-bind:disabled="false"
                     @click="confirm('[#text Delete record. Are you sure?#]') && delete_record">
