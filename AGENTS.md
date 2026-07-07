@@ -46,6 +46,10 @@ For every task, follow this workflow unless explicitly instructed otherwise.
    - Use Conventional Commits.
    - Keep commit messages short, specific, professional, and usually one line.
    - Do not add commercial noise like `Co-Authored-By`.
+   - Do not narrate bugs, vulnerabilities, or internal shortcomings in commit
+     messages — describe what changed, not how something was broken or
+     exploitable. This is open source history; don't hand future readers an
+     exploit writeup.
 
 8. Repeat.
    - Continue step by step until the task is complete.
