@@ -33,7 +33,11 @@ test.describe('mobile admin', () => {
     await expect(page.locator('#nb_nav_toggler')).toBeHidden();
     await expect(page.locator('#nb-bar [title="Site home"]')).toBeVisible();
     await expect(page.locator('#nb-bar [title="Admin dashboard"]')).toBeVisible();
+    const nav_before = await page.locator('#nb-bar').boundingBox();
     await page.locator('#nb-bar button[title="Resources"]').click();
+    const nav_after = await page.locator('#nb-bar').boundingBox();
+    expect(nav_after?.height).toBe(nav_before?.height);
+    expect(nav_after?.y).toBe(nav_before?.y);
     await expect(page.locator('#nb_mobile_resources_menu a[href$="/nb-admin/test-records"]')).toBeVisible();
     await expect(page.locator('#nb_mobile_resources_menu a[href$="/nb-admin/test-records/add"]')).toBeVisible();
     await expectNoHorizontalOverflow(page);
