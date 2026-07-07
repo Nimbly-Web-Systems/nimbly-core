@@ -37,7 +37,17 @@ For every task, follow this workflow unless explicitly instructed otherwise.
 
 5. Sanity test the step.
    - Run relevant local checks.
-   - Use Playwright for UI/browser sanity testing when frontend behavior is affected.
+   - Be efficient with verification time and tokens:
+     - Confirm the local environment is running before browser tests. If
+       needed, ask the user to run `./nimbly up`, or run it yourself only when
+       server startup is part of the task.
+     - Prefer targeted CLI, `curl`, and git checks for health, routing, auth
+       reachability, branch/tag state, migrations, and deploy verification.
+     - Use Playwright only when browser behavior is genuinely under test, for
+       example admin forms, inline editing, media picker behavior, Alpine
+       interactions, or responsive/visual regressions.
+     - Avoid repeated full E2E runs after infrastructure or setup failures;
+       fix/confirm the environment first, then rerun the smallest relevant spec.
    - Compare the result against the requested outcome, not only against whether the code compiles.
 
 6. Adjust until correct.
