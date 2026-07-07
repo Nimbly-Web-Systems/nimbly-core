@@ -30,16 +30,19 @@ test.describe('mobile admin', () => {
     await expect(page.locator('#nb-bar')).toBeVisible();
     await expectNoHorizontalOverflow(page);
 
-    await page.locator('#nb_nav_toggler').click();
-    await expect(page.getByRole('button', { name: /resources/i })).toBeVisible();
-    await expect(page.locator('#nb-bar a[href$="/nb-admin/test-records"]')).toBeVisible();
+    await expect(page.locator('#nb_nav_toggler')).toBeHidden();
+    await expect(page.locator('#nb-bar [title="Site home"]')).toBeVisible();
+    await expect(page.locator('#nb-bar [title="Admin dashboard"]')).toBeVisible();
+    await page.locator('#nb-bar button[title="Resources"]').click();
+    await expect(page.locator('#nb_mobile_resources_menu a[href$="/nb-admin/test-records"]')).toBeVisible();
+    await expect(page.locator('#nb_mobile_resources_menu a[href$="/nb-admin/test-records/add"]')).toBeVisible();
     await expectNoHorizontalOverflow(page);
   });
 
   test('resource list and add form stay usable on a phone viewport', async ({ page }) => {
     await page.goto('/nb-admin/test-records');
     await expect(page.getByRole('searchbox')).toBeVisible();
-    await expect(page.locator('a[href$="/nb-admin/test-records/add"]')).toBeVisible();
+    await expect(page.locator('#main a[href$="/nb-admin/test-records/add"]')).toBeVisible();
     await expectNoHorizontalOverflow(page);
 
     await page.goto('/nb-admin/test-records/add');

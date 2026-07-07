@@ -17,6 +17,15 @@ nb_edit.init = function () {
         if (edit_menu) {
             edit_menu.classList.remove('hidden');
         }
+        const mobile_edit_button = document.getElementById('nb_mobile_edit_btn');
+        if (mobile_edit_button) {
+            mobile_edit_button.classList.remove('hidden');
+            mobile_edit_button.classList.add('flex');
+        }
+        const mobile_edit_menu = document.getElementById('nb_mobile_edit_menu');
+        if (mobile_edit_menu) {
+            mobile_edit_menu.classList.remove('hidden');
+        }
     }
     const form_editors = document.querySelectorAll("form [data-nb-edit]");
     form_editors.forEach(ed => {

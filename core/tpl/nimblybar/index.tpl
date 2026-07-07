@@ -41,13 +41,16 @@
     class="fixed bottom-0 left-0 right-0 z-[1035] overflow-visible border-t border-cbar bg-cbar text-white font-primary shadow-[0_4px_12px_0_rgba(0,0,0,0.07),_0_2px_4px_rgba(0,0,0,0.05)] transition-all duration-200 ease-in-out md:top-0 md:bottom-auto md:h-screen [#if nbar_side=left echo=md:left-0 md:right-auto md:border-r#][#if nbar_side=left echo_else=md:right-0 md:left-auto md:border-l#]"
     :class="collapsed ? 'md:w-8' : 'md:w-60 md:px-2'">
 
-    <div class="flex h-16 flex-col overflow-hidden md:h-full" :class="[
+    <div class="flex h-auto flex-col overflow-hidden md:h-full" :class="[
         collapsed ? 'md:items-center md:pt-3' : 'md:items-stretch md:pt-3',
-        mobile_open ? 'h-[min(80vh,32rem)] pb-3' : ''
+        mobile_panel ? 'pb-3' : ''
     ]">
-        <div class="flex h-16 shrink-0 items-center gap-2 px-2 md:h-8 md:px-0" :class="collapsed ? 'md:justify-center' : ''">
+        [#feature-cond view-admin-dashboard tpl=menu-mobile-resources#]
+        [#feature-cond edit-inline-content tpl=menu-mobile-edit#]
+
+        <div class="flex h-16 shrink-0 items-center justify-between gap-1 px-2 md:h-8 md:justify-start md:gap-2 md:px-0" :class="collapsed ? 'md:justify-center' : ''">
             <button id="nb_nav_toggler"
-                class="flex h-12 w-12 cursor-pointer items-center justify-center rounded text-white hover:bg-clight focus:bg-clight focus:outline-none md:h-8 md:w-8"
+                class="hidden h-12 w-12 cursor-pointer items-center justify-center rounded text-white hover:bg-clight focus:bg-clight focus:outline-none md:flex md:h-8 md:w-8"
                 type="button" @click="toggle" :title="collapsed ? '[#text Expand menu#]' : '[#text Collapse menu#]'">
                 <svg aria-hidden="true" focusable="false" class="h-5 w-5 shrink-0 fill-white" role="img"
                     xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512">
@@ -69,15 +72,17 @@
             </a>
 
             [#feature-cond view-admin-dashboard tpl=btn-dashboard#]
+            [#feature-cond view-admin-dashboard tpl=btn-mobile-resources#]
+            [#feature-cond edit-inline-content tpl=btn-mobile-edit#]
             [#feature-cond edit-.config tpl=btn-page-settings#]
 
-            <div x-show="!collapsed || is_mobile" class="relative ml-auto" @click.outside="account_open = false" id="nb-bar-account-menu">
-                <button id="nb_account_btn" type="button" @click="account_open = !account_open"
+            <div x-show="!collapsed || is_mobile" class="relative md:ml-auto" @click.outside="account_open = false" id="nb-bar-account-menu">
+                <button id="nb_account_btn" type="button" @click="account_open = !account_open; mobile_panel = null"
                     class="flex h-12 w-12 cursor-pointer items-center justify-center rounded text-white hover:bg-clight focus:bg-clight focus:outline-none md:h-8 md:w-8"
-                    aria-haspopup="true" :aria-expanded="account_open.toString()" title="[#text Account#]">
+                    aria-haspopup="true" :aria-expanded="account_open.toString()" title="[#text Profile#]">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
                         stroke="currentColor" class="h-5 w-5 shrink-0">
-                        <title>[#text Account#]</title>
+                        <title>[#text Profile#]</title>
                         <path stroke-linecap="round" stroke-linejoin="round"
                             d="M17.982 18.725A7.488 7.488 0 0 0 12 15.75a7.488 7.488 0 0 0-5.982 2.975m11.963 0a9 9 0 1 0-11.963 0m11.963 0A8.966 8.966 0 0 1 12 21a8.966 8.966 0 0 1-5.982-2.275M15 9.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
                     </svg>
@@ -93,7 +98,7 @@
                         href="[#base-url#]/nb-admin/profile">
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
                             stroke="currentColor" data-slot="icon" class="w-6 h-6 mr-2">
-                            <title>Account</title>
+                            <title>[#text Profile#]</title>
                             <path stroke-linecap="round" stroke-linejoin="round"
                                 d="M17.982 18.725A7.488 7.488 0 0 0 12 15.75a7.488 7.488 0 0 0-5.982 2.975m11.963 0a9 9 0 1 0-11.963 0m11.963 0A8.966 8.966 0 0 1 12 21a8.966 8.966 0 0 1-5.982-2.275M15 9.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z">
                             </path>
@@ -115,7 +120,7 @@
             </div>
         </div>
 
-        <ul class="mt-2 flex flex-1 flex-col gap-2 overflow-y-auto px-2 pb-2 md:mt-8 md:flex-none md:overflow-visible md:px-0 md:pb-0" x-show="mobile_open || (!collapsed && !is_mobile)" x-transition>
+        <ul class="mt-2 hidden flex-1 flex-col gap-2 overflow-y-auto px-2 pb-2 md:mt-8 md:flex md:flex-none md:overflow-visible md:px-0 md:pb-0" x-show="!collapsed && !is_mobile" x-transition>
             [#feature-cond view-admin-dashboard tpl=menu-resources#]
             [#feature-cond edit-inline-content tpl=menu-edit#]
             [#set menu-ext=#]
