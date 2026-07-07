@@ -1,5 +1,5 @@
 <div x-cloak x-show="mobile_panel === 'edit'" x-transition id="nb_mobile_edit_menu"
-    class="hidden border-b border-white/10 px-2 py-3 md:hidden">
+    class="fixed bottom-16 left-0 right-0 z-[1095] hidden border-b border-white/10 bg-cbar px-2 py-3 shadow-[0_-8px_20px_rgba(0,0,0,0.18)] md:hidden">
     <div class="mb-2 px-2 text-xs font-semibold uppercase tracking-wide text-white/60">[#text Edit#]</div>
     <div class="flex flex-col gap-1">
         <button type="button" data-nb-edit-toggle
