@@ -3,6 +3,8 @@
 [#set nimblybar-mobile-app-enabled=#]
 [#set nimblybar-mobile-app=#]
 [#nimblybar-mobile-app#]
+[#set nbar-page-settings-in-edit=#]
+[#feature-cond edit-inline-content tpl=set-page-settings-in-edit#]
 
 <script>
     (function () {

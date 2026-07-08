@@ -27,5 +27,6 @@
             </span>
             [#text Save#]
         </button>
+        [#feature-cond edit-.config tpl=menu-mobile-page-settings#]
     </div>
 </div>

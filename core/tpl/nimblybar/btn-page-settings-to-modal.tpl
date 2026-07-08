@@ -1,5 +1,5 @@
-<button id="nb_page_settings_btn" x-show="!collapsed || is_mobile" type="button"
-    class="flex h-12 w-12 cursor-pointer items-center justify-center rounded text-white hover:bg-clight md:h-8 md:w-8"
+<button id="nb_page_settings_btn" x-show="[#if nbar-page-settings-in-edit=(not-empty) echo='!is_mobile && !collapsed' echo_else='!collapsed || is_mobile'#]" type="button"
+    class="[#if nbar-page-settings-in-edit=(not-empty) echo=hidden md:flex echo_else=flex#] h-12 w-12 cursor-pointer items-center justify-center rounded text-white hover:bg-clight md:h-8 md:w-8"
     aria-haspopup="dialog" @click="open_modal('nb-modal-settings')" title="[#text Page settings#]">
     <svg class="h-5 w-5 shrink-0 fill-white" fill="#ffffff" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
         <title>[#text Page settings#]</title>
