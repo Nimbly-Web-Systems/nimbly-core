@@ -1,5 +1,8 @@
 [#set nbar_side="[#get data.config.site.nimblybar.side default=right#]"#]
 [#set nbar_collapsed="[#if api_nb_bar_slim=(empty) echo=false echo_else=true#]"#]
+[#set nimblybar-mobile-app-enabled=#]
+[#set nimblybar-mobile-app=#]
+[#nimblybar-mobile-app#]
 
 <script>
     (function () {
@@ -42,6 +45,7 @@
     :class="collapsed ? 'md:w-8' : 'md:w-60 md:px-2'">
 
     <div class="flex h-16 flex-col overflow-visible md:h-full md:overflow-hidden" :class="collapsed ? 'md:items-center md:pt-3' : 'md:items-stretch md:pt-3'">
+        [#if nimblybar-mobile-app-enabled=(not-empty) tpl=menu-mobile-app#]
         [#feature-cond view-admin-dashboard tpl=menu-mobile-resources#]
         [#feature-cond edit-inline-content tpl=menu-mobile-edit#]
 
@@ -58,7 +62,9 @@
                 </svg>
             </button>
 
-            <a x-show="!collapsed || is_mobile" class="flex h-12 w-12 items-center justify-center rounded text-white hover:bg-clight md:h-8 md:w-8"
+            [#if nimblybar-mobile-app-enabled=(not-empty) tpl=btn-mobile-app#]
+
+            <a x-show="!collapsed || is_mobile" class="[#if nimblybar-mobile-app-enabled=(not-empty) echo=hidden md:flex echo_else=flex#] h-12 w-12 items-center justify-center rounded text-white hover:bg-clight md:h-8 md:w-8"
                 href="[#base-url#]/" title="[#text Site home#]">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.0"
                     stroke="currentColor" class="h-5 w-5 shrink-0">
