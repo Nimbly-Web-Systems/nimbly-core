@@ -48,6 +48,7 @@
         [#if nimblybar-mobile-app-enabled=(not-empty) tpl=menu-mobile-app#]
         [#feature-cond view-admin-dashboard tpl=menu-mobile-resources#]
         [#feature-cond edit-inline-content tpl=menu-mobile-edit#]
+        [#menu-mobile-profile#]
 
         <div class="flex h-16 shrink-0 items-center justify-between gap-1 px-2 md:h-8 md:justify-start md:gap-2 md:px-0" :class="collapsed ? 'md:justify-center' : ''">
             <button id="nb_nav_toggler"
@@ -72,9 +73,9 @@
             [#feature-cond edit-.config tpl=btn-page-settings#]
 
             <div x-show="!collapsed || is_mobile" class="relative md:ml-auto" @click.outside="account_open = false" id="nb-bar-account-menu">
-                <button id="nb_account_btn" type="button" @click="account_open = !account_open; mobile_panel = null"
+                <button id="nb_account_btn" type="button" @click="is_mobile ? toggle_mobile_panel('profile') : (account_open = !account_open, mobile_panel = null)"
                     class="flex h-12 w-12 cursor-pointer items-center justify-center rounded text-white hover:bg-clight focus:bg-clight focus:outline-none md:h-8 md:w-8"
-                    aria-haspopup="true" :aria-expanded="account_open.toString()" title="[#text Profile#]">
+                    aria-haspopup="true" :aria-expanded="(is_mobile ? mobile_panel === 'profile' : account_open).toString()" title="[#text Profile#]">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
                         stroke="currentColor" class="h-5 w-5 shrink-0">
                         <title>[#text Profile#]</title>
