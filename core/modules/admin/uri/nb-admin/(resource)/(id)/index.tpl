@@ -1,4 +1,4 @@
-[#access feature=edit-[#resource-id#]#]
+[#access feature="[#get admin-record-access-feature#]"#]
 [#set _resource_url=[#base-url#]/nb-admin/[#resource-id#]#]
-[#set page-title="[#text Edit [#resource-name [#resource-id#]#]#]"#]
+[#set page-title="[#resource-title [#resource-id#] [#get uuid#]#]"#]
 [#html#]
