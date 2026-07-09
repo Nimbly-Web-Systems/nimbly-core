@@ -52,9 +52,10 @@
         [#feature-cond edit-inline-content tpl=menu-mobile-edit#]
         [#menu-mobile-profile#]
 
-        <div class="flex h-16 shrink-0 items-center justify-between gap-1 px-2 md:h-8 md:justify-start md:gap-2 md:px-0" :class="collapsed ? 'md:justify-center' : ''">
+        <div class="flex h-16 shrink-0 items-center justify-between gap-1 px-2 md:h-8 md:gap-2 md:px-0" :class="collapsed ? 'md:w-8 md:justify-start' : 'md:justify-start'">
             <button id="nb_nav_toggler"
                 class="hidden h-12 w-12 cursor-pointer items-center justify-center rounded text-white hover:bg-clight focus:bg-clight focus:outline-none md:flex md:h-8 md:w-8"
+                :style="collapsed && !is_mobile ? 'width: 32px; min-width: 32px;' : ''"
                 type="button" @click="toggle" :title="collapsed ? '[#text Expand menu#]' : '[#text Collapse menu#]'">
                 <svg aria-hidden="true" focusable="false" class="h-5 w-5 shrink-0 fill-white" role="img"
                     xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512">
