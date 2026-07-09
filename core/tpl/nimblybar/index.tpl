@@ -43,8 +43,9 @@
 </style>
 
 <nav id="nb-bar" x-data="nimblybar('[#nbar_side#]', [#nbar_collapsed#])"
-    class="fixed bottom-0 left-0 right-0 z-[1035] overflow-visible border-t border-cbar bg-cbar text-white font-primary shadow-[0_4px_12px_0_rgba(0,0,0,0.07),_0_2px_4px_rgba(0,0,0,0.05)] transition-all duration-200 ease-in-out md:top-0 md:bottom-auto md:h-screen [#if nbar_side=left echo=md:left-0 md:right-auto md:border-r#][#if nbar_side=left echo_else=md:right-0 md:left-auto md:border-l#]"
-    :class="collapsed ? 'md:w-8' : 'md:w-60 md:px-2'">
+    style="--nb-bar-width: [#if nbar_collapsed=true echo=2rem echo_else=15rem#]; --nb-bar-padding: [#if nbar_collapsed=true echo=0rem echo_else=0.5rem#];"
+    class="fixed bottom-0 left-0 right-0 z-[1035] overflow-visible border-t border-cbar bg-cbar text-white font-primary shadow-[0_4px_12px_0_rgba(0,0,0,0.07),_0_2px_4px_rgba(0,0,0,0.05)] transition-all duration-200 ease-in-out md:top-0 md:bottom-auto md:h-screen md:w-[var(--nb-bar-width)] md:px-[var(--nb-bar-padding)] [#if nbar_side=left echo=md:left-0 md:right-auto md:border-r#][#if nbar_side=left echo_else=md:right-0 md:left-auto md:border-l#]"
+    :style="{ '--nb-bar-width': collapsed ? '2rem' : '15rem', '--nb-bar-padding': collapsed ? '0rem' : '0.5rem' }">
 
     <div class="flex h-16 flex-col overflow-visible md:h-full md:overflow-hidden" :class="collapsed ? 'md:items-center md:pt-3' : 'md:items-stretch md:pt-3'">
         [#if nimblybar-mobile-app-enabled=(not-empty) tpl=menu-mobile-app#]
@@ -119,7 +120,7 @@
             </div>
         </div>
 
-        <ul class="mt-2 hidden flex-1 flex-col gap-2 overflow-y-auto px-2 pb-2 md:mt-8 md:flex md:flex-none md:overflow-visible md:px-0 md:pb-0" x-show="!collapsed && !is_mobile" x-transition>
+        <ul x-cloak class="mt-2 hidden flex-1 flex-col gap-2 overflow-y-auto px-2 pb-2 md:mt-8 md:flex md:flex-none md:overflow-visible md:px-0 md:pb-0" x-show="!collapsed && !is_mobile" x-transition>
             [#feature-cond view-admin-dashboard tpl=menu-resources#]
             [#feature-cond edit-inline-content tpl=menu-edit#]
             [#set menu-ext=#]
