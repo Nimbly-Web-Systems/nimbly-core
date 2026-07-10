@@ -114,6 +114,7 @@ function api_token_access($feature, $resource = false) {
         return false;
     }
 
+    run_library('session');
     if (!_persist_user_roles($user['email'])) {
         return false;
     }

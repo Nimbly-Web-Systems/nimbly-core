@@ -4,7 +4,7 @@ function api_token_sc() {
 	load_library('api');
     load_library('set');
     set_variable('key', $_SERVER['PEPPER']);
-    set_variable('api.allow', 'api_post_api_token');
+    set_variable('api.allow', 'api_post_api_token,api_get_api_token');
 	api_method_switch('api_token');
 }
 
