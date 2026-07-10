@@ -8,12 +8,16 @@ function get_user_resources_sc($params) {
 	$result = array();
     $rs = data_resources_list();
     foreach ($rs as $k => $v) {
-		if (in_array($k, ['users', 'roles'])) {
+		$meta = data_meta($k);
+		$visible_by_default = !in_array($k, ['users', 'roles'], true);
+		$visible = array_key_exists('nimblybar', $meta) ? $meta['nimblybar'] === true : $visible_by_default;
+		if (!$visible) {
 			continue;
 		}
-    	if (get_user_resources_access($k)) {
-    		$result[$k] = ['key' => $k, 'name' => ucwords(str_replace(['-', '_', '.'], [' ', ' ', ''], $k))];
-    	}
+		if (get_user_resources_access($k)) {
+			$name = $meta['name']['plural'] ?? ucwords(str_replace(['-', '_', '.'], [' ', ' ', ''], $k));
+			$result[$k] = ['key' => $k, 'name' => $name];
+		}
     }
     set_variable("data.user-resources", $result);
 }

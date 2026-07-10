@@ -44,6 +44,9 @@ function get_resource_records_sc($params)
         if (!empty($meta['actions']['url'])) {
             $data_records[$ix]['_action_url'] = _prep_action_url($meta['actions']['url'], $record, $ix);
         }
+        if (!empty($meta['actions']['view_url'])) {
+            $data_records[$ix]['_view_url'] = _prep_action_url($meta['actions']['view_url'], $record, $ix);
+        }
     }
     set_variable('data.fields', $fields);
     set_variable('data.records', $data_records);
