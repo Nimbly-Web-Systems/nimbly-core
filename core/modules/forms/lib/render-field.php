@@ -101,7 +101,8 @@ function render_field_sc($params)
 function render_field(array $def, string $field = '', $value = null, string $store = 'form_data', ?string $source = null, ?string $model = null): void
 {
     $fields = $def;
-    if ($field && isset($def[$field])) {
+    $is_single_field = _field_is_single_definition($def);
+    if (!$is_single_field && $field && isset($def[$field]) && is_array($def[$field])) {
         $def = $def[$field];
     }
 
@@ -188,10 +189,37 @@ function _get_field_value(string $var_name)
     return get_variable($var_name);
 }
 
+function _field_is_single_definition(array $def): bool
+{
+    $definition_keys = [
+        'type',
+        'name',
+        'required',
+        'default',
+        'help',
+        'options',
+        'resource',
+        'actions',
+        'ai_prompts',
+        'i18n',
+        'wrapper_class',
+    ];
+
+    foreach ($definition_keys as $key) {
+        if (array_key_exists($key, $def) && !is_array($def[$key])) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 function _field_actions_normalize(array $def): array
 {
     $actions = $def['actions'] ?? [];
     if (empty($actions)) {
+        $actions = [];
+    } else if (!is_array($actions)) {
         $actions = [];
     } else if (isset($actions['type'])) {
         $actions = [$actions];
