@@ -435,29 +435,32 @@ function migrate_10_find_legacy_field_templates(string $ext_dir): array
         'data-te-*' => '/\bdata-te-[a-z0-9_-]+/i',
     ];
     $result = [];
-    $it = new RecursiveIteratorIterator(
-        new RecursiveDirectoryIterator($ext_dir, FilesystemIterator::SKIP_DOTS)
-    );
-    foreach ($it as $file) {
-        $path = $file->getPathname();
-        if (str_starts_with($path, BASE_DIR . 'ext/static/')) {
+    foreach (['tpl', 'uri', 'modules', 'lib'] as $source_dir) {
+        $root = rtrim($ext_dir, '/') . '/' . $source_dir;
+        if (!is_dir($root)) {
             continue;
         }
-        if (!in_array($file->getExtension(), ['tpl', 'php', 'inc', 'js'], true)) {
-            continue;
-        }
-        $content = file_get_contents($path);
-        $tokens = [];
-        foreach ($patterns as $label => $pattern) {
-            if (preg_match($pattern, $content)) {
-                $tokens[] = $label;
+        $it = new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator($root, FilesystemIterator::SKIP_DOTS)
+        );
+        foreach ($it as $file) {
+            $path = $file->getPathname();
+            if (!in_array($file->getExtension(), ['tpl', 'php', 'inc', 'js'], true)) {
+                continue;
             }
-        }
-        if (!empty($tokens)) {
-            $result[] = [
-                'file' => str_replace(BASE_DIR, '', $path),
-                'tokens' => $tokens,
-            ];
+            $content = file_get_contents($path);
+            $tokens = [];
+            foreach ($patterns as $label => $pattern) {
+                if (preg_match($pattern, $content)) {
+                    $tokens[] = $label;
+                }
+            }
+            if (!empty($tokens)) {
+                $result[] = [
+                    'file' => str_replace(BASE_DIR, '', $path),
+                    'tokens' => $tokens,
+                ];
+            }
         }
     }
     return $result;
