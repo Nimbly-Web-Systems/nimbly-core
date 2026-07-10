@@ -988,7 +988,44 @@ function data_modified($resource, $uuid = null)
     if (!file_exists($path)) {
         return 0;
     }
+
+    if ($uuid === null && is_dir($path)) {
+        return _data_modified_recursive($path);
+    }
+
     return filemtime($path);
+}
+
+/**
+ * Returns the newest modification time for files that make up a resource.
+ *
+ * Resource collections may be changed outside the data API by Git or a
+ * deployment. A directory's own mtime does not change when an existing record
+ * is rewritten, so collection caches must inspect the record files. Data
+ * indexes are derived state and may be unreadable by the current process; they
+ * do not affect the resource contents and are skipped.
+ *
+ * @param string $dir Resource or split-directory path.
+ * @return int Newest Unix modification timestamp.
+ */
+function _data_modified_recursive($dir)
+{
+    $modified = filemtime($dir) ?: 0;
+
+    foreach (scandir($dir) as $entry) {
+        if ($entry === '.' || $entry === '..' || $entry === '.index') {
+            continue;
+        }
+
+        $path = "$dir/$entry";
+        if (is_file($path)) {
+            $modified = max($modified, filemtime($path) ?: 0);
+        } elseif (is_dir($path) && strlen($entry) === 2) {
+            $modified = max($modified, _data_modified_recursive($path));
+        }
+    }
+
+    return $modified;
 }
 
 /**
