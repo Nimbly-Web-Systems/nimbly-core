@@ -2933,6 +2933,20 @@ Elements from the project package manifests as well: delete `tw-elements` from
 `tw-elements/dist/plugin` or `node_modules/tw-elements` references from legacy
 Tailwind config files.
 
+The command also reports two visual migration risks that require manual review:
+
+- A project-defined `.footer` class can collide with DaisyUI 5's `footer`
+  component, which applies a grid layout and gap. A formerly centered horizontal
+  footer may therefore become a widely spaced vertical navigation. Rename custom
+  footers to a project-specific class unless the DaisyUI component is intended.
+- Native `input`, `textarea`, or `select` elements that retain `border-0` may
+  become visually borderless after Tailwind Elements and its `data-te-*`
+  enhancer are removed. Give these controls an explicit border when the old
+  enhancer previously supplied the visible field boundary.
+
+These checks are warnings only because both class names can be intentional.
+Always inspect public footers and forms after rebuilding migrated assets.
+
 #### Add `daisyuiThemes` export to `ext/tailwind.theme.js`
 
 In 1.0.0, `ext/tailwind.theme.js` only had a default export (Tailwind color

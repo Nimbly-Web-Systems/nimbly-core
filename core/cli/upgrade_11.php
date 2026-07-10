@@ -26,6 +26,54 @@ function upgrade_11_tailwind_elements_files(): array
     return array_values(array_filter($files, 'is_file'));
 }
 
+function upgrade_11_collect_files(string $root, array $extensions): array
+{
+    if (!is_dir($root)) {
+        return [];
+    }
+
+    $files = [];
+    $iterator = new RecursiveIteratorIterator(
+        new RecursiveDirectoryIterator($root, FilesystemIterator::SKIP_DOTS)
+    );
+    foreach ($iterator as $file) {
+        if ($file->isFile() && in_array($file->getExtension(), $extensions, true)) {
+            $files[] = $file->getPathname();
+        }
+    }
+    return $files;
+}
+
+function upgrade_11_ui_migration_collect(): array
+{
+    $hits = [
+        'footer_class' => [],
+        'borderless_fields' => [],
+    ];
+    $roots = [BASE_DIR . 'ext/tpl', BASE_DIR . 'ext/uri', BASE_DIR . 'ext/modules', BASE_DIR . 'ext/theme.css'];
+
+    foreach ($roots as $root) {
+        $files = is_file($root) ? [$root] : upgrade_11_collect_files($root, ['tpl', 'css']);
+        foreach ($files as $file) {
+            $content = file_get_contents($file);
+            $relative = str_replace(BASE_DIR, '', $file);
+
+            if (preg_match('/class\s*=\s*["\'][^"\']*(?<![a-z0-9_-])footer(?![a-z0-9_-])[^"\']*["\']/i', $content)
+                || preg_match('/(^|[},\s])\.footer(?:\s|\{|,|:)/m', $content)) {
+                $hits['footer_class'][] = $relative;
+            }
+
+            if (preg_match('/<(?:input|textarea|select)\b[^>]*class\s*=\s*["\'][^"\']*\bborder-0\b[^"\']*["\']/is', $content)) {
+                $hits['borderless_fields'][] = $relative;
+            }
+        }
+    }
+
+    $hits['footer_class'] = array_values(array_unique($hits['footer_class']));
+    $hits['borderless_fields'] = array_values(array_unique($hits['borderless_fields']));
+    return $hits;
+}
+
 function upgrade_11_apply_tailwind_elements_cleanup(array $files): int
 {
     $deleted = 0;
@@ -229,17 +277,14 @@ function upgrade_11_apply_gitignore(array $state): bool
 function upgrade_11_collect_sc(string $pattern): array
 {
     $hits = [];
-    $it = new RecursiveIteratorIterator(
-        new RecursiveDirectoryIterator(BASE_DIR . 'ext', FilesystemIterator::SKIP_DOTS)
-    );
-    foreach ($it as $file) {
-        if (!in_array($file->getExtension(), ['tpl', 'php', 'inc'], true)) {
-            continue;
-        }
-        $content = file_get_contents($file->getPathname());
-        $count = preg_match_all($pattern, $content);
-        if ($count > 0) {
-            $hits[] = [$file->getPathname(), $count];
+    foreach (['tpl', 'uri', 'modules', 'lib'] as $source_dir) {
+        $root = BASE_DIR . 'ext/' . $source_dir;
+        foreach (upgrade_11_collect_files($root, ['tpl', 'php', 'inc']) as $file) {
+            $content = file_get_contents($file);
+            $count = preg_match_all($pattern, $content);
+            if ($count > 0) {
+                $hits[] = [$file, $count];
+            }
         }
     }
     return $hits;
@@ -310,17 +355,14 @@ function upgrade_11_php_usage_count(string $content, array $function_names = [],
 function upgrade_11_collect_php_usage(array $function_names = [], array $library_names = []): array
 {
     $hits = [];
-    $it = new RecursiveIteratorIterator(
-        new RecursiveDirectoryIterator(BASE_DIR . 'ext', FilesystemIterator::SKIP_DOTS)
-    );
-    foreach ($it as $file) {
-        if (!in_array($file->getExtension(), ['php', 'inc'], true)) {
-            continue;
-        }
-        $content = file_get_contents($file->getPathname());
-        $count = upgrade_11_php_usage_count($content, $function_names, $library_names);
-        if ($count > 0) {
-            $hits[] = [$file->getPathname(), $count];
+    foreach (['uri', 'modules', 'lib'] as $source_dir) {
+        $root = BASE_DIR . 'ext/' . $source_dir;
+        foreach (upgrade_11_collect_files($root, ['php', 'inc']) as $file) {
+            $content = file_get_contents($file);
+            $count = upgrade_11_php_usage_count($content, $function_names, $library_names);
+            if ($count > 0) {
+                $hits[] = [$file, $count];
+            }
         }
     }
     return $hits;
@@ -685,6 +727,7 @@ $env          = upgrade_11_read_env();
 $paths        = upgrade_11_paths_from_env($env);
 $htaccess     = upgrade_11_htaccess_state($env['PEPPER'] ?? '', $paths['base_path'], $paths['rewrite_base_path']);
 $tw_elements  = upgrade_11_tailwind_elements_files();
+$ui_migration = upgrade_11_ui_migration_collect();
 $tw_entry     = upgrade_11_tailwind_entrypoint_state();
 $daisyui      = upgrade_11_daisyui_themes_state();
 $config_upsert = upgrade_11_config_upsert_state();
@@ -707,6 +750,8 @@ $has_work = migrate_10_has_work($migration)
     || !empty($moves)
     || in_array($htaccess['action'], ['write', 'recreate_mod_php', 'recreate_cgi_pass_auth'], true)
     || !empty($tw_elements)
+    || !empty($ui_migration['footer_class'])
+    || !empty($ui_migration['borderless_fields'])
     || $tw_entry['action'] === 'update'
     || $daisyui['action'] === 'warn'
     || $config_upsert['action'] === 'update'
@@ -815,6 +860,25 @@ if (!empty($tw_elements)) {
     foreach ($tw_elements as $file) {
         echo '  Delete ' . str_replace(BASE_DIR, '', $file) . "\n";
     }
+}
+
+if (!empty($ui_migration['footer_class']) || !empty($ui_migration['borderless_fields'])) {
+    echo "\n[" . ++$step . "] Manual Tailwind Elements / DaisyUI visual review\n\n";
+    if (!empty($ui_migration['footer_class'])) {
+        echo "  Generic .footer usage may inherit DaisyUI 5's grid layout and gap:\n";
+        foreach ($ui_migration['footer_class'] as $file) {
+            echo "    - {$file}\n";
+        }
+        echo "  Rename project footers to a project-specific class unless DaisyUI's footer component is intended.\n\n";
+    }
+    if (!empty($ui_migration['borderless_fields'])) {
+        echo "  Form controls with border-0 need a visual check after Tailwind Elements removal:\n";
+        foreach ($ui_migration['borderless_fields'] as $file) {
+            echo "    - {$file}\n";
+        }
+        echo "  Add an explicit visible border when the removed data-te input styling previously supplied it.\n";
+    }
+    cli_tip("These diagnostics are warnings only; the command does not rewrite project-specific UI classes.");
 }
 
 foreach ([
