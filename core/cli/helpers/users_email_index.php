@@ -116,7 +116,10 @@ function users_email_index_apply(array $state): array
         ];
     }
 
-    $meta = $state['meta'];
+    // Earlier upgrade steps may already have changed users/.meta (for example,
+    // removing the legacy pk key). Reload it here instead of writing the stale
+    // pre-upgrade snapshot back over those changes.
+    $meta = json_decode(file_get_contents($state['meta_file']), true) ?? [];
     $meta_updated = false;
 
     $meta['index'] = isset($meta['index']) && is_array($meta['index']) ? $meta['index'] : [];
