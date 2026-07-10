@@ -31,12 +31,9 @@ test.describe('admin CRUD — test-records', () => {
     // find the edit link for the record we created
     await page.goto('/nb-admin/test-records');
     await expect(page.locator('body')).toContainText('Playwright record', { timeout: 10_000 });
-    const edit_link = page.locator('a[href*="/nb-admin/test-records/"]', { has: page.locator('text=Playwright record') })
-      .or(page.locator('tr', { has: page.locator('text=Playwright record') }).locator('a[href*="nb-admin/test-records"]').first());
-
     // get the edit URL from the row
     const row = page.locator('tr', { has: page.locator('text=Playwright record') });
-    const edit_href = await row.locator('a[href*="nb-admin/test-records"]').first().getAttribute('href');
+    const edit_href = await row.locator('a[title="Edit"]').getAttribute('href');
     await page.goto(edit_href);
 
     const submit = page.locator('form button[type=submit]').first();
