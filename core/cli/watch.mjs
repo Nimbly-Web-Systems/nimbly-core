@@ -99,7 +99,7 @@ await js_ctx.watch();
 
 function find_text_po(dir, out = []) {
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
-    if (entry.name === 'node_modules' || entry.name === '.git') continue;
+    if (entry.name === 'node_modules' || entry.name === '.git' || entry.name === '.index') continue;
     const path = join(dir, entry.name);
     if (entry.isDirectory()) find_text_po(path, out);
     else if (entry.isFile() && entry.name === 'text.po') out.push(path);
