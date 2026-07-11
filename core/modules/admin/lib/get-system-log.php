@@ -8,7 +8,7 @@ function get_system_log_sc($params)
 		chmod($file, 0640);
 	}
 
-	$lines = file($file);
+	$lines = system_log_tail($file);
 	$result = [];
 
 	$last_fatal = current($params) === 'last-fatal';
@@ -28,6 +28,32 @@ function get_system_log_sc($params)
 		set_variable('last_fatal', current($result));
 	}
 	set_variable('system_log', $result);
+}
+
+function system_log_tail($file, $max_bytes = 1048576)
+{
+	$size = filesize($file);
+	if ($size === false || $size === 0) {
+		return [];
+	}
+
+	$handle = fopen($file, 'rb');
+	if ($handle === false) {
+		return [];
+	}
+
+	$offset = max(0, $size - $max_bytes);
+	fseek($handle, $offset);
+	if ($offset > 0) {
+		fgets($handle);
+	}
+	$contents = stream_get_contents($handle);
+	fclose($handle);
+
+	if ($contents === false || $contents === '') {
+		return [];
+	}
+	return preg_split('/\r?\n/', rtrim($contents, "\r\n"));
 }
 
 function parse_log_entry($line)
