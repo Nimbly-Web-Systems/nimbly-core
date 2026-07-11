@@ -224,6 +224,7 @@ function dashboard_data_cache_size(): int
 function dashboard_manage_jobs_group(): string
 {
     $pill_entries = [];
+    $link_entries = [];
     $caption = null;
 
     if (access_by_feature('view-.jobs')) {
@@ -257,7 +258,11 @@ function dashboard_manage_jobs_group(): string
         $actions[] = ['type' => 'post', 'label' => "Clear data cache ($data_cache_size)", 'form_id' => 'ccache_data', 'action' => '/nb-admin'];
     }
 
-    return dashboard_manage_group('System', $pill_entries, [], $actions, $caption);
+    if (access_by_feature('view-system-log')) {
+        $link_entries[] = ['label' => 'View system log', 'url' => '/nb-admin/syslog'];
+    }
+
+    return dashboard_manage_group('System', $pill_entries, $link_entries, $actions, $caption);
 }
 
 function dashboard_manage_group(string $heading, array $pill_entries, array $link_entries, array $actions, ?string $caption): string
