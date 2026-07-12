@@ -99,7 +99,10 @@ function api_token_access($feature, $resource = false) {
     $user = null;
 
     foreach ($users as $uuid => $u) {
-        if ($u['api']['access'] && $u['api']['token'] === $token) {
+        if (!is_array($u) || !is_array($u['api'] ?? null)) {
+            continue;
+        }
+        if (!empty($u['api']['access']) && ($u['api']['token'] ?? '') === $token) {
             $user = $u;
             $user['uuid'] = $uuid;
             break;

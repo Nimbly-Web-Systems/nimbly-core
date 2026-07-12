@@ -167,6 +167,10 @@ function persist_oauth_login($email) {
 }
 
 function _persist_user_roles($name) {
+    run_library('session');
+    if (!isset($_SESSION['roles']) || !is_array($_SESSION['roles'])) {
+        $_SESSION['roles'] = [];
+    }
     $roles = load_user_roles($name);
     foreach ($_SESSION['roles'] as $role => $value) {
         $_SESSION['roles'][$role] = false;
