@@ -67,6 +67,8 @@ RewriteCond %{REQUEST_URI} ^/%%REWRITE_BASE_PATH%%img/.*
 RewriteCond %{QUERY_STRING} ^ratio=((?:0|[1-9][0-9]*)(?:\.[0-9]+)?)$
 RewriteRule ^ - [E=IMG_RATIO:_r%1]
 
+RewriteCond %{QUERY_STRING} ^$ [OR]
+RewriteCond %{ENV:IMG_RATIO} !^$
 RewriteCond %{REQUEST_URI} ^/%%REWRITE_BASE_PATH%%img/(.*)
 RewriteCond ext/static/_thumb_/img/%1%{ENV:IMG_RATIO} -F
 Header set Content-Type "image/webp" "expr=-z %{CONTENT_TYPE}"
