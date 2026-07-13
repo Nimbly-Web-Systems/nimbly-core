@@ -77,4 +77,19 @@ if (!data_exists('test-records', '.meta')) {
     echo "ok    deleted resource 'test-records'\n";
 }
 
+// ── Thumbnail fixture ────────────────────────────────────────────────────────
+$test_image_uuid = '836dccc3121a25ebdcee594631b0a4a7';
+$test_image_meta = data_read('.files_meta', $test_image_uuid);
+if (($test_image_meta['name'] ?? '') !== 'nimbly-test-thumbnail-ratio.png') {
+    echo "skip  thumbnail fixture '$test_image_uuid' not found\n";
+} else {
+    data_delete('.files_meta', $test_image_uuid);
+    $test_image_path = data_path('.files', $test_image_uuid);
+    if (file_exists($test_image_path)) {
+        unlink($test_image_path);
+    }
+    _rmdirr(BASE_DIR . 'ext/static/_thumb_/img/' . $test_image_uuid);
+    echo "ok    deleted thumbnail fixture '$test_image_uuid'\n";
+}
+
 echo "\ntest:teardown complete.\n";
