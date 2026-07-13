@@ -64,7 +64,7 @@ RewriteRule .* - [E=HTTP_AUTHORIZATION:%1]
 
 # rewrite: use EXT static/_thumb_  if available for requested img file
 RewriteCond %{REQUEST_URI} ^/%%REWRITE_BASE_PATH%%img/.*
-RewriteCond %{QUERY_STRING} ^ratio=(.*)$
+RewriteCond %{QUERY_STRING} ^ratio=((?:0|[1-9][0-9]*)(?:\.[0-9]+)?)$
 RewriteRule ^ - [E=IMG_RATIO:_r%1]
 
 RewriteCond %{REQUEST_URI} ^/%%REWRITE_BASE_PATH%%img/(.*)
