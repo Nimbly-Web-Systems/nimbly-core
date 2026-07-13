@@ -2016,7 +2016,10 @@ MAIL_SERVICE=resend
 MAIL_FROM=no-reply@yourdomain.com
 MAIL_FROM_NAME="Your Site Name"
 RESEND_API_KEY=re_xxxxxxxxxxxx
+SYSTEM_ALERT_EMAIL=alerts@example.com
 ```
+
+`SYSTEM_ALERT_EMAIL` receives deduplicated fatal PHP error alerts and final job-failure alerts. If it is empty, Nimbly falls back to `ADMIN_EMAIL`. Alert delivery is queued, so the project scheduler must be running.
 
 SMTP is also supported for projects that send through an SMTP provider:
 
