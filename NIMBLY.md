@@ -342,6 +342,21 @@ router_accept();
 
 The standard pattern: call `router_match()`, validate the result, load and validate any data, then call `router_accept()` only when everything checks out. If anything fails, just `return` — the request falls through to the next route or a 404.
 
+#### Validate all route input at the boundary
+
+Treat every value exposed through a URL as untrusted input. This includes dynamic path segments, GET/query parameters, headers used by the route, and any request value obtained through the template variable system. Automated scanners routinely send SQL fragments, shell syntax, traversal sequences, oversized numbers, and other fuzzing payloads to every public parameter, even when Nimbly does not use SQL.
+
+Validate and normalize these values in the route before passing them to a library or using them in arithmetic, resource lookups, filesystem paths, cache keys, redirects, or commands:
+
+- Prefer an allowlist for the exact accepted syntax; do not try to remove known-bad fragments.
+- Enforce type, length, range, and allowed values as applicable.
+- Convert validated numeric input to `int` or `float` before calculations.
+- Keep raw request text out of filesystem and cache paths unless its complete syntax has been allowlist-validated and deliberately forms part of the cache identity.
+- Reject invalid input immediately with the route's normal failure response. API-like asset routes may return an empty HTTP 400 when malformed input should be observable by rate limiting or bot detection.
+- Validate independently in PHP even when Apache, a proxy, or a CDN already filters the same parameter; edge filtering is an optimization, not the trust boundary.
+
+For example, a thumbnail `ratio` query parameter must be validated as a bounded positive decimal and converted to a float before image calculations. A string such as `ratio=1' OR 1=1` must never reach thumbnail arithmetic or cache-file creation.
+
 Keep `route.inc` focused on routing logic only — match, validate, set a variable or two, accept or deny. Business logic belongs in a library loaded from `index.tpl` via a shortcode.
 
 > **Never add `route.inc` to a static route.** A static route (e.g. `login/`, `about/`) has no `(param)` segments and is always accepted — adding `route.inc` without calling `router_accept()` causes a 404. If you need to run logic on a static page, put it in a shortcode called from `index.tpl`, not in `route.inc`.
