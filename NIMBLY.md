@@ -3257,7 +3257,7 @@ SMTP_PASSWORD=smtp-password
 SMTP_SECURE=smtps
 ```
 
-If your project had a `.services` record with `tpl: email-password-reset`, it is no longer used. The `upgrade-11` command will warn you if such records are found.
+If your project had a `.services` record with `tpl: email-password-reset`, it is no longer used. The `upgrade-11` command will warn you if such records are found. After every credential in `.services` has been copied to `.env` and verified, remove the entire `ext/data/.services/` directory, including its `.meta` file. Do not leave an empty or partially migrated `.services` resource behind.
 
 Projects with no `.services` records need no action here.
 

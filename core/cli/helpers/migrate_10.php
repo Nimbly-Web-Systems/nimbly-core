@@ -145,8 +145,9 @@ function migrate_10_print_summary($state)
             }
         }
         echo "\nAll service configuration now lives in .env.\n";
-        echo "Copy the decrypted values above into .env, then delete these records.\n";
-        echo "Deleting a record without first copying its value into .env loses the credential permanently.\n\n";
+        echo "Copy the decrypted values above into .env and verify them, then delete the entire ext/data/.services/ directory.\n";
+        echo "Do not leave its .meta file or any partially migrated records behind.\n";
+        echo "Deleting the directory without first copying its values into .env loses the credentials permanently.\n\n";
         echo "For email services, add:\n";
         echo "  MAIL_SERVICE=resend          # or: smtp, mailgun, system\n";
         echo "  MAIL_FROM=no-reply@yourdomain.com\n";
