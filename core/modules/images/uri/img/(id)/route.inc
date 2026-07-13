@@ -52,7 +52,23 @@ if (isset($headers['If-Modified-Since']) && strtotime($headers['If-Modified-Sinc
 
 // prepare thumbnail creation
 $size = $parts[count($parts) - 1] ?? 240;
-$ratio = get_variable('ratio', 0);
+$ratio_text = (string) get_variable('ratio', '');
+$ratio = 0;
+if ($ratio_text !== '') {
+	$valid_ratio = strlen($ratio_text) <= 24
+		&& preg_match('/^(?:0|[1-9][0-9]*)(?:\.[0-9]+)?$/D', $ratio_text) === 1;
+	if (!$valid_ratio) {
+		http_response_code(400);
+		header('Content-Length: 0');
+		exit();
+	}
+	$ratio = (float) $ratio_text;
+	if (!is_finite($ratio) || $ratio <= 0 || $ratio > 100) {
+		http_response_code(400);
+		header('Content-Length: 0');
+		exit();
+	}
+}
 $m = substr($size, -1);
 if ($m === 'f' || $m === 'c') { // fit, crop
 	$mode = $m;
