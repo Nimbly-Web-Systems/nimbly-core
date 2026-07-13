@@ -104,4 +104,30 @@ foreach ($records as $uuid => $data) {
     }
 }
 
+// ── Thumbnail fixture ────────────────────────────────────────────────────────
+$test_image_bytes = hex2bin(
+    '89504e470d0a1a0a0000000d494844520000000a0000000a0802000000025058ea' .
+    '000000097048597300000ec400000ec401952b0e1b0000001449444154189563e4' .
+    '51b260c00d98f0c88d60690087de007ac66e42290000000049454e44ae426082'
+) . 'nimbly-test-thumbnail-ratio';
+$test_image_uuid = md5($test_image_bytes);
+$test_image_path = data_path('.files', $test_image_uuid);
+
+if (data_exists('.files_meta', $test_image_uuid) || file_exists($test_image_path)) {
+    echo "skip  thumbnail fixture '$test_image_uuid' already exists\n";
+} else {
+    @mkdir(dirname($test_image_path), 0750, true);
+    file_put_contents($test_image_path, $test_image_bytes);
+    data_create('.files_meta', $test_image_uuid, [
+        'name' => 'nimbly-test-thumbnail-ratio.png',
+        'type' => 'image/png',
+        'size' => strlen($test_image_bytes),
+        'width' => 10,
+        'height' => 10,
+        'orientation' => 'landscape',
+        'aspect_ratio' => 1,
+    ]);
+    echo "ok    created thumbnail fixture '$test_image_uuid'\n";
+}
+
 echo "\ntest:setup complete.\n";
