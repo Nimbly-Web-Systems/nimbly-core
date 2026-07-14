@@ -20,7 +20,14 @@ function resource_title(string $resource, array $record): string
 {
     $field = resource_title_field($resource);
     if ($field !== null && !empty($record[$field])) {
-        return (string)$record[$field];
+        $value = $record[$field];
+        if (is_array($value)) {
+            load_library('get');
+            $value = get_i18n_resolve($value);
+        }
+        if (!is_array($value)) {
+            return (string)$value;
+        }
     }
     return (string)($record['uuid'] ?? '');
 }
