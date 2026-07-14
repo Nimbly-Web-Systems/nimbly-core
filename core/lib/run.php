@@ -177,11 +177,12 @@ function run_template($str) {
  */
 function _recover_quoted_strings(&$str, &$quoted_parts = null) {
     if (!empty($quoted_parts)) {
-        $quot_pos = strpos($str, NB_QUOTID);
-        if ($quot_pos !== false) {
-            $quot_id = substr($str, $quot_pos);
-            $quot = $quoted_parts[$quot_id];
-            $str = str_replace($quot_id, $quot, $str);
+        if (preg_match('/' . preg_quote(NB_QUOTID, '/') . '(\d+)/', $str, $m)) {
+            $quot_id = NB_QUOTID . $m[1];
+            if (isset($quoted_parts[$quot_id])) {
+                $quot = $quoted_parts[$quot_id];
+                $str = str_replace($quot_id, $quot, $str);
+            }
         }
     }
 }
