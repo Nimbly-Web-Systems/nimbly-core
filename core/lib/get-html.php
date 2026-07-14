@@ -55,7 +55,7 @@ function get_html_sc($params)
             return;
         }
 
-        $html = data_lookup($resource, $uuid, $field, get_param_value('default', ''));
+        $html = data_lookup($resource, $uuid, $field, get_param_value($params, 'default', ''));
     }
 
     /**
