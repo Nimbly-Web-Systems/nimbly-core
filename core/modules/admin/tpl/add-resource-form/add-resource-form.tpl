@@ -4,6 +4,7 @@
         [#set nb_form_edit=false overwrite#]
         [#form-key add_resource_[#resource-id#]#]
         <div class="max-w-lg">
+            [#language-picker#]
             [#repeat data.fields var=_f#]
 
             <div class="mt-6 md:mt-8"></div>
