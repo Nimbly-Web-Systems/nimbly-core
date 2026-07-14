@@ -146,9 +146,19 @@ function render_field(array $def, string $field = '', $value = null, string $sto
     $field_value = $value ?? $def['default'] ?? '';
     $i18n_seed = null;
 
+    // The edit form holds every language's value at once (tabs switch which
+    // one is visible), so its fields bind to form_data.field['lang']. The add
+    // form captures a single language at a time (chosen via the language
+    // picker) and wraps the flat value into {lang: value} on submit — so its
+    // i18n fields must stay flat scalars like any other field, not objects.
+    // nb_form_edit is a template variable — [#set nb_form_edit=false#] stores
+    // the literal string "false", which is truthy to PHP's empty(), so this
+    // must compare the string value rather than testing emptiness.
+    $is_edit_i18n = !empty($def['i18n']) && get_variable('nb_form_edit') === 'true';
+
     if ($model === null) {
         $model = "{$store}.{$field}";
-        if (!empty($def['i18n'])) {
+        if ($is_edit_i18n) {
             $lang = get_variable('lang') ?? get_variable('record.lang') ?? '';
             $i18n_seed = is_array($field_value) ? $field_value : ($lang ? [$lang => $field_value] : []);
             if ($lang) {
@@ -157,20 +167,24 @@ function render_field(array $def, string $field = '', $value = null, string $sto
                 }
                 $model .= "[lang]";
             }
+        } elseif (!empty($def['i18n']) && is_array($field_value)) {
+            $lang = get_variable('lang') ?? get_variable('record.lang') ?? '';
+            $field_value = $field_value[$lang] ?? '';
         }
     }
     set_variable('_f.value', $field_value);
     set_variable('_f.model', $model);
     $x_init = '';
-    if (empty($def['i18n'])) {
+    if (!$is_edit_i18n) {
         $init_value = json_encode((string)$field_value, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         $x_init = 'x-init="' . htmlspecialchars("{$model}={$init_value}", ENT_QUOTES, 'UTF-8') . '"';
     }
     set_variable('_f.x_init', $x_init);
 
-    // i18n fields: seed the full language map into the Alpine store so editors
-    // can bind to form_data.field['lang'] without losing other languages.
-    if (!empty($def['i18n'])) {
+    // Edit-mode i18n fields: seed the full language map into the Alpine store
+    // so editors can bind to form_data.field['lang'] without losing other
+    // languages.
+    if ($is_edit_i18n) {
         $json = json_encode($i18n_seed ?? [], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         $init = "if (!{$store}.{$field} || typeof {$store}.{$field} !== 'object') { {$store}.{$field} = {$json}; }";
         echo "<div x-init=\"" . htmlspecialchars($init, ENT_QUOTES, 'UTF-8') . "\"></div>\n";
