@@ -1,6 +1,7 @@
 <?php
 
 load_library('get');
+load_library('base-url');
 load_library('text');
 load_library('util');
 
@@ -148,7 +149,7 @@ function view_resource_record_file(string $uuid): string
 
 function view_resource_record_base_url(): string
 {
-    return htmlspecialchars((string)(get_variable('base-url') ?? ''), ENT_QUOTES, 'UTF-8');
+    return htmlspecialchars(base_url_sc(), ENT_QUOTES, 'UTF-8');
 }
 
 function view_resource_record_text(string $key): string
