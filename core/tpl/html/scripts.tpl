@@ -21,6 +21,8 @@ window.nb = {
 
 <script src="[#base-url#]/app.js?v=[#app-modified#]"></script>
 
+[#if data.config.site.pwa.enabled=true tpl=pwa-register tpl_else=pwa-unregister#]
+
 [#collect-script#]
 
 <script>
