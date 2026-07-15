@@ -42,7 +42,9 @@ For every task, follow this workflow unless explicitly instructed otherwise.
    - Be efficient with verification time and tokens:
      - Confirm the local environment is running before browser tests. If needed, ask the user to run `./nimbly up`, or run it yourself only when server startup is part of the task.
      - Prefer targeted CLI, `curl`, and Git checks for health, routing, authentication reachability, branch or tag state, migrations, and deployment verification.
+     - For presentation-only changes such as spacing, utility classes, copy, labels, or simple static links, do not run Playwright or the full test suite by default. Verify with the diff, relevant lint or template checks, an asset build when required, and a focused visual inspection only when it adds value.
      - Use Playwright only when browser behavior is genuinely under test, such as admin forms, inline editing, media picker behavior, Alpine interactions, or responsive and visual regressions.
+     - Reserve browser and full-suite testing for changes involving interaction, permissions, data flow, business logic, or a concrete regression risk.
      - Run the smallest relevant test first.
      - Run the full suite only after focused checks pass, normally near completion.
      - Avoid repeated full E2E runs after infrastructure or setup failures. Fix or confirm the environment first, then rerun the smallest relevant specification.
