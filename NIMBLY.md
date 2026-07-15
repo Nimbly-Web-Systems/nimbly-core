@@ -143,6 +143,43 @@ Use `ext/theme.css` for project-specific public-site CSS and component overrides
 
 **Always use theme colors instead of inventing colors.** Reach for the project's named tokens first — `primary`, `cnormal`, `clight`, `cdark`, `cdarkest`, `cbar`, `clink`, `secondary` — before using any Tailwind palette color (`red-700`, `blue-500`, etc.). Hard-coded palette colors bypass the theme and make redesigns harder. Only use a raw palette color when no theme token fits semantically and adding one to `ext/tailwind.theme.js` is not warranted.
 
+### Favicons and progressive web apps
+
+Core provides a modern favicon set for every site. Static files follow the normal Nimbly override order: a file in `ext/static/` replaces the identically named default in `core/static/`.
+
+| File | Purpose |
+|---|---|
+| `favicon.ico` | Broad browser fallback with 16, 32, and 48 pixel variants |
+| `favicon.svg` | Scalable modern browser icon |
+| `favicon-32x32.png` | Raster browser fallback |
+| `apple-touch-icon.png` | 180×180 Apple home-screen/web-clip icon |
+
+Override only the files whose identity differs from the core Nimbly defaults. The shared HTML template adds `app-modified` to favicon URLs, so rebuilding the application invalidates stale browser icon caches. A legacy project may still override the complete `favicon` template, but same-name static files are the preferred customization mechanism.
+
+PWA support is explicitly opt-in. Enable it in `.config/site`:
+
+```json
+{
+  "pwa": {
+    "enabled": true
+  }
+}
+```
+
+Core then links `manifest.webmanifest` and registers `service-worker.js`. Customize the installed application by copying any of these defaults to the same path in `ext/static/` and editing or replacing it:
+
+- `manifest.webmanifest`
+- `pwa-icon-192.png`
+- `pwa-icon-512.png`
+- `pwa-icon-maskable-512.png`
+- `service-worker.js` (only when the application genuinely needs different caching behaviour)
+
+Keep manifest `start_url`, `scope`, and icon URLs relative so the same application works at `/` and under aliases such as `/Koen/`. A maskable icon must keep all important artwork inside the central safe zone and should use an opaque background.
+
+The default Phase 1 service worker precaches only the versioned application CSS, JavaScript, favicon, and PWA icon files. It never intercepts page navigation, admin or authentication pages, APIs, media/data endpoints, non-GET requests, or mutations. Disabling PWA support unregisters the worker and removes caches for that application scope. Offline navigation, cached content, offline editing, background synchronization, and conflict handling are application features for a separately designed Phase 2.
+
+After upgrading an existing Apache installation, run `./nimbly system:upgrade-11 --yes` once to add the manifest MIME type and safe service-worker cache headers to its generated `.htaccess`.
+
 ### Choosing the rendering boundary
 
 Do not default to frontend or backend rendering. Choose the smallest, clearest solution by weighing maintainability, lines of code, duplicated representations, performance, accessibility, SEO, and where the state actually changes. Alpine.js is an interaction layer, not a reason to move existing content and markup into JavaScript.
