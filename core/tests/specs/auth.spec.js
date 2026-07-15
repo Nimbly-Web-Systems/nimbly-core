@@ -30,6 +30,13 @@ test('login succeeds and test-records admin is accessible', async ({ page }) => 
   await expect(page).toHaveURL(/nb-admin\/test-records/);
 });
 
+test('desktop resource menu shows counts and permitted add actions', async ({ page }) => {
+  await login(page);
+  await page.goto('/nb-admin');
+  await expect(page.locator('#nb-bar a[href$="/nb-admin/test-records"]:visible')).toHaveText('Test Records (2)');
+  await expect(page.locator('#nb-bar a[href$="/nb-admin/test-records/add"]:visible')).toBeVisible();
+});
+
 test('protected test route accessible after login', async ({ page }) => {
   await login(page);
   await page.goto('/.test/ping');
