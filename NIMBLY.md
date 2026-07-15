@@ -143,9 +143,20 @@ Use `ext/theme.css` for project-specific public-site CSS and component overrides
 
 **Always use theme colors instead of inventing colors.** Reach for the project's named tokens first — `primary`, `cnormal`, `clight`, `cdark`, `cdarkest`, `cbar`, `clink`, `secondary` — before using any Tailwind palette color (`red-700`, `blue-500`, etc.). Hard-coded palette colors bypass the theme and make redesigns harder. Only use a raw palette color when no theme token fits semantically and adding one to `ext/tailwind.theme.js` is not warranted.
 
-### Frontend-first data loading
+### Choosing the rendering boundary
 
-When dynamic data needs to be displayed or interacted with in the frontend, prefer an Alpine.js solution over a backend template loop. Use `[#fmt var=data.records json#]` to pass server-loaded data into Alpine.js as a JSON object, then render it reactively.
+Do not default to frontend or backend rendering. Choose the smallest, clearest solution by weighing maintainability, lines of code, duplicated representations, performance, accessibility, SEO, and where the state actually changes. Alpine.js is an interaction layer, not a reason to move existing content and markup into JavaScript.
+
+Keep content server-rendered when the browser only needs to show, hide, sort, or filter existing elements. Expose only the small values Alpine needs through `data-*` attributes:
+
+```html
+<article data-year='[#fmt [#get item.date#] type=date fmt="Y"#]'
+    x-show="year === 'all' || year === $el.dataset.year">
+    [#get-html item.body#]
+</article>
+```
+
+Use `[#fmt var=data.records json#]` when the client genuinely needs structured records for reactive creation, transformation, editing, or state changes:
 
 ```html
 <div x-data='{ records: [#fmt var=data.articles json empty=[]#] }'>
@@ -155,15 +166,25 @@ When dynamic data needs to be displayed or interacted with in the frontend, pref
 </div>
 ```
 
-Weigh the tradeoff carefully, especially when dynamic data is involved:
+For hybrid interfaces, server-render reusable markup inside a native `<template>` and let Alpine clone or populate it. This keeps the HTML structure in templates instead of duplicating it in JavaScript while still allowing client-side creation:
 
-| Prefer frontend (Alpine.js + `[#fmt json#]`) | Prefer backend (template loop) |
+```html
+<template id="result-card">
+    <article class="result-card">
+        <h2 data-result-title></h2>
+    </article>
+</template>
+```
+
+Choose among the three approaches deliberately:
+
+| Approach | Prefer it when |
 |---|---|
-| Interactive filtering, sorting, real-time updates | Static content that must be SEO-indexed |
-| Data that changes without a page reload | Simple lists with no interactivity |
-| Data already loaded by `[#data#]` — formatting to JSON costs nothing | Per-record server-side access control |
+| Server-rendered elements plus `data-*` | Existing content only needs filtering, sorting, toggling, or selection |
+| Server-rendered `<template>` plus Alpine | The client creates elements dynamically but their markup should remain template-owned |
+| Alpine plus `[#fmt ... json#]` | The client genuinely needs structured data for reactive rendering or transformation |
 
-If the data is already loaded with `[#data#]`, passing it to Alpine.js is free and keeps the template simpler. Default to the frontend approach when both options work equally well.
+Prefer the option with the least duplicated data, markup, and logic. Passing already-loaded data to JSON is computationally cheap, but it can still add architectural complexity, duplicate server-rendered content, increase page weight, and move markup ownership into JavaScript. Count indirection and multiple representations as costs even when they require few lines of code.
 
 ### KISS, YAGNI and DRY
 
