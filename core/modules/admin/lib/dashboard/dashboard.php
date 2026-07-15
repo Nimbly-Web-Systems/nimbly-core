@@ -6,6 +6,8 @@ load_library('set');
 
 function dashboard_sc($params)
 {
+    set_variable('_dash.action_link_class', trim(run_buffered(dirname(__FILE__) . '/cls-action-link.tpl')));
+
     $failed_jobs = 0;
     if (access_by_feature('view-.jobs')) {
         foreach (data_read('.jobs') as $uuid => $job) {
@@ -316,7 +318,7 @@ function dashboard_touch_link_class(): string
 
 function dashboard_action_link_class(): string
 {
-    return 'inline-flex min-h-10 cursor-pointer items-center rounded-md border border-neutral-300 bg-white px-3 py-2 text-xs font-medium text-neutral-700 hover:bg-neutral-100 sm:min-h-0 sm:border-0 sm:bg-transparent sm:p-0 sm:underline sm:decoration-neutral-300 sm:hover:bg-transparent sm:hover:text-neutral-800 sm:hover:decoration-neutral-500';
+    return get_variable('_dash.action_link_class', '');
 }
 
 function fmt_bytes_short(int $bytes): string
