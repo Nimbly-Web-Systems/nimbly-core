@@ -28,6 +28,14 @@ test.describe('mobile admin', () => {
   test('dashboard mobile nav opens resource sheet without horizontal overflow', async ({ page }) => {
     await page.goto('/nb-admin/');
     await expect(page.locator('#nb-bar')).toBeVisible();
+    const data_panel = page.getByRole('heading', { name: 'Your data' }).locator('..');
+    await expect(data_panel.locator('a[href$="/nb-admin/test-records/add"]')).toBeVisible();
+    const data_layout = await data_panel.locator('ul').evaluate((list) => ({
+      justify_content: getComputedStyle(list).justifyContent,
+      item_flex_grow: getComputedStyle(list.querySelector('li')).flexGrow,
+    }));
+    expect(data_layout.justify_content).toBe('flex-start');
+    expect(data_layout.item_flex_grow).toBe('0');
     await expectNoHorizontalOverflow(page);
 
     await expect(page.locator('#nb_nav_toggler')).toBeHidden();
