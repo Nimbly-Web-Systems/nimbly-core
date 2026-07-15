@@ -242,7 +242,9 @@ nb_edit.on_input = function (e) {
     if (e.currentTarget._nb_mode == 'page') {
         e.currentTarget._nb_inputs++;
     }
-    document.getElementById('nb_edit_save').removeAttribute('disabled');
+    document.querySelectorAll('[data-nb-edit-save]').forEach((btn) => {
+        btn.removeAttribute('disabled');
+    });
 };
 
 nb_edit.store_caret_pos = function () {
