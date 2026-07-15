@@ -46,7 +46,7 @@ test.describe('mobile admin', () => {
     const nav_after = await page.locator('#nb-bar').boundingBox();
     expect(nav_after?.height).toBe(nav_before?.height);
     expect(nav_after?.y).toBe(nav_before?.y);
-    await expect(page.locator('#nb_mobile_resources_menu a[href$="/nb-admin/test-records"]')).toBeVisible();
+    await expect(page.locator('#nb_mobile_resources_menu a[href$="/nb-admin/test-records"]')).toHaveText('Test Records (2)');
     await expect(page.locator('#nb_mobile_resources_menu a[href$="/nb-admin/test-records/add"]')).toBeVisible();
     await expectNoHorizontalOverflow(page);
   });

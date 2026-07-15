@@ -16,7 +16,7 @@ function get_user_resources_sc($params) {
 		}
 		if (get_user_resources_access($k)) {
 			$name = $meta['name']['plural'] ?? ucwords(str_replace(['-', '_', '.'], [' ', ' ', ''], $k));
-			$result[$k] = ['key' => $k, 'name' => $name];
+			$result[$k] = ['key' => $k, 'name' => $name, 'count' => count(data_list($k))];
 		}
     }
     set_variable("data.user-resources", $result);
