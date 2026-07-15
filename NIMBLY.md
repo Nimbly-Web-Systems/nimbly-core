@@ -176,13 +176,16 @@ For hybrid interfaces, server-render reusable markup inside a native `<template>
 </template>
 ```
 
-Choose among the three approaches deliberately:
+For large, paginated, permission-sensitive, expensive, or frequently changing datasets, do not preload every record into the page. Let Alpine request the required page or slice through the API and keep pagination, loading, empty, and error states explicit. This reduces initial page weight and server work, and avoids sending records the user has not requested. Do not introduce API loading for a small static list when server rendering is simpler and faster.
+
+Choose among the four approaches deliberately:
 
 | Approach | Prefer it when |
 |---|---|
 | Server-rendered elements plus `data-*` | Existing content only needs filtering, sorting, toggling, or selection |
 | Server-rendered `<template>` plus Alpine | The client creates elements dynamically but their markup should remain template-owned |
 | Alpine plus `[#fmt ... json#]` | The client genuinely needs structured data for reactive rendering or transformation |
+| Alpine plus paginated API requests | The dataset is too large, expensive, sensitive, or dynamic to preload responsibly |
 
 Prefer the option with the least duplicated data, markup, and logic. Passing already-loaded data to JSON is computationally cheap, but it can still add architectural complexity, duplicate server-rendered content, increase page weight, and move markup ownership into JavaScript. Count indirection and multiple representations as costs even when they require few lines of code.
 
