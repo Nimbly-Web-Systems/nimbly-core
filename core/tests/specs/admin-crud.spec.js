@@ -15,6 +15,7 @@ test.describe('admin CRUD — test-records', () => {
 
   test('create a record', async ({ page }) => {
     await page.goto('/nb-admin/test-records/add');
+    expect(await page.evaluate(() => Array.isArray(_i18n_fields))).toBe(true);
     const submit = page.locator('form button[type=submit]');
     await expect(submit).toBeEnabled();
 
