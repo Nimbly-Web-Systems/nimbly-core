@@ -6,7 +6,7 @@ load_library('set');
 
 function dashboard_sc($params)
 {
-    set_variable('_dash.action_link_class', trim(run_buffered(dirname(__FILE__) . '/cls-action-link.tpl')));
+    set_variable('_dash.action_link_class', trim(run_buffered(dirname(__FILE__, 3) . '/uri/nb-admin/cls-action-link.tpl')));
 
     $failed_jobs = 0;
     if (access_by_feature('view-.jobs')) {
