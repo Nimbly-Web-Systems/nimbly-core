@@ -1,5 +1,5 @@
 <a href="[#base-url#]/nb-admin/[#item.key#]/add"
     title="[#text Add [#item.name#]#]"
-    class="mt-2 inline-flex min-h-10 items-center rounded-md border border-neutral-300 bg-white px-3 py-2 text-xs font-medium text-neutral-700 hover:bg-neutral-100 sm:min-h-0 sm:border-0 sm:bg-transparent sm:p-0 sm:underline sm:decoration-neutral-300 sm:hover:bg-transparent sm:hover:text-neutral-800 sm:hover:decoration-neutral-500">
+    class="mt-2 [#_dash.action_link_class#]">
     + [#text Add#]
 </a>
