@@ -2,6 +2,7 @@
 
 load_library('get');
 load_library('base-url');
+load_library('fmt');
 load_library('text');
 load_library('util');
 
@@ -63,7 +64,12 @@ function view_resource_record_value(string $type, $value): string
     $string = (string)$value;
     switch ($type) {
         case 'boolean':
-            return !empty($value) ? view_resource_record_text('Yes') : view_resource_record_text('No');
+            return fmt_sc([
+                'val' => $value,
+                'type' => 'boolean',
+                'boolean' => t('Yes') . '|' . t('No'),
+                'style' => 'badge',
+            ]);
         case 'html':
             return '<div class="prose max-w-none">' . $string . '</div>';
         case 'textarea':
