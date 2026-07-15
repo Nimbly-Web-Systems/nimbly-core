@@ -131,6 +131,10 @@ function _prep_record($record, $fields, $resource_maps = [])
             'max_length' => $v['max_length'] ?? 32,
             'empty' => '',
         ];
+        if (($v['type'] ?? '') === 'boolean') {
+            $fmt_params['boolean'] = t('Yes') . '|' . t('No');
+            $fmt_params['style'] = 'badge';
+        }
         if (!empty($v['fmt'])) {
             $fmt_params['fmt'] = $v['fmt'];
         }

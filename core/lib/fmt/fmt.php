@@ -71,6 +71,9 @@ function fmt_sc($params)
         case 'boolean':
             $bools = explode('|', (string)get_param_value($params, 'boolean', 'yes|no'), 2);
             $result = empty($val) ? $bools[1] : $bools[0];
+            if (get_param_value($params, 'style') === 'badge') {
+                return fmt_boolean_badge(!empty($val), $result);
+            }
             break;
         case 'image':
             set_variable('_img_uuid', is_array($val) ? resolve_i18n($val, $lang) : $val, true);
@@ -105,6 +108,19 @@ function fmt_sc($params)
     }
 
     return $result;
+}
+
+function fmt_boolean_badge(bool $value, string $label): string
+{
+    $class = $value
+        ? 'badge badge-success badge-soft gap-1'
+        : 'badge badge-ghost gap-1 text-neutral-500';
+    $icon = $value ? '&#10003;' : '&minus;';
+
+    return '<span class="' . $class . '">'
+        . '<span aria-hidden="true">' . $icon . '</span>'
+        . '<span>' . htmlspecialchars($label, ENT_QUOTES, 'UTF-8') . '</span>'
+        . '</span>';
 }
 
 function ago($dt)
