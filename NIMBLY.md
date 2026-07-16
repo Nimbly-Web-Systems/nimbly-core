@@ -2442,7 +2442,7 @@ Identity (name/description) and permissions are saved together from a single for
 
 `/nb-admin/jobs` (`core/modules/admin/lib/jobs-panel/`) is a diagnostic view over the job queue and scheduler — queued/running/done/failed counts, a table of jobs with their last error, and "Run due jobs now" / "Prune completed" actions, gated on `view-.jobs` / `manage-.jobs`.
 
-`/nb-admin/settings` (`core/modules/admin/lib/site-settings/`) edits the single site-wide `.config/site` record (name, description, admin sidebar position), gated on `edit-.config`. This is distinct from the per-page title editor behind the nimblybar gear icon, which edits `page_settings.page_title` for the current page only.
+`/nb-admin/settings` (`core/modules/admin/lib/site-settings/`) edits the single site-wide `.config/site` record (name, description, admin sidebar position), gated on `edit-.config`. The Nimbly bar defaults to the left; projects should store `nimblybar.side: right` only when they explicitly need a right-side exception. This is distinct from the per-page title editor behind the nimblybar gear icon, which edits `page_settings.page_title` for the current page only.
 
 ### Resource record switcher
 
