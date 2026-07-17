@@ -1,11 +1,11 @@
 # Nimbly
 
-Nimbly is a fast, lean and flexible full stack design system for custom
+Nimbly is a fast, lean and flexible full-stack design system for custom
 websites, web applications and progressive web apps.
 
-Designers can shape reusable interface patterns with real content. Developers
-get the routing, data, admin and application tools needed to make those
-patterns work. Everything grows together in one clear system.
+Reusable interface patterns connect directly to real content, routing, data,
+admin and application logic. Every part belongs to the same clear, composable
+system.
 
 ## From prototype to production
 
