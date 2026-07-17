@@ -11,6 +11,11 @@ resources connect directly to forms, APIs, administration, permissions, and
 editable content. The same clear contracts also give developers and coding
 agents precise, navigable units to work with.
 
+Every route is an independent endpoint with control over its own output and
+frontend architecture. One route can render a Nimbly template, another can
+return JSON, and another can run React, vanilla JavaScript, plain HTML, or the
+tools best suited to that part of the application.
+
 The reusable system lives in `core/`. Each application owns its routes, content
 model, templates, business logic, configuration, and identity in a separate
 `ext/` repository. A working prototype can grow in the same structure into a
@@ -19,10 +24,9 @@ complete production application.
 ## What Nimbly provides
 
 - Atomic templates, shortcodes, and components for composing application behavior and pages
-- Static and dynamic file-based routing alongside the templates that serve each route
+- Independent static and dynamic routes that can render templates, serve HTML or JSON, or power any frontend stack
 - JSON resources with schemas, validation, indexes, lifecycle events, and REST API access
 - Built-in authentication, users, roles, permissions, admin, media, forms, jobs, and inline editing
-- Tailwind CSS, DaisyUI, Alpine.js, and esbuild for focused frontend development
 - Opt-in manifests, app icons, and safe service-worker foundations for installable PWAs
 - CLI workflows for setup, builds, migrations, testing, scheduling, and deployment
 
@@ -48,10 +52,6 @@ EC2 instance, Render, or any container host.
 
 Manual VPS deployment is equally valid for self-managed installs with existing
 Apache/PHP infrastructure. See `NIMBLY.md` for cron, env, and update details.
-
-## Frontend stack
-
-Tailwind CSS 4 · DaisyUI 5 · Alpine.js · esbuild
 
 ## Documentation
 
