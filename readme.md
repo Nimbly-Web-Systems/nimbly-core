@@ -3,14 +3,13 @@
 Nimbly is a fast, lean and flexible full-stack design system for custom
 websites, web applications and progressive web apps.
 
-Reusable interface patterns connect directly to real content, routing, data,
-admin and application logic. Every part belongs to the same clear, composable
-system.
+Reusable interface patterns connect directly to real data, routing and
+application logic. Every part belongs to the same clear, composable system.
 
 ## From prototype to production
 
 Nimbly starts with the part people use. Create a route, compose a page from
-small templates and components, then connect structured content and application
+small templates and components, then connect structured data and application
 logic as the product grows. The working prototype becomes the production
 application in the same architecture.
 
@@ -30,7 +29,7 @@ authentication, permissions, forms, media, inline editing, internationalization,
 jobs and deployment workflows are ready to work together.
 
 Reusable framework capabilities live in `core/`. Every application owns its
-routes, content model, templates, components, business logic, configuration and
+routes, data model, templates, components, business logic, configuration and
 visual identity in a separate `ext/` repository.
 
 ## Try Nimbly
@@ -48,7 +47,7 @@ Nimbly requires Node 20+ and either PHP 8+ or Docker.
 
 ## A good fit
 
-Nimbly works especially well for custom sites, content platforms, portals,
+Nimbly works especially well for custom sites, digital platforms, portals,
 membership systems, internal tools and operational web apps. It gives each
 project a fast foundation, a lean architecture and room to become exactly what
 its users need.
