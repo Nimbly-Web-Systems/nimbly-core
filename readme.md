@@ -1,21 +1,29 @@
 # Nimbly
 
-Nimbly is a full-stack design system for building custom web applications. It
-combines a lightweight PHP runtime with routing, structured resources, a
-template engine, authentication, an API, an admin interface, and a modern
-frontend toolchain.
+Nimbly is a full-stack atomic design system for building custom web applications
+and progressive web apps fast. It combines a lightweight runtime with routing,
+data, APIs, admin, templates, authentication, interface patterns, and
+development workflows as small, reliable building blocks.
 
-Nimbly keeps the reusable system in `core/` and each application's routes,
-content model, templates, business logic, and visual identity in its own
-`ext/` repository. This gives applications shared full-stack conventions
-without forcing them into a fixed page design or generic component catalogue.
+Atomic design in Nimbly covers the complete application stack. Pages are
+composed from focused templates, shortcodes, and components. Structured
+resources connect directly to forms, APIs, administration, permissions, and
+editable content. The same clear contracts also give developers and coding
+agents precise, navigable units to work with.
+
+The reusable system lives in `core/`. Each application owns its routes, content
+model, templates, business logic, configuration, and identity in a separate
+`ext/` repository. A working prototype can grow in the same structure into a
+complete production application.
 
 ## What Nimbly provides
 
-- File-based routing and a composable shortcode template system
-- JSON resources with metadata, validation, indexes, lifecycle events, and API access
-- Authentication, roles, permissions, administration, media, forms, and inline editing
-- Tailwind CSS, DaisyUI, and Alpine.js building blocks for custom interfaces
+- Atomic templates, shortcodes, and components for composing application behavior and pages
+- Static and dynamic file-based routing alongside the templates that serve each route
+- JSON resources with schemas, validation, indexes, lifecycle events, and REST API access
+- Built-in authentication, users, roles, permissions, admin, media, forms, jobs, and inline editing
+- Tailwind CSS, DaisyUI, Alpine.js, and esbuild for focused frontend development
+- Opt-in manifests, app icons, and safe service-worker foundations for installable PWAs
 - CLI workflows for setup, builds, migrations, testing, scheduling, and deployment
 
 ## Getting started
@@ -41,9 +49,9 @@ EC2 instance, Render, or any container host.
 Manual VPS deployment is equally valid for self-managed installs with existing
 Apache/PHP infrastructure. See `NIMBLY.md` for cron, env, and update details.
 
-## Stack
+## Frontend stack
 
-PHP 8 · Tailwind CSS 4 · DaisyUI 5 · Alpine.js · esbuild
+Tailwind CSS 4 · DaisyUI 5 · Alpine.js · esbuild
 
 ## Documentation
 
