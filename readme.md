@@ -18,6 +18,10 @@ codebase. Each working version grows directly into the next.
 DaisyUI, ready to use out of the box. Any route can also work with your own
 frontend instead.
 
+**Agent-friendly.** A complete implementation reference and predictable
+project structure give AI agents precise routes, resources, templates and
+conventions to work with.
+
 ## Try Nimbly
 
 ```bash
