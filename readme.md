@@ -1,6 +1,22 @@
 # Nimbly
 
-Nimbly is a lean web framework that gives you the building blocks to create exactly what you need, fast.
+Nimbly is a full-stack design system for building custom web applications. It
+combines a lightweight PHP runtime with routing, structured resources, a
+template engine, authentication, an API, an admin interface, and a modern
+frontend toolchain.
+
+Nimbly keeps the reusable system in `core/` and each application's routes,
+content model, templates, business logic, and visual identity in its own
+`ext/` repository. This gives applications shared full-stack conventions
+without forcing them into a fixed page design or generic component catalogue.
+
+## What Nimbly provides
+
+- File-based routing and a composable shortcode template system
+- JSON resources with metadata, validation, indexes, lifecycle events, and API access
+- Authentication, roles, permissions, administration, media, forms, and inline editing
+- Tailwind CSS, DaisyUI, and Alpine.js building blocks for custom interfaces
+- CLI workflows for setup, builds, migrations, testing, scheduling, and deployment
 
 ## Getting started
 
