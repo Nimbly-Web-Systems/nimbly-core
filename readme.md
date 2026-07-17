@@ -14,6 +14,10 @@ codebase. Each working version grows directly into the next.
 
 **Lean.** Almost no framework overhead or boilerplate.
 
+**Performant.** Nimbly loads application capabilities on demand, keeping
+unused middleware and backend logic out of the request path. Dynamic pages
+stay fast and transparent.
+
 **Flexible.** Nimbly's core frontend stack is Alpine.js, Tailwind CSS and
 DaisyUI, ready to use out of the box. Any route can also work with your own
 frontend instead.
@@ -21,6 +25,9 @@ frontend instead.
 **Agent-friendly.** A complete implementation reference and predictable
 project structure give AI agents precise routes, resources, templates and
 conventions to work with.
+
+**Complete.** Ships with **users, roles and permissions**, an **admin
+dashboard**, **routing** and **integrated data** out of the box.
 
 ## Try Nimbly
 
