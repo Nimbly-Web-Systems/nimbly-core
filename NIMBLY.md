@@ -827,15 +827,16 @@ Canonical permissions use `<operation>-<resource_id>`, for example `view-article
 Permissions are assigned to roles in `/nb-admin/roles/`. Use the role permissions screen to edit checkbox-based permissions; custom tokens can still be stored for project-specific checks. Legacy tokens such as `manage-content`, `(any)`, `get_<resource>`, `add-<resource>`, and `(any)_<resource>` are normalized during session loading and upgrade migration, but new code should use canonical permissions.
 
 #### `[#date input fmt=Y-m-d#]`
-Formats a date value. Input can be a Unix timestamp, a date string, or omitted (defaults to today).
+Formats a date value. Input can be a Unix timestamp, a date string, or omitted (defaults to today). Use `fmt=full`, `long`, `medium`, or `short` for locale-aware human-readable output. Any other `fmt` value uses PHP date format syntax for an exact technical format. Pass `lang=` to override the detected language.
 
 ```
 [#date fmt=d-m-Y#]                        → today in d-m-Y format
 [#date item.date fmt="j F Y"#]            → formats item.date
 [#date 1741265734 fmt=Y-m-d#]             → formats Unix timestamp
+[#date item.date fmt=long#]               → locale-aware long date
 ```
 
-Uses PHP date format strings.
+`[#fmt var=item.date type=date fmt=long#]` uses the same date formatter. Named formats use PHP's `intl` extension when available and fall back to deterministic English PHP formats without failing the page.
 
 #### `[#get-first dataset#]`
 Stores the first item of a dataset into `first` (or a custom variable).
