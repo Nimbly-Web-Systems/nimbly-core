@@ -1681,6 +1681,34 @@ Rules for HTML translation:
 
 ## 6. Routing
 
+### Localized route URLs
+
+Add `i18n-url.json` beside a route's `index.tpl` or `route.inc` to declare the
+equivalent URL for each configured language. Values are installation-relative
+and may use normal Nimbly shortcodes:
+
+```json
+{
+  "nl": "nl/artikel/[#get record.title_slug lang=nl#]/",
+  "en": "en/article/[#get record.title_slug lang=en#]/"
+}
+```
+
+`[#i18n-url en#]` resolves the English URL. `(home)` resolves to the language
+homepage and `(hide)` makes that language unavailable. A route may override a
+mapping for the current request with `[#set i18n-url.en="en/special-page/"#]`.
+When no mapping exists, `.config.site.lang_switch_fallback` accepts `home`
+(the default), `hide`, or `disabled`.
+
+`[#language-switch#]` renders all languages in `.config.site.languages`. Apps
+may override that template to provide a menu or dropdown while retaining the
+core URL resolution behavior.
+
+Translated routes that render the same author-managed page can set a shared
+page and content key before `[#html#]`, for example
+`[#set page-content-key=about#]`. Both `.config` page settings and `.content`
+fields then resolve through that key instead of creating language-route copies.
+
 Routes are `.tpl` files in `ext/uri/`. The folder structure maps directly to the URL.
 
 Dynamic URL segments use parentheses:
