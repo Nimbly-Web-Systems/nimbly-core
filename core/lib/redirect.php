@@ -2,6 +2,7 @@
 
 /**
  * @doc `[redirect url]` redirects to url
+ * @doc `[redirect url status=301]` redirects with an explicit HTTP status
  */
 function redirect_sc($params) {
     $url = is_array($params)? current($params) : $params;
@@ -11,7 +12,8 @@ function redirect_sc($params) {
     if ($url === $GLOBALS['SYSTEM']['request_uri']) {
         return;
     }
-    redirect($url);
+    $status = is_array($params) ? intval(get_param_value($params, 'status', 303)) : 303;
+    redirect($url, $status);
 }
 
 function redirect($url, $status=303) {

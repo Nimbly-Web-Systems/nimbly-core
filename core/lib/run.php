@@ -407,3 +407,14 @@ function run_buffered($file) {
     ob_end_clean();
     return $result;
 }
+
+/**
+ * Runs a template string and returns its rendered output.
+ */
+function run_template_buffered($template) {
+    ob_start();
+    run_template($template);
+    $result = ob_get_contents();
+    ob_end_clean();
+    return $result;
+}
