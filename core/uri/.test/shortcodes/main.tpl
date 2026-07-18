@@ -9,3 +9,10 @@
 
 <!-- [#get#] with default fallback -->
 <span id="get-default">[#get tsc-missing default="fallback"#]</span>
+
+<!-- Named date formats use the requested locale; exact formats stay deterministic -->
+<span id="date-long-en">[#date 2026-06-10 fmt=long lang=en#]</span>
+<span id="date-long-nl">[#date 2026-06-10 fmt=long lang=nl#]</span>
+<span id="date-exact">[#date 2026-06-10 fmt=Y/m/d#]</span>
+<span id="fmt-date-long-nl">[#fmt val=2026-06-10 type=date fmt=long lang=nl#]</span>
+<span id="date-invalid">[#date invalid-date fmt=long lang=en#]</span>

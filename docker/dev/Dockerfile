@@ -14,6 +14,7 @@ RUN apt-get -y update && \
         php-fpm \
         php-gd \
         php-gmp \
+        php-intl \
         php-mbstring && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*

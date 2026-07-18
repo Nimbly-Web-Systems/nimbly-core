@@ -3,6 +3,7 @@
 load_library("get");
 load_library("set");
 load_library("util");
+load_library("detect-language");
 
 function fmt_sc($params)
 {
@@ -36,7 +37,8 @@ function fmt_sc($params)
             $result = trim(strip_tags($val));
             break;
         case 'date':
-            $result = date((string)get_param_value($params, 'fmt', 'Y-m-d'), is_numeric($val) ? $val : strtotime($val));
+            load_library('date');
+            $result = date_format_value($val, (string)get_param_value($params, 'fmt', 'Y-m-d'), $lang);
             break;
         case 'ago':
             $result = ago(is_numeric($val) ? $val : strtotime($val));
