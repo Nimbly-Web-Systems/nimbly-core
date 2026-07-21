@@ -117,7 +117,7 @@ function fmt_sc($params)
 function fmt_boolean_badge(bool $value, string $label): string
 {
     $class = $value
-        ? 'badge gap-1 border-emerald-300 bg-emerald-200 text-emerald-900'
+        ? 'badge badge-ghost gap-1 text-neutral-700'
         : 'badge badge-ghost gap-1 text-neutral-500';
     $icon = $value ? '&#10003;' : '&minus;';
 
