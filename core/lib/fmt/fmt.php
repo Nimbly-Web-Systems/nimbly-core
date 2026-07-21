@@ -77,6 +77,8 @@ function fmt_sc($params)
                 return fmt_boolean_badge(!empty($val), $result);
             }
             break;
+        case 'color':
+            return fmt_color_swatch((string)$val);
         case 'image':
             set_variable('_img_uuid', is_array($val) ? resolve_i18n($val, $lang) : $val, true);
             return run_buffered(dirname(__FILE__) . '/image.tpl');
@@ -115,13 +117,28 @@ function fmt_sc($params)
 function fmt_boolean_badge(bool $value, string $label): string
 {
     $class = $value
-        ? 'badge badge-success badge-soft gap-1'
+        ? 'badge gap-1 border-emerald-300 bg-emerald-200 text-emerald-900'
         : 'badge badge-ghost gap-1 text-neutral-500';
     $icon = $value ? '&#10003;' : '&minus;';
 
     return '<span class="' . $class . '">'
         . '<span aria-hidden="true">' . $icon . '</span>'
         . '<span>' . htmlspecialchars($label, ENT_QUOTES, 'UTF-8') . '</span>'
+        . '</span>';
+}
+
+function fmt_color_swatch(string $value): string
+{
+    $value = trim($value);
+    if (!preg_match('/^#(?:[0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/', $value)) {
+        return htmlspecialchars($value, ENT_QUOTES, 'UTF-8');
+    }
+
+    $escaped_value = htmlspecialchars($value, ENT_QUOTES, 'UTF-8');
+    return '<span class="inline-flex items-center" aria-label="Color ' . $escaped_value
+        . '" title="' . $escaped_value . '">'
+        . '<span aria-hidden="true" class="h-6 w-6 rounded-full border border-neutral-400 shadow-sm" style="background-color:'
+        . $escaped_value . '"></span>'
         . '</span>';
 }
 
