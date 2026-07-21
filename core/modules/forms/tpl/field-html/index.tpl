@@ -5,7 +5,7 @@
             "buttons":"[#get _f.buttons default=bold,italic#]", 
             "media_sizes":"[#get _f.media_sizes default=#]",
             "media": [#fmt var=_f.media type=boolean boolean=true|false#]}' 
-            class="prose">
+            class="prose bg-white">
         [#get-html record.[#_f.key#] legacy-img-sizes=lg-70,xl-50#]
     </div>
 
