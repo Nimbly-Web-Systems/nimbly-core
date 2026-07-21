@@ -1,33 +1,35 @@
 <form x-data="site_settings([#_ss.name_json#], [#_ss.description_json#], [#_ss.side_json#], [#_ss.languages_json#])" @submit.prevent="submit"
     class="overflow-hidden rounded-2xl bg-neutral-50 shadow-md">
     <div class="max-w-lg space-y-4 p-5">
-        <div>
-            <label for="site_name" class="mb-1 block text-sm font-medium text-neutral-700">[#text Site name#]</label>
-            <input type="text" id="site_name" x-model="form_data.name" class="input input-bordered w-full">
-        </div>
-        <div>
-            <label class="mb-1 block text-sm font-medium text-neutral-700">[#text Description#]</label>
-            <div x-show="languages.length > 1" class="mb-2 flex gap-1" role="tablist">
-                <template x-for="language in languages" :key="language">
+        <ul x-show="languages.length > 1" class="mb-10 flex flex-row" role="tablist">
+            <template x-for="language in languages" :key="language">
+                <li>
                     <button type="button" role="tab" @click="active_language = language"
                         :aria-selected="active_language === language"
-                        :class="active_language === language ? 'bg-neutral-800 text-white' : 'bg-neutral-200 text-neutral-700 hover:bg-neutral-300'"
-                        class="rounded-md px-2.5 py-1 text-xs font-semibold uppercase transition-colors"
+                        :class="active_language === language ? 'border-b-primary' : 'border-b-transparent'"
+                        class="cursor-pointer border-b-2 px-4 py-2 text-xs uppercase text-gray-600 hover:font-bold hover:text-black"
                         x-text="language"></button>
-                </template>
-            </div>
-            <template x-if="languages.length">
-                <textarea :id="'site_description_' + active_language" x-model="form_data.description[active_language]"
-                    rows="4" class="textarea textarea-bordered w-full"></textarea>
+                </li>
             </template>
-            <template x-if="!languages.length">
-                <textarea id="site_description" x-model="form_data.description" rows="4"
-                    class="textarea textarea-bordered w-full"></textarea>
-            </template>
+        </ul>
+        <div>
+            <label :for="languages.length ? 'site_name_' + active_language : 'site_name'"
+                class="mb-1 block text-sm font-medium text-neutral-700">[#text Site name#]</label>
+            <input type="text" :id="languages.length ? 'site_name_' + active_language : 'site_name'"
+                :value="current_name" @input="set_current('name', $event.target.value)" class="input input-bordered w-full">
         </div>
         <div>
-            <label for="nimblybar_side" class="mb-1 block text-sm font-medium text-neutral-700">[#text Admin sidebar position#]</label>
-            <select id="nimblybar_side" x-model="form_data.nimblybar.side" class="select select-bordered w-full">
+            <label :for="languages.length ? 'site_description_' + active_language : 'site_description'"
+                class="mb-1 block text-sm font-medium text-neutral-700">[#text Description#]</label>
+            <textarea :id="languages.length ? 'site_description_' + active_language : 'site_description'"
+                :value="current_description" @input="set_current('description', $event.target.value)" rows="4"
+                class="textarea textarea-bordered w-full"></textarea>
+        </div>
+        <div>
+            <label :for="languages.length ? 'nimblybar_side_' + active_language : 'nimblybar_side'"
+                class="mb-1 block text-sm font-medium text-neutral-700">[#text Admin sidebar position#]</label>
+            <select :id="languages.length ? 'nimblybar_side_' + active_language : 'nimblybar_side'"
+                :value="current_side" @change="set_current('side', $event.target.value)" class="select select-bordered w-full">
                 <option value="left">[#text Left#]</option>
                 <option value="right">[#text Right#]</option>
             </select>
