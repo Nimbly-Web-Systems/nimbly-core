@@ -92,25 +92,22 @@ nb_edit.init_editor = function (ed, as_form_field = false) {
 nb_edit.on_focus = function (e) {
     const ed = e.currentTarget;
     nb_edit.active_editor = ed;
-    const insert_media_btn = document.getElementById('nb_edit_insert_media');
-    if (!insert_media_btn) {
-        return;
-    }
-    if (ed._nb_editor_options.media) {
-        insert_media_btn.removeAttribute('disabled');
-    } else {
-        insert_media_btn.setAttribute('disabled', true);
-    }
+    document.querySelectorAll('[data-nb-edit-insert-media]').forEach(button => {
+        if (ed._nb_editor_options.media) {
+            button.removeAttribute('disabled');
+        } else {
+            button.setAttribute('disabled', true);
+        }
+    });
 }
 
 nb_edit.on_blur = function (e) {
-    const insert_media_btn = document.getElementById('nb_edit_insert_media');
-    if (!insert_media_btn) {
-        return;
-    }
     const nb_bar_toggle_btn = document.getElementById('nb-bar-toggler');
-    if (e.relatedTarget != insert_media_btn && e.relatedTarget != nb_bar_toggle_btn) {
-        insert_media_btn.setAttribute('disabled', true);
+    const moving_to_insert_media = e.relatedTarget?.matches?.('[data-nb-edit-insert-media]');
+    if (!moving_to_insert_media && e.relatedTarget != nb_bar_toggle_btn) {
+        document.querySelectorAll('[data-nb-edit-insert-media]').forEach(button => {
+            button.setAttribute('disabled', true);
+        });
         nb_edit.active_editor = null;
     }
 }
