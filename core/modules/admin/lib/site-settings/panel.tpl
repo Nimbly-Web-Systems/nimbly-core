@@ -1,4 +1,4 @@
-<form x-data="site_settings([#_ss.name_json#], [#_ss.description_json#], [#_ss.side_json#])" @submit.prevent="submit"
+<form x-data="site_settings([#_ss.name_json#], [#_ss.description_json#], [#_ss.side_json#], [#_ss.languages_json#])" @submit.prevent="submit"
     class="overflow-hidden rounded-2xl bg-neutral-50 shadow-md">
     <div class="max-w-lg space-y-4 p-5">
         <div>
@@ -6,8 +6,24 @@
             <input type="text" id="site_name" x-model="form_data.name" class="input input-bordered w-full">
         </div>
         <div>
-            <label for="site_description" class="mb-1 block text-sm font-medium text-neutral-700">[#text Description#]</label>
-            <input type="text" id="site_description" x-model="form_data.description" class="input input-bordered w-full">
+            <label class="mb-1 block text-sm font-medium text-neutral-700">[#text Description#]</label>
+            <div x-show="languages.length > 1" class="mb-2 flex gap-1" role="tablist">
+                <template x-for="language in languages" :key="language">
+                    <button type="button" role="tab" @click="active_language = language"
+                        :aria-selected="active_language === language"
+                        :class="active_language === language ? 'bg-neutral-800 text-white' : 'bg-neutral-200 text-neutral-700 hover:bg-neutral-300'"
+                        class="rounded-md px-2.5 py-1 text-xs font-semibold uppercase transition-colors"
+                        x-text="language"></button>
+                </template>
+            </div>
+            <template x-if="languages.length">
+                <textarea :id="'site_description_' + active_language" x-model="form_data.description[active_language]"
+                    rows="4" class="textarea textarea-bordered w-full"></textarea>
+            </template>
+            <template x-if="!languages.length">
+                <textarea id="site_description" x-model="form_data.description" rows="4"
+                    class="textarea textarea-bordered w-full"></textarea>
+            </template>
         </div>
         <div>
             <label for="nimblybar_side" class="mb-1 block text-sm font-medium text-neutral-700">[#text Admin sidebar position#]</label>
