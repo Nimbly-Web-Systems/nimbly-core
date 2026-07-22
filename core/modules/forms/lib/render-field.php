@@ -144,6 +144,9 @@ function render_field(array $def, string $field = '', $value = null, string $sto
     }
     set_variable('_f.wrapper_class', $def['wrapper_class'] ?? 'nb-field relative my-10');
     $field_value = $value ?? $def['default'] ?? '';
+    if ($type === 'date' && is_string($field_value) && preg_match('/^\d{4}-\d{2}-\d{2}/', $field_value)) {
+        $field_value = substr($field_value, 0, 10);
+    }
     $i18n_seed = null;
 
     // The edit form holds every language's value at once (tabs switch which
