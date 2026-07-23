@@ -168,7 +168,6 @@ function upgrade_11_favicon_state(): array
 {
     $legacy_file = BASE_DIR . 'ext/static/favicon.png';
     $legacy_directory = BASE_DIR . 'ext/static/favicon';
-    $template_file = BASE_DIR . 'ext/tpl/html/favicon.tpl';
     $modern_files = [
         'favicon.ico',
         'favicon.svg',
@@ -180,11 +179,14 @@ function upgrade_11_favicon_state(): array
         static fn(string $file): bool => is_file(BASE_DIR . 'ext/static/' . $file)
     ));
 
-    if (is_file($template_file)) {
-        return [
-            'action' => 'none',
-            'message' => 'Project provides an explicit favicon template override.',
-        ];
+    foreach (upgrade_11_collect_files(BASE_DIR . 'ext/tpl', ['tpl']) as $template_file) {
+        $template = file_get_contents($template_file);
+        if (preg_match('/<link\b[^>]*\brel\s*=\s*["\'](?:icon|apple-touch-icon)["\']/i', $template)) {
+            return [
+                'action' => 'none',
+                'message' => 'Project provides explicit favicon markup in its templates.',
+            ];
+        }
     }
 
     $has_legacy_directory = is_dir($legacy_directory)
