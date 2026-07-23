@@ -167,6 +167,7 @@ function upgrade_11_daisyui_themes_state(): array
 function upgrade_11_favicon_state(): array
 {
     $legacy_file = BASE_DIR . 'ext/static/favicon.png';
+    $legacy_directory = BASE_DIR . 'ext/static/favicon';
     $template_file = BASE_DIR . 'ext/tpl/html/favicon.tpl';
     $modern_files = [
         'favicon.ico',
@@ -186,7 +187,12 @@ function upgrade_11_favicon_state(): array
         ];
     }
 
-    if (!is_file($legacy_file) && (empty($existing) || count($existing) === count($modern_files))) {
+    $has_legacy_directory = is_dir($legacy_directory)
+        && count(glob($legacy_directory . '/*') ?: []) > 0;
+
+    if (!is_file($legacy_file)
+        && !$has_legacy_directory
+        && (empty($existing) || count($existing) === count($modern_files))) {
         return [
             'action' => 'none',
             'message' => empty($existing)
@@ -198,11 +204,11 @@ function upgrade_11_favicon_state(): array
     $missing = array_values(array_diff($modern_files, $existing));
     return [
         'action' => 'warn',
-        'legacy' => is_file($legacy_file),
+        'legacy' => is_file($legacy_file) || $has_legacy_directory,
         'existing' => $existing,
         'missing' => $missing,
-        'message' => is_file($legacy_file)
-            ? 'Legacy ext/static/favicon.png is not used by the modern core favicon template.'
+        'message' => is_file($legacy_file) || $has_legacy_directory
+            ? 'Legacy ext/static/favicon.png or ext/static/favicon/ assets are not used by the modern core favicon template.'
             : 'Project favicon overrides are incomplete, so missing files fall back to Nimbly defaults.',
     ];
 }
