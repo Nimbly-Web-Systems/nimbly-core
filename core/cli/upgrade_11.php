@@ -164,6 +164,49 @@ function upgrade_11_daisyui_themes_state(): array
     ];
 }
 
+function upgrade_11_favicon_state(): array
+{
+    $legacy_file = BASE_DIR . 'ext/static/favicon.png';
+    $template_file = BASE_DIR . 'ext/tpl/html/favicon.tpl';
+    $modern_files = [
+        'favicon.ico',
+        'favicon.svg',
+        'favicon-32x32.png',
+        'apple-touch-icon.png',
+    ];
+    $existing = array_values(array_filter(
+        $modern_files,
+        static fn(string $file): bool => is_file(BASE_DIR . 'ext/static/' . $file)
+    ));
+
+    if (is_file($template_file)) {
+        return [
+            'action' => 'none',
+            'message' => 'Project provides an explicit favicon template override.',
+        ];
+    }
+
+    if (!is_file($legacy_file) && (empty($existing) || count($existing) === count($modern_files))) {
+        return [
+            'action' => 'none',
+            'message' => empty($existing)
+                ? 'Project uses the core favicon set.'
+                : 'Project provides a complete modern favicon override set.',
+        ];
+    }
+
+    $missing = array_values(array_diff($modern_files, $existing));
+    return [
+        'action' => 'warn',
+        'legacy' => is_file($legacy_file),
+        'existing' => $existing,
+        'missing' => $missing,
+        'message' => is_file($legacy_file)
+            ? 'Legacy ext/static/favicon.png is not used by the modern core favicon template.'
+            : 'Project favicon overrides are incomplete, so missing files fall back to Nimbly defaults.',
+    ];
+}
+
 function upgrade_11_config_upsert_state(): array
 {
     if (!data_exists('.config', '.meta')) {
@@ -730,6 +773,7 @@ $tw_elements  = upgrade_11_tailwind_elements_files();
 $ui_migration = upgrade_11_ui_migration_collect();
 $tw_entry     = upgrade_11_tailwind_entrypoint_state();
 $daisyui      = upgrade_11_daisyui_themes_state();
+$favicon      = upgrade_11_favicon_state();
 $config_upsert = upgrade_11_config_upsert_state();
 $gitignore    = upgrade_11_gitignore_state();
 $get_key_hits = upgrade_11_get_key_collect();
@@ -754,6 +798,7 @@ $has_work = migrate_10_has_work($migration)
     || !empty($ui_migration['borderless_fields'])
     || $tw_entry['action'] === 'update'
     || $daisyui['action'] === 'warn'
+    || $favicon['action'] === 'warn'
     || $config_upsert['action'] === 'update'
     || $gitignore['action'] === 'update'
     || !empty($get_key_hits)
@@ -838,6 +883,15 @@ if ($daisyui['action'] === 'warn') {
     echo "\n[" . ++$step . "] DaisyUI theme export missing\n\n";
     echo '  ' . $daisyui['message'] . "\n";
     cli_tip("Add 'export const daisyuiThemes = [{ light: { primary: \"#...\", secondary: \"#...\", ... } }];' to ext/tailwind.theme.js. See NIMBLY.md §19 for the full example.");
+}
+
+if ($favicon['action'] === 'warn') {
+    echo "\n[" . ++$step . "] Project favicon migration\n\n";
+    echo '  ' . $favicon['message'] . "\n";
+    if (!empty($favicon['missing'])) {
+        echo '  Missing ext/static overrides: ' . implode(', ', $favicon['missing']) . "\n";
+    }
+    cli_tip("Create project-specific modern favicon files or override ext/tpl/html/favicon.tpl when intentionally retaining a legacy raster favicon. See NIMBLY.md §3.");
 }
 
 if ($config_upsert['action'] === 'update') {
