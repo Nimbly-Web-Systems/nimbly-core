@@ -35,6 +35,8 @@ $commands = [
     'scheduler:cron:install' => ['file' => 'core/cli/scheduler_orchestrator.php', 'desc' => 'Install the server scheduler cron file', 'public' => true],
     'scheduler:cron:remove' => ['file' => 'core/cli/scheduler_orchestrator.php', 'desc' => 'Remove the server scheduler cron file', 'public' => true],
     'scheduler:cron:status' => ['file' => 'core/cli/scheduler_orchestrator.php', 'desc' => 'Show server scheduler cron status', 'public' => true],
+    'host:audit'         => ['file' => 'core/cli/host_audit.php',    'desc' => 'Audit host and registered Nimbly project health', 'public' => true],
+    'host:audit:install' => ['file' => 'core/cli/host_audit.php',    'desc' => 'Install the server host-audit wrapper', 'public' => true],
     'routes:sync'     => ['file' => 'core/cli/routes_add.php',   'desc' => 'Scan route.inc files and create missing dynamic route records', 'public' => true],
     'index:rebuild'    => ['file' => 'core/cli/reindex.php',        'desc' => 'Rebuild index entries for a resource', 'public' => true],
     'docker:init'       => ['file' => 'core/cli/docker_init.php',   'desc' => 'Generate Dockerfile and CI workflow in ext/ for Docker image builds', 'public' => true],

@@ -1,0 +1,132 @@
+<?php
+
+define('NIMBLY_HOST_AUDIT_LIBRARY', true);
+require_once __DIR__ . '/../cli/host_audit.php';
+
+function audit_assert(bool $condition, string $message): void
+{
+    if (!$condition) {
+        fwrite(STDERR, "FAIL: {$message}\n");
+        exit(1);
+    }
+}
+
+function audit_remove_fixture(string $path): void
+{
+    if (!is_dir($path)) {
+        return;
+    }
+    $items = scandir($path) ?: [];
+    foreach ($items as $item) {
+        if ($item === '.' || $item === '..') {
+            continue;
+        }
+        $item_path = $path . '/' . $item;
+        if (is_dir($item_path)) {
+            audit_remove_fixture($item_path);
+        } else {
+            unlink($item_path);
+        }
+    }
+    rmdir($path);
+}
+
+audit_assert(host_audit_duration_seconds('24h') === 86400, 'parses hour duration');
+audit_assert(host_audit_duration_seconds('2d') === 172800, 'parses day duration');
+audit_assert(host_audit_duration_seconds('tomorrow') === null, 'rejects invalid duration');
+
+$findings = [
+    host_audit_finding(
+        'php:warning:test',
+        'warning',
+        'project',
+        'PHP warning',
+        'first',
+        100,
+        'example'
+    ),
+    host_audit_finding(
+        'php:warning:test',
+        'warning',
+        'project',
+        'PHP warning',
+        'second',
+        200,
+        'example'
+    ),
+];
+$grouped = host_audit_group_findings($findings);
+audit_assert(count($grouped) === 1, 'groups stable finding ids');
+audit_assert($grouped[0]['count'] === 2, 'counts grouped findings');
+audit_assert($grouped[0]['first_seen'] === gmdate('c', 100), 'keeps first timestamp');
+audit_assert($grouped[0]['last_seen'] === gmdate('c', 200), 'keeps last timestamp');
+
+$jails = host_audit_fail2ban_jails("Status\n`- Jail list:\tsshd, recidive, apache-php-scan\n");
+audit_assert($jails === ['apache-php-scan', 'recidive', 'sshd'], 'parses jail list');
+
+$counts = host_audit_fail2ban_counts(
+    "Currently failed:\t4\nTotal failed:\t100\nCurrently banned:\t2\nTotal banned:\t50\n"
+);
+audit_assert($counts['currently_banned'] === 2, 'parses current bans');
+audit_assert($counts['total_failed'] === 100, 'parses total failures');
+
+$message = host_audit_normalize_message(
+    'Undefined array key uuid in /var/www/site/data.php on line 127'
+);
+audit_assert(str_contains($message, 'line {n}'), 'normalizes line numbers');
+
+$redacted = host_audit_redact(
+    'token=secret-value password=hunter2 "api_key":"json-secret" Authorization: Bearer abc123'
+);
+audit_assert(!str_contains($redacted, 'secret-value'), 'redacts token');
+audit_assert(!str_contains($redacted, 'hunter2'), 'redacts password');
+audit_assert(!str_contains($redacted, 'json-secret'), 'redacts JSON secrets');
+audit_assert(!str_contains($redacted, 'abc123'), 'redacts bearer tokens');
+
+audit_assert(host_audit_exit_code('ok') === 0, 'healthy exit code');
+audit_assert(host_audit_exit_code('warning') === 1, 'warning exit code');
+audit_assert(host_audit_exit_code('critical') === 2, 'critical exit code');
+audit_assert(host_audit_exit_code('unknown') === 3, 'unknown exit code');
+
+$fixture = sys_get_temp_dir() . '/nimbly-host-audit-test-' . bin2hex(random_bytes(4));
+mkdir($fixture . '/ext/data/.jobs', 0755, true);
+mkdir($fixture . '/ext/.git/rebase-merge', 0755, true);
+file_put_contents(
+    $fixture . '/ext/data/.jobs/failed-job',
+    json_encode(['status' => 'failed', 'last_error' => 'Example failure'])
+);
+file_put_contents(
+    $fixture . '/ext/data/.jobs/running-job',
+    json_encode(['status' => 'running'])
+);
+touch($fixture . '/ext/data/.jobs/running-job', time() - 7200);
+file_put_contents($fixture . '/ext/.git/HEAD', "ref: refs/heads/live\n");
+mkdir($fixture . '/ext/.git/refs/heads', 0755, true);
+file_put_contents($fixture . '/ext/.git/refs/heads/live', str_repeat('a', 40) . "\n");
+
+$fixture_findings = [];
+$fixture_context = [
+    'now' => time(),
+    'config' => ['job_running_stale_minutes' => 30],
+];
+$job_counts = host_audit_project_jobs(
+    'fixture',
+    $fixture,
+    $fixture_context,
+    $fixture_findings
+);
+audit_assert($job_counts['failed'] === 1, 'counts failed jobs');
+audit_assert($job_counts['running'] === 1, 'counts running jobs');
+audit_assert(
+    count(array_filter(
+        $fixture_findings,
+        fn(array $finding): bool => str_starts_with($finding['id'], 'job:stale:')
+    )) === 1,
+    'reports stale running jobs'
+);
+$git_state = host_audit_git_state($fixture . '/ext');
+audit_assert($git_state['branch'] === 'live', 'reads git branch');
+audit_assert($git_state['operation'] === 'rebase', 'detects interrupted rebase');
+audit_remove_fixture($fixture);
+
+echo "Host audit tests passed\n";

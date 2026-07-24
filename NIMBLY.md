@@ -1913,6 +1913,74 @@ php core/cli/nimbly.php scheduler:cron:status
 name, path, duration, and exit code, and continues after project failures.
 `default_delay_after_seconds` defaults to `10`.
 
+#### `host:audit`
+
+Runs a read-only health audit for a manually managed Nimbly host and every
+enabled project in `/etc/nimbly/scheduler-projects.json`.
+
+```bash
+sudo php core/cli/nimbly.php host:audit --format=json
+sudo php core/cli/nimbly.php host:audit --format=text
+sudo php core/cli/nimbly.php host:audit --format=json --since=2d
+```
+
+The default window is the previous rolling 24 hours. Supported duration suffixes
+are `s`, `m`, `h`, and `d`.
+
+The audit is stateless and never repairs the host. It checks:
+
+- uptime, load, memory, root-disk usage, failed systemd units, and required
+  services;
+- Apache, SSH, and fail2ban configuration validity;
+- certificate expiry and the last Certbot renewal service result;
+- effective key-only SSH policy and required fail2ban jails;
+- Apache 5xx responses, PHP fatal errors and warnings, worker exhaustion, and
+  crash events while suppressing routine missing-script and denied-scanner
+  noise;
+- each registered project's Nimbly system log, job queue, environment, and
+  interrupted core/ext Git operations; and
+- scheduler freshness and nonzero project scheduler exits.
+
+JSON is the canonical automation format. Findings have stable IDs, severity,
+scope, evidence, count, and first/last timestamps where available, so a separate
+collector or monitoring task can compare runs without parsing prose. The exit
+codes are:
+
+| Exit | Meaning |
+|---|---|
+| `0` | Healthy |
+| `1` | One or more warnings |
+| `2` | One or more critical findings |
+| `3` | Audit incomplete or invalid invocation |
+
+Install a root-owned wrapper and default configuration from any current core
+checkout:
+
+```bash
+sudo php core/cli/nimbly.php host:audit:install
+```
+
+This creates:
+
+| Path | Purpose |
+|---|---|
+| `/usr/local/bin/nimbly-host-audit` | Stable command wrapper |
+| `/usr/local/lib/nimbly-host-audit.php` | Self-contained audit collector |
+| `/etc/nimbly/host-audit.json` | Thresholds, required services/jails, and log paths |
+
+For a trusted SSH collector, add `--user=<ssh-user>`. The installer then creates
+`/etc/sudoers.d/nimbly-host-audit`, validates it with `visudo`, and permits only
+the exact read-only JSON invocation:
+
+```bash
+sudo php core/cli/nimbly.php host:audit:install --user=deploy-user
+sudo -n /usr/local/bin/nimbly-host-audit --format=json
+```
+
+Do not put credentials in the audit configuration or output. Public DNS, TLS,
+and HTTP reachability belong in the external collector: an audit running on a
+host cannot reliably report that the host itself is unreachable.
+
 ---
 
 ## 8. Build
