@@ -404,6 +404,9 @@ function host_audit_apache(array $context, array &$findings): array
             if ($project !== null) {
                 $project_metrics[$project] ??= host_audit_empty_project_metrics();
                 $project_metrics[$project]['requests']++;
+                if (isset($project_metrics[$project]['status_counts'][$bucket])) {
+                    $project_metrics[$project]['status_counts'][$bucket]++;
+                }
                 if ($bucket === '5xx') {
                     $project_metrics[$project]['http_5xx']++;
                 }
@@ -699,6 +702,7 @@ function host_audit_merge_project_metrics(array $projects, array $metrics): arra
         $key = host_audit_id((string)$name);
         $values = $metrics[$name] ?? $metrics[$key] ?? host_audit_empty_project_metrics();
         $project['requests'] = $values['requests'];
+        $project['status_counts'] = $values['status_counts'];
         $project['http_5xx'] = $values['http_5xx'];
         $project['php_errors'] = $values['php_errors'];
     }
@@ -1308,7 +1312,12 @@ function host_audit_project_from_path(string $path, array $registered_projects =
 
 function host_audit_empty_project_metrics(): array
 {
-    return ['requests' => 0, 'http_5xx' => 0, 'php_errors' => 0];
+    return [
+        'requests' => 0,
+        'status_counts' => ['2xx' => 0, '3xx' => 0, '4xx' => 0, '5xx' => 0],
+        'http_5xx' => 0,
+        'php_errors' => 0,
+    ];
 }
 
 function host_audit_add_project_php_event(

@@ -139,9 +139,18 @@ $project_checks = [
 ];
 $merged_metrics = host_audit_merge_project_metrics(
     $project_checks,
-    ['nimbly-site' => ['requests' => 12, 'http_5xx' => 1, 'php_errors' => 2]]
+    ['nimbly-site' => [
+        'requests' => 12,
+        'status_counts' => ['2xx' => 9, '3xx' => 1, '4xx' => 1, '5xx' => 1],
+        'http_5xx' => 1,
+        'php_errors' => 2,
+    ]]
 );
 audit_assert($merged_metrics['nimbly-site']['requests'] === 12, 'merges project traffic');
+audit_assert(
+    $merged_metrics['nimbly-site']['status_counts']['2xx'] === 9,
+    'merges project status distribution'
+);
 audit_assert($merged_metrics['other']['requests'] === 0, 'defaults missing project traffic');
 
 $message = host_audit_normalize_message(
