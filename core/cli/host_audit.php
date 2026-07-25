@@ -60,9 +60,13 @@ function host_audit_main(array $argv): void
         'system' => host_audit_system($context, $findings),
         'certificates' => host_audit_certificates($context, $findings),
         'security' => host_audit_security($context, $findings),
-        'apache' => host_audit_apache($context, $findings),
     ];
     $project_result = host_audit_projects($context, $findings);
+    $context['registered_projects'] = array_map(
+        'host_audit_id',
+        array_keys($project_result['checks'])
+    );
+    $checks['apache'] = host_audit_apache($context, $findings);
     $project_result['checks'] = host_audit_merge_project_metrics(
         $project_result['checks'],
         (array)($checks['apache']['projects'] ?? [])
@@ -393,7 +397,10 @@ function host_audit_apache(array $context, array &$findings): array
             if (isset($status_counts[$bucket])) {
                 $status_counts[$bucket]++;
             }
-            $project = host_audit_project_from_path($entry['path']);
+            $project = host_audit_project_from_path(
+                $entry['path'],
+                (array)($context['registered_projects'] ?? [])
+            );
             if ($project !== null) {
                 $project_metrics[$project] ??= host_audit_empty_project_metrics();
                 $project_metrics[$project]['requests']++;
@@ -439,7 +446,11 @@ function host_audit_apache(array $context, array &$findings): array
                 $php_counts['fatal']++;
                 $message = host_audit_normalize_message($match[2]);
                 $php_summaries['fatal'][$message] = true;
-                host_audit_add_project_php_event($project_metrics, $line);
+                host_audit_add_project_php_event(
+                    $project_metrics,
+                    $line,
+                    (array)($context['registered_projects'] ?? [])
+                );
                 $findings[] = host_audit_finding(
                     'php:fatal:' . host_audit_id($message),
                     'critical',
@@ -452,7 +463,11 @@ function host_audit_apache(array $context, array &$findings): array
                 $php_counts['warning']++;
                 $message = host_audit_normalize_message($match[1]);
                 $php_summaries['warning'][$message] = true;
-                host_audit_add_project_php_event($project_metrics, $line);
+                host_audit_add_project_php_event(
+                    $project_metrics,
+                    $line,
+                    (array)($context['registered_projects'] ?? [])
+                );
                 $findings[] = host_audit_finding(
                     'php:warning:' . host_audit_id($message),
                     'warning',
@@ -1160,13 +1175,19 @@ function host_audit_parse_access_line(string $line): ?array
     ];
 }
 
-function host_audit_project_from_path(string $path): ?string
+function host_audit_project_from_path(string $path, array $registered_projects = []): ?string
 {
     if (!preg_match('~^/([^/?#]+)~', $path, $match)) {
         return null;
     }
     $segment = host_audit_id(rawurldecode($match[1]));
-    return $segment !== '' ? $segment : null;
+    if ($segment === '') {
+        return null;
+    }
+    if ($registered_projects !== [] && !in_array($segment, $registered_projects, true)) {
+        return null;
+    }
+    return $segment;
 }
 
 function host_audit_empty_project_metrics(): array
@@ -1174,12 +1195,19 @@ function host_audit_empty_project_metrics(): array
     return ['requests' => 0, 'http_5xx' => 0, 'php_errors' => 0];
 }
 
-function host_audit_add_project_php_event(array &$metrics, string $line): void
+function host_audit_add_project_php_event(
+    array &$metrics,
+    string $line,
+    array $registered_projects = []
+): void
 {
     if (!preg_match('~/var/www/([^/\s]+)/~', $line, $match)) {
         return;
     }
     $project = host_audit_id($match[1]);
+    if ($registered_projects !== [] && !in_array($project, $registered_projects, true)) {
+        return;
+    }
     $metrics[$project] ??= host_audit_empty_project_metrics();
     $metrics[$project]['php_errors']++;
 }
