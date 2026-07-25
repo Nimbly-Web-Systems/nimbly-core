@@ -1915,8 +1915,11 @@ name, path, duration, and exit code, and continues after project failures.
 
 #### `host:audit`
 
-Runs a read-only health audit for a manually managed Nimbly host and every
-enabled project in `/etc/nimbly/scheduler-projects.json`.
+Runs a read-only health audit for a manually managed Nimbly host. Project
+inventory comes from the configured Nimbly `ext/data/projects` resource: every
+active hosted project is included automatically. Apache `sites-enabled` aliases
+resolve inventory records to staging checkouts. The scheduler registry
+contributes only each project's `Active` or `Not scheduled` state.
 
 ```bash
 sudo php core/cli/nimbly.php host:audit --format=json
@@ -1941,7 +1944,7 @@ The audit is stateless and never repairs the host. It checks:
 - Apache 5xx responses, PHP fatal errors and warnings, worker exhaustion, and
   crash events while suppressing routine missing-script and denied-scanner
   noise;
-- each registered project's Nimbly system log, job queue, environment, and
+- each active hosted project's Nimbly system log, job queue, environment, and
   interrupted core/ext Git operations, locally known pending remote commits,
   attributed requests, 5xx responses, PHP errors, and derived health status;
 - scheduler freshness and nonzero project scheduler exits.
