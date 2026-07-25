@@ -70,6 +70,43 @@ $counts = host_audit_fail2ban_counts(
 audit_assert($counts['currently_banned'] === 2, 'parses current bans');
 audit_assert($counts['total_failed'] === 100, 'parses total failures');
 
+$access = host_audit_parse_access_line(
+    'stage.example:443 10.0.0.1 - - [24/Jul/2026:20:30:00 +0000] '
+    . '"GET /nimbly-site/api HTTP/1.1" 503 123'
+);
+audit_assert($access !== null, 'parses vhost access line');
+audit_assert($access['status'] === 503, 'parses HTTP status');
+audit_assert($access['path'] === '/nimbly-site/api', 'parses request path');
+audit_assert(
+    host_audit_project_from_path($access['path']) === 'nimbly-site',
+    'attributes request path to project'
+);
+
+$security_activity = host_audit_parse_security_activity(
+    "NOTICE [sshd] Ban 192.0.2.1\nNOTICE [recidive] Ban 192.0.2.2\n",
+    "Failed password for invalid user test\nInvalid user scan from 192.0.2.3\n"
+);
+audit_assert($security_activity['new_bans'] === 2, 'counts window bans');
+audit_assert($security_activity['ssh_failures'] === 2, 'counts SSH failures');
+
+$metrics = [];
+host_audit_add_project_php_event(
+    $metrics,
+    '[php:error] PHP Warning in /var/www/nimbly-site/core/lib/test.php on line 10'
+);
+audit_assert($metrics['nimbly-site']['php_errors'] === 1, 'attributes PHP event');
+
+$project_checks = [
+    'nimbly-site' => ['available' => true],
+    'other' => ['available' => true],
+];
+$merged_metrics = host_audit_merge_project_metrics(
+    $project_checks,
+    ['nimbly-site' => ['requests' => 12, 'http_5xx' => 1, 'php_errors' => 2]]
+);
+audit_assert($merged_metrics['nimbly-site']['requests'] === 12, 'merges project traffic');
+audit_assert($merged_metrics['other']['requests'] === 0, 'defaults missing project traffic');
+
 $message = host_audit_normalize_message(
     'Undefined array key uuid in /var/www/site/data.php on line 127'
 );

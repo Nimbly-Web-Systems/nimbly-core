@@ -1931,14 +1931,19 @@ The audit is stateless and never repairs the host. It checks:
 
 - uptime, load, memory, root-disk usage, failed systemd units, and required
   services;
+- CPU count, Apache service uptime, request totals and 2xx/3xx/4xx/5xx
+  distribution for the reporting window;
 - Apache, SSH, and fail2ban configuration validity;
 - certificate expiry and the last Certbot renewal service result;
 - effective key-only SSH policy and required fail2ban jails;
+- Fail2ban bans and SSH authentication failures observed during the reporting
+  window;
 - Apache 5xx responses, PHP fatal errors and warnings, worker exhaustion, and
   crash events while suppressing routine missing-script and denied-scanner
   noise;
 - each registered project's Nimbly system log, job queue, environment, and
-  interrupted core/ext Git operations; and
+  interrupted core/ext Git operations, locally known pending remote commits,
+  attributed requests, 5xx responses, PHP errors, and derived health status;
 - scheduler freshness and nonzero project scheduler exits.
 
 JSON is the canonical automation format. Findings have stable IDs, severity,
