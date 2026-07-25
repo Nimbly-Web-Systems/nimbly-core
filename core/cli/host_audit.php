@@ -63,8 +63,16 @@ function host_audit_main(array $argv): void
         'apache' => host_audit_apache($context, $findings),
     ];
     $project_result = host_audit_projects($context, $findings);
+    $project_result['checks'] = host_audit_merge_project_metrics(
+        $project_result['checks'],
+        (array)($checks['apache']['projects'] ?? [])
+    );
     $checks['projects'] = $project_result['checks'];
     $checks['scheduler'] = host_audit_scheduler($context, $findings);
+    foreach ($checks['projects'] as $name => &$project_check) {
+        $project_check['status'] = host_audit_project_status((string)$name, $findings);
+    }
+    unset($project_check);
 
     $findings = host_audit_group_findings($findings);
     usort($findings, 'host_audit_compare_findings');
@@ -216,6 +224,7 @@ function host_audit_system(array $context, array &$findings): array
 
     return [
         'uptime_seconds' => host_audit_uptime_seconds(),
+        'cpu_count' => host_audit_cpu_count(),
         'load_average' => function_exists('sys_getloadavg') ? sys_getloadavg() : null,
         'disk_root_used_percent' => $disk_used_percent,
         'memory' => $memory,
@@ -337,10 +346,13 @@ function host_audit_security(array $context, array &$findings): array
         $jail_status[$jail] = host_audit_fail2ban_counts($status['stdout']);
     }
     ksort($jail_status);
+    $fail2ban_activity = host_audit_fail2ban_activity($context['since']);
 
     return [
         'ssh' => array_intersect_key($ssh, $expected),
         'fail2ban_jails' => $jail_status,
+        'new_bans' => $fail2ban_activity['new_bans'],
+        'ssh_failures' => $fail2ban_activity['ssh_failures'],
     ];
 }
 
@@ -356,33 +368,66 @@ function host_audit_apache(array $context, array &$findings): array
         glob($log_dir . '/*error.log.1') ?: []
     );
 
-    $http_5xx = 0;
+    $status_counts = ['2xx' => 0, '3xx' => 0, '4xx' => 0, '5xx' => 0];
+    $requests = 0;
+    $project_metrics = [];
+    $route_5xx = [];
     foreach (array_unique($access_files) as $file) {
-        host_audit_each_line($file, function (string $line) use ($context, &$findings, &$http_5xx): void {
-            if (!preg_match('/\[(?<date>[^\]]+)\]\s+"(?<method>[A-Z]+)\s+(?<path>\S+)[^"]*"\s+(?<status>\d{3})\s/', $line, $match)) {
+        host_audit_each_line($file, function (string $line) use (
+            $context,
+            &$findings,
+            &$requests,
+            &$status_counts,
+            &$project_metrics,
+            &$route_5xx
+        ): void {
+            $entry = host_audit_parse_access_line($line);
+            if ($entry === null) {
                 return;
             }
-            $timestamp = strtotime($match['date']);
-            $status = (int)$match['status'];
-            if ($timestamp === false || $timestamp < $context['since'] || $status < 500) {
+            if ($entry['timestamp'] < $context['since']) {
                 return;
             }
-            $http_5xx++;
-            $path = parse_url($match['path'], PHP_URL_PATH) ?: $match['path'];
+            $requests++;
+            $bucket = (int)floor($entry['status'] / 100) . 'xx';
+            if (isset($status_counts[$bucket])) {
+                $status_counts[$bucket]++;
+            }
+            $project = host_audit_project_from_path($entry['path']);
+            if ($project !== null) {
+                $project_metrics[$project] ??= host_audit_empty_project_metrics();
+                $project_metrics[$project]['requests']++;
+                if ($bucket === '5xx') {
+                    $project_metrics[$project]['http_5xx']++;
+                }
+            }
+            if ($entry['status'] < 500) {
+                return;
+            }
+            $route_key = $entry['method'] . ' ' . $entry['path'];
+            $route_5xx[$route_key] = ($route_5xx[$route_key] ?? 0) + 1;
             $findings[] = host_audit_finding(
-                'apache:5xx:' . $status . ':' . host_audit_id($path),
-                $status >= 503 ? 'critical' : 'warning',
+                'apache:5xx:' . $entry['status'] . ':' . host_audit_id($entry['path']),
+                $entry['status'] >= 503 ? 'critical' : 'warning',
                 'host',
-                "HTTP {$status} response",
-                "{$match['method']} {$path}",
-                $timestamp
+                "HTTP {$entry['status']} response",
+                $route_key,
+                $entry['timestamp'],
+                $project
             );
         });
     }
 
     $php_counts = ['fatal' => 0, 'warning' => 0];
+    $php_summaries = ['fatal' => [], 'warning' => []];
     foreach (array_unique($error_files) as $file) {
-        host_audit_each_line($file, function (string $line) use ($context, &$findings, &$php_counts): void {
+        host_audit_each_line($file, function (string $line) use (
+            $context,
+            &$findings,
+            &$php_counts,
+            &$php_summaries,
+            &$project_metrics
+        ): void {
             $timestamp = host_audit_apache_error_timestamp($line);
             if ($timestamp === null || $timestamp < $context['since']) {
                 return;
@@ -393,6 +438,8 @@ function host_audit_apache(array $context, array &$findings): array
             if (preg_match('/PHP (Fatal error|Parse error):\s*(.+)$/i', $line, $match)) {
                 $php_counts['fatal']++;
                 $message = host_audit_normalize_message($match[2]);
+                $php_summaries['fatal'][$message] = true;
+                host_audit_add_project_php_event($project_metrics, $line);
                 $findings[] = host_audit_finding(
                     'php:fatal:' . host_audit_id($message),
                     'critical',
@@ -404,6 +451,8 @@ function host_audit_apache(array $context, array &$findings): array
             } elseif (preg_match('/PHP Warning:\s*(.+)$/i', $line, $match)) {
                 $php_counts['warning']++;
                 $message = host_audit_normalize_message($match[1]);
+                $php_summaries['warning'][$message] = true;
+                host_audit_add_project_php_event($project_metrics, $line);
                 $findings[] = host_audit_finding(
                     'php:warning:' . host_audit_id($message),
                     'warning',
@@ -433,12 +482,32 @@ function host_audit_apache(array $context, array &$findings): array
             }
         });
     }
+    arsort($route_5xx);
+    ksort($project_metrics);
+    $service = host_audit_service_status('apache2');
 
     return [
+        'service' => $service['status'],
+        'uptime_seconds' => $service['uptime_seconds'],
         'access_logs' => array_values(array_unique($access_files)),
         'error_logs' => array_values(array_unique($error_files)),
-        'http_5xx' => $http_5xx,
+        'requests' => $requests,
+        'status_counts' => $status_counts,
+        'http_5xx' => $status_counts['5xx'],
+        'top_problem_route' => array_key_first($route_5xx),
         'php_events' => $php_counts,
+        'php_event_summaries' => [
+            'fatal' => array_slice(array_keys($php_summaries['fatal']), 0, 5),
+            'warning' => array_slice(array_keys($php_summaries['warning']), 0, 5),
+        ],
+        'worker_exhaustion_or_crashes' => count(array_filter(
+            $findings,
+            fn(array $finding): bool => str_starts_with(
+                (string)($finding['id'] ?? ''),
+                'apache:capacity-or-crash:'
+            )
+        )),
+        'projects' => $project_metrics,
     ];
 }
 
@@ -473,8 +542,42 @@ function host_audit_projects(array $context, array &$findings): array
             $environments[] = $check['environment'];
         }
     }
+    foreach ($checks as $name => &$check) {
+        $check['status'] = host_audit_project_status((string)$name, $findings);
+    }
+    unset($check);
     ksort($checks);
     return ['checks' => $checks, 'environments' => array_values(array_unique($environments))];
+}
+
+function host_audit_project_status(string $name, array $findings): string
+{
+    $status = 'healthy';
+    foreach ($findings as $finding) {
+        if (($finding['project'] ?? null) !== $name) {
+            continue;
+        }
+        if (($finding['severity'] ?? '') === 'critical') {
+            return 'critical';
+        }
+        if (($finding['severity'] ?? '') === 'warning') {
+            $status = 'warning';
+        }
+    }
+    return $status;
+}
+
+function host_audit_merge_project_metrics(array $projects, array $metrics): array
+{
+    foreach ($projects as $name => &$project) {
+        $key = host_audit_id((string)$name);
+        $values = $metrics[$key] ?? host_audit_empty_project_metrics();
+        $project['requests'] = $values['requests'];
+        $project['http_5xx'] = $values['http_5xx'];
+        $project['php_errors'] = $values['php_errors'];
+    }
+    unset($project);
+    return $projects;
 }
 
 function host_audit_project(string $name, string $path, array $context, array &$findings): array
@@ -1008,6 +1111,114 @@ function host_audit_fail2ban_counts(string $output): array
     return $counts;
 }
 
+function host_audit_fail2ban_activity(int $since): array
+{
+    $fail2ban = host_audit_run_command(
+        ['journalctl', '-u', 'fail2ban', '--since', '@' . $since, '--no-pager', '-o', 'cat'],
+        15
+    );
+    $ssh = host_audit_run_command(
+        ['journalctl', '-u', 'ssh', '--since', '@' . $since, '--no-pager', '-o', 'cat'],
+        15
+    );
+    return host_audit_parse_security_activity($fail2ban['stdout'], $ssh['stdout']);
+}
+
+function host_audit_parse_security_activity(string $fail2ban, string $ssh): array
+{
+    $ssh_failures = 0;
+    foreach (preg_split('/\R/', $ssh) ?: [] as $line) {
+        if (preg_match('/Failed password|Invalid user|authentication failure/i', $line)) {
+            $ssh_failures++;
+        }
+    }
+    return [
+        'new_bans' => preg_match_all('/\bBan\s+\d{1,3}(?:\.\d{1,3}){3}\b/', $fail2ban),
+        'ssh_failures' => $ssh_failures,
+    ];
+}
+
+function host_audit_parse_access_line(string $line): ?array
+{
+    if (!preg_match(
+        '/\[(?<date>[^\]]+)\]\s+"(?<method>[A-Z]+)\s+(?<target>\S+)[^"]*"\s+(?<status>\d{3})\s/',
+        $line,
+        $match
+    )) {
+        return null;
+    }
+    $timestamp = strtotime($match['date']);
+    if ($timestamp === false) {
+        return null;
+    }
+    $path = parse_url($match['target'], PHP_URL_PATH) ?: $match['target'];
+    return [
+        'timestamp' => $timestamp,
+        'method' => $match['method'],
+        'path' => $path,
+        'status' => (int)$match['status'],
+    ];
+}
+
+function host_audit_project_from_path(string $path): ?string
+{
+    if (!preg_match('~^/([^/?#]+)~', $path, $match)) {
+        return null;
+    }
+    $segment = host_audit_id(rawurldecode($match[1]));
+    return $segment !== '' ? $segment : null;
+}
+
+function host_audit_empty_project_metrics(): array
+{
+    return ['requests' => 0, 'http_5xx' => 0, 'php_errors' => 0];
+}
+
+function host_audit_add_project_php_event(array &$metrics, string $line): void
+{
+    if (!preg_match('~/var/www/([^/\s]+)/~', $line, $match)) {
+        return;
+    }
+    $project = host_audit_id($match[1]);
+    $metrics[$project] ??= host_audit_empty_project_metrics();
+    $metrics[$project]['php_errors']++;
+}
+
+function host_audit_service_status(string $service): array
+{
+    $result = host_audit_run_command(
+        [
+            'systemctl',
+            'show',
+            $service,
+            '-p',
+            'ActiveState',
+            '-p',
+            'ActiveEnterTimestampMonotonic',
+        ],
+        5
+    );
+    $values = host_audit_parse_key_values($result['stdout']);
+    $entered = (int)($values['ActiveEnterTimestampMonotonic'] ?? 0);
+    $host_uptime = host_audit_uptime_seconds();
+    $uptime = $entered > 0 && $host_uptime !== null
+        ? max(0, $host_uptime - (int)floor($entered / 1000000))
+        : null;
+    return [
+        'status' => $values['ActiveState'] ?? 'unknown',
+        'uptime_seconds' => $uptime,
+    ];
+}
+
+function host_audit_cpu_count(): ?int
+{
+    if (!is_file('/proc/cpuinfo')) {
+        return null;
+    }
+    $count = preg_match_all('/^processor\s*:/m', (string)file_get_contents('/proc/cpuinfo'));
+    return $count > 0 ? $count : null;
+}
+
 function host_audit_apache_error_timestamp(string $line): ?int
 {
     if (!preg_match('/^\[([^\]]+)\]/', $line, $match)) {
@@ -1035,15 +1246,39 @@ function host_audit_git_state(string $path): array
 {
     $git_path = $path . '/.git';
     if (!is_dir($git_path)) {
-        return ['branch' => null, 'revision' => null, 'operation' => null];
+        return [
+            'branch' => null,
+            'revision' => null,
+            'operation' => null,
+            'pending_commits' => null,
+        ];
     }
-    $head = trim((string)@file_get_contents($git_path . '/HEAD'));
-    $branch = str_starts_with($head, 'ref: refs/heads/')
-        ? substr($head, strlen('ref: refs/heads/'))
-        : null;
-    $revision = $branch !== null
-        ? trim((string)@file_get_contents($git_path . '/refs/heads/' . $branch))
-        : $head;
+    $safe = ['git', '-c', 'safe.directory=' . $path, '-C', $path];
+    $branch_result = host_audit_run_command(
+        array_merge($safe, ['symbolic-ref', '--short', '-q', 'HEAD']),
+        5
+    );
+    $revision_result = host_audit_run_command(
+        array_merge($safe, ['rev-parse', '--verify', 'HEAD']),
+        5
+    );
+    $branch = trim($branch_result['stdout']) ?: null;
+    $revision = trim($revision_result['stdout']) ?: null;
+    if ($branch === null || $revision === null) {
+        $head = trim((string)@file_get_contents($git_path . '/HEAD'));
+        $fallback_branch = str_starts_with($head, 'ref: refs/heads/')
+            ? substr($head, strlen('ref: refs/heads/'))
+            : null;
+        $branch ??= $fallback_branch;
+        if ($revision === null) {
+            $revision = $fallback_branch !== null
+                ? trim((string)@file_get_contents(
+                    $git_path . '/refs/heads/' . $fallback_branch
+                ))
+                : $head;
+            $revision = $revision !== '' ? $revision : null;
+        }
+    }
     $operation = null;
     if (is_dir($git_path . '/rebase-merge') || is_dir($git_path . '/rebase-apply')) {
         $operation = 'rebase';
@@ -1052,10 +1287,25 @@ function host_audit_git_state(string $path): array
     } elseif (is_file($git_path . '/CHERRY_PICK_HEAD')) {
         $operation = 'cherry-pick';
     }
+    $pending_commits = null;
+    $upstream = host_audit_run_command(
+        array_merge($safe, ['rev-parse', '--abbrev-ref', '--symbolic-full-name', '@{upstream}']),
+        5
+    );
+    if ($upstream['exit_code'] === 0 && trim($upstream['stdout']) !== '') {
+        $pending = host_audit_run_command(
+            array_merge($safe, ['rev-list', '--count', 'HEAD..@{upstream}']),
+            10
+        );
+        if ($pending['exit_code'] === 0 && is_numeric(trim($pending['stdout']))) {
+            $pending_commits = (int)trim($pending['stdout']);
+        }
+    }
     return [
         'branch' => $branch,
-        'revision' => $revision !== '' ? $revision : null,
+        'revision' => $revision,
         'operation' => $operation,
+        'pending_commits' => $pending_commits,
     ];
 }
 
