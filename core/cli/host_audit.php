@@ -708,7 +708,7 @@ function host_audit_merge_project_metrics(array $projects, array $metrics): arra
 
 function host_audit_project(string $name, string $path, array $context, array &$findings): array
 {
-    if ($path === '' || !is_file($path . '/core/cli/nimbly.php')) {
+    if ($path === '' || !is_dir($path . '/core') || !is_dir($path . '/ext')) {
         $findings[] = host_audit_finding(
             'project:missing:' . host_audit_id($name),
             'critical',
