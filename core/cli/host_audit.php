@@ -62,10 +62,7 @@ function host_audit_main(array $argv): void
         'security' => host_audit_security($context, $findings),
     ];
     $project_result = host_audit_projects($context, $findings);
-    $context['registered_projects'] = array_map(
-        'host_audit_id',
-        array_keys($project_result['checks'])
-    );
+    $context['registered_projects'] = $project_result['aliases'];
     $checks['apache'] = host_audit_apache($context, $findings);
     $project_result['checks'] = host_audit_merge_project_metrics(
         $project_result['checks'],
@@ -125,6 +122,9 @@ function host_audit_default_config(): array
         'scheduler_config' => '/etc/nimbly/scheduler-projects.json',
         'scheduler_log' => '/var/log/nimbly-scheduler.log',
         'apache_log_dir' => '/var/log/apache2',
+        'apache_sites_enabled' => '/etc/apache2/sites-enabled',
+        'project_inventory' => '/var/www/nimbly-site/ext/data/projects',
+        'project_alias_overrides' => [],
     ];
 }
 
@@ -528,31 +528,61 @@ function host_audit_apache(array $context, array &$findings): array
 
 function host_audit_projects(array $context, array &$findings): array
 {
-    $config_path = (string)$context['config']['scheduler_config'];
-    $scheduler_config = is_file($config_path)
-        ? json_decode((string)file_get_contents($config_path), true)
-        : null;
-    if (!is_array($scheduler_config) || !isset($scheduler_config['projects'])
-        || !is_array($scheduler_config['projects'])) {
+    $inventory_path = (string)$context['config']['project_inventory'];
+    if (!is_dir($inventory_path)) {
         $findings[] = host_audit_finding(
-            'projects:scheduler-registry',
+            'projects:master-inventory',
             'critical',
             'host',
-            'Scheduler project registry is missing or invalid',
-            $config_path
+            'Master project inventory is unavailable',
+            $inventory_path
         );
-        return ['checks' => [], 'environments' => []];
+        return ['checks' => [], 'environments' => [], 'aliases' => []];
     }
 
+    $scheduler_paths = host_audit_scheduler_project_paths(
+        (string)$context['config']['scheduler_config'],
+        $findings
+    );
+    $apache_aliases = host_audit_apache_aliases(
+        (string)$context['config']['apache_sites_enabled']
+    );
+    $overrides = (array)($context['config']['project_alias_overrides'] ?? []);
     $checks = [];
     $environments = [];
-    foreach ($scheduler_config['projects'] as $name => $project) {
-        if (!is_array($project) || ($project['enabled'] ?? true) === false) {
+    $aliases = [];
+    foreach (glob(rtrim($inventory_path, '/') . '/*') ?: [] as $record_path) {
+        if (!is_file($record_path) || basename($record_path) === '.meta') {
             continue;
         }
-        $path = rtrim((string)($project['path'] ?? ''), '/');
-        $check = host_audit_project((string)$name, $path, $context, $findings);
+        $project = json_decode((string)file_get_contents($record_path), true);
+        if (!is_array($project)
+            || empty($project['is_active'])
+            || empty($project['has_hosting'])) {
+            continue;
+        }
+        $name = trim((string)($project['name'] ?? ''));
+        $slug = host_audit_id((string)($project['name_slug'] ?? $name));
+        if ($name === '' || $slug === '') {
+            $findings[] = host_audit_finding(
+                'projects:invalid-record:' . host_audit_id(basename($record_path)),
+                'critical',
+                'host',
+                'Active hosted project has no usable name',
+                basename($record_path)
+            );
+            continue;
+        }
+        $apache_project = host_audit_apache_project($slug, $apache_aliases, $overrides);
+        $path = $apache_project['path'];
+        $check = host_audit_project($name, $path, $context, $findings);
+        $check['scheduler'] = isset($scheduler_paths[$path])
+            ? 'Active'
+            : 'Not scheduled';
         $checks[$name] = $check;
+        if ($apache_project['alias'] !== '') {
+            $aliases[host_audit_id($apache_project['alias'])] = $name;
+        }
         if (!empty($check['environment'])) {
             $environments[] = $check['environment'];
         }
@@ -562,7 +592,88 @@ function host_audit_projects(array $context, array &$findings): array
     }
     unset($check);
     ksort($checks);
-    return ['checks' => $checks, 'environments' => array_values(array_unique($environments))];
+    return [
+        'checks' => $checks,
+        'environments' => array_values(array_unique($environments)),
+        'aliases' => $aliases,
+    ];
+}
+
+function host_audit_scheduler_project_paths(string $config_path, array &$findings): array
+{
+    $scheduler_config = is_file($config_path)
+        ? json_decode((string)file_get_contents($config_path), true)
+        : null;
+    if (!is_array($scheduler_config) || !isset($scheduler_config['projects'])
+        || !is_array($scheduler_config['projects'])) {
+        $findings[] = host_audit_finding(
+            'scheduler:project-registry',
+            'warning',
+            'host',
+            'Scheduler project registry is missing or invalid',
+            $config_path
+        );
+        return [];
+    }
+    $paths = [];
+    foreach ($scheduler_config['projects'] as $project) {
+        if (!is_array($project) || ($project['enabled'] ?? true) === false) {
+            continue;
+        }
+        $path = rtrim((string)($project['path'] ?? ''), '/');
+        if ($path !== '') {
+            $paths[$path] = true;
+        }
+    }
+    return $paths;
+}
+
+function host_audit_apache_aliases(string $sites_enabled): array
+{
+    $aliases = [];
+    foreach (glob(rtrim($sites_enabled, '/') . '/*') ?: [] as $config_path) {
+        if (!is_file($config_path)) {
+            continue;
+        }
+        foreach (file($config_path, FILE_IGNORE_NEW_LINES) ?: [] as $line) {
+            if (!preg_match(
+                '~^\s*Alias\s+/([^/\s]+)/?\s+["\']?([^"\']+)["\']?\s*$~i',
+                $line,
+                $match
+            )) {
+                continue;
+            }
+            $alias = host_audit_id($match[1]);
+            $path = rtrim(trim($match[2]), '/');
+            if ($alias !== '' && str_starts_with($path, '/var/www/')) {
+                $aliases[$alias] = $path;
+            }
+        }
+    }
+    return $aliases;
+}
+
+function host_audit_apache_project(string $slug, array $aliases, array $overrides): array
+{
+    $alias = isset($overrides[$slug]) && is_string($overrides[$slug])
+        ? host_audit_id($overrides[$slug])
+        : '';
+    if ($alias === '') {
+        $compact = str_replace('-', '', $slug);
+        $trimmed = preg_replace('/-(?:site|blog|app)$/', '', $slug) ?: $slug;
+        foreach ($aliases as $candidate => $path) {
+            if ($candidate === $slug
+                || str_replace('-', '', $candidate) === $compact
+                || $candidate === $trimmed) {
+                $alias = $candidate;
+                break;
+            }
+        }
+    }
+    return [
+        'alias' => $alias,
+        'path' => $alias !== '' ? (string)($aliases[$alias] ?? '') : '',
+    ];
 }
 
 function host_audit_project_status(string $name, array $findings): string
@@ -586,7 +697,7 @@ function host_audit_merge_project_metrics(array $projects, array $metrics): arra
 {
     foreach ($projects as $name => &$project) {
         $key = host_audit_id((string)$name);
-        $values = $metrics[$key] ?? host_audit_empty_project_metrics();
+        $values = $metrics[$name] ?? $metrics[$key] ?? host_audit_empty_project_metrics();
         $project['requests'] = $values['requests'];
         $project['http_5xx'] = $values['http_5xx'];
         $project['php_errors'] = $values['php_errors'];
@@ -1184,8 +1295,13 @@ function host_audit_project_from_path(string $path, array $registered_projects =
     if ($segment === '') {
         return null;
     }
-    if ($registered_projects !== [] && !in_array($segment, $registered_projects, true)) {
-        return null;
+    if ($registered_projects !== []) {
+        if (array_is_list($registered_projects)) {
+            return in_array($segment, $registered_projects, true) ? $segment : null;
+        }
+        return isset($registered_projects[$segment])
+            ? (string)$registered_projects[$segment]
+            : null;
     }
     return $segment;
 }
@@ -1205,8 +1321,16 @@ function host_audit_add_project_php_event(
         return;
     }
     $project = host_audit_id($match[1]);
-    if ($registered_projects !== [] && !in_array($project, $registered_projects, true)) {
-        return;
+    if ($registered_projects !== []) {
+        if (array_is_list($registered_projects)) {
+            if (!in_array($project, $registered_projects, true)) {
+                return;
+            }
+        } elseif (isset($registered_projects[$project])) {
+            $project = (string)$registered_projects[$project];
+        } else {
+            return;
+        }
     }
     $metrics[$project] ??= host_audit_empty_project_metrics();
     $metrics[$project]['php_errors']++;

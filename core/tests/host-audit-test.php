@@ -85,6 +85,32 @@ audit_assert(
     host_audit_project_from_path('/wp-admin/install.php', ['nimbly-site']) === null,
     'does not attribute scanner paths to projects'
 );
+audit_assert(
+    host_audit_project_from_path(
+        '/harmony-playground-app/api',
+        ['harmony-playground-app' => 'HP App']
+    ) === 'HP App',
+    'maps an Apache alias to its inventory project'
+);
+
+$apache_project = host_audit_apache_project(
+    'groene-chemie',
+    ['groenechemie' => '/var/www/nimbly-groenechemie'],
+    []
+);
+audit_assert(
+    $apache_project['path'] === '/var/www/nimbly-groenechemie',
+    'matches compact Apache aliases'
+);
+$apache_project_override = host_audit_apache_project(
+    'hp-app',
+    ['harmony-playground-app' => '/var/www/harmony-playground-app'],
+    ['hp-app' => 'harmony-playground-app']
+);
+audit_assert(
+    $apache_project_override['path'] === '/var/www/harmony-playground-app',
+    'uses explicit Apache alias overrides'
+);
 
 $security_activity = host_audit_parse_security_activity(
     "NOTICE [sshd] Ban 192.0.2.1\nNOTICE [recidive] Ban 192.0.2.2\n",
