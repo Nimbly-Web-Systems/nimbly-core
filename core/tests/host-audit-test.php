@@ -78,8 +78,12 @@ audit_assert($access !== null, 'parses vhost access line');
 audit_assert($access['status'] === 503, 'parses HTTP status');
 audit_assert($access['path'] === '/nimbly-site/api', 'parses request path');
 audit_assert(
-    host_audit_project_from_path($access['path']) === 'nimbly-site',
+    host_audit_project_from_path($access['path'], ['nimbly-site']) === 'nimbly-site',
     'attributes request path to project'
+);
+audit_assert(
+    host_audit_project_from_path('/wp-admin/install.php', ['nimbly-site']) === null,
+    'does not attribute scanner paths to projects'
 );
 
 $security_activity = host_audit_parse_security_activity(
@@ -92,9 +96,16 @@ audit_assert($security_activity['ssh_failures'] === 2, 'counts SSH failures');
 $metrics = [];
 host_audit_add_project_php_event(
     $metrics,
-    '[php:error] PHP Warning in /var/www/nimbly-site/core/lib/test.php on line 10'
+    '[php:error] PHP Warning in /var/www/nimbly-site/core/lib/test.php on line 10',
+    ['nimbly-site']
 );
 audit_assert($metrics['nimbly-site']['php_errors'] === 1, 'attributes PHP event');
+host_audit_add_project_php_event(
+    $metrics,
+    '[php:error] PHP Warning in /var/www/unknown/core/lib/test.php on line 10',
+    ['nimbly-site']
+);
+audit_assert(!isset($metrics['unknown']), 'ignores PHP events outside registered projects');
 
 $project_checks = [
     'nimbly-site' => ['available' => true],
