@@ -67,17 +67,27 @@ For every task, follow this workflow unless explicitly instructed otherwise.
    - If the sanity test or visual result is not correct, fix it before moving on.
    - Rerun the relevant check after adjustments.
 
-7. Commit the completed step.
+7. Complete migration bookkeeping.
+   - For every Nimbly 1.1 project migration, reconcile the Intra project record
+     before considering the migration complete.
+   - Set `core_version` to `master`, record the exact live `core_commit` and
+     `core_verified_on`, and set `core_status` to `verified` only when live
+     matches the current published core target.
+   - Book two hours to the migrated project for the migration and production
+     verification. Reuse or normalize an existing migration booking instead of
+     creating a duplicate.
+
+8. Commit the completed step.
    - Commit only after the step is implemented and sanity tested.
    - Use Conventional Commits.
    - Keep commit messages short, specific, professional, and usually one line.
    - Do not add commercial noise such as `Co-Authored-By`.
    - Do not narrate bugs, vulnerabilities, or internal shortcomings in commit messages. Describe what changed, not how something was broken or exploitable. This is open source history, so do not hand future readers an exploit writeup.
 
-8. Repeat.
+9. Repeat.
    - Continue step by step until the task is complete.
 
-9. Final handoff.
+10. Final handoff.
    - Summarize what changed.
    - List commits created.
    - List tests and checks performed.
