@@ -376,6 +376,9 @@ function host_audit_apache(array $context, array &$findings): array
     $requests = 0;
     $project_metrics = [];
     $route_5xx = [];
+    $not_found_total = 0;
+    $not_found_probe_count = 0;
+    $not_found_routes = [];
     foreach (array_unique($access_files) as $file) {
         host_audit_each_line($file, function (string $line) use (
             $context,
@@ -383,7 +386,10 @@ function host_audit_apache(array $context, array &$findings): array
             &$requests,
             &$status_counts,
             &$project_metrics,
-            &$route_5xx
+            &$route_5xx,
+            &$not_found_total,
+            &$not_found_probe_count,
+            &$not_found_routes
         ): void {
             $entry = host_audit_parse_access_line($line);
             if ($entry === null) {
@@ -409,6 +415,30 @@ function host_audit_apache(array $context, array &$findings): array
                 }
                 if ($bucket === '5xx') {
                     $project_metrics[$project]['http_5xx']++;
+                }
+            }
+            if ($entry['status'] === 404) {
+                $not_found_total++;
+                if (host_audit_404_is_probe($entry['path'])) {
+                    $not_found_probe_count++;
+                } else {
+                    $route_key = ($project ?? 'Unattributed') . "\n" . $entry['path'];
+                    $not_found_routes[$route_key] ??= [
+                        'project' => $project,
+                        'path' => $entry['path'],
+                        'count' => 0,
+                        'first_seen' => $entry['timestamp'],
+                        'last_seen' => $entry['timestamp'],
+                    ];
+                    $not_found_routes[$route_key]['count']++;
+                    $not_found_routes[$route_key]['first_seen'] = min(
+                        $not_found_routes[$route_key]['first_seen'],
+                        $entry['timestamp']
+                    );
+                    $not_found_routes[$route_key]['last_seen'] = max(
+                        $not_found_routes[$route_key]['last_seen'],
+                        $entry['timestamp']
+                    );
                 }
             }
             if ($entry['status'] < 500) {
@@ -501,6 +531,16 @@ function host_audit_apache(array $context, array &$findings): array
         });
     }
     arsort($route_5xx);
+    $not_found_routes = array_values($not_found_routes);
+    usort($not_found_routes, function (array $left, array $right): int {
+        return ($right['count'] <=> $left['count'])
+            ?: strcmp((string)$left['path'], (string)$right['path']);
+    });
+    foreach ($not_found_routes as &$route) {
+        $route['first_seen'] = gmdate('c', $route['first_seen']);
+        $route['last_seen'] = gmdate('c', $route['last_seen']);
+    }
+    unset($route);
     ksort($project_metrics);
     $service = host_audit_service_status('apache2');
 
@@ -513,6 +553,13 @@ function host_audit_apache(array $context, array &$findings): array
         'status_counts' => $status_counts,
         'http_5xx' => $status_counts['5xx'],
         'top_problem_route' => array_key_first($route_5xx),
+        'not_found' => [
+            'total' => $not_found_total,
+            'filtered_probes' => $not_found_probe_count,
+            'genuine_total' => $not_found_total - $not_found_probe_count,
+            'unique' => count($not_found_routes),
+            'routes' => array_slice($not_found_routes, 0, 50),
+        ],
         'php_events' => $php_counts,
         'php_event_summaries' => [
             'fatal' => array_slice(array_keys($php_summaries['fatal']), 0, 5),
@@ -527,6 +574,21 @@ function host_audit_apache(array $context, array &$findings): array
         )),
         'projects' => $project_metrics,
     ];
+}
+
+function host_audit_404_is_probe(string $path): bool
+{
+    $normalized = strtolower(rawurldecode(parse_url($path, PHP_URL_PATH) ?: $path));
+    return preg_match(
+        '~(?:^|/)(?:'
+        . 'wp-login\.php|xmlrpc\.php|wp-admin(?:/|$)|wp-content(?:/|$)|'
+        . 'phpmyadmin(?:/|$)|pma(?:/|$)|adminer(?:\.php)?|'
+        . '\.env(?:\.|$)|\.git(?:/|$)|\.svn(?:/|$)|'
+        . 'vendor/phpunit|cgi-bin(?:/|$)|boaform|HNAP1|'
+        . 'server-status|actuator(?:/|$)|console(?:/|$)'
+        . ')~ix',
+        $normalized
+    ) === 1;
 }
 
 function host_audit_projects(array $context, array &$findings): array

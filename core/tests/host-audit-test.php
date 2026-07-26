@@ -85,6 +85,9 @@ audit_assert(
     host_audit_project_from_path('/wp-admin/install.php', ['nimbly-site']) === null,
     'does not attribute scanner paths to projects'
 );
+audit_assert(host_audit_404_is_probe('/wp-login.php'), 'filters WordPress login probes');
+audit_assert(host_audit_404_is_probe('/vendor/phpunit/phpunit/src/Util/PHP/eval-stdin.php'), 'filters PHPUnit probes');
+audit_assert(!host_audit_404_is_probe('/nimbly-site/about-us'), 'keeps genuine application paths');
 audit_assert(
     host_audit_project_from_path(
         '/harmony-playground-app/api',
