@@ -396,5 +396,5 @@ function dashboard_repo_status_item(string $label, int $last_update, string $cou
 
 function dashboard_status_heading(string $label): string
 {
-    return '<div class="text-xs font-semibold uppercase tracking-wide text-primary">' . htmlspecialchars($label, ENT_QUOTES, 'UTF-8') . '</div>';
+    return '<div class="text-xs font-semibold uppercase tracking-wide text-neutral-900">' . htmlspecialchars($label, ENT_QUOTES, 'UTF-8') . '</div>';
 }
