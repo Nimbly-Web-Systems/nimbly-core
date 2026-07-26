@@ -17,7 +17,7 @@ if (!defined('BASE_DIR')) {
 }
 
 const HOST_AUDIT_SCHEMA_VERSION = 1;
-const HOST_AUDIT_VERSION = '1.0.0';
+const HOST_AUDIT_VERSION = '1.1.0';
 
 if (!defined('NIMBLY_HOST_AUDIT_LIBRARY')) {
     $host_audit_command = $argv[1] ?? 'host:audit';
@@ -147,6 +147,36 @@ function host_audit_read_config(): array
 function host_audit_system(array $context, array &$findings): array
 {
     $config = $context['config'];
+    $platform = host_audit_platform();
+    if (!empty($platform['release_upgrade']['available'])) {
+        $target = (string)($platform['release_upgrade']['target'] ?? 'new release');
+        $findings[] = host_audit_finding(
+            'system:release-upgrade',
+            'warning',
+            'host',
+            'Operating system release upgrade is available',
+            $target . ' · planned maintenance required'
+        );
+    }
+    if (!empty($platform['reboot_required'])) {
+        $findings[] = host_audit_finding(
+            'system:reboot-required',
+            'warning',
+            'host',
+            'Server reboot is required',
+            'Planned maintenance required'
+        );
+    }
+    if (($platform['security_updates'] ?? 0) > 0) {
+        $findings[] = host_audit_finding(
+            'system:security-updates',
+            'warning',
+            'host',
+            'Security updates are pending',
+            (int)$platform['security_updates'] . ' package(s) · planned maintenance required'
+        );
+    }
+
     $disk_total = @disk_total_space('/');
     $disk_free = @disk_free_space('/');
     $disk_used_percent = null;
@@ -235,6 +265,8 @@ function host_audit_system(array $context, array &$findings): array
         'failed_units' => $failed_units,
         'services' => $services,
         'config_tests' => $config_test_status,
+        'platform' => $platform,
+        'php' => host_audit_php_runtime(),
     ];
 }
 
@@ -1251,6 +1283,103 @@ function host_audit_uptime_seconds(): ?int
     }
     $parts = explode(' ', trim((string)file_get_contents('/proc/uptime')));
     return isset($parts[0]) ? (int)floor((float)$parts[0]) : null;
+}
+
+function host_audit_platform(): array
+{
+    $release = host_audit_parse_key_values(
+        is_readable('/etc/os-release') ? (string)file_get_contents('/etc/os-release') : ''
+    );
+    $notice = '';
+    foreach ([
+        '/var/lib/ubuntu-release-upgrader/release-upgrade-available',
+        '/var/lib/update-notifier/release-upgrade-available',
+    ] as $path) {
+        if (is_readable($path)) {
+            $notice = trim((string)file_get_contents($path));
+            if ($notice !== '') {
+                break;
+            }
+        }
+    }
+    if ($notice === '' && is_file('/usr/bin/do-release-upgrade')) {
+        $upgrade_check = host_audit_run_command(['do-release-upgrade', '-c'], 30);
+        $notice = trim($upgrade_check['stdout'] . "\n" . $upgrade_check['stderr']);
+    }
+
+    $updates_notice = is_readable('/var/lib/update-notifier/updates-available')
+        ? (string)file_get_contents('/var/lib/update-notifier/updates-available')
+        : '';
+    $security_updates = null;
+    if (preg_match('/(\d+)\s+(?:of these updates are|update(?:s)? (?:is|are)) standard security updates/i', $updates_notice, $match)) {
+        $security_updates = (int)$match[1];
+    }
+
+    return [
+        'name' => trim((string)($release['PRETTY_NAME'] ?? $release['NAME'] ?? ''), '"'),
+        'version_id' => trim((string)($release['VERSION_ID'] ?? ''), '"'),
+        'release_upgrade' => host_audit_release_upgrade($notice),
+        'reboot_required' => is_file('/var/run/reboot-required'),
+        'reboot_packages' => is_readable('/var/run/reboot-required.pkgs')
+            ? array_values(array_filter(array_map('trim', file('/var/run/reboot-required.pkgs', FILE_IGNORE_NEW_LINES) ?: [])))
+            : [],
+        'security_updates' => $security_updates,
+    ];
+}
+
+function host_audit_release_upgrade(string $notice): array
+{
+    $target = null;
+    if (preg_match('/New release [\'"]([^\'"]+)[\'"] available/i', $notice, $match)
+        || preg_match('/New release:\s*([^\s]+)/i', $notice, $match)) {
+        $target = trim($match[1]);
+    }
+    return [
+        'available' => $target !== null,
+        'target' => $target,
+    ];
+}
+
+function host_audit_php_runtime(): array
+{
+    $modules = host_audit_run_command(['apache2ctl', '-M'], 10);
+    $fpm_config = '';
+    $config_paths = array_merge(
+        glob('/etc/apache2/conf-enabled/*.conf') ?: [],
+        glob('/etc/apache2/sites-enabled/*') ?: []
+    );
+    foreach ($config_paths as $path) {
+        if (is_readable($path)) {
+            $fpm_config .= "\n" . file_get_contents($path);
+        }
+    }
+    $handler = host_audit_php_handler(
+        $modules['stdout'] . "\n" . $modules['stderr'],
+        $fpm_config
+    );
+    $web_version = null;
+    if ($handler === 'php-fpm'
+        && preg_match('/php(\d+\.\d+)-fpm(?:\.sock)?/i', $fpm_config, $match)) {
+        $web_version = $match[1];
+    }
+    return [
+        'version' => $web_version ?? PHP_VERSION,
+        'cli_version' => PHP_VERSION,
+        'sapi' => PHP_SAPI,
+        'handler' => $handler,
+    ];
+}
+
+function host_audit_php_handler(string $apache_modules, string $fpm_config): string
+{
+    if (preg_match('/SetHandler\s+"?proxy:unix:.*php.*fpm/i', $fpm_config)
+        || preg_match('/php\d+(?:\.\d+)?-fpm\.sock/i', $fpm_config)) {
+        return 'php-fpm';
+    }
+    if (preg_match('/\bphp(?:\d+)?_module\b/i', $apache_modules)) {
+        return 'apache-module';
+    }
+    return 'unknown';
 }
 
 function host_audit_parse_key_values(string $output): array
