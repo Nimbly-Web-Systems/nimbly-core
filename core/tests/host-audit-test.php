@@ -35,6 +35,27 @@ audit_assert(host_audit_duration_seconds('24h') === 86400, 'parses hour duration
 audit_assert(host_audit_duration_seconds('2d') === 172800, 'parses day duration');
 audit_assert(host_audit_duration_seconds('tomorrow') === null, 'rejects invalid duration');
 
+$release_upgrade = host_audit_release_upgrade(
+    "New release '26.04 LTS' available.\nRun 'do-release-upgrade' to upgrade to it."
+);
+audit_assert($release_upgrade['available'] === true, 'detects available OS release upgrade');
+audit_assert($release_upgrade['target'] === '26.04 LTS', 'extracts OS release target');
+audit_assert(
+    host_audit_release_upgrade('No new release found.')['available'] === false,
+    'keeps current OS release healthy'
+);
+audit_assert(
+    host_audit_php_handler(' php_module (shared)', '') === 'apache-module',
+    'detects Apache PHP module'
+);
+audit_assert(
+    host_audit_php_handler(
+        ' proxy_fcgi_module (shared)',
+        'SetHandler "proxy:unix:/run/php/php8.4-fpm.sock|fcgi://localhost"'
+    ) === 'php-fpm',
+    'detects PHP-FPM handler'
+);
+
 $findings = [
     host_audit_finding(
         'php:warning:test',
