@@ -17,7 +17,7 @@ if (!defined('BASE_DIR')) {
 }
 
 const HOST_AUDIT_SCHEMA_VERSION = 1;
-const HOST_AUDIT_VERSION = '1.1.0';
+const HOST_AUDIT_VERSION = '1.2.0';
 
 if (!defined('NIMBLY_HOST_AUDIT_LIBRARY')) {
     $host_audit_command = $argv[1] ?? 'host:audit';
@@ -63,6 +63,8 @@ function host_audit_main(array $argv): void
     ];
     $project_result = host_audit_projects($context, $findings);
     $context['registered_projects'] = $project_result['aliases'];
+    $context['registered_hosts'] = $project_result['hosts'];
+    $context['known_hosts'] = $project_result['known_hosts'];
     $checks['apache'] = host_audit_apache($context, $findings);
     $project_result['checks'] = host_audit_merge_project_metrics(
         $project_result['checks'],
@@ -435,10 +437,13 @@ function host_audit_apache(array $context, array &$findings): array
             if (isset($status_counts[$bucket])) {
                 $status_counts[$bucket]++;
             }
-            $project = host_audit_project_from_path(
-                $entry['path'],
-                (array)($context['registered_projects'] ?? [])
+            $attribution = host_audit_request_attribution(
+                $entry,
+                (array)($context['registered_projects'] ?? []),
+                (array)($context['registered_hosts'] ?? []),
+                (array)($context['known_hosts'] ?? [])
             );
+            $project = $attribution['project'];
             if ($project !== null) {
                 $project_metrics[$project] ??= host_audit_empty_project_metrics();
                 $project_metrics[$project]['requests']++;
@@ -454,9 +459,12 @@ function host_audit_apache(array $context, array &$findings): array
                 if (host_audit_404_is_probe($entry['path'])) {
                     $not_found_probe_count++;
                 } else {
-                    $route_key = ($project ?? 'Unattributed') . "\n" . $entry['path'];
+                    $route_key = $attribution['label'] . "\n" . $entry['path'];
                     $not_found_routes[$route_key] ??= [
                         'project' => $project,
+                        'target' => $attribution['label'],
+                        'target_type' => $attribution['type'],
+                        'host' => $entry['vhost'],
                         'path' => $entry['path'],
                         'count' => 0,
                         'first_seen' => $entry['timestamp'],
@@ -634,7 +642,13 @@ function host_audit_projects(array $context, array &$findings): array
             'Master project inventory is unavailable',
             $inventory_path
         );
-        return ['checks' => [], 'environments' => [], 'aliases' => []];
+        return [
+            'checks' => [],
+            'environments' => [],
+            'aliases' => [],
+            'hosts' => [],
+            'known_hosts' => [],
+        ];
     }
 
     $scheduler_paths = host_audit_scheduler_project_paths(
@@ -644,10 +658,14 @@ function host_audit_projects(array $context, array &$findings): array
     $apache_aliases = host_audit_apache_aliases(
         (string)$context['config']['apache_sites_enabled']
     );
+    $apache_vhosts = host_audit_apache_vhosts(
+        (string)$context['config']['apache_sites_enabled']
+    );
     $overrides = (array)($context['config']['project_alias_overrides'] ?? []);
     $checks = [];
     $environments = [];
     $aliases = [];
+    $project_paths = [];
     foreach (glob(rtrim($inventory_path, '/') . '/*') ?: [] as $record_path) {
         if (!is_file($record_path) || basename($record_path) === '.meta') {
             continue;
@@ -677,6 +695,9 @@ function host_audit_projects(array $context, array &$findings): array
             ? 'Active'
             : 'Not scheduled';
         $checks[$name] = $check;
+        if ($path !== '') {
+            $project_paths[rtrim($path, '/')] = $name;
+        }
         if ($apache_project['alias'] !== '') {
             $aliases[host_audit_id($apache_project['alias'])] = $name;
         }
@@ -688,11 +709,20 @@ function host_audit_projects(array $context, array &$findings): array
         $check['status'] = host_audit_project_status((string)$name, $findings);
     }
     unset($check);
+    $hosts = [];
+    foreach ($apache_vhosts as $host => $document_root) {
+        $project_path = rtrim($document_root, '/');
+        if (isset($project_paths[$project_path])) {
+            $hosts[$host] = $project_paths[$project_path];
+        }
+    }
     ksort($checks);
     return [
         'checks' => $checks,
         'environments' => array_values(array_unique($environments)),
         'aliases' => $aliases,
+        'hosts' => $hosts,
+        'known_hosts' => array_fill_keys(array_keys($apache_vhosts), true),
     ];
 }
 
@@ -748,6 +778,48 @@ function host_audit_apache_aliases(string $sites_enabled): array
         }
     }
     return $aliases;
+}
+
+function host_audit_apache_vhosts(string $sites_enabled): array
+{
+    $vhosts = [];
+    foreach (glob(rtrim($sites_enabled, '/') . '/*') ?: [] as $config_path) {
+        if (!is_file($config_path)) {
+            continue;
+        }
+        $current = null;
+        foreach (file($config_path, FILE_IGNORE_NEW_LINES) ?: [] as $line) {
+            $line = trim(preg_replace('/\s+#.*$/', '', $line) ?? $line);
+            if (preg_match('/^<VirtualHost\b/i', $line)) {
+                $current = ['hosts' => [], 'document_root' => ''];
+                continue;
+            }
+            if ($current === null) {
+                continue;
+            }
+            if (preg_match('/^<\/VirtualHost>/i', $line)) {
+                foreach ($current['hosts'] as $host) {
+                    if ($current['document_root'] !== '') {
+                        $vhosts[$host] = $current['document_root'];
+                    }
+                }
+                $current = null;
+                continue;
+            }
+            if (preg_match('/^Server(?:Name|Alias)\s+(.+)$/i', $line, $match)) {
+                foreach (preg_split('/\s+/', trim($match[1])) ?: [] as $host) {
+                    $host = host_audit_normalize_vhost($host, true);
+                    if ($host !== null) {
+                        $current['hosts'][] = $host;
+                    }
+                }
+            } elseif (preg_match('/^DocumentRoot\s+["\']?([^"\']+)["\']?$/i', $line, $match)) {
+                $current['document_root'] = rtrim(trim($match[1]), '/');
+            }
+        }
+    }
+    ksort($vhosts);
+    return $vhosts;
 }
 
 function host_audit_apache_project(string $slug, array $aliases, array $overrides): array
@@ -1491,11 +1563,81 @@ function host_audit_parse_access_line(string $line): ?array
         return null;
     }
     $path = parse_url($match['target'], PHP_URL_PATH) ?: $match['target'];
+    $prefix_end = strpos($line, '[');
+    $prefix = $prefix_end === false ? '' : trim(substr($line, 0, $prefix_end));
+    $prefix_parts = preg_split('/\s+/', $prefix) ?: [];
+    $vhost = count($prefix_parts) >= 2
+        ? host_audit_normalize_vhost((string)$prefix_parts[0])
+        : null;
     return [
         'timestamp' => $timestamp,
         'method' => $match['method'],
         'path' => $path,
         'status' => (int)$match['status'],
+        'vhost' => $vhost,
+    ];
+}
+
+function host_audit_normalize_vhost(string $value, bool $allow_wildcard = false): ?string
+{
+    $host = strtolower(trim($value, " \t\n\r\0\x0B."));
+    $host = preg_replace('/:\d+$/', '', $host) ?? $host;
+    if ($host === ''
+        || filter_var($host, FILTER_VALIDATE_IP)
+        || (!$allow_wildcard && str_contains($host, '*'))
+        || preg_match($allow_wildcard
+            ? '/^(?:\*\.)?[a-z0-9](?:[a-z0-9.-]*[a-z0-9])?$/'
+            : '/^[a-z0-9](?:[a-z0-9.-]*[a-z0-9])?$/', $host) !== 1) {
+        return null;
+    }
+    return $host;
+}
+
+function host_audit_project_from_host(string $host, array $registered_hosts): ?string
+{
+    $host = host_audit_normalize_vhost($host) ?? '';
+    if ($host === '') {
+        return null;
+    }
+    if (isset($registered_hosts[$host])) {
+        return (string)$registered_hosts[$host];
+    }
+    foreach ($registered_hosts as $pattern => $project) {
+        if (str_starts_with((string)$pattern, '*.')
+            && str_ends_with($host, substr((string)$pattern, 1))) {
+            return (string)$project;
+        }
+    }
+    return null;
+}
+
+function host_audit_request_attribution(
+    array $entry,
+    array $registered_projects,
+    array $registered_hosts,
+    array $known_hosts
+): array {
+    $host = (string)($entry['vhost'] ?? '');
+    if ($host === '' && count($known_hosts) === 1) {
+        $host = (string)array_key_first($known_hosts);
+    }
+    $project = host_audit_project_from_host($host, $registered_hosts);
+    if ($project === null && $registered_projects !== []) {
+        $project = host_audit_project_from_path(
+            (string)($entry['path'] ?? ''),
+            $registered_projects
+        );
+    }
+    if ($project !== null) {
+        return ['project' => $project, 'type' => 'project', 'label' => $project];
+    }
+    if ($host !== '' && host_audit_project_from_host($host, $known_hosts) !== null) {
+        return ['project' => null, 'type' => 'server', 'label' => 'Server'];
+    }
+    return [
+        'project' => null,
+        'type' => 'unknown-host',
+        'label' => $host === '' ? 'Unknown host' : 'Unknown host: ' . $host,
     ];
 }
 

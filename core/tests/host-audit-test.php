@@ -108,6 +108,7 @@ $access = host_audit_parse_access_line(
 audit_assert($access !== null, 'parses vhost access line');
 audit_assert($access['status'] === 503, 'parses HTTP status');
 audit_assert($access['path'] === '/nimbly-site/api', 'parses request path');
+audit_assert($access['vhost'] === 'stage.example', 'parses logged Apache vhost');
 audit_assert(
     host_audit_project_from_path($access['path'], ['nimbly-site']) === 'nimbly-site',
     'attributes request path to project'
@@ -126,6 +127,56 @@ audit_assert(
     ) === 'HP App',
     'maps an Apache alias to its inventory project'
 );
+audit_assert(
+    host_audit_project_from_host(
+        'koen.staging.example:443',
+        ['koen.staging.example' => 'Koen']
+    ) === 'Koen',
+    'maps a logged vhost to its project'
+);
+$host_attribution = host_audit_request_attribution(
+    [
+        'vhost' => 'koen.staging.example',
+        'path' => '/missing-page',
+    ],
+    [],
+    ['koen.staging.example' => 'Koen'],
+    ['koen.staging.example' => true]
+);
+audit_assert($host_attribution['project'] === 'Koen', 'prefers hostname project attribution');
+$server_attribution = host_audit_request_attribution(
+    [
+        'vhost' => 'staging.example',
+        'path' => '/robots.txt',
+    ],
+    [],
+    [],
+    ['staging.example' => true]
+);
+audit_assert($server_attribution['type'] === 'server', 'labels a known generic vhost as server traffic');
+$implicit_server_attribution = host_audit_request_attribution(
+    [
+        'vhost' => null,
+        'path' => '/robots.txt',
+    ],
+    [],
+    [],
+    ['staging.example' => true]
+);
+audit_assert(
+    $implicit_server_attribution['type'] === 'server',
+    'labels hostless traffic as server traffic when Apache has one known vhost'
+);
+$unknown_attribution = host_audit_request_attribution(
+    [
+        'vhost' => 'scanner.invalid',
+        'path' => '/missing-page',
+    ],
+    [],
+    [],
+    ['staging.example' => true]
+);
+audit_assert($unknown_attribution['type'] === 'unknown-host', 'labels unknown vhost traffic explicitly');
 
 $apache_project = host_audit_apache_project(
     'groene-chemie',
@@ -208,6 +259,15 @@ audit_assert(host_audit_exit_code('unknown') === 3, 'unknown exit code');
 $fixture = sys_get_temp_dir() . '/nimbly-host-audit-test-' . bin2hex(random_bytes(4));
 mkdir($fixture . '/ext/data/.jobs', 0755, true);
 mkdir($fixture . '/ext/.git/rebase-merge', 0755, true);
+mkdir($fixture . '/apache-sites', 0755, true);
+file_put_contents(
+    $fixture . '/apache-sites/project.conf',
+    "<VirtualHost *:443>\n"
+    . "    ServerName koen.staging.example\n"
+    . "    ServerAlias www.koen.staging.example\n"
+    . "    DocumentRoot /var/www/Koen\n"
+    . "</VirtualHost>\n"
+);
 file_put_contents(
     $fixture . '/ext/data/.jobs/failed-job',
     json_encode(['status' => 'failed', 'last_error' => 'Example failure'])
@@ -244,6 +304,15 @@ audit_assert(
 $git_state = host_audit_git_state($fixture . '/ext');
 audit_assert($git_state['branch'] === 'live', 'reads git branch');
 audit_assert($git_state['operation'] === 'rebase', 'detects interrupted rebase');
+$vhosts = host_audit_apache_vhosts($fixture . '/apache-sites');
+audit_assert(
+    ($vhosts['koen.staging.example'] ?? '') === '/var/www/Koen',
+    'maps Apache ServerName to its document root'
+);
+audit_assert(
+    ($vhosts['www.koen.staging.example'] ?? '') === '/var/www/Koen',
+    'maps Apache ServerAlias to its document root'
+);
 audit_remove_fixture($fixture);
 
 echo "Host audit tests passed\n";
