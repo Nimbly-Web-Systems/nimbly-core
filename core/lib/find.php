@@ -136,9 +136,11 @@ function load_library($name) {
         return;
     }
     $path = find_library($name);
-    if ($path !== false) {
-        require_once($path);
+    if ($path === false) {
+        return false;
     }
+
+    require_once($path);
     $loaded[$name] = true;
     return $path;
 }
