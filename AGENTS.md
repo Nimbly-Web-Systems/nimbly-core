@@ -76,6 +76,11 @@ For every task, follow this workflow unless explicitly instructed otherwise.
    - Book two hours to the migrated project for the migration and production
      verification. Reuse or normalize an existing migration booking instead of
      creating a duplicate.
+   - Migrate every legacy SMTP or `.services` mail configuration to Resend.
+     Reuse the established Resend credential when appropriate, keep it only in
+     runtime `.env` files, set `MAIL_FROM_NAME` to the project site name, and
+     verify that no obsolete SMTP variables or tracked service credentials
+     remain.
 
 8. Commit the completed step.
    - Commit only after the step is implemented and sanity tested.
