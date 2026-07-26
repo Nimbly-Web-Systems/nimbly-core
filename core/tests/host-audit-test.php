@@ -49,11 +49,21 @@ audit_assert(
     'detects Apache PHP module'
 );
 audit_assert(
+    host_audit_php_handler('php8.3.load', '') === 'apache-module',
+    'detects enabled Apache PHP module file'
+);
+audit_assert(
     host_audit_php_handler(
         ' proxy_fcgi_module (shared)',
         'SetHandler "proxy:unix:/run/php/php8.4-fpm.sock|fcgi://localhost"'
     ) === 'php-fpm',
     'detects PHP-FPM handler'
+);
+audit_assert(
+    host_audit_security_updates_from_pro(
+        '{"summary":{"num_standard_security_updates":7}}'
+    ) === 7,
+    'parses Ubuntu Pro security updates'
 );
 
 $findings = [

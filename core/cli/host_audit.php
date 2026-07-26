@@ -1314,6 +1314,13 @@ function host_audit_platform(): array
     if (preg_match('/(\d+)\s+(?:of these updates are|update(?:s)? (?:is|are)) standard security updates/i', $updates_notice, $match)) {
         $security_updates = (int)$match[1];
     }
+    if ($security_updates === null && is_file('/usr/bin/pro')) {
+        $security_status = host_audit_run_command(
+            ['pro', 'security-status', '--format', 'json'],
+            20
+        );
+        $security_updates = host_audit_security_updates_from_pro($security_status['stdout']);
+    }
 
     return [
         'name' => trim((string)($release['PRETTY_NAME'] ?? $release['NAME'] ?? ''), '"'),
@@ -1325,6 +1332,13 @@ function host_audit_platform(): array
             : [],
         'security_updates' => $security_updates,
     ];
+}
+
+function host_audit_security_updates_from_pro(string $output): ?int
+{
+    $status = json_decode($output, true);
+    $updates = is_array($status) ? ($status['summary']['num_standard_security_updates'] ?? null) : null;
+    return is_numeric($updates) ? (int)$updates : null;
 }
 
 function host_audit_release_upgrade(string $notice): array
@@ -1343,6 +1357,9 @@ function host_audit_release_upgrade(string $notice): array
 function host_audit_php_runtime(): array
 {
     $modules = host_audit_run_command(['apache2ctl', '-M'], 10);
+    foreach (glob('/etc/apache2/mods-enabled/php*.load') ?: [] as $module_path) {
+        $modules['stdout'] .= "\n" . basename($module_path);
+    }
     $fpm_config = '';
     $config_paths = array_merge(
         glob('/etc/apache2/conf-enabled/*.conf') ?: [],
@@ -1376,7 +1393,8 @@ function host_audit_php_handler(string $apache_modules, string $fpm_config): str
         || preg_match('/php\d+(?:\.\d+)?-fpm\.sock/i', $fpm_config)) {
         return 'php-fpm';
     }
-    if (preg_match('/\bphp(?:\d+)?_module\b/i', $apache_modules)) {
+    if (preg_match('/\bphp(?:\d+)?_module\b/i', $apache_modules)
+        || preg_match('/\bphp\d+(?:\.\d+)?\.load\b/i', $apache_modules)) {
         return 'apache-module';
     }
     return 'unknown';
