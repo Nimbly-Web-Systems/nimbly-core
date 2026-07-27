@@ -17,7 +17,12 @@ function get_resource_meta_sc($params) {
     set_variable("data.resource", $resource);
     set_variable("data.fields", $meta['fields']);
     set_variables("data.field.", $meta['fields']);
-    set_variable('data.ai_translate_record', !empty($meta['ai_translate_record']));
+    $ai_record_action = $meta['ai_record_action'] ?? ($meta['ai_translate_record'] ?? false);
+    set_variable('data.ai_record_action', !empty($ai_record_action));
+    set_variable(
+        'data.ai_record_action_title',
+        is_array($ai_record_action) ? ($ai_record_action['title'] ?? 'Translate') : 'Translate'
+    );
 
     // Exposed for the add-form language picker and i18n submit wrapping —
     // see language_picker_sc() and add-resource-form/form_add.js.
