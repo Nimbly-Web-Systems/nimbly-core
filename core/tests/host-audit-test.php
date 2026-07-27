@@ -181,6 +181,7 @@ audit_assert($unknown_attribution['type'] === 'unknown-host', 'labels unknown vh
 $apache_project = host_audit_apache_project(
     'groene-chemie',
     ['groenechemie' => '/var/www/nimbly-groenechemie'],
+    [],
     []
 );
 audit_assert(
@@ -190,11 +191,22 @@ audit_assert(
 $apache_project_override = host_audit_apache_project(
     'hp-app',
     ['harmony-playground-app' => '/var/www/harmony-playground-app'],
+    [],
     ['hp-app' => 'harmony-playground-app']
 );
 audit_assert(
     $apache_project_override['path'] === '/var/www/harmony-playground-app',
     'uses explicit Apache alias overrides'
+);
+$apache_vhost_project = host_audit_apache_project(
+    'f-14association',
+    [],
+    ['f14tomcatassociation.org' => '/var/www/f-14association'],
+    []
+);
+audit_assert(
+    $apache_vhost_project['path'] === '/var/www/f-14association',
+    'matches Apache virtual-host document roots'
 );
 
 $security_activity = host_audit_parse_security_activity(
