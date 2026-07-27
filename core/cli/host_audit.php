@@ -65,6 +65,8 @@ function host_audit_main(array $argv): void
     $context['registered_projects'] = $project_result['aliases'];
     $context['registered_hosts'] = $project_result['hosts'];
     $context['known_hosts'] = $project_result['known_hosts'];
+    $context['access_log_projects'] = $project_result['access_log_projects'];
+    $context['error_log_projects'] = $project_result['error_log_projects'];
     $checks['apache'] = host_audit_apache($context, $findings);
     $project_result['checks'] = host_audit_merge_project_metrics(
         $project_result['checks'],
@@ -414,8 +416,13 @@ function host_audit_apache(array $context, array &$findings): array
     $not_found_probe_count = 0;
     $not_found_routes = [];
     foreach (array_unique($access_files) as $file) {
+        $file_project = host_audit_log_project(
+            $file,
+            (array)($context['access_log_projects'] ?? [])
+        );
         host_audit_each_line($file, function (string $line) use (
             $context,
+            $file_project,
             &$findings,
             &$requests,
             &$status_counts,
@@ -443,6 +450,13 @@ function host_audit_apache(array $context, array &$findings): array
                 (array)($context['registered_hosts'] ?? []),
                 (array)($context['known_hosts'] ?? [])
             );
+            if ($file_project !== null) {
+                $attribution = [
+                    'project' => $file_project,
+                    'type' => 'project',
+                    'label' => $file_project,
+                ];
+            }
             $project = $attribution['project'];
             if ($project !== null) {
                 $project_metrics[$project] ??= host_audit_empty_project_metrics();
@@ -501,8 +515,13 @@ function host_audit_apache(array $context, array &$findings): array
     $php_counts = ['fatal' => 0, 'warning' => 0];
     $php_summaries = ['fatal' => [], 'warning' => []];
     foreach (array_unique($error_files) as $file) {
+        $file_project = host_audit_log_project(
+            $file,
+            (array)($context['error_log_projects'] ?? [])
+        );
         host_audit_each_line($file, function (string $line) use (
             $context,
+            $file_project,
             &$findings,
             &$php_counts,
             &$php_summaries,
@@ -519,8 +538,9 @@ function host_audit_apache(array $context, array &$findings): array
                 $php_counts['fatal']++;
                 $message = host_audit_normalize_message($match[2]);
                 $php_summaries['fatal'][$message] = true;
-                host_audit_add_project_php_event(
+                host_audit_record_project_php_event(
                     $project_metrics,
+                    $file_project,
                     $line,
                     (array)($context['registered_projects'] ?? [])
                 );
@@ -530,14 +550,16 @@ function host_audit_apache(array $context, array &$findings): array
                     'host',
                     'PHP fatal error',
                     $message,
-                    $timestamp
+                    $timestamp,
+                    $file_project
                 );
             } elseif (preg_match('/PHP Warning:\s*(.+)$/i', $line, $match)) {
                 $php_counts['warning']++;
                 $message = host_audit_normalize_message($match[1]);
                 $php_summaries['warning'][$message] = true;
-                host_audit_add_project_php_event(
+                host_audit_record_project_php_event(
                     $project_metrics,
+                    $file_project,
                     $line,
                     (array)($context['registered_projects'] ?? [])
                 );
@@ -547,7 +569,8 @@ function host_audit_apache(array $context, array &$findings): array
                     'host',
                     'PHP warning',
                     $message,
-                    $timestamp
+                    $timestamp,
+                    $file_project
                 );
             } elseif (preg_match('/MaxRequestWorkers|segfault|panic/i', $line)) {
                 $findings[] = host_audit_finding(
@@ -648,6 +671,8 @@ function host_audit_projects(array $context, array &$findings): array
             'aliases' => [],
             'hosts' => [],
             'known_hosts' => [],
+            'access_log_projects' => [],
+            'error_log_projects' => [],
         ];
     }
 
@@ -660,6 +685,10 @@ function host_audit_projects(array $context, array &$findings): array
     );
     $apache_vhosts = host_audit_apache_vhosts(
         (string)$context['config']['apache_sites_enabled']
+    );
+    $apache_logs = host_audit_apache_log_roots(
+        (string)$context['config']['apache_sites_enabled'],
+        (string)$context['config']['apache_log_dir']
     );
     $overrides = (array)($context['config']['project_alias_overrides'] ?? []);
     $checks = [];
@@ -716,9 +745,34 @@ function host_audit_projects(array $context, array &$findings): array
     unset($check);
     $hosts = [];
     foreach ($apache_vhosts as $host => $document_root) {
+        if (str_starts_with((string)$document_root, '@redirect:')) {
+            continue;
+        }
         $project_path = rtrim($document_root, '/');
         if (isset($project_paths[$project_path])) {
             $hosts[$host] = $project_paths[$project_path];
+        }
+    }
+    $access_log_projects = [];
+    foreach ($apache_logs['access'] as $log_path => $document_root) {
+        if (isset($project_paths[$document_root])) {
+            $access_log_projects[$log_path] = $project_paths[$document_root];
+        }
+    }
+    $error_log_projects = [];
+    foreach ($apache_logs['error'] as $log_path => $document_root) {
+        if (isset($project_paths[$document_root])) {
+            $error_log_projects[$log_path] = $project_paths[$document_root];
+        }
+    }
+    foreach ($apache_vhosts as $host => $document_root) {
+        if (!str_starts_with((string)$document_root, '@redirect:')) {
+            continue;
+        }
+        $target_host = substr((string)$document_root, strlen('@redirect:'));
+        $target_project = host_audit_project_from_host($target_host, $hosts);
+        if ($target_project !== null) {
+            $hosts[$host] = $target_project;
         }
     }
     ksort($checks);
@@ -728,6 +782,8 @@ function host_audit_projects(array $context, array &$findings): array
         'aliases' => $aliases,
         'hosts' => $hosts,
         'known_hosts' => array_fill_keys(array_keys($apache_vhosts), true),
+        'access_log_projects' => $access_log_projects,
+        'error_log_projects' => $error_log_projects,
     ];
 }
 
@@ -796,7 +852,7 @@ function host_audit_apache_vhosts(string $sites_enabled): array
         foreach (file($config_path, FILE_IGNORE_NEW_LINES) ?: [] as $line) {
             $line = trim(preg_replace('/\s+#.*$/', '', $line) ?? $line);
             if (preg_match('/^<VirtualHost\b/i', $line)) {
-                $current = ['hosts' => [], 'document_root' => ''];
+                $current = ['hosts' => [], 'document_root' => '', 'redirect_host' => ''];
                 continue;
             }
             if ($current === null) {
@@ -806,6 +862,8 @@ function host_audit_apache_vhosts(string $sites_enabled): array
                 foreach ($current['hosts'] as $host) {
                     if ($current['document_root'] !== '') {
                         $vhosts[$host] = $current['document_root'];
+                    } elseif ($current['redirect_host'] !== '') {
+                        $vhosts[$host] = '@redirect:' . $current['redirect_host'];
                     }
                 }
                 $current = null;
@@ -820,11 +878,65 @@ function host_audit_apache_vhosts(string $sites_enabled): array
                 }
             } elseif (preg_match('/^DocumentRoot\s+["\']?([^"\']+)["\']?$/i', $line, $match)) {
                 $current['document_root'] = rtrim(trim($match[1]), '/');
+            } elseif (preg_match(
+                '~^Redirect(?:\s+\w+)?\s+/\s+https?://([^/\s]+)~i',
+                $line,
+                $match
+            )) {
+                $current['redirect_host'] = host_audit_normalize_vhost($match[1]) ?? '';
             }
         }
     }
     ksort($vhosts);
     return $vhosts;
+}
+
+function host_audit_apache_log_roots(string $sites_enabled, string $log_dir): array
+{
+    $logs = ['access' => [], 'error' => []];
+    foreach (glob(rtrim($sites_enabled, '/') . '/*') ?: [] as $config_path) {
+        if (!is_file($config_path)) {
+            continue;
+        }
+        $current = null;
+        foreach (file($config_path, FILE_IGNORE_NEW_LINES) ?: [] as $line) {
+            $line = trim(preg_replace('/\s+#.*$/', '', $line) ?? $line);
+            if (preg_match('/^<VirtualHost\b/i', $line)) {
+                $current = ['document_root' => '', 'access' => [], 'error' => []];
+                continue;
+            }
+            if ($current === null) {
+                continue;
+            }
+            if (preg_match('/^<\/VirtualHost>/i', $line)) {
+                if ($current['document_root'] !== '') {
+                    foreach (['access', 'error'] as $type) {
+                        foreach ($current[$type] as $path) {
+                            $logs[$type][$path] = $current['document_root'];
+                        }
+                    }
+                }
+                $current = null;
+                continue;
+            }
+            if (preg_match('/^DocumentRoot\s+["\']?([^"\']+)["\']?$/i', $line, $match)) {
+                $current['document_root'] = rtrim(trim($match[1]), '/');
+                continue;
+            }
+            if (preg_match('/^CustomLog\s+["\']?([^"\'\s]+)["\']?/i', $line, $match)) {
+                $current['access'][] = host_audit_apache_log_path($match[1], $log_dir);
+            } elseif (preg_match('/^ErrorLog\s+["\']?([^"\'\s]+)["\']?/i', $line, $match)) {
+                $current['error'][] = host_audit_apache_log_path($match[1], $log_dir);
+            }
+        }
+    }
+    return $logs;
+}
+
+function host_audit_apache_log_path(string $path, string $log_dir): string
+{
+    $path = str_replace('${APACHE_LOG_DIR}', rtrim($log_dir, '/'), trim($path));
+    return str_starts_with($path, '/') ? $path : rtrim($log_dir, '/') . '/' . $path;
 }
 
 function host_audit_apache_project(
@@ -859,6 +971,9 @@ function host_audit_apache_project(
     $compact = str_replace('-', '', $slug);
     $trimmed = preg_replace('/-(?:site|blog|app)$/', '', $slug) ?: $slug;
     foreach (array_unique(array_values($vhosts)) as $path) {
+        if (str_starts_with((string)$path, '@redirect:')) {
+            continue;
+        }
         $candidate = host_audit_id(basename(rtrim((string)$path, '/')));
         if ($candidate === $slug
             || str_replace('-', '', $candidate) === $compact
@@ -1707,6 +1822,26 @@ function host_audit_empty_project_metrics(): array
         'http_5xx' => 0,
         'php_errors' => 0,
     ];
+}
+
+function host_audit_log_project(string $path, array $projects): ?string
+{
+    $base_path = preg_replace('/\.1$/', '', $path) ?: $path;
+    return isset($projects[$base_path]) ? (string)$projects[$base_path] : null;
+}
+
+function host_audit_record_project_php_event(
+    array &$metrics,
+    ?string $file_project,
+    string $line,
+    array $registered_projects
+): void {
+    if ($file_project === null) {
+        host_audit_add_project_php_event($metrics, $line, $registered_projects);
+        return;
+    }
+    $metrics[$file_project] ??= host_audit_empty_project_metrics();
+    $metrics[$file_project]['php_errors']++;
 }
 
 function host_audit_add_project_php_event(

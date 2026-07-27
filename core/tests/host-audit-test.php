@@ -290,6 +290,12 @@ file_put_contents(
     . "    ServerName koen.staging.example\n"
     . "    ServerAlias www.koen.staging.example\n"
     . "    DocumentRoot /var/www/Koen\n"
+    . "    ErrorLog \${APACHE_LOG_DIR}/koen-error.log\n"
+    . "    CustomLog \${APACHE_LOG_DIR}/koen-access.log combined\n"
+    . "</VirtualHost>\n"
+    . "<VirtualHost *:443>\n"
+    . "    ServerName old-koen.example\n"
+    . "    Redirect permanent / https://koen.staging.example/\n"
     . "</VirtualHost>\n"
 );
 file_put_contents(
@@ -336,6 +342,29 @@ audit_assert(
 audit_assert(
     ($vhosts['www.koen.staging.example'] ?? '') === '/var/www/Koen',
     'maps Apache ServerAlias to its document root'
+);
+audit_assert(
+    ($vhosts['old-koen.example'] ?? '') === '@redirect:koen.staging.example',
+    'maps redirect-only Apache hosts to their target host'
+);
+$apache_logs = host_audit_apache_log_roots(
+    $fixture . '/apache-sites',
+    '/var/log/apache2'
+);
+audit_assert(
+    ($apache_logs['access']['/var/log/apache2/koen-access.log'] ?? '') === '/var/www/Koen',
+    'maps project access logs to their document root'
+);
+audit_assert(
+    ($apache_logs['error']['/var/log/apache2/koen-error.log'] ?? '') === '/var/www/Koen',
+    'maps project error logs to their document root'
+);
+audit_assert(
+    host_audit_log_project(
+        '/var/log/apache2/koen-access.log.1',
+        ['/var/log/apache2/koen-access.log' => 'Koen']
+    ) === 'Koen',
+    'attributes rotated project logs'
 );
 audit_remove_fixture($fixture);
 
