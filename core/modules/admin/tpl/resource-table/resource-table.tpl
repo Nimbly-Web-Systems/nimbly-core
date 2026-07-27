@@ -30,7 +30,7 @@
                         </template>
                     </th>
                 </template>
-                <th scope="col" class="font-bold border-b border-neutral-200 py-3 text-left text-xs text-secondary">Actions</th>
+                <th scope="col" class="font-bold border-b border-neutral-200 py-3 text-left text-xs text-neutral-500">Actions</th>
             </tr>
         </thead>
         <tbody>
@@ -85,7 +85,7 @@
                     <template x-for="(field, field_id) in _fields" :key="field_id">
                         <div>
                             <div class="text-xs font-semibold uppercase tracking-wide text-neutral-500"
-                                :class="is_system_field(field_id) ? 'text-secondary' : ''"
+                                :class="is_system_field(field_id) ? 'text-neutral-500' : ''"
                                 x-text="field.name">
                             </div>
                             <div class="break-words text-neutral-700"
