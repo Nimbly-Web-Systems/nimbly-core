@@ -3,5 +3,5 @@
     style="transform:translateX(6px)"
     title="[#item.label#]" aria-label="[#item.label#]" x-bind:disabled="busy"
     @click.prevent="ai([#item.field_arg#], lang)">
-    <span class="inline-flex" :class="{ 'animate-spin': busy }">[#item.icon_svg#]</span>
+    <span class="inline-flex" :class="{ 'animate-spin': ai_busy_field === [#item.field_arg#] }">[#item.icon_svg#]</span>
 </button>

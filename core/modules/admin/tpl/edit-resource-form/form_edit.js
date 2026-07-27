@@ -5,6 +5,8 @@ document.addEventListener("alpine:init", () => {
     lang: _initial_lang,
     redirect_on_submit: true,
     busy: false,
+    ai_busy_field: null,
+    ai_busy_all: false,
 
     init() {
       this.form_data = window._frecord || {};
@@ -131,6 +133,7 @@ document.addEventListener("alpine:init", () => {
     },
     ai(field, lang) {
       this.busy = true;
+      this.ai_busy_field = field;
       nb.api
         .post(nb.base_url + "/api/v1/openai/complete", {
           resource: this.resource_id,
@@ -140,6 +143,7 @@ document.addEventListener("alpine:init", () => {
         })
         .then((data) => {
           this.busy = false;
+          this.ai_busy_field = null;
           this.me_busy = false;
           if (data.success) {
             this.form_data[field][lang] = data.completion;
@@ -155,8 +159,41 @@ document.addEventListener("alpine:init", () => {
         })
         .catch((err) => {
           this.busy = false;
+          this.ai_busy_field = null;
           this.me_busy = false;
           nb.notify(err.message || "Could not complete AI request");
+        });
+    },
+    ai_all(lang) {
+      this.busy = true;
+      this.ai_busy_all = true;
+      nb.api
+        .post(nb.base_url + "/api/v1/openai/complete", {
+          resource: this.resource_id,
+          uuid: this.record_id,
+          lang,
+          field: "(all)",
+        })
+        .then((data) => {
+          this.busy = false;
+          this.ai_busy_all = false;
+          if (!data.success) {
+            nb.notify(data.message);
+            return;
+          }
+          Object.entries(data.completions || {}).forEach(([field, value]) => {
+            if (!this.form_data[field] || typeof this.form_data[field] !== "object") {
+              this.form_data[field] = {};
+            }
+            this.form_data[field][lang] = value;
+          });
+          this.lang = lang;
+          this.set_editors(lang);
+        })
+        .catch((err) => {
+          this.busy = false;
+          this.ai_busy_all = false;
+          nb.notify(err.message || "Could not translate record");
         });
     },
     translate(lang) {
