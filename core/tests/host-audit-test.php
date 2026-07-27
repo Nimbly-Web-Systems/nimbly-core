@@ -34,6 +34,18 @@ function audit_remove_fixture(string $path): void
 audit_assert(host_audit_duration_seconds('24h') === 86400, 'parses hour duration');
 audit_assert(host_audit_duration_seconds('2d') === 172800, 'parses day duration');
 audit_assert(host_audit_duration_seconds('tomorrow') === null, 'rejects invalid duration');
+audit_assert(
+    host_audit_project_log_is_informational(
+        'Nimbly: Error: password reset requested for unknown email example@example.com'
+    ),
+    'ignores legacy unknown-email password reset events'
+);
+audit_assert(
+    host_audit_project_log_is_informational(
+        'Nimbly: Password reset requested for unknown email example@example.com'
+    ),
+    'ignores informational unknown-email password reset events'
+);
 
 $release_upgrade = host_audit_release_upgrade(
     "New release '26.04 LTS' available.\nRun 'do-release-upgrade' to upgrade to it."

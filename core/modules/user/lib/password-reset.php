@@ -18,7 +18,7 @@ function password_reset_request($email) {
 
 	$user = find_user_by_email($email);
 	if (empty($user) || empty($user['uuid']) || empty($user['email'])) {
-		log_system('Error: password reset requested for unknown email ' . $email);
+		log_system('Password reset requested for unknown email ' . $email);
 		return ['message' => $message, 'sent' => false];
 	}
 
