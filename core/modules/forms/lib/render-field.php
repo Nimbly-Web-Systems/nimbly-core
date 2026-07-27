@@ -259,7 +259,7 @@ function _field_actions_normalize(array $def): array
     if (!empty($def['ai_prompts'])) {
         $actions[] = [
             'type' => 'ai',
-            'label' => 'Generate with AI',
+            'label' => $def['ai_label'] ?? 'Generate with AI',
             'icon' => 'sparkles',
         ];
     }
