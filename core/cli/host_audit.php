@@ -936,6 +936,9 @@ function host_audit_project(string $name, string $path, array $context, array &$
                 return;
             }
             $message = $match['message'];
+            if (host_audit_project_log_is_informational($message)) {
+                return;
+            }
             if (!preg_match('/PHP (Warning|Fatal|Parse)|Nimbly:.*(?:error|failed|exception)/i', $message)) {
                 return;
             }
@@ -981,6 +984,14 @@ function host_audit_project(string $name, string $path, array $context, array &$
         'jobs' => $jobs,
         'git' => $git,
     ];
+}
+
+function host_audit_project_log_is_informational(string $message): bool
+{
+    return preg_match(
+        '/Nimbly:\s+(?:Error:\s+)?password reset requested for unknown email\b/i',
+        $message
+    ) === 1;
 }
 
 function host_audit_project_jobs(
