@@ -6,7 +6,7 @@
         <thead>
             <tr>
                 <template x-for="(field, field_id) in _fields" :key="field_id">
-                    <th scope="col" class="font-bold border-b border-neutral-200 py-3 text-left"
+                    <th scope="col" class="border-b border-neutral-200 py-3 pr-4 text-left font-bold"
                         :class="field_class(field_id)"
                         x-ref="field_id">
                         <template x-if="field.sortable !== undefined && !field.sortable">
@@ -30,17 +30,17 @@
                         </template>
                     </th>
                 </template>
-                <th scope="col" class="font-bold border-b border-neutral-200 py-3 text-left text-xs text-neutral-500">Actions</th>
+                <th scope="col" class="border-b border-neutral-200 py-3 pr-4 text-left text-xs font-bold text-neutral-500">Actions</th>
             </tr>
         </thead>
         <tbody>
             <template x-if="total_count() < 1">
                 <tr>
-                    <td class="text-neutral-600 py-3 border-b border-neutral-200"
+                    <td class="border-b border-neutral-200 py-3 pr-4 text-neutral-600"
                         :colspan="Object.keys(_fields).length">
                         <p x-text="search_regex? '[#text No search results#]': '[#text No records yet#]'" ></p>
                     </td>
-                    <td class="text-neutral-600 py-3 border-b border-neutral-200">
+                    <td class="border-b border-neutral-200 py-3 pr-4 text-neutral-600">
                         <template x-if="Object.keys(_records).length < 1">
                             [#feature-cond create-[#resource-id#] tpl=action_add#]
                         </template>
@@ -51,12 +51,12 @@
             <template x-for="(record, record_id) in page_records" :key="record_id">
                 <tr :x-ref="record_id">
                     <template x-for="(field, field_id) in _fields">
-                        <td class="text-neutral-600 py-3 border-b border-neutral-200"
+                        <td class="border-b border-neutral-200 py-3 pr-4 text-neutral-600"
                             :class="field_class(field_id)"
                             x-html="highlight(record[field_id])">
                         </td>
                     </template>
-                    <td class="text-neutral-600 py-3 border-b border-neutral-200">
+                    <td class="border-b border-neutral-200 py-3 pr-4 text-neutral-600">
                         <div class="flex items-center gap-1">
                             [#actions#]
                         </div>
