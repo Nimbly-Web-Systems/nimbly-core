@@ -179,7 +179,20 @@ function render_field(array $def, string $field = '', $value = null, string $sto
     set_variable('_f.model', $model);
     $x_init = '';
     if (!$is_edit_i18n) {
-        $init_value = json_encode((string)$field_value, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        if (!empty($def['multi'])) {
+            if (is_string($field_value)) {
+                $field_value = trim($field_value);
+                $field_value = $field_value === '' || $field_value === '(empty)'
+                    ? []
+                    : array_values(array_filter(array_map('trim', explode(',', $field_value))));
+            } elseif (!is_array($field_value)) {
+                $field_value = [];
+            }
+        }
+        $init_value = json_encode(
+            !empty($def['multi']) ? array_values($field_value) : (string)$field_value,
+            JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
+        );
         $x_init = 'x-init="' . htmlspecialchars("{$model}={$init_value}", ENT_QUOTES, 'UTF-8') . '"';
     }
     set_variable('_f.x_init', $x_init);
@@ -197,7 +210,8 @@ function render_field(array $def, string $field = '', $value = null, string $sto
         set_variable('_f.source', $source);
     }
 
-    run_single_sc('field-' . $type);
+    $template_type = $type === 'file' && !empty($def['multi']) ? 'file-multi' : $type;
+    run_single_sc('field-' . $template_type);
 }
 
 function _get_field_value(string $var_name)
@@ -246,7 +260,7 @@ function _field_actions_normalize(array $def): array
         $actions[] = [
             'type' => 'ai',
             'label' => 'Generate with AI',
-            'icon' => 'sparkles',
+            'icon' => 'openai',
         ];
     }
 

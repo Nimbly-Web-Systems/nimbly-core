@@ -4,8 +4,9 @@ document.addEventListener("alpine:init", () => {
             const source = value && typeof value === "object" ? value : {};
             const localized = {};
 
-            languages.forEach((language) => {
-                localized[language] = source[language] ?? (typeof value === "string" ? value : fallback);
+            languages.forEach((language, index) => {
+                localized[language] = source[language]
+                    ?? (typeof value === "string" && index === 0 ? value : fallback);
             });
 
             return localized;

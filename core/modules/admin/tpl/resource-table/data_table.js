@@ -79,7 +79,7 @@ document.addEventListener("alpine:init", () => {
       return field_id === "_created" || field_id === "_modified";
     },
     field_class(field_id) {
-      return this.is_system_field(field_id) ? "text-xs text-secondary" : "";
+      return this.is_system_field(field_id) ? "text-xs text-neutral-500" : "";
     },
     sort_records() {
       const field = this.sort_field;

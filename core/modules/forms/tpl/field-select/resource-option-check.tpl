@@ -1,11 +1,7 @@
-<label class="flex items-center gap-3 px-3 py-2 hover:bg-base-200 cursor-pointer first:pt-4" @mousedown.prevent>
-    <input type="checkbox" class="checkbox checkbox-sm"
-        :checked="(form_data['[#_f.key#]'] || '').split(',').includes('[#opt.key#]')"
-        @change="
-            let s = (form_data['[#_f.key#]'] || '').split(',').filter(v => v && v !== '(empty)');
-            const i = s.indexOf('[#opt.key#]');
-            i === -1 ? s.push('[#opt.key#]') : s.splice(i, 1);
-            form_data['[#_f.key#]'] = s.join(',') || '(empty)';
-        ">
+<label class="flex cursor-pointer items-center gap-3 px-3 py-2 hover:bg-base-200 first:pt-4"
+    data-option-label="[#get opt.name#][#get opt.title#]"
+    x-show="!query || $el.dataset.optionLabel.toLowerCase().includes(query.toLowerCase()) || form_data['[#_f.key#]'].includes('[#opt.key#]')">
+    <input type="checkbox" class="checkbox checkbox-sm" value="[#opt.key#]"
+        x-model="form_data['[#_f.key#]']">
     <span class="text-sm">[#get opt.name#][#get opt.title#]</span>
 </label>
