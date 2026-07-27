@@ -182,7 +182,9 @@ function render_field(array $def, string $field = '', $value = null, string $sto
         if (!empty($def['multi'])) {
             if (is_string($field_value)) {
                 $field_value = trim($field_value);
-                $field_value = $field_value === '' || $field_value === '(empty)'
+                $field_value = $field_value === ''
+                    || $field_value === '(empty)'
+                    || strcasecmp($field_value, 'Array') === 0
                     ? []
                     : array_values(array_filter(array_map('trim', explode(',', $field_value))));
             } elseif (!is_array($field_value)) {
