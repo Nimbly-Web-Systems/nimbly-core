@@ -152,6 +152,11 @@ document.addEventListener("alpine:init", () => {
           } else {
             nb.notify(data.message);
           }
+        })
+        .catch((err) => {
+          this.busy = false;
+          this.me_busy = false;
+          nb.notify(err.message || "Could not complete AI request");
         });
     },
     translate(lang) {
