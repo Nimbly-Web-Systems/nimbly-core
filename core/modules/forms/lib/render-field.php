@@ -131,7 +131,7 @@ function render_field(array $def, string $field = '', $value = null, string $sto
     set_variable('_f.ai',       !empty($def['ai_prompts']));
     set_variable('_f.actions',  $actions);
     set_variable('_f.has_actions', !empty($actions));
-    set_variable('_f.action_style', !empty($actions) ? 'padding-right:4rem' : '');
+    set_variable('_f.action_style', !empty($actions) ? 'padding-right:40px' : '');
     if (isset($def['options']) && is_array($def['options'])) {
         // Re-shape into a sequential list so option keys can never collide with
         // a configured language code and get silently collapsed by get_sc()'s
