@@ -33,7 +33,7 @@ function _field_action_render(array $action, string $field): string
 {
     $type = (string)($action['type'] ?? 'link');
     $action['label']    = (string)($action['label'] ?? ($type === 'ai' ? 'Generate with AI' : 'Open'));
-    $action['icon']     = (string)($action['icon']  ?? ($type === 'ai' ? 'openai' : 'external-link'));
+    $action['icon']     = (string)($action['icon']  ?? ($type === 'ai' ? 'sparkles' : 'external-link'));
     $action['icon_svg'] = run_buffered(dirname(__FILE__) . "/icon-{$action['icon']}.tpl");
 
     if ($type === 'link') {

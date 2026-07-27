@@ -260,7 +260,7 @@ function _field_actions_normalize(array $def): array
         $actions[] = [
             'type' => 'ai',
             'label' => 'Generate with AI',
-            'icon' => 'openai',
+            'icon' => 'sparkles',
         ];
     }
 
