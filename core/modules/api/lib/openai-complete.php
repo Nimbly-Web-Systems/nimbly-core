@@ -23,7 +23,7 @@ function openai_complete_post()
 
     $meta = data_meta($data['resource']);
     $fn = $data['field'];
-    if ($fn === '(all)' && empty($meta['ai_translate_record'])) {
+    if ($fn === '(all)' && empty($meta['ai_record_action']) && empty($meta['ai_translate_record'])) {
         return json_result(['message' => 'NOT_IMPLEMENTED'], 501);
     }
     if ($fn !== '(all)' && !isset($meta['fields'][$fn]['ai_prompts'])) {
