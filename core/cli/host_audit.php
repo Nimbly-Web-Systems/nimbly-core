@@ -688,7 +688,12 @@ function host_audit_projects(array $context, array &$findings): array
             );
             continue;
         }
-        $apache_project = host_audit_apache_project($slug, $apache_aliases, $overrides);
+        $apache_project = host_audit_apache_project(
+            $slug,
+            $apache_aliases,
+            $apache_vhosts,
+            $overrides
+        );
         $path = $apache_project['path'];
         $check = host_audit_project($name, $path, $context, $findings);
         $check['scheduler'] = isset($scheduler_paths[$path])
@@ -822,7 +827,12 @@ function host_audit_apache_vhosts(string $sites_enabled): array
     return $vhosts;
 }
 
-function host_audit_apache_project(string $slug, array $aliases, array $overrides): array
+function host_audit_apache_project(
+    string $slug,
+    array $aliases,
+    array $vhosts,
+    array $overrides
+): array
 {
     $alias = isset($overrides[$slug]) && is_string($overrides[$slug])
         ? host_audit_id($overrides[$slug])
@@ -839,10 +849,27 @@ function host_audit_apache_project(string $slug, array $aliases, array $override
             }
         }
     }
-    return [
-        'alias' => $alias,
-        'path' => $alias !== '' ? (string)($aliases[$alias] ?? '') : '',
-    ];
+    if ($alias !== '') {
+        return [
+            'alias' => $alias,
+            'path' => (string)($aliases[$alias] ?? ''),
+        ];
+    }
+
+    $compact = str_replace('-', '', $slug);
+    $trimmed = preg_replace('/-(?:site|blog|app)$/', '', $slug) ?: $slug;
+    foreach (array_unique(array_values($vhosts)) as $path) {
+        $candidate = host_audit_id(basename(rtrim((string)$path, '/')));
+        if ($candidate === $slug
+            || str_replace('-', '', $candidate) === $compact
+            || $candidate === $trimmed) {
+            return [
+                'alias' => '',
+                'path' => (string)$path,
+            ];
+        }
+    }
+    return ['alias' => '', 'path' => ''];
 }
 
 function host_audit_project_status(string $name, array $findings): string
