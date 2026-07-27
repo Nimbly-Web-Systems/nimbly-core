@@ -86,7 +86,6 @@ function openai_complete_post()
         $response = '';
     } else {
         $prompts[] = ["role" => "user", "content" => $src_content];
-        log_system($prompts);
         $response = openai_get_completion($api_key, $prompts);
         if ($response === false) {
             log_system('Translation fail');
@@ -171,8 +170,6 @@ function openai_get_completion($api_key, $messages)
         "model" => "gpt-4o-mini",
         "messages" => $messages
     ]));
-
-    log_system($messages);
 
     if (empty($response) || !isset($response['choices'][0]['message']['content'])) {
         return $result;
