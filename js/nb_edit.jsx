@@ -139,6 +139,13 @@ nb_edit.toggle = function () {
     });
 }
 
+nb_edit.is_editable = function (ed) {
+    if (!ed) {
+        return false;
+    }
+    return nb_edit.enabled || ed._nb_mode === 'form';
+}
+
 nb_edit.enable_editor = function (ed) {
     if (typeof ed._nb_medium_editor == 'undefined') {
         nb_edit.init_editor(ed);
