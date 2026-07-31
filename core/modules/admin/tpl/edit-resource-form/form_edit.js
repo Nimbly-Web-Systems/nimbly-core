@@ -16,6 +16,9 @@ document.addEventListener("alpine:init", () => {
         this.set_editors(lang);
         this.$nextTick(() => this.refresh_ai_actions(lang));
       });
+      this.$watch("form_data", () => {
+        this.refresh_ai_actions(this.lang);
+      });
 
       this.$nextTick(() => {
         this.set_editors(this.lang);
