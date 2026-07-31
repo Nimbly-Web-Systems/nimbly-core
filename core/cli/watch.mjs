@@ -1,7 +1,8 @@
 import { spawnSync, spawn } from 'node:child_process';
-import { readdirSync, statSync, mkdirSync, writeFileSync } from 'node:fs';
-import { join, dirname } from 'node:path';
+import { readdirSync, statSync } from 'node:fs';
+import { join } from 'node:path';
 import esbuild from 'esbuild';
+import { write_app_version } from './app-version.mjs';
 
 const use_color = process.stdout.isTTY && process.env.NO_COLOR === undefined;
 const dim   = (s) => use_color ? `\x1b[2m${s}\x1b[0m`  : s;
@@ -23,12 +24,6 @@ function section(title) {
   console.log(cyan(rule()));
   console.log(title);
   console.log(cyan(rule()));
-}
-
-function write_version() {
-  const path = 'ext/static/app.version';
-  mkdirSync(dirname(path), { recursive: true });
-  writeFileSync(path, `${Math.floor(Date.now() / 1000)}\n`);
 }
 
 // ─── initial build ────────────────────────────────────────────────────────────
@@ -62,7 +57,7 @@ function version_plugin(label) {
     setup(build) {
       build.onEnd((result) => {
         if (result.errors.length === 0) {
-          write_version();
+          write_app_version();
           ok(`${label} rebuilt`);
         } else {
           fail(`${label} build failed`);
@@ -129,7 +124,7 @@ setInterval(() => {
   po_timer = setTimeout(() => {
     const result = spawnSync(process.execPath, ['core/cli/merge-text-po.mjs'], { stdio: 'inherit' });
     if (result.status === 0) {
-      write_version();
+      write_app_version();
       ok('text rebuilt');
     }
   }, 300);
