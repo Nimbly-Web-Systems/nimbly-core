@@ -41,6 +41,6 @@
 
 <!--
 ██▄  ██  Nimbly v1.1.0
-██ ▀▄██  [#fmt [#app-modified#] date#]
+██ ▀▄██  [#app-modified#]
 ██   ██  Generated in [#fmt [#execution-time#] type=number decimals=2#]s
 -->

@@ -1,7 +1,3 @@
-import { mkdirSync, writeFileSync } from 'node:fs';
-import { dirname } from 'node:path';
+import { write_app_version } from './app-version.mjs';
 
-const path = 'ext/static/app.version';
-
-mkdirSync(dirname(path), { recursive: true });
-writeFileSync(path, `${Math.floor(Date.now() / 1000)}\n`);
+write_app_version();
