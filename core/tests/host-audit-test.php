@@ -133,6 +133,20 @@ audit_assert(host_audit_404_is_probe('/wp-login.php'), 'filters WordPress login 
 audit_assert(host_audit_404_is_probe('/vendor/phpunit/phpunit/src/Util/PHP/eval-stdin.php'), 'filters PHPUnit probes');
 audit_assert(!host_audit_404_is_probe('/nimbly-site/about-us'), 'keeps genuine application paths');
 audit_assert(
+    host_audit_501_is_rejected_method_probe([
+        'status' => 501,
+        'method' => 'UPWN',
+    ]),
+    'filters rejected probes using unknown HTTP methods'
+);
+audit_assert(
+    !host_audit_501_is_rejected_method_probe([
+        'status' => 501,
+        'method' => 'POST',
+    ]),
+    'keeps genuine 501 application responses'
+);
+audit_assert(
     host_audit_project_from_path(
         '/harmony-playground-app/api',
         ['harmony-playground-app' => 'HP App']

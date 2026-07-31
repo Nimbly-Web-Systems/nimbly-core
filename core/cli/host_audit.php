@@ -412,6 +412,7 @@ function host_audit_apache(array $context, array &$findings): array
     $requests = 0;
     $project_metrics = [];
     $route_5xx = [];
+    $rejected_method_probes = 0;
     $not_found_total = 0;
     $not_found_probe_count = 0;
     $not_found_routes = [];
@@ -428,6 +429,7 @@ function host_audit_apache(array $context, array &$findings): array
             &$status_counts,
             &$project_metrics,
             &$route_5xx,
+            &$rejected_method_probes,
             &$not_found_total,
             &$not_found_probe_count,
             &$not_found_routes
@@ -440,6 +442,10 @@ function host_audit_apache(array $context, array &$findings): array
                 return;
             }
             $requests++;
+            if (host_audit_501_is_rejected_method_probe($entry)) {
+                $rejected_method_probes++;
+                return;
+            }
             $bucket = (int)floor($entry['status'] / 100) . 'xx';
             if (isset($status_counts[$bucket])) {
                 $status_counts[$bucket]++;
@@ -616,6 +622,7 @@ function host_audit_apache(array $context, array &$findings): array
         'status_counts' => $status_counts,
         'http_5xx' => $status_counts['5xx'],
         'top_problem_route' => array_key_first($route_5xx),
+        'rejected_method_probes' => $rejected_method_probes,
         'not_found' => [
             'total' => $not_found_total,
             'filtered_probes' => $not_found_probe_count,
@@ -652,6 +659,36 @@ function host_audit_404_is_probe(string $path): bool
         . ')~ix',
         $normalized
     ) === 1;
+}
+
+function host_audit_501_is_rejected_method_probe(array $entry): bool
+{
+    if ((int)($entry['status'] ?? 0) !== 501) {
+        return false;
+    }
+
+    $method = strtoupper(trim((string)($entry['method'] ?? '')));
+    $known_methods = [
+        'GET',
+        'HEAD',
+        'POST',
+        'PUT',
+        'PATCH',
+        'DELETE',
+        'CONNECT',
+        'OPTIONS',
+        'TRACE',
+        'PROPFIND',
+        'PROPPATCH',
+        'MKCOL',
+        'COPY',
+        'MOVE',
+        'LOCK',
+        'UNLOCK',
+        'SEARCH',
+    ];
+
+    return $method !== '' && !in_array($method, $known_methods, true);
 }
 
 function host_audit_projects(array $context, array &$findings): array
