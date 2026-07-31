@@ -7,17 +7,19 @@ document.addEventListener("alpine:init", () => {
     busy: false,
     ai_busy_field: null,
     ai_busy_all: false,
-    form_revision: 0,
+    ai_all_disabled: true,
 
     init() {
       this.form_data = window._frecord || {};
 
       this.$watch("lang", (lang) => {
         this.set_editors(lang);
+        this.$nextTick(() => this.refresh_ai_actions(lang));
       });
 
       this.$nextTick(() => {
         this.set_editors(this.lang);
+        this.refresh_ai_actions(this.lang);
       });
     },
 
@@ -133,7 +135,6 @@ document.addEventListener("alpine:init", () => {
       this.submit();
     },
     ai_field_has_value(field, lang) {
-      this.form_revision;
       const values = this.form_data[field];
       if (!values || typeof values !== "object") {
         return false;
@@ -144,6 +145,9 @@ document.addEventListener("alpine:init", () => {
       return _ai_record_action_fields.every((field) =>
         this.ai_field_has_value(field, lang),
       );
+    },
+    refresh_ai_actions(lang) {
+      this.ai_all_disabled = this.ai_all_complete(lang);
     },
     ai(field, lang) {
       this.busy = true;
@@ -210,6 +214,7 @@ document.addEventListener("alpine:init", () => {
           });
           this.lang = lang;
           this.set_editors(lang);
+          this.refresh_ai_actions(lang);
         })
         .catch((err) => {
           this.busy = false;
