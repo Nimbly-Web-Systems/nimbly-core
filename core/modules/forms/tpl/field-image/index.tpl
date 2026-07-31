@@ -3,15 +3,16 @@
 
     <!-- image set -->
     <template x-if="[#_f.model#]">
-        <figure class="flex items-center justify-center aspect-square w-[300px] h-[300px] mx-auto">
-            <img :src="`[#base-url#]/img/${[#_f.model#]}/480x480f`" class="object-scale-down max-h-full">
+        <figure class="flex min-h-72 w-full items-center justify-center overflow-hidden rounded-md bg-neutral-100">
+            <img :src="`[#base-url#]/img/${[#_f.model#]}/960x720f`"
+                class="max-h-[32rem] w-full object-contain">
         </figure>
     </template>
 
     <!-- no image set -->
     <template x-if="[#_f.model#] == ''">
-        <figure class="flex items-center justify-center aspect-square w-[300px] h-[300px] mx-auto bg-clight/10">
-            <img src="[#empty-img#]" class="w-full h-full">
+        <figure class="flex min-h-72 w-full items-center justify-center overflow-hidden rounded-md bg-clight/10">
+            <img src="[#empty-img#]" class="h-72 w-full object-contain">
         </figure>
     </template>
 
