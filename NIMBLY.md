@@ -437,7 +437,7 @@ Loads all records of a resource into `data.<resource>`.
 ```
 [#data articles#]
 [#data articles sort=date|desc#]
-[#data articles filter=published:yes#]
+[#data articles filter=published:1#]
 [#data articles search=nimbly#]
 [#data articles var=featured filter=featured:yes#]
 [#data users.abc123#]           → loads single record into data.users.abc123
@@ -446,7 +446,7 @@ Loads all records of a resource into `data.<resource>`.
 
 Parameters:
 - `sort` — `field|asc`, `field|desc`, multiple: `date|desc,title|asc`
-- `filter` — `field:value`, multiple: `published:yes,status:new`, negation: `status:!draft`, or: `status:new||todo`
+- `filter` — `field:value`, multiple: `published:1,status:new`, negation: `status:!draft`, or: `status:new||todo`
 - `search` — full-text search across all fields
 - `var` — custom variable name instead of `data.<resource>`
 - `op` — `read` (default) or `list` (UUIDs only)
@@ -458,7 +458,7 @@ Iterates over a data variable, rendering the template with the same name for eac
 [#repeat data.articles#]
 [#repeat data.articles tpl=article-card#]
 [#repeat data.articles limit=3#]
-[#repeat data.articles filter=published:yes#]
+[#repeat data.articles filter=published:1#]
 [#repeat record.related_items csv tpl=related-item#]
 [#repeat data.articles var=post#]   → item variable named "post" instead of "item"
 ```
@@ -2849,7 +2849,7 @@ function prepare_events_sc($params)
 Called in templates exactly like any other shortcode:
 
 ```
-[#data event filter=published:yes sort=date|string|asc#]
+[#data event filter=published:1 sort=date|string|asc#]
 [#prepare-events#]
 [#repeat data.event#]
 ```
