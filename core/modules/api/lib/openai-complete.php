@@ -46,7 +46,7 @@ function openai_complete_post()
             if (empty($definition['i18n']) || empty($definition['ai_prompts'])) {
                 continue;
             }
-            $field_values = $record[$field] ?? [];
+            $field_values = $data['values'][$field] ?? ($record[$field] ?? []);
             $target_value = is_array($field_values) ? ($field_values[$data['lang']] ?? '') : '';
             if (is_string($target_value) && trim($target_value) !== '') {
                 continue;

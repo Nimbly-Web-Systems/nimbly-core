@@ -7,6 +7,7 @@ document.addEventListener("alpine:init", () => {
     busy: false,
     ai_busy_field: null,
     ai_busy_all: false,
+    form_revision: 0,
 
     init() {
       this.form_data = window._frecord || {};
@@ -132,6 +133,7 @@ document.addEventListener("alpine:init", () => {
       this.submit();
     },
     ai_field_has_value(field, lang) {
+      this.form_revision;
       const values = this.form_data[field];
       if (!values || typeof values !== "object") {
         return false;
@@ -177,6 +179,10 @@ document.addEventListener("alpine:init", () => {
         });
     },
     ai_all(lang) {
+      this.sync_editors(lang);
+      const values = Object.fromEntries(
+        _ai_record_action_fields.map((field) => [field, this.form_data[field] || {}]),
+      );
       this.busy = true;
       this.ai_busy_all = true;
       nb.api
@@ -185,6 +191,7 @@ document.addEventListener("alpine:init", () => {
           uuid: this.record_id,
           lang,
           field: "(all)",
+          values,
         })
         .then((data) => {
           this.busy = false;
