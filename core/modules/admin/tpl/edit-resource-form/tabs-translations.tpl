@@ -8,7 +8,7 @@
     </ul>
     <button type="button" x-cloak x-show="_ai_record_action && _translation_mode === 'field'"
         class="inline-flex cursor-pointer items-center gap-2 rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-100 disabled:pointer-events-none disabled:opacity-70"
-        :disabled="busy" title="[#text [#get data.ai_record_action_title default=Translate#]#]"
+        :disabled="busy || ai_all_complete(lang)" title="[#text [#get data.ai_record_action_title default=Translate#]#]"
         @click.prevent="ai_all(lang)">
         <span class="inline-flex" :class="{ 'animate-spin': ai_busy_all }">[#include file=[#base-path#]core/modules/forms/lib/field-actions/icon-sparkles.tpl#]</span>
         <span>[#text [#get data.ai_record_action_title default=Translate#]#]</span>

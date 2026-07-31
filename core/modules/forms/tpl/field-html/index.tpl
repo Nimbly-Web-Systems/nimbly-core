@@ -1,13 +1,15 @@
 <div class="relative my-6">
-    [#field-actions#]
+    <div class="flex items-start gap-2">
     <div data-nb-edit="[#_f.key#]"
         [#if _f.i18n=(not-empty) echo="data-nb-edit-i18n=\"true\""#]
         data-nb-edit-options='{
             "buttons":"[#get _f.buttons default=bold,italic#]", 
             "media_sizes":"[#get _f.media_sizes default=#]",
             "media": [#fmt var=_f.media type=boolean boolean=true|false#]}' 
-            class="prose bg-white">
+            class="prose min-w-0 flex-1 bg-white">
         [#get-html record.[#_f.key#] legacy-img-sizes=lg-70,xl-50#]
+    </div>
+    [#field-actions#]
     </div>
 
     <label for="[#_f.key#]" class="pointer-events-none absolute left-3 -top-2.5 px-1
