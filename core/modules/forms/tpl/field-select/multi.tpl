@@ -1,17 +1,6 @@
 <div [#_f.x_init#]
     class="overflow-hidden rounded-lg border border-base-300 bg-white focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-neutral-400">
-    <div x-data="{
-            query: '',
-            option_count: 0,
-            highlight_option(value) {
-                const safe = String(value || '').replace(/[&<>'&quot;]/g, character => ({
-                    '&': '&amp;', '<': '&lt;', '>': '&gt;', &quot;'&quot;: '&#39;', '&quot;': '&quot;'
-                })[character]);
-                if (!this.query.trim()) return safe;
-                const term = this.query.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-                return safe.replace(new RegExp(`(${term})`, 'gi'), '<mark class=&quot;rounded-sm bg-yellow-200 px-0.5 text-inherit&quot;>$1</mark>');
-            }
-        }"
+    <div x-data="{ query: '', option_count: 0 }"
         x-init="$nextTick(() => option_count = $refs.options.querySelectorAll('label').length)">
         <div x-cloak x-show="option_count > 10" class="border-b border-base-200 px-3 pb-3 pt-5">
             <input type="search" x-model="query" class="input input-bordered input-sm w-full"

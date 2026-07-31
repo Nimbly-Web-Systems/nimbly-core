@@ -3,6 +3,5 @@
     x-show="!query || $el.dataset.optionLabel.toLowerCase().includes(query.toLowerCase()) || form_data['[#_f.key#]'].includes('[#opt.key#]')">
     <input type="checkbox" class="checkbox checkbox-sm" value="[#opt.key#]"
         x-model="form_data['[#_f.key#]']">
-    <span class="text-sm" data-option-label="[#get opt.name#][#get opt.title#]"
-        x-html="highlight_option($el.dataset.optionLabel)"></span>
+    <span class="text-sm">[#get opt.name#][#get opt.title#]</span>
 </label>
