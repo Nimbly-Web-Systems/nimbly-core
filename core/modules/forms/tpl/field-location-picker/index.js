@@ -91,9 +91,16 @@ document.addEventListener("alpine:init", () => {
 
     place_marker(latitude, longitude) {
       if (!this.marker) {
+        const marker_icon = L.divIcon({
+          className: "",
+          html: this.$refs.marker_icon.content.firstElementChild.cloneNode(true),
+          iconSize: [24, 24],
+          iconAnchor: [12, 12],
+        });
         this.marker = L.marker([latitude, longitude], {
           draggable: true,
           autoPan: true,
+          icon: marker_icon,
         }).addTo(this.map);
         this.marker.on("dragend", () => {
           const position = this.marker.getLatLng();

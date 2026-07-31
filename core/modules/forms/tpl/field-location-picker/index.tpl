@@ -15,6 +15,9 @@
 
         <div class="relative mt-4 overflow-hidden rounded-md bg-neutral-100">
             <div x-ref="map" class="h-80 w-full sm:h-96" aria-label="[#text Choose the location on the world map#]"></div>
+            <template x-ref="marker_icon">
+                <span class="block h-6 w-6 rounded-full border-2 border-white bg-primary shadow-md"></span>
+            </template>
             <div x-show="loading"
                 class="pointer-events-none absolute inset-0 z-[500] flex items-center justify-center bg-white/80 text-sm font-semibold text-neutral-700">
                 [#text Loading map&hellip;#]
