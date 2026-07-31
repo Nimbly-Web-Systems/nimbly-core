@@ -15,7 +15,7 @@ $GLOBALS['SYSTEM']['data_error'] = null;
  * @doc - var: custom variable name for the loaded data.
  * @doc - op: operation to perform. Supported: `read` (default) or `list` (list UUIDs only).
  * @doc - sort: sorting instructions, e.g. `date|desc,title|asc`.
- * @doc - filter: filtering instructions, e.g. `published:yes,status:new`.
+ * @doc - filter: filtering instructions, e.g. `published:1,status:new`.
  * @doc - search: search term to filter records by any matching field.
  * @doc
  * @doc (*): Mandatory. 
@@ -25,7 +25,7 @@ $GLOBALS['SYSTEM']['data_error'] = null;
  * @doc - `[#data users.123#]` loads the single user with UUID `123` into `data.users.123`.
  * @doc - `[#data users var=all_users#]` loads all users into the custom variable `all_users`.
  * @doc - `[#data projects sort=date|desc,title|asc#]` loads projects sorted by date descending, then title ascending.
- * @doc - `[#data blog-items filter=published:yes#]` loads blog items filtered where `published` equals `yes`.
+ * @doc - `[#data blog-items filter=published:1#]` loads blog items whose boolean `published` field is enabled.
  */
 function data_sc($params)
 {
