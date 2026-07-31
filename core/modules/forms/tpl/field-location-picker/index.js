@@ -94,8 +94,8 @@ document.addEventListener("alpine:init", () => {
         const marker_icon = L.divIcon({
           className: "",
           html: this.$refs.marker_icon.content.firstElementChild.cloneNode(true),
-          iconSize: [24, 24],
-          iconAnchor: [12, 12],
+          iconSize: [32, 32],
+          iconAnchor: [16, 32],
         });
         this.marker = L.marker([latitude, longitude], {
           draggable: true,
