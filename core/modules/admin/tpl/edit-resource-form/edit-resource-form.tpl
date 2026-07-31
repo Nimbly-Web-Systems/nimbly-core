@@ -1,6 +1,7 @@
 <section class="bg-neutral-100 pb-10">
     <form autocomplete="false" x-ref="edit_resource_form" x-data="form_edit('[#data.resource#]', '[#data.uuid#]')" :data-lang="lang"
-        @input="$nextTick(() => sync_editors(lang))" @submit.prevent="submit"
+        @input="if (_ai_record_action_fields.includes($event.target.name) && !$event.target.value.trim()) { ai_all_disabled = false; } $nextTick(() => sync_editors(lang))"
+        @submit.prevent="submit"
         class="rounded-md bg-neutral-50 p-3 shadow-md sm:p-4 md:p-6 lg:p-8 xl:p-10">
 
         <div class="max-w-3xl pr-12">
