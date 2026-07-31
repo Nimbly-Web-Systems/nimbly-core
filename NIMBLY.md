@@ -1037,6 +1037,7 @@ Defines the structure and behavior of a resource. All fields must be explicitly 
 | `select` | Dropdown — fixed options or from resource |
 | `number` | Numeric input — supports optional `min` and `max` |
 | `color` | Color picker |
+| `location-picker` | Interactive world map that stores latitude in the field and longitude in the configured `longitude_field` companion field |
 
 Field type names must match exactly.
 
@@ -1144,6 +1145,33 @@ Options from another resource:
 ```json
 "type": "select",
 "resource": "categories"
+```
+
+**Location picker fields:**
+
+Use `location-picker` when editors should choose coordinates on a map instead
+of typing them. The picker field stores latitude in its own field and updates a
+separate numeric longitude field named by `longitude_field`. Hide the companion
+field with `wrapper_class: "hidden"` so the editor sees one atomic control while
+the resource retains simple scalar coordinates:
+
+```json
+"location_lat": {
+  "name": "Location",
+  "type": "location-picker",
+  "longitude_field": "location_lng",
+  "required": true,
+  "admin_col": false
+},
+"location_lng": {
+  "name": "Longitude",
+  "type": "number",
+  "required": true,
+  "min": -180,
+  "max": 180,
+  "wrapper_class": "hidden",
+  "admin_col": false
+}
 ```
 
 ### Root-level .meta configuration
