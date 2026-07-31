@@ -1,0 +1,4 @@
+interface:
+  display_name: "Nimbly Infra Architect"
+  short_description: "Diagnose and safely remediate Nimbly infrastructure"
+  default_prompt: "Use $nimbly-infra-architect to review the latest infrastructure health reports, resolve permitted issues, and verify recovery."
