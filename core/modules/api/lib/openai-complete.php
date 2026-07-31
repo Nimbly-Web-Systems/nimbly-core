@@ -46,7 +46,12 @@ function openai_complete_post()
             if (empty($definition['i18n']) || empty($definition['ai_prompts'])) {
                 continue;
             }
-            $source = openai_source_content($record[$field] ?? [], $meta['languages'], $data['lang']);
+            $field_values = $record[$field] ?? [];
+            $target_value = is_array($field_values) ? ($field_values[$data['lang']] ?? '') : '';
+            if (is_string($target_value) && trim($target_value) !== '') {
+                continue;
+            }
+            $source = openai_source_content($field_values, $meta['languages'], $data['lang']);
             if ($source === null) {
                 continue;
             }

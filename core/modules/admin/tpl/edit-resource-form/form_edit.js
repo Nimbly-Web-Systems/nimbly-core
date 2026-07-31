@@ -185,7 +185,9 @@ document.addEventListener("alpine:init", () => {
             if (!this.form_data[field] || typeof this.form_data[field] !== "object") {
               this.form_data[field] = {};
             }
-            this.form_data[field][lang] = value;
+            if (!String(this.form_data[field][lang] || "").trim()) {
+              this.form_data[field][lang] = value;
+            }
           });
           this.lang = lang;
           this.set_editors(lang);
