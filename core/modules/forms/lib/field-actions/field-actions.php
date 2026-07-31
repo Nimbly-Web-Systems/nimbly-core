@@ -22,8 +22,6 @@ function field_actions_sc($params) {
         return;
     }
 
-    $align = get_param_value($params, 'align', 'center');
-    set_variable('_fa.top_class', $align === 'top' ? 'top-3' : 'top-1/2 -translate-y-1/2');
     set_variable('_fa.buttons', $buttons);
 
     return run_buffered(dirname(__FILE__) . '/panel.tpl');
