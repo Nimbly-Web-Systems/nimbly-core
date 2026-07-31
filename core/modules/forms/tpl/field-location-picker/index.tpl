@@ -10,18 +10,18 @@
             [#_f.title#][#if _f.required=(not-empty) echo=" *"#]
         </h3>
         <p class="mt-1 text-sm text-neutral-600">
-            [#text Click_the_map_to_place_the_location._Drag_the_pin_to_adjust_it.#]
+            [#text Click the map to place the location. Drag the pin to adjust it.#]
         </p>
 
         <div class="relative mt-4 overflow-hidden rounded-md bg-neutral-100">
-            <div x-ref="map" class="h-80 w-full sm:h-96" aria-label="[#text Choose_the_location_on_the_world_map#]"></div>
+            <div x-ref="map" class="h-80 w-full sm:h-96" aria-label="[#text Choose the location on the world map#]"></div>
             <div x-show="loading"
                 class="pointer-events-none absolute inset-0 z-[500] flex items-center justify-center bg-white/80 text-sm font-semibold text-neutral-700">
-                [#text Loading_map&hellip;#]
+                [#text Loading map&hellip;#]
             </div>
             <div x-show="load_error" x-cloak
                 class="absolute inset-0 z-[500] flex items-center justify-center bg-white p-6 text-center text-sm text-red-700">
-                [#text The_map_could_not_be_loaded._Check_your_connection_and_reload_the_page.#]
+                [#text The map could not be loaded. Check your connection and reload the page.#]
             </div>
         </div>
     </div>
