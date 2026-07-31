@@ -2,7 +2,7 @@
     <form autocomplete="false" x-ref="edit_resource_form" x-data="form_edit('[#data.resource#]', '[#data.uuid#]')" :data-lang="lang" @submit.prevent="submit"
         class="rounded-md bg-neutral-50 p-3 shadow-md sm:p-4 md:p-6 lg:p-8 xl:p-10">
 
-        <div class="max-w-lg">
+        <div class="max-w-3xl pr-12">
             [#if has_translations=(not-empty) tpl=tabs-translations#]
 
             [#set nb_form_edit=true overwrite#]
