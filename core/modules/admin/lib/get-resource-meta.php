@@ -33,6 +33,7 @@ function get_resource_meta_sc($params) {
     }
 
     $i18n_fields = [];
+    $ai_record_action_fields = [];
     foreach ($meta['fields'] as $key => $field) {
         $is_i18n = !empty($field['i18n']);
         // A slug field with no explicit i18n inherits it from its source
@@ -47,7 +48,11 @@ function get_resource_meta_sc($params) {
         }
         if ($is_i18n) {
             $i18n_fields[] = $key;
+            if (!empty($field['ai_prompts'])) {
+                $ai_record_action_fields[] = $key;
+            }
         }
     }
     set_variable('data.i18n_fields', $i18n_fields);
+    set_variable('data.ai_record_action_fields', $ai_record_action_fields);
 }
