@@ -16,8 +16,8 @@
         <div class="relative mt-4 overflow-hidden rounded-md bg-neutral-100">
             <div x-ref="map" class="h-80 w-full sm:h-96" aria-label="[#text Choose the location on the world map#]"></div>
             <template x-ref="marker_icon">
-                <svg viewBox="0 0 24 24" fill="currentColor" stroke="white" stroke-width="1"
-                    class="h-8 w-8 text-base-content drop-shadow-md" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="currentColor" stroke="white" stroke-width="1.25"
+                    class="h-12 w-12 text-base-content drop-shadow-lg" aria-hidden="true">
                     <path fill-rule="evenodd"
                         d="M11.54 22.351l.07.04.028.016a.76.76 0 0 0 .723 0l.028-.015.071-.041a16.975 16.975 0 0 0 2.144-1.58c1.61-1.349 3.535-3.724 3.535-6.588a6.139 6.139 0 1 0-12.278 0c0 2.864 1.925 5.239 3.535 6.588a16.975 16.975 0 0 0 2.144 1.58ZM12 16.5a2.25 2.25 0 1 0 0-4.5 2.25 2.25 0 0 0 0 4.5Z"
                         clip-rule="evenodd" />
