@@ -156,7 +156,6 @@ function scheduler_orchestrator_install(): void
     scheduler_orchestrator_ensure_dir(dirname($bin_path));
     scheduler_orchestrator_ensure_dir(dirname($log_path));
 
-    $php_binary = PHP_BINARY;
     $cli_path = BASE_DIR . 'core/cli/nimbly.php';
     $env_args = [
         'NIMBLY_SCHEDULER_CONFIG=' . scheduler_orchestrator_config_path(),
@@ -166,8 +165,9 @@ function scheduler_orchestrator_install(): void
         'NIMBLY_SCHEDULER_LOCK=' . scheduler_orchestrator_lock_path(),
     ];
     $script = "#!/bin/sh\n"
+        . "php_binary=\$(command -v php) || exit 127\n"
         . "exec env " . implode(' ', array_map('escapeshellarg', $env_args))
-        . ' ' . escapeshellarg($php_binary) . ' ' . escapeshellarg($cli_path)
+        . ' "$php_binary" ' . escapeshellarg($cli_path)
         . " scheduler:run >> " . escapeshellarg($log_path) . " 2>&1\n";
 
     if (file_put_contents($bin_path, $script) === false) {
