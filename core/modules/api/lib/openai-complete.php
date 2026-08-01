@@ -41,12 +41,19 @@ function openai_complete_post()
 
 
     if ($fn === '(all)') {
+        $input_values = $data['values'] ?? [];
+        if (!is_array($input_values)) {
+            return json_result(['message' => 'INVALID_DATA'], 400);
+        }
         $fields = [];
         foreach ($meta['fields'] ?? [] as $field => $definition) {
             if (empty($definition['i18n']) || empty($definition['ai_prompts'])) {
                 continue;
             }
-            $field_values = $data['values'][$field] ?? ($record[$field] ?? []);
+            $field_values = $input_values[$field] ?? ($record[$field] ?? []);
+            if (!is_array($field_values)) {
+                return json_result(['message' => 'INVALID_DATA'], 400);
+            }
             $target_value = is_array($field_values) ? ($field_values[$data['lang']] ?? '') : '';
             if (is_string($target_value) && trim($target_value) !== '') {
                 continue;

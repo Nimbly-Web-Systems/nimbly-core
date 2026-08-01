@@ -149,7 +149,7 @@ document.addEventListener("alpine:init", () => {
       return String(value || "").trim().length === 0;
     },
     translation_field_empty(field, lang) {
-      return this.translation_empty[field]?.[lang] ?? true;
+      return this.translation_empty[field]?.[lang] === true;
     },
     has_empty_translation_fields(lang) {
       return _ai_record_action_fields.some((field) =>
@@ -191,7 +191,6 @@ document.addEventListener("alpine:init", () => {
         .then((data) => {
           this.busy = false;
           this.ai_busy_field = null;
-          this.me_busy = false;
           if (data.success) {
             this.form_data[field][lang] = data.completion;
             this.set_translation_empty(field, lang, data.completion);
@@ -208,7 +207,6 @@ document.addEventListener("alpine:init", () => {
         .catch((err) => {
           this.busy = false;
           this.ai_busy_field = null;
-          this.me_busy = false;
           nb.notify(err.message || "Could not complete AI request");
         });
     },

@@ -69,7 +69,7 @@ function get_resource_record_sc($params)
         if (empty($record['lang']) || !in_array($record['lang'], $languages, true)) {
             $record['lang'] = current($languages);
         }
-        $ix = array_search($record['lang'], $languages);
+        $ix = array_search($record['lang'], $languages, true);
         if ($ix !== false) {
             unset($languages[$ix]);
             $languages = array_values($languages);

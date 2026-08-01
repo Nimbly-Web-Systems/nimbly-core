@@ -28,7 +28,7 @@ function get_resource_meta_sc($params) {
     // see language_picker_sc() and add-resource-form/form_add.js.
     $languages = $meta['languages'] ?? [];
     set_variable('languages', $languages);
-    set_variable('data.languages', array_values($languages));
+    set_variable('data.translation_languages', array_values($languages));
     if (!empty($languages)) {
         set_variable('record.lang', current($languages));
     }
