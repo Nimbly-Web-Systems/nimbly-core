@@ -7,18 +7,17 @@ document.addEventListener("alpine:init", () => {
     busy: false,
     ai_busy_field: null,
     ai_busy_all: false,
-    ai_all_disabled: true,
+    translation_empty: {},
 
     init() {
       this.form_data = window._frecord || {};
+      this.initialize_translation_empty();
 
       this.$watch("lang", (lang) => {
         this.set_editors(lang);
-        this.$nextTick(() => this.refresh_ai_actions(lang));
       });
       this.$nextTick(() => {
         this.set_editors(this.lang);
-        this.refresh_ai_actions(this.lang);
       });
     },
 
@@ -133,20 +132,35 @@ document.addEventListener("alpine:init", () => {
       this.redirect_on_submit = false;
       this.submit();
     },
-    ai_field_has_value(field, lang) {
-      const values = this.form_data[field];
-      if (!values || typeof values !== "object") {
-        return false;
-      }
-      return String(values[lang] || "").trim().length > 0;
-    },
-    ai_all_complete(lang) {
-      return _ai_record_action_fields.every((field) =>
-        this.ai_field_has_value(field, lang),
+    initialize_translation_empty() {
+      this.translation_empty = Object.fromEntries(
+        _ai_record_action_fields.map((field) => [
+          field,
+          Object.fromEntries(
+            _translation_languages.map((language) => [
+              language,
+              this.translation_value_is_empty(this.form_data[field]?.[language]),
+            ]),
+          ),
+        ]),
       );
     },
-    refresh_ai_actions(lang) {
-      this.ai_all_disabled = this.ai_all_complete(lang);
+    translation_value_is_empty(value) {
+      return String(value || "").trim().length === 0;
+    },
+    translation_field_empty(field, lang) {
+      return this.translation_empty[field]?.[lang] ?? true;
+    },
+    has_empty_translation_fields(lang) {
+      return _ai_record_action_fields.some((field) =>
+        this.translation_field_empty(field, lang),
+      );
+    },
+    set_translation_empty(field, lang, value) {
+      if (!this.translation_empty[field]) {
+        this.translation_empty[field] = {};
+      }
+      this.translation_empty[field][lang] = this.translation_value_is_empty(value);
     },
     sync_ai_input(event, lang) {
       const editor = event.target.closest?.("[data-nb-edit]");
@@ -162,7 +176,7 @@ document.addEventListener("alpine:init", () => {
       this.form_data[field][lang] = editor
         ? editor.innerHTML.trim()
         : event.target.value;
-      this.refresh_ai_actions(lang);
+      this.set_translation_empty(field, lang, this.form_data[field][lang]);
     },
     ai(field, lang) {
       this.busy = true;
@@ -180,7 +194,7 @@ document.addEventListener("alpine:init", () => {
           this.me_busy = false;
           if (data.success) {
             this.form_data[field][lang] = data.completion;
-            this.refresh_ai_actions(lang);
+            this.set_translation_empty(field, lang, data.completion);
             if (data.completion.length === 0) {
               nb.notify("Empty result");
             }
@@ -226,11 +240,11 @@ document.addEventListener("alpine:init", () => {
             }
             if (!String(this.form_data[field][lang] || "").trim()) {
               this.form_data[field][lang] = value;
+              this.set_translation_empty(field, lang, value);
             }
           });
           this.lang = lang;
           this.set_editors(lang);
-          this.refresh_ai_actions(lang);
         })
         .catch((err) => {
           this.busy = false;
