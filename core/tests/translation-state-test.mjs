@@ -16,7 +16,7 @@ globalThis.Alpine = {
 };
 globalThis.nb = { forms: {} };
 globalThis._initial_lang = "nl";
-globalThis._ai_record_action_fields = ["location_name", "title"];
+globalThis._ai_record_action_fields = ["location_name", "title", "body"];
 globalThis._translation_languages = ["nl", "en"];
 
 await import("../modules/admin/tpl/edit-resource-form/form_edit.js");
@@ -26,12 +26,15 @@ const state = form_edit_factory("articles", "test-record");
 state.form_data = {
   location_name: { nl: "Locatie", en: "" },
   title: { nl: "Titel", en: "Title" },
+  body: { nl: "<p>Inhoud</p>", en: "<p>Body</p>" },
 };
 state.initialize_translation_empty();
 
 assert.equal(state.has_empty_translation_fields("nl"), false);
 assert.equal(state.has_empty_translation_fields("en"), true);
 assert.equal(state.translation_field_empty("unknown", "en"), false);
+assert.equal(state.translation_value_is_empty("<p><br></p>"), true);
+assert.equal(state.translation_value_is_empty('<p><img src="image.jpg"></p>'), false);
 
 state.sync_ai_input({
   target: {
@@ -54,6 +57,12 @@ state.sync_ai_input({
 
 assert.equal(state.translation_field_empty("location_name", "en"), true);
 assert.equal(state.has_empty_translation_fields("en"), true);
+
+state.sync_ai_editor({
+  target: { dataset: { nbEdit: "body" } },
+  detail: { value: "<p><br></p>" },
+}, "en");
+assert.equal(state.translation_field_empty("body", "en"), true);
 
 const edit_template = await readFile(
   new URL("../modules/admin/tpl/edit-resource-form/index.tpl", import.meta.url),
