@@ -4,44 +4,80 @@ use PHPMailer\PHPMailer\PHPMailer;
 
 function email($email_data)
 {
-	if (empty($email_data['recipient'])) {
-		throw new Exception('Email field "recipient" not set');
-		return false;
-	}
-
-	if (empty($email_data['subject']) || empty($email_data['tpl'])) {
-		throw new Exception('Email subject not set or template not found');
-		return false;
-	}
-
-	$tpl = find_template($email_data['tpl']);
-	if (!$tpl) {
-		throw new Exception('Template not found');
-		return false;
-	}
-
-	$email_data['tpl'] = $tpl;
-	$service = $email_data['service'] ?? 'system';
-
-	$result = false;
-
-	if ($service === 'system') {
-		$result = email_via_system($email_data);
-	} else if ($service === 'mailgun') {
-		$result = email_via_mailgun($email_data);
-	} else if ($service === 'smtp' || $service === 'phpmailer') {
-		$result = email_via_smtp($email_data);
-	} else if ($service === 'resend') {
-		$result = email_via_resend($email_data);
-	}
-
-	if ($result !== true) {
+	$result = email_result($email_data);
+	if (empty($result['success'])) {
 		load_library("log");
 		load_library("set");
-		set_variable("email.result", "error: email not sent");
-		log_system("Error: email not sent");
+		set_variable("email.result", "error: " . ($result['error'] ?? 'email not sent'));
+		log_system("Error: " . ($result['error'] ?? 'email not sent'));
 	}
-	return $result;
+	return !empty($result['success']);
+}
+
+function email_result($email_data)
+{
+	try {
+		if (empty($email_data['recipient'])) {
+			throw new Exception('Email recipient not set');
+		}
+		if (empty($email_data['subject'])) {
+			throw new Exception('Email subject not set');
+		}
+
+		$email_data = email_prepare($email_data);
+		$service = $email_data['service'] ?? 'system';
+		if ($service === 'resend') {
+			return email_via_resend_result($email_data);
+		}
+
+		$success = false;
+		if ($service === 'system') {
+			$success = email_via_system($email_data);
+		} else if ($service === 'mailgun') {
+			$success = email_via_mailgun($email_data);
+		} else if ($service === 'smtp' || $service === 'phpmailer') {
+			$success = email_via_smtp($email_data);
+		}
+
+		return ['success' => $success === true, 'id' => null, 'error' => $success === true ? null : 'Email provider rejected the message'];
+	} catch (Throwable $e) {
+		return ['success' => false, 'id' => null, 'error' => $e->getMessage()];
+	}
+}
+
+function email_prepare($email_data)
+{
+	if (isset($email_data['html'])) {
+		$email_data['html'] = (string)$email_data['html'];
+	} else {
+		if (empty($email_data['tpl'])) {
+			throw new Exception('Email template or rendered HTML not set');
+		}
+		$tpl = find_template($email_data['tpl']);
+		if (!$tpl) {
+			throw new Exception('Email template not found');
+		}
+		$email_data['tpl'] = $tpl;
+		$email_data['html'] = run_buffered($tpl);
+	}
+	$email_data['text'] = isset($email_data['text']) ? (string)$email_data['text'] : plain_text($email_data['html']);
+	return $email_data;
+}
+
+function email_batch_result($messages, $options = [])
+{
+	if (!is_array($messages) || count($messages) < 1 || count($messages) > 100) {
+		return ['success' => false, 'ids' => [], 'error' => 'Email batch must contain between 1 and 100 messages'];
+	}
+	try {
+		$prepared = [];
+		foreach ($messages as $message) {
+			$prepared[] = email_prepare(array_merge($options, $message));
+		}
+		return email_via_resend_batch_result($prepared, $options);
+	} catch (Throwable $e) {
+		return ['success' => false, 'ids' => [], 'error' => $e->getMessage()];
+	}
 }
 
 function email_via_system($email_data)
@@ -66,7 +102,7 @@ function email_via_system($email_data)
 
 	load_library("set");
 
-	if (@mail($recipient, $email_data['subject'], run_buffered($email_data['tpl']), implode("\r\n", $headers))) {
+	if (@mail($recipient, $email_data['subject'], $email_data['html'], implode("\r\n", $headers))) {
 		set_variable("email.result", "email sent");
 		return true;
 	}
@@ -75,7 +111,6 @@ function email_via_system($email_data)
 
 function email_via_mailgun($email_data)
 {
-	$email_data['html'] = run_buffered($email_data['tpl']);
 	load_libraries(['curl', 'util']);
 	$url = sprintf(
 		'%s/v3/%s/messages',
@@ -99,42 +134,86 @@ function email_via_mailgun($email_data)
 
 function email_via_resend($email_data)
 {
-	load_libraries(['curl', 'util', 'env', 'run']);
+	return !empty(email_via_resend_result(email_prepare($email_data))['success']);
+}
 
-	$api_key = env('RESEND_API_KEY');
-	$html = run_buffered($email_data['tpl']);
-	$text = plain_text($html);
+function email_via_resend_result($email_data)
+{
+	$result = email_resend_request('/emails', email_resend_payload($email_data), $email_data);
+	return [
+		'success' => !empty($result['success']) && !empty($result['body']['id']),
+		'id' => $result['body']['id'] ?? null,
+		'error' => $result['error'] ?? null,
+	];
+}
 
+function email_via_resend_batch_result($messages, $options = [])
+{
+	$payload = array_map('email_resend_payload', $messages);
+	$result = email_resend_request('/emails/batch', $payload, $options);
+	$ids = [];
+	foreach (($result['body']['data'] ?? []) as $item) {
+		if (!empty($item['id'])) {
+			$ids[] = $item['id'];
+		}
+	}
+	return [
+		'success' => !empty($result['success']) && count($ids) === count($messages),
+		'ids' => $ids,
+		'error' => $result['error'] ?? null,
+	];
+}
+
+function email_resend_payload($email_data)
+{
+	load_library('env');
 	$from = $email_data['from'] ?? env('MAIL_FROM');
 	$from_name = $email_data['from_name'] ?? env('MAIL_FROM_NAME');
 	if (!empty($from_name)) {
 		$from = $from_name . ' <' . $from . '>';
 	}
-
-	$ch = _curl_init('https://api.resend.com/emails', [
-		'Authorization: Bearer ' . $api_key,
-		'Content-Type: application/json',
-	]);
-	curl_setopt($ch, CURLOPT_POST, true);
-	$post_fields = [
-		'from'    => $from,
-		'to'      => email_recipients($email_data['recipient']),
+	$payload = [
+		'from' => $from,
+		'to' => email_recipients($email_data['recipient']),
 		'subject' => $email_data['subject'],
-		'html'    => $html,
-		'text'    => $text,
+		'html' => $email_data['html'],
+		'text' => $email_data['text'],
 	];
-	if (!empty($email_data['cc'])) {
-		$post_fields['cc'] = email_recipients($email_data['cc']);
+	foreach (['cc', 'bcc', 'reply_to', 'headers', 'tags'] as $key) {
+		if (!empty($email_data[$key])) {
+			$payload[$key] = in_array($key, ['cc', 'bcc'], true) ? email_recipients($email_data[$key]) : $email_data[$key];
+		}
 	}
-	if (!empty($email_data['bcc'])) {
-		$post_fields['bcc'] = email_recipients($email_data['bcc']);
+	return $payload;
+}
+
+function email_resend_request($path, $payload, $options = [])
+{
+	if (isset($options['request']) && is_callable($options['request'])) {
+		return $options['request']($path, $payload, $options);
 	}
-
-	curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($post_fields));
-
+	load_libraries(['curl', 'env']);
+	$api_key = $options['api_key'] ?? env('RESEND_API_KEY');
+	if (empty($api_key)) {
+		return ['success' => false, 'body' => [], 'error' => 'Resend is not configured'];
+	}
+	$headers = ['Authorization: Bearer ' . $api_key, 'Content-Type: application/json'];
+	if (!empty($options['idempotency_key'])) {
+		$headers[] = 'Idempotency-Key: ' . $options['idempotency_key'];
+	}
+	$base_url = rtrim($options['api_base_url'] ?? 'https://api.resend.com', '/');
+	$ch = _curl_init($base_url . $path, $headers);
+	curl_setopt($ch, CURLOPT_POST, true);
+	curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
 	$response = _curl_exec($ch);
-	$result = json_decode($response, true);
-	return !empty($result['id']);
+	$body = json_decode((string)$response, true);
+	if (!is_array($body)) {
+		return ['success' => false, 'body' => [], 'error' => 'Email provider returned an invalid response'];
+	}
+	if (!empty($body['message']) && empty($body['id']) && empty($body['data'])) {
+		return ['success' => false, 'body' => $body, 'error' => 'Email provider rejected the request'];
+	}
+	return ['success' => true, 'body' => $body, 'error' => null];
 }
 
 function email_recipients($recipients)
@@ -182,8 +261,15 @@ function email_via_smtp($email_data)
 			$mail->addAddress($recipient, $recipient_names[$jx]);
 		}
 
-		$html = run_buffered($email_data['tpl']);
-		$plain = plain_text($html);
+		$html = $email_data['html'];
+		$plain = $email_data['text'];
+
+		if (!empty($email_data['reply_to'])) {
+			$mail->addReplyTo($email_data['reply_to']);
+		}
+		foreach (($email_data['headers'] ?? []) as $name => $value) {
+			$mail->addCustomHeader($name, $value);
+		}
 
 		//Content
 		$mail->isHTML(true);                                  //Set email format to HTML
