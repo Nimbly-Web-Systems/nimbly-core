@@ -72,6 +72,7 @@ function get_resource_record_sc($params)
         $ix = array_search($record['lang'], $languages);
         if ($ix !== false) {
             unset($languages[$ix]);
+            $languages = array_values($languages);
         }
         set_variable('languages', $languages);
         set_variable('has_translations', true);
