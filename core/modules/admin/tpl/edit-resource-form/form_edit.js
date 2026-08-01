@@ -16,10 +16,6 @@ document.addEventListener("alpine:init", () => {
         this.set_editors(lang);
         this.$nextTick(() => this.refresh_ai_actions(lang));
       });
-      this.$watch("form_data", () => {
-        this.refresh_ai_actions(this.lang);
-      });
-
       this.$nextTick(() => {
         this.set_editors(this.lang);
         this.refresh_ai_actions(this.lang);
@@ -153,14 +149,19 @@ document.addEventListener("alpine:init", () => {
       this.ai_all_disabled = this.ai_all_complete(lang);
     },
     sync_ai_input(event, lang) {
-      const field = event.target.name;
+      const editor = event.target.closest?.("[data-nb-edit]");
+      const field = editor
+        ? editor.dataset.nbEdit.split(".").pop()
+        : event.target.name;
       if (!field || !_ai_record_action_fields.includes(field)) {
         return;
       }
       if (!this.form_data[field] || typeof this.form_data[field] !== "object") {
         this.form_data[field] = {};
       }
-      this.form_data[field][lang] = event.target.value;
+      this.form_data[field][lang] = editor
+        ? editor.innerHTML.trim()
+        : event.target.value;
       this.refresh_ai_actions(lang);
     },
     ai(field, lang) {
@@ -179,6 +180,7 @@ document.addEventListener("alpine:init", () => {
           this.me_busy = false;
           if (data.success) {
             this.form_data[field][lang] = data.completion;
+            this.refresh_ai_actions(lang);
             if (data.completion.length === 0) {
               nb.notify("Empty result");
             }
