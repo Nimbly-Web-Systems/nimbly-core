@@ -71,10 +71,27 @@ nb_edit.init_editor = function (ed, as_form_field = false) {
         editor_options['imageDragging'] = typeof options.media === "boolean" && options.media === true;
         var editor = new MediumEditor(ed, editor_options);
         ed._nb_medium_editor = editor;
+        if (as_form_field) {
+            editor.subscribe('editableInput', (_event, editable) => {
+                editable.dispatchEvent(new CustomEvent('nb:editor-change', {
+                    bubbles: true,
+                    detail: { value: editable.innerHTML.trim() }
+                }));
+            });
+        }
     }
 
     ed._nb_editor_options = options;
     ed._nb_mode = as_form_field ? 'form' : 'page';
+
+    if (as_form_field && ed._nb_plain) {
+        ed.addEventListener('input', () => {
+            ed.dispatchEvent(new CustomEvent('nb:editor-change', {
+                bubbles: true,
+                detail: { value: ed.innerHTML.trim() }
+            }));
+        });
+    }
 
     ed.addEventListener("focus", (e) => {
         nb_edit.on_focus(e);

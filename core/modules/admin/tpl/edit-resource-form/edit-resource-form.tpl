@@ -1,6 +1,7 @@
 <section class="bg-neutral-100 pb-10">
     <form autocomplete="false" x-ref="edit_resource_form" x-data="form_edit('[#data.resource#]', '[#data.uuid#]')" :data-lang="lang"
         @input="sync_ai_input($event, lang)"
+        @nb:editor-change="sync_ai_editor($event, lang)"
         @submit.prevent="submit"
         class="rounded-md bg-neutral-50 p-3 shadow-md sm:p-4 md:p-6 lg:p-8 xl:p-10">
 

@@ -55,7 +55,7 @@ function openai_complete_post()
                 return json_result(['message' => 'INVALID_DATA'], 400);
             }
             $target_value = is_array($field_values) ? ($field_values[$data['lang']] ?? '') : '';
-            if (is_string($target_value) && trim($target_value) !== '') {
+            if (!openai_translation_value_is_empty($target_value, $definition)) {
                 continue;
             }
             $source = openai_source_content($field_values, $meta['languages'], $data['lang']);
@@ -105,6 +105,17 @@ function openai_complete_post()
         }
     }
     return json_result(['completion' => $response]);
+}
+
+function openai_translation_value_is_empty($value, array $definition): bool
+{
+    if (!is_string($value)) {
+        return empty($value);
+    }
+    if (($definition['type'] ?? '') === 'html') {
+        $value = strip_tags($value, '<img><video><audio><iframe>');
+    }
+    return trim($value) === '';
 }
 
 function openai_source_content($values, array $languages, string $target_lang): ?array
