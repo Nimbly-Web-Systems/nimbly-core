@@ -152,6 +152,17 @@ document.addEventListener("alpine:init", () => {
     refresh_ai_actions(lang) {
       this.ai_all_disabled = this.ai_all_complete(lang);
     },
+    sync_ai_input(event, lang) {
+      const field = event.target.name;
+      if (!field || !_ai_record_action_fields.includes(field)) {
+        return;
+      }
+      if (!this.form_data[field] || typeof this.form_data[field] !== "object") {
+        this.form_data[field] = {};
+      }
+      this.form_data[field][lang] = event.target.value;
+      this.refresh_ai_actions(lang);
+    },
     ai(field, lang) {
       this.busy = true;
       this.ai_busy_field = field;
