@@ -25,7 +25,7 @@ function find_template($name, $dir = null) {
         }
     }
 
-    $path = find_path($SYSTEM['uri'], 'uri', $name . ".tpl");
+    $path = find_path($SYSTEM['uri'] ?? '', 'uri', $name . ".tpl");
     if ($path !== false) {
         return $path;
     }
