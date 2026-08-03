@@ -20,7 +20,11 @@ function last_update_sc($params) {
 
 function find_latest_time(string $dir): ?string {
     $result = 0;
-    foreach (scandir($dir) as $path) { 
+    $paths = @scandir($dir);
+    if ($paths === false) {
+        return $result;
+    }
+    foreach ($paths as $path) {
         if (in_array($path, ['.', '..'], true)) {
             continue;
         }
@@ -33,4 +37,4 @@ function find_latest_time(string $dir): ?string {
         }
     }
     return $result;
-} 
+}
