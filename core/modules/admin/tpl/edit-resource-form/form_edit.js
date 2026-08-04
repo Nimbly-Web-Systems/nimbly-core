@@ -45,9 +45,29 @@ document.addEventListener("alpine:init", () => {
           delete el._nb_medium_editor;
         }
 
-        el.innerHTML = value;
+        el.innerHTML = this.editor_html_for_display(value);
         nb.edit.init_editor(el, true);
       });
+    },
+
+    editor_html_for_display(value) {
+      const base_url = nb.base_url === "/" ? "" : nb.base_url.replace(/\/$/, "");
+      if (!base_url) {
+        return String(value || "");
+      }
+      return String(value || "").replace(
+        /(["', (])\/(img\/[0-9a-z]{20,32}\/|download\/[0-9a-z]{20,32}(?=["', )<]))/gi,
+        `$1${base_url}/$2`,
+      );
+    },
+
+    editor_html_for_storage(value) {
+      const base_url = nb.base_url === "/" ? "" : nb.base_url.replace(/\/$/, "");
+      if (!base_url) {
+        return String(value || "");
+      }
+      return String(value || "").replaceAll(`${base_url}/img/`, "/img/")
+        .replaceAll(`${base_url}/download/`, "/download/");
     },
 
     sync_editors(lang) {
@@ -67,7 +87,7 @@ document.addEventListener("alpine:init", () => {
           return;
         }
 
-        this.form_data[field][lang] = el.innerHTML.trim();
+        this.form_data[field][lang] = this.editor_html_for_storage(el.innerHTML.trim());
       });
     },
 
@@ -79,6 +99,8 @@ document.addEventListener("alpine:init", () => {
 
         if (field_data && typeof field_data === "object" && typeof editor_values[field] !== "object") {
           delete editor_values[field];
+        } else if (typeof editor_values[field] === "string") {
+          editor_values[field] = this.editor_html_for_storage(editor_values[field]);
         }
       });
 

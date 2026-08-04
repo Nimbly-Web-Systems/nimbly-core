@@ -68,14 +68,23 @@ function get_html_sc($params)
         $html = resolve_i18n($html, $lang);
     }
 
-    // remove any base_url like src="/(base-url)/img/(uuid)
-    $html = preg_replace('/([" ,])\/[\w]{2,}(\/img\/[0-9a-z]{20,32}\/)/i', '$1$2', $html);
+    // Remove any stored installation base from internal media URLs. Rich text
+    // must remain portable between root and subdirectory installations.
+    $html = preg_replace(
+        '/([" ,])\/[\w-]{2,}(\/(?:img\/[0-9a-z]{20,32}\/|download\/[0-9a-z]{20,32}(?=[" ,<])))/i',
+        '$1$2',
+        $html
+    );
 
     $base_url = trim($GLOBALS['SYSTEM']['uri_base'] ?? '', ' \\/');
 
     if (strlen($base_url) > 0) {
-        // insert base_url in any src="/img/(uuid)" with base-url
-        $html = preg_replace('/([", ])\/img\/([0-9a-z]{20,32}\/)/i', '$1/' . $base_url . '/img/$2', $html);
+        // Add the active installation base to root-relative media URLs.
+        $html = preg_replace(
+            '/([", ])\/(img\/[0-9a-z]{20,32}\/|download\/[0-9a-z]{20,32}(?=[" ,<]))/i',
+            '$1/' . $base_url . '/$2',
+            $html
+        );
     }
 
     // replace legacy lazy loading images
