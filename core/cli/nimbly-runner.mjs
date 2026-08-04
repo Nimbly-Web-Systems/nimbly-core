@@ -8,7 +8,8 @@ const args = process.argv.slice(2);
 const force_docker = args[0] === '--docker';
 const cli_args = force_docker ? args.slice(1) : args;
 const has_command = cli_args.length > 0;
-const command = cli_args[0] ?? '';
+const requested_command = cli_args[0] ?? '';
+const command = requested_command === 'test' ? 'test:run' : requested_command;
 
 function command_exists(command, check_args = ['--version']) {
   const result = spawnSync(command, check_args, { stdio: 'ignore' });
@@ -263,7 +264,7 @@ function show_common_help(show_all_hint = true, show_usage = true) {
   console.log('  init               Prepare a checkout for first use');
   console.log('  build              Build project assets');
   console.log('  watch              Watch and rebuild assets during development');
-  console.log('  test:run           Set up, run, and tear down the E2E test suite');
+  console.log('  test               Run the core and application test suites');
   console.log('  up                 Start the local Docker environment');
   if (show_all_hint) {
     console.log('');
@@ -386,6 +387,30 @@ if (command === 'test:run') {
     ], { stdio: 'inherit' });
   }
 
+  function php_test_step(file) {
+    if (!force_docker && command_exists('php')) {
+      return spawnSync('php', [file], { stdio: 'inherit' });
+    }
+    const env_args = env_keys_test
+      .filter((key) => process.env[key] !== undefined)
+      .flatMap((key) => ['-e', `${key}=${process.env[key]}`]);
+    return spawnSync('docker', [
+      'compose', '-f', 'docker/dev/docker-compose.yml',
+      'run', '--rm', ...env_args, 'nimbly',
+      'php', file,
+    ], { stdio: 'inherit' });
+  }
+
+  function php_test_files(directory) {
+    if (!existsSync(directory)) {
+      return [];
+    }
+    return readdirSync(directory)
+      .filter((name) => name.endsWith('-test.php'))
+      .sort()
+      .map((name) => `${directory}/${name}`);
+  }
+
   section('Setup');
   const setup = php_step('test:setup');
   if ((setup.status ?? 1) !== 0) {
@@ -393,29 +418,41 @@ if (command === 'test:run') {
     process.exit(setup.status ?? 1);
   }
 
-  if (!existsSync('node_modules/@playwright/test')) {
+  section('PHP tests');
+  let test_status = 0;
+  for (const file of [...php_test_files('core/tests'), ...php_test_files('ext/tests')]) {
+    const result = php_test_step(file);
+    if ((result.status ?? 1) !== 0) {
+      test_status = result.status ?? 1;
+      break;
+    }
+  }
+
+  if (test_status === 0 && !existsSync('node_modules/@playwright/test')) {
     section('Install @playwright/test');
     run_step('npm', ['install', '--save-dev', '@playwright/test']);
   }
 
-  section('Install Playwright browsers');
-  const pw_install_args = process.env.CI
-    ? ['playwright', 'install', '--with-deps', 'chromium']
-    : ['playwright', 'install', 'chromium'];
-  const install_result = spawnSync('npx', pw_install_args, { stdio: 'inherit' });
+  if (test_status === 0) {
+    section('Install Playwright browsers');
+    const pw_install_args = process.env.CI
+      ? ['playwright', 'install', '--with-deps', 'chromium']
+      : ['playwright', 'install', 'chromium'];
+    const install_result = spawnSync('npx', pw_install_args, { stdio: 'inherit' });
 
-  let test_status = 1;
-  if ((install_result.status ?? 1) === 0) {
-    section('Run tests');
-    const pw_extra = cli_args.slice(1);
-    const test_result = spawnSync(
-      'npx',
-      ['playwright', 'test', '--config', 'core/tests/playwright.config.js', ...pw_extra],
-      { stdio: 'inherit' }
-    );
-    test_status = test_result.status ?? 1;
-  } else {
-    console.error('Playwright browser install failed.');
+    if ((install_result.status ?? 1) === 0) {
+      section('Browser tests');
+      const pw_extra = cli_args.slice(1);
+      const test_result = spawnSync(
+        'npx',
+        ['playwright', 'test', '--config', 'core/tests/playwright.config.js', ...pw_extra],
+        { stdio: 'inherit' }
+      );
+      test_status = test_result.status ?? 1;
+    } else {
+      console.error('Playwright browser install failed.');
+      test_status = install_result.status ?? 1;
+    }
   }
 
   section('Teardown');
