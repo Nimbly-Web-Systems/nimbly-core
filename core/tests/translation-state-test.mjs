@@ -14,7 +14,7 @@ globalThis.Alpine = {
     form_edit_factory = factory;
   },
 };
-globalThis.nb = { forms: {} };
+globalThis.nb = { base_url: "/jereis", forms: {} };
 globalThis._initial_lang = "nl";
 globalThis._ai_record_action_fields = ["location_name", "title", "body"];
 globalThis._translation_languages = ["nl", "en"];
@@ -29,6 +29,19 @@ state.form_data = {
   body: { nl: "<p>Inhoud</p>", en: "<p>Body</p>" },
 };
 state.initialize_translation_empty();
+
+assert.equal(
+  state.editor_html_for_display('<img src="/img/12345678901234567890/1200w">'),
+  '<img src="/jereis/img/12345678901234567890/1200w">',
+);
+assert.equal(
+  state.editor_html_for_display('<video src="/download/12345678901234567890"></video>'),
+  '<video src="/jereis/download/12345678901234567890"></video>',
+);
+assert.equal(
+  state.editor_html_for_storage('<img src="/jereis/img/12345678901234567890/1200w">'),
+  '<img src="/img/12345678901234567890/1200w">',
+);
 
 assert.equal(state.has_empty_translation_fields("nl"), false);
 assert.equal(state.has_empty_translation_fields("en"), true);
