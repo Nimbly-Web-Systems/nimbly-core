@@ -1109,6 +1109,10 @@ function _data_validate($resource, $uuid, &$data_ls)
         return true;
     }
     $meta = data_meta($resource);
+    if (_data_validate_field_definitions($meta, $data_ls) !== true) {
+        data_error_set('VALIDATION_FAILED');
+        return false;
+    }
     if (!empty($meta['validate'])) {
         $validation_rules = $meta['validate'];
         foreach ($validation_rules as $rule => $fields) {
@@ -1134,6 +1138,43 @@ function _data_validate($resource, $uuid, &$data_ls)
     }
 
     return true;
+}
+
+function _data_validate_field_definitions($meta, $data_ls)
+{
+    foreach (($meta['fields'] ?? []) as $field => $definition) {
+        $has_value = array_key_exists($field, $data_ls) && _data_value_is_present($data_ls[$field]);
+        if (!empty($definition['required']) && !$has_value) {
+            return false;
+        }
+        if (!$has_value || (!isset($definition['min']) && !isset($definition['max']))) {
+            continue;
+        }
+        if (!is_numeric($data_ls[$field])) {
+            return false;
+        }
+        $value = (float)$data_ls[$field];
+        if (isset($definition['min']) && $value < (float)$definition['min']) {
+            return false;
+        }
+        if (isset($definition['max']) && $value > (float)$definition['max']) {
+            return false;
+        }
+    }
+    return true;
+}
+
+function _data_value_is_present($value)
+{
+    if (is_array($value)) {
+        foreach ($value as $item) {
+            if (_data_value_is_present($item)) {
+                return true;
+            }
+        }
+        return false;
+    }
+    return $value !== null && (!is_string($value) || trim($value) !== '');
 }
 
 function _data_validate_unique($resource, $uuid, $data_ls, $fields)
