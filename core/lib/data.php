@@ -1142,7 +1142,10 @@ function _data_validate($resource, $uuid, &$data_ls)
 
 function _data_validate_field_definitions($meta, $data_ls)
 {
-    foreach (($meta['fields'] ?? []) as $field => $definition) {
+    $fields = is_array($meta) && isset($meta['fields']) && is_array($meta['fields'])
+        ? $meta['fields']
+        : [];
+    foreach ($fields as $field => $definition) {
         $has_value = array_key_exists($field, $data_ls) && _data_value_is_present($data_ls[$field]);
         if (!empty($definition['required']) && !$has_value) {
             return false;
