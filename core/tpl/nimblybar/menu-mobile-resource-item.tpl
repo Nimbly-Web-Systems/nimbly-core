@@ -5,5 +5,5 @@
         <span class="min-w-0 flex-1 break-words">[#text [#item.name#]#]</span>
         <span class="shrink-0 rounded-full bg-white/10 px-2 py-1 text-xs tabular-nums">([#data-count [#item.key#]#])</span>
     </a>
-    [#feature-cond features=create-[#item.key#] tpl=menu-mobile-resource-add#]
+    [#feature-cond features=create-[#item.key#] tpl=menu-mobile-resource-add tpl_else=menu-mobile-resource-add-placeholder#]
 </li>
