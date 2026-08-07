@@ -11,7 +11,8 @@ RUN apt-get -y update && \
         php-gd \
         php-gmp \
         php-intl \
-        php-mbstring && \
+        php-mbstring \
+        php-xml && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
 COPY docker/apache2.conf /etc/apache2/apache2.conf

@@ -7,6 +7,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get -y update && \
     apt-get -y install \
         apache2 \
+        composer \
         nodejs \
         npm \
         php-cli \
@@ -15,7 +16,8 @@ RUN apt-get -y update && \
         php-gd \
         php-gmp \
         php-intl \
-        php-mbstring && \
+        php-mbstring \
+        php-xml && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
