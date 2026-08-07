@@ -127,9 +127,10 @@ foreach ($route_files as $route_file) {
         echo "Warning: static route has route.inc, skipped: $route\n";
         continue;
     }
-    if (!file_exists(dirname($route_file) . '/index.tpl')) {
+    $route_contents = file_get_contents($route_file);
+    if (!file_exists(dirname($route_file) . '/index.tpl') && str_contains($route_contents, 'router_accept')) {
         $warnings++;
-        echo "Warning: route.inc has no sibling index.tpl, skipped: $route\n";
+        echo "Warning: route.inc calls router_accept() but has no sibling index.tpl, skipped: $route\n";
         continue;
     }
 
