@@ -50,6 +50,7 @@ if (empty($pepper)) {
 $_SERVER['PEPPER'] = $pepper;
 load_library('data');
 load_library('encrypt');
+require_once BASE_DIR . 'core/cli/helpers/composer.php';
 
 // -----------------------------------------------------------------------
 // Resolve module name
