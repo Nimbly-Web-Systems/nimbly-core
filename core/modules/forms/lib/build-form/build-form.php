@@ -81,11 +81,15 @@ function build_form($form_def, $params = [], $uuid = null)
     // edit of an existing record, so it defaults off whenever uuid= is used
     // and can still be forced either way via $form_def['honeypot'].
     set_variable('_bf_honeypot', ($form_def['honeypot'] ?? empty($uuid)) ? 'true' : '');
+    // Redirects to _resource_url on success instead of resetting the form in
+    // place — off by default (public forms stay put and show a thank-you),
+    // on for admin add/edit flows that return to the resource list.
+    set_variable('_bf_redirect_on_success', ($form_def['redirect_on_success'] ?? false) ? 'true' : '');
 
+    load_library('get-resource-meta');
+    get_resource_meta_sc(['resource' => $resource, 'uuid' => $uuid]);
     if ($uuid) {
-        load_library('get-resource-meta');
         load_library('get-resource-record');
-        get_resource_meta_sc(['resource' => $resource, 'uuid' => $uuid]);
         get_resource_record_sc(['resource' => $resource, 'uuid' => $uuid]);
     }
 
