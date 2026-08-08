@@ -37,8 +37,9 @@ test.describe('admin edit — i18n and group fields (test-i18n-records)', () => 
     const add_button = page.getByRole('button', { name: 'Add', exact: true });
     await add_button.click();
 
-    const items = page.locator('[name="items"]');
-    await expect(page.locator('input').last()).toBeVisible();
+    const group_items = page.locator('div[x-data^="nb_group_field"] > div.mb-3.rounded');
+    await expect(group_items).toHaveCount(2);
+    await expect(group_items.last().locator('input').first()).toBeVisible();
 
     const submit = page.locator('form button[type=submit]').first();
     await submit.click();

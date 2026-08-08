@@ -1,21 +1,24 @@
 // Plain JS, no shortcode syntax — kept separate from fscript.js (a template
 // file) specifically so it stays directly unit-testable via Node's `import()`.
-// Reads _initial_lang / _frecord / _translation_mode / _ai_record_action_fields
-// / _translation_languages / _resource_url as globals, declared by whichever
-// template includes this file (build-form's fscript.js).
-function nb_build_form_edit_state(resource_id, record_id) {
+// Receives rendered form configuration explicitly so multiple build-form
+// instances on one page cannot overwrite each other's state.
+function nb_build_form_edit_state(resource_id, record_id, config = {}) {
+  const ai_record_action_fields = config.ai_record_action_fields || [];
+  const translation_languages = config.translation_languages || [];
   return {
     resource_id: resource_id,
     record_id: record_id,
-    lang: _initial_lang,
-    redirect_on_submit: true,
+    lang: config.initial_lang || "en",
+    redirect_on_submit: config.redirect_on_success === true,
+    _ai_record_action: config.ai_record_action === true,
+    _translation_mode: config.translation_mode || "",
     busy: false,
     ai_busy_field: null,
     ai_busy_all: false,
     translation_empty: {},
 
     init_edit_state() {
-      this.form_data = _frecord || {};
+      this.form_data = config.record || {};
       this.initialize_translation_empty();
       this.$watch("lang", (lang) => {
         this.set_editors(lang);
@@ -25,20 +28,24 @@ function nb_build_form_edit_state(resource_id, record_id) {
       });
     },
 
-    edit_submit() {
+    edit_submit(redirect_on_success = this.redirect_on_submit) {
       this.busy = true;
       this.sync_editors(this.lang);
       const payload = {
         ...this.form_data,
         ...this.get_editor_values(),
       };
-      if (_translation_mode === "field") {
+      if (payload.keep_password === true) {
+        delete payload.password;
+      }
+      delete payload.keep_password;
+      if (config.translation_mode === "field") {
         // lang/translations are bookkeeping added for rendering by
         // get_resource_record_sc() — never persist them back onto the record.
         delete payload.lang;
         delete payload.translations;
       }
-      nb.api
+      return nb.api
         .put(nb.base_url + "/api/v1/" + this.resource_id + "/" + this.record_id, payload)
         .then((data) => {
           this.busy = false;
@@ -46,21 +53,25 @@ function nb_build_form_edit_state(resource_id, record_id) {
             nb.notify(data.message);
             return;
           }
-          if (!this.redirect_on_submit) {
+          if (!redirect_on_success) {
+            nb.notify(nb.text.record_updated);
             return;
           }
-          nb.system_message(nb.text.record_updated).then(() => {
+          return nb.system_message(nb.text.record_updated).then(() => {
             if (document.referrer && !document.referrer.includes("/nb-admin/")) {
               window.location.href = document.referrer;
             } else {
-              window.location.href = _resource_url || nb.base_url + "/nb-admin/" + this.resource_id;
+              window.location.href = config.resource_url || nb.base_url + "/nb-admin/" + this.resource_id;
             }
           });
+        })
+        .catch((error) => {
+          this.busy = false;
+          nb.notify(error.message || "Could not update record");
         });
     },
     save() {
-      this.redirect_on_submit = false;
-      this.edit_submit();
+      return this.edit_submit(false);
     },
     set_editors(lang) {
       if (!this.$el) {
@@ -139,10 +150,10 @@ function nb_build_form_edit_state(resource_id, record_id) {
     },
     initialize_translation_empty() {
       this.translation_empty = Object.fromEntries(
-        _ai_record_action_fields.map((field) => [
+        ai_record_action_fields.map((field) => [
           field,
           Object.fromEntries(
-            _translation_languages.map((language) => [
+            translation_languages.map((language) => [
               language,
               this.translation_value_is_empty(this.form_data[field]?.[language]),
             ]),
@@ -161,7 +172,7 @@ function nb_build_form_edit_state(resource_id, record_id) {
       return this.translation_empty[field]?.[lang] === true;
     },
     has_empty_translation_fields(lang) {
-      return _ai_record_action_fields.some((field) =>
+      return ai_record_action_fields.some((field) =>
         this.translation_field_empty(field, lang),
       );
     },
@@ -173,7 +184,7 @@ function nb_build_form_edit_state(resource_id, record_id) {
     },
     sync_ai_input(event, lang) {
       const field = event.target.name;
-      if (!field || !_ai_record_action_fields.includes(field)) {
+      if (!field || !ai_record_action_fields.includes(field)) {
         return;
       }
       if (!this.form_data[field] || typeof this.form_data[field] !== "object") {
@@ -184,7 +195,7 @@ function nb_build_form_edit_state(resource_id, record_id) {
     },
     sync_ai_editor(event, lang) {
       const field = event.target.dataset.nbEdit?.split(".").pop();
-      if (!field || !_ai_record_action_fields.includes(field)) {
+      if (!field || !ai_record_action_fields.includes(field)) {
         return;
       }
       this.form_data[field][lang] = event.detail.value;
@@ -225,7 +236,7 @@ function nb_build_form_edit_state(resource_id, record_id) {
     ai_all(lang) {
       this.sync_editors(lang);
       const values = Object.fromEntries(
-        _ai_record_action_fields.map((field) => [field, this.form_data[field] || {}]),
+        ai_record_action_fields.map((field) => [field, this.form_data[field] || {}]),
       );
       this.busy = true;
       this.ai_busy_all = true;
@@ -263,15 +274,21 @@ function nb_build_form_edit_state(resource_id, record_id) {
         });
     },
     delete_record() {
-      nb.api
+      this.busy = true;
+      return nb.api
         .delete(nb.base_url + "/api/v1/" + this.resource_id + "/" + this.record_id)
         .then((data) => {
+          this.busy = false;
           if (data.success) {
             nb.system_message(nb.text.record_deleted);
-            window.location.href = _resource_url || nb.base_url + "/nb-admin/" + this.resource_id;
+            window.location.href = config.resource_url || nb.base_url + "/nb-admin/" + this.resource_id;
           } else {
             nb.notify(data.message);
           }
+        })
+        .catch((error) => {
+          this.busy = false;
+          nb.notify(error.message || "Could not delete record");
         });
     },
   };

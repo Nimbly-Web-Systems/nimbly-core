@@ -1,17 +1,15 @@
-var _bf_uuid = "[#get _bf_uuid#]";
-var _initial_lang = "[#get record.lang default=en#]";
-var _translation_mode = "[#get translation_mode#]";
-var _ai_record_action = [#if data.ai_record_action=(not-empty) echo=true echo_else=false#];
-var _ai_record_action_fields = [#fmt var=data.ai_record_action_fields type=json empty=[]#];
-var _translation_languages = [#fmt var=data.translation_languages type=json empty=[]#];
-var _frecord = [#fmt var=_frecord type=json empty={}#];
-var _resource_url = "[#get _resource_url default=[#base-url#]/nb-admin/[#_bf_resource#]#]";
-var _bf_redirect_on_success = [#if _bf_redirect_on_success=(not-empty) echo=true echo_else=false#];
-var _i18n_fields = [#fmt var=data.i18n_fields type=json empty=[]#];
-
-[#include file=[#base-path#]core/modules/forms/lib/build-form/edit-form-state.js#]
-
 document.addEventListener("alpine:init", () => {
+const form_config = {
+    initial_lang: [#fmt var=_bf_initial_lang type=json empty=null#],
+    translation_mode: [#fmt var=translation_mode type=json empty=null#],
+    ai_record_action: [#if data.ai_record_action=(not-empty) echo=true echo_else=false#],
+    ai_record_action_fields: [#fmt var=data.ai_record_action_fields type=json empty=[]#],
+    translation_languages: [#fmt var=data.translation_languages type=json empty=[]#],
+    record: [#fmt var=_frecord type=json empty={}#],
+    resource_url: [#fmt var=_bf_resource_url type=json empty=null#],
+    redirect_on_success: [#if _bf_redirect_on_success=(not-empty) echo=true echo_else=false#],
+    i18n_fields: [#fmt var=data.i18n_fields type=json empty=[]#],
+};
 Alpine.data("[#_bf_js_name#]_form", (resource_id = "(empty)", record_id = "") => ({
     resource_id: resource_id,
     record_id: record_id,
@@ -20,6 +18,8 @@ Alpine.data("[#_bf_js_name#]_form", (resource_id = "(empty)", record_id = "") =>
     file_uuid: null,
     uploading: false,
     submitting: false,
+    busy: false,
+    lang: form_config.initial_lang,
 
     init() {
       if (!this.record_id) {
@@ -63,12 +63,12 @@ Alpine.data("[#_bf_js_name#]_form", (resource_id = "(empty)", record_id = "") =>
       // i18n fields are captured as flat scalars in one language at a time
       // (see language-picker + render-field.php); wrap into the {lang: value}
       // shape the rest of the system expects only once, right before submit.
-      (_i18n_fields || []).forEach((field) => {
+      form_config.i18n_fields.forEach((field) => {
         if (payload[field] !== undefined && typeof payload[field] !== "object") {
           payload[field] = { [this.lang]: payload[field] };
         }
       });
-      nb.api
+      return nb.api
         .post(nb.base_url + "/api/v1/" + resource_id + "?key=" + this.form_key, payload)
         .then((data) => {
           this.uploading = false;
@@ -77,9 +77,9 @@ Alpine.data("[#_bf_js_name#]_form", (resource_id = "(empty)", record_id = "") =>
             this.finish_submit();
             return;
           }
-          if (_bf_redirect_on_success) {
+          if (form_config.redirect_on_success) {
             nb.system_message(nb.text.record_added).then(() => {
-              window.location.href = _resource_url || nb.base_url + "/nb-admin/" + resource_id;
+              window.location.href = form_config.resource_url || nb.base_url + "/nb-admin/" + resource_id;
             });
             return;
           }
@@ -99,11 +99,10 @@ Alpine.data("[#_bf_js_name#]_form", (resource_id = "(empty)", record_id = "") =>
           return;
         }
         if (this.record_id) {
-          this.edit_submit();
-          return;
+          return this.edit_submit();
         }
-        [#if _bf_upload_field=(not-empty) echo=this.submit_with_upload(e);#]
-        [#if _bf_upload_field=(empty) echo=this.submit_without_upload(e);#]
+        [#if _bf_upload_field=(not-empty) echo="return this.submit_with_upload(e);"#]
+        [#if _bf_upload_field=(empty) echo="return this.submit_without_upload(e);"#]
     },
     submit_without_upload(e) {
       this.form_elem = e.target;
@@ -111,7 +110,7 @@ Alpine.data("[#_bf_js_name#]_form", (resource_id = "(empty)", record_id = "") =>
         "input[type=hidden][name=form_key]"
       )[0].value;
       this.set_form_submitting(true);
-      this.post_entry();
+      return this.post_entry();
     },
     submit_with_upload(e) {
       this.uploading = true;
@@ -135,7 +134,7 @@ Alpine.data("[#_bf_js_name#]_form", (resource_id = "(empty)", record_id = "") =>
       }
 
       if (!_uploading) {
-        this.post_entry();
+        return this.post_entry();
       }
     },
     upload(file, e) {
@@ -167,7 +166,7 @@ Alpine.data("[#_bf_js_name#]_form", (resource_id = "(empty)", record_id = "") =>
         });
     },
 
-    ...nb_build_form_edit_state(resource_id, record_id),
+    [#if _bf_uuid=(not-empty) echo="...nb_build_form_edit_state(resource_id, record_id, form_config),"#]
     ...nb.forms,
   }));
 })
