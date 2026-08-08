@@ -92,7 +92,12 @@ function build_form($form_def, $params = [], $uuid = null)
         load_library('get-resource-record');
         get_resource_record_sc(['resource' => $resource, 'uuid' => $uuid]);
     }
+    set_variable('_bf_initial_lang', get_variable('record.lang', 'en'));
+    set_variable('_bf_resource_url', get_variable('_resource_url', ''));
 
+    if ($uuid) {
+        echo '<script>' . file_get_contents(dirname(__FILE__) . '/edit-form-state.js') . '</script>';
+    }
     echo '<script>' . run_buffered(dirname(__FILE__) . '/fscript.js') . '</script>';
     echo run_buffered(dirname(__FILE__) . '/fheader.tpl');
     echo run_buffered(dirname(__FILE__) . '/fbody.tpl');

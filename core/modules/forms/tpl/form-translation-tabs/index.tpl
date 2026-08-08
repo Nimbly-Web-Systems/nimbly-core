@@ -6,7 +6,7 @@
             :class="lang=='[#get record.lang#]'? 'border-b-primary' : 'border-b-transparent'">[#text [#get record.lang#]#]</button></li>
         [#repeat languages tpl=form-translation-tab#]
     </ul>
-    <button type="button" x-cloak x-show="_ai_record_action && _translation_mode === 'field'"
+    <button type="button" x-cloak x-show="$data._ai_record_action && $data._translation_mode === 'field'"
         class="inline-flex cursor-pointer items-center gap-2 rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-100 disabled:pointer-events-none disabled:opacity-70"
         :disabled="busy || !has_empty_translation_fields(lang)" title="[#text [#get data.ai_record_action_title default=Translate#]#]"
         @click.prevent="ai_all(lang)">
