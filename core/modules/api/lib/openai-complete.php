@@ -21,7 +21,7 @@ function openai_complete_post()
         return json_result(['message' => 'SERVICE_UNAVAILABLE'], 503);
     }
 
-    $meta = data_meta($data['resource']);
+    $meta = data_meta($data['resource'], $data['uuid']);
     $fn = $data['field'];
     if ($fn === '(all)' && empty($meta['ai_record_action']) && empty($meta['ai_translate_record'])) {
         return json_result(['message' => 'NOT_IMPLEMENTED'], 501);

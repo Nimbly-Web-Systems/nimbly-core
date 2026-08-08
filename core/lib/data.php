@@ -956,14 +956,20 @@ function data_resources_list()
  * Uses static cache to avoid repeated disk reads.
  * If no metadata file exists, builds default metadata and creates `.meta`.
  *
+ * When the resource's own `.meta` defines no fields and a `$uuid` is given,
+ * falls back to the record's own embedded `_fields`/`_languages` keys, so a
+ * record can carry its own schema instead of requiring an external `.meta`.
+ *
  * @param string $resource Resource name.
+ * @param string|null $uuid Optional record UUID, for the embedded-schema fallback.
  * @return array Resource metadata array.
  */
-function data_meta($resource)
+function data_meta($resource, $uuid = null)
 {
     static $meta_result = [];
-    if (!empty($meta_result[$resource])) {
-        return $meta_result[$resource];
+    $cache_key = $resource . '|' . $uuid;
+    if (!empty($meta_result[$cache_key])) {
+        return $meta_result[$cache_key];
     }
     if (data_exists($resource, ".meta")) {
         $meta = data_read($resource, ".meta");
@@ -971,7 +977,16 @@ function data_meta($resource)
         $meta = ['fields' => false];
         data_create($resource, ".meta", $meta);
     }
-    $meta_result[$resource] = $meta;
+    if (empty($meta['fields']) && $uuid !== null && data_exists($resource, $uuid)) {
+        $record = data_read($resource, $uuid);
+        if (!empty($record['_fields']) && is_array($record['_fields'])) {
+            $meta['fields'] = $record['_fields'];
+            if (!empty($record['_languages'])) {
+                $meta['languages'] = $record['_languages'];
+            }
+        }
+    }
+    $meta_result[$cache_key] = $meta;
     return $meta;
 }
 
