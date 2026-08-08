@@ -4,8 +4,10 @@ var _translation_mode = "[#get translation_mode#]";
 var _ai_record_action = [#if data.ai_record_action=(not-empty) echo=true echo_else=false#];
 var _ai_record_action_fields = [#fmt var=data.ai_record_action_fields type=json empty=[]#];
 var _translation_languages = [#fmt var=data.translation_languages type=json empty=[]#];
-var _frecord = [#fmt var=_frecord json#];
+var _frecord = [#fmt var=_frecord type=json empty={}#];
 var _resource_url = "[#get _resource_url default=[#base-url#]/nb-admin/[#_bf_resource#]#]";
+var _bf_redirect_on_success = [#if _bf_redirect_on_success=(not-empty) echo=true echo_else=false#];
+var _i18n_fields = [#fmt var=data.i18n_fields type=json empty=[]#];
 
 [#include file=[#base-path#]core/modules/forms/lib/build-form/edit-form-state.js#]
 
@@ -51,24 +53,40 @@ Alpine.data("[#_bf_js_name#]_form", (resource_id = "(empty)", record_id = "") =>
     post_entry() {
       this.set_form_submitting(true);
       var d = new Date();
+      const payload = {
+        status: "[#_bf_status#]",
+        [#if _bf_upload_field=(not-empty) echo="[#_bf_upload_field#]: this.file_uuid,"#]
+        entry_date: d.toISOString().split("T")[0],
+        ...this.form_data,
+        ...nb.edit.get_field_values(this.form_elem),
+      };
+      // i18n fields are captured as flat scalars in one language at a time
+      // (see language-picker + render-field.php); wrap into the {lang: value}
+      // shape the rest of the system expects only once, right before submit.
+      (_i18n_fields || []).forEach((field) => {
+        if (payload[field] !== undefined && typeof payload[field] !== "object") {
+          payload[field] = { [this.lang]: payload[field] };
+        }
+      });
       nb.api
-        .post(nb.base_url + "/api/v1/" + resource_id + "?key=" + this.form_key, {
-          status: "[#_bf_status#]",
-          [#if _bf_upload_field=(not-empty) echo="[#_bf_upload_field#]: this.file_uuid,"#]
-          entry_date: d.toISOString().split("T")[0],
-          ...this.form_data,
-          ...nb.edit.get_field_values(this.form_elem),
-        })
+        .post(nb.base_url + "/api/v1/" + resource_id + "?key=" + this.form_key, payload)
         .then((data) => {
           this.uploading = false;
-          if (data.success) {
-            this.form_data = {};
-            nb.notify(
-              "[#_bf_success_message#]"
-            );
-          } else {
+          if (!data.success) {
             nb.notify(data.message);
+            this.finish_submit();
+            return;
           }
+          if (_bf_redirect_on_success) {
+            nb.system_message(nb.text.record_added).then(() => {
+              window.location.href = _resource_url || nb.base_url + "/nb-admin/" + resource_id;
+            });
+            return;
+          }
+          this.form_data = {};
+          nb.notify(
+            "[#_bf_success_message#]"
+          );
           this.finish_submit();
         })
         .catch((error) => {

@@ -26,7 +26,7 @@ function get_resource_meta_sc($params) {
     );
 
     // Exposed for the add-form language picker and i18n submit wrapping —
-    // see language_picker_sc() and add-resource-form/form_add.js.
+    // see language_picker_sc() and build-form/fscript.js's post_entry().
     $languages = $meta['languages'] ?? [];
     set_variable('languages', $languages);
     set_variable('data.translation_languages', array_values($languages));
