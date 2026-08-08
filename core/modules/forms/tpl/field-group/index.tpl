@@ -16,7 +16,17 @@ if (!window.nb_group_field) {
                 if (this.items.length === 0) {
                     this.add();
                 }
-                form_data[this.key] = this.items;
+                this.sync_form_data();
+            },
+            // A plain method body (unlike a template expression) isn't
+            // scope-merged by Alpine, so a bare `form_data` reference here
+            // resolves to nothing — reach the enclosing form's data explicitly.
+            sync_form_data() {
+                const form = this.$el.closest('form');
+                if (!form) {
+                    return;
+                }
+                Alpine.$data(form).form_data[this.key] = this.items;
             },
             json_from(id, fallback) {
                 try {
@@ -48,19 +58,21 @@ if (!window.nb_group_field) {
             add() {
                 if (this.items.length >= this.max) return;
                 this.items.push(this.normalize());
-                form_data[this.key] = this.items;
+                this.sync_form_data();
             },
             remove(ix) {
                 if (this.items.length === 1) {
                     this.items.splice(0, 1, this.normalize());
-                    return;
+                } else {
+                    this.items.splice(ix, 1);
                 }
-                this.items.splice(ix, 1);
+                this.sync_form_data();
             },
             move(ix, delta) {
                 const target = ix + delta;
                 if (target < 0 || target >= this.items.length) return;
                 this.items.splice(target, 0, this.items.splice(ix, 1)[0]);
+                this.sync_form_data();
             },
             option_entries(field) {
                 return Object.entries(field.options || {}).map(([value, label]) => ({ value, label }));

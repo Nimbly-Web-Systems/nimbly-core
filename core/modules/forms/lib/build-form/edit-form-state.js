@@ -1,5 +1,10 @@
-document.addEventListener("alpine:init", () => {
-  Alpine.data("form_edit", (resource_id, record_id) => ({
+// Plain JS, no shortcode syntax — kept separate from fscript.js (a template
+// file) specifically so it stays directly unit-testable via Node's `import()`.
+// Reads _initial_lang / _frecord / _translation_mode / _ai_record_action_fields
+// / _translation_languages / _resource_url as globals, declared by whichever
+// template includes this file (build-form's fscript.js).
+function nb_build_form_edit_state(resource_id, record_id) {
+  return {
     resource_id: resource_id,
     record_id: record_id,
     lang: _initial_lang,
@@ -9,10 +14,9 @@ document.addEventListener("alpine:init", () => {
     ai_busy_all: false,
     translation_empty: {},
 
-    init() {
-      this.form_data = window._frecord || {};
+    init_edit_state() {
+      this.form_data = _frecord || {};
       this.initialize_translation_empty();
-
       this.$watch("lang", (lang) => {
         this.set_editors(lang);
       });
@@ -21,14 +25,48 @@ document.addEventListener("alpine:init", () => {
       });
     },
 
+    edit_submit() {
+      this.busy = true;
+      this.sync_editors(this.lang);
+      const payload = {
+        ...this.form_data,
+        ...this.get_editor_values(),
+      };
+      if (_translation_mode === "field") {
+        // lang/translations are bookkeeping added for rendering by
+        // get_resource_record_sc() — never persist them back onto the record.
+        delete payload.lang;
+        delete payload.translations;
+      }
+      nb.api
+        .put(nb.base_url + "/api/v1/" + this.resource_id + "/" + this.record_id, payload)
+        .then((data) => {
+          this.busy = false;
+          if (!data.success) {
+            nb.notify(data.message);
+            return;
+          }
+          if (!this.redirect_on_submit) {
+            return;
+          }
+          nb.system_message(nb.text.record_updated).then(() => {
+            if (document.referrer && !document.referrer.includes("/nb-admin/")) {
+              window.location.href = document.referrer;
+            } else {
+              window.location.href = _resource_url || nb.base_url + "/nb-admin/" + this.resource_id;
+            }
+          });
+        });
+    },
+    save() {
+      this.redirect_on_submit = false;
+      this.edit_submit();
+    },
     set_editors(lang) {
-      if (!this.$refs.edit_resource_form) {
+      if (!this.$el) {
         return;
       }
-
-      const editors =
-        this.$refs.edit_resource_form.querySelectorAll("[data-nb-edit]");
-
+      const editors = this.$el.querySelectorAll("[data-nb-edit]");
       editors.forEach((el) => {
         const parts = el.dataset.nbEdit.split(".");
         const field = parts[parts.length - 1];
@@ -49,7 +87,6 @@ document.addEventListener("alpine:init", () => {
         nb.edit.init_editor(el, true);
       });
     },
-
     editor_html_for_display(value) {
       const base_url = nb.base_url === "/" ? "" : nb.base_url.replace(/\/$/, "");
       if (!base_url) {
@@ -60,7 +97,6 @@ document.addEventListener("alpine:init", () => {
         `$1${base_url}/$2`,
       );
     },
-
     editor_html_for_storage(value) {
       const base_url = nb.base_url === "/" ? "" : nb.base_url.replace(/\/$/, "");
       if (!base_url) {
@@ -69,15 +105,11 @@ document.addEventListener("alpine:init", () => {
       return String(value || "").replaceAll(`${base_url}/img/`, "/img/")
         .replaceAll(`${base_url}/download/`, "/download/");
     },
-
     sync_editors(lang) {
-      if (!this.$refs.edit_resource_form) {
+      if (!this.$el) {
         return;
       }
-
-      const editors =
-        this.$refs.edit_resource_form.querySelectorAll("[data-nb-edit]");
-
+      const editors = this.$el.querySelectorAll("[data-nb-edit]");
       editors.forEach((el) => {
         const parts = el.dataset.nbEdit.split(".");
         const field = parts[parts.length - 1];
@@ -90,9 +122,8 @@ document.addEventListener("alpine:init", () => {
         this.form_data[field][lang] = this.editor_html_for_storage(el.innerHTML.trim());
       });
     },
-
     get_editor_values() {
-      const editor_values = nb.edit.get_field_values(this.$refs.edit_resource_form);
+      const editor_values = nb.edit.get_field_values(this.$el);
 
       Object.keys(editor_values).forEach((field) => {
         const field_data = this.form_data[field];
@@ -105,54 +136,6 @@ document.addEventListener("alpine:init", () => {
       });
 
       return editor_values;
-    },
-
-    submit() {
-      this.busy = true;
-      this.sync_editors(this.lang);
-      if (this.form_data.hasOwnProperty("keep_password")) {
-        if (
-          this.form_data.keep_password &&
-          this.form_data.hasOwnProperty("password")
-        ) {
-          delete this.form_data.password;
-        }
-        delete this.form_data.keep_password;
-      }
-      const payload = {
-        ...this.form_data,
-        ...this.get_editor_values(),
-      };
-      if (typeof _translation_mode !== "undefined" && _translation_mode === "field") {
-        delete payload.lang;
-        delete payload.translations;
-      }
-      nb.api
-        .put(nb.base_url + "/api/v1/" + resource_id + "/" + record_id, payload)
-        .then((data) => {
-          this.busy = false;
-          if (data.success) {
-            if (this.redirect_on_submit) {
-              nb.system_message(nb.text.record_updated).then((data) => {
-                if (
-                  document.referrer &&
-                  !document.referrer.includes("/nb-admin/")
-                ) {
-                  window.location.href = document.referrer;
-                } else {
-                  window.location.href = _resource_url || nb.base_url + "/nb-admin/" + resource_id;
-                }
-              });
-            } else {
-            }
-          } else {
-            nb.notify(data.message);
-          }
-        });
-    },
-    save() {
-      this.redirect_on_submit = false;
-      this.submit();
     },
     initialize_translation_empty() {
       this.translation_empty = Object.fromEntries(
@@ -279,40 +262,24 @@ document.addEventListener("alpine:init", () => {
           nb.notify(err.message || "Could not translate record");
         });
     },
-    translate(lang) {
-      this.busy = true;
-      nb.api
-        .post(nb.base_url + "/api/v1/openai/translate", {
-          resource: this.resource_id,
-          uuid: this.record_id,
-          lang: lang,
-        })
-        .then((data) => {
-          this.busy = false;
-          if (data.success) {
-            var uuid = Object.keys(data[this.resource_id])[0];
-            nb.system_message(nb.text.record_added).then((data) => {
-              window.location.href = (_resource_url || nb.base_url + "/nb-admin/" + this.resource_id) + "/" + uuid;
-            });
-          } else {
-            nb.notify(data.message);
-          }
-        });
-    },
     delete_record() {
       nb.api
-        .delete(
-          nb.base_url + "/api/v1/" + this.resource_id + "/" + this.record_id
-        )
+        .delete(nb.base_url + "/api/v1/" + this.resource_id + "/" + this.record_id)
         .then((data) => {
           if (data.success) {
             nb.system_message(nb.text.record_deleted);
-            window.location.href = _resource_url || nb.base_url + "/nb-admin/" + resource_id;
+            window.location.href = _resource_url || nb.base_url + "/nb-admin/" + this.resource_id;
           } else {
             nb.notify(data.message);
           }
         });
     },
-    ...nb.forms,
-  }));
-});
+  };
+}
+
+// Classic (non-module) script — this file is raw-included inside a plain
+// <script> tag by fscript.js, so `function` declarations are already global.
+// Set explicitly too so a Node `import()` of this file (as an ES module, for
+// tests) can also reach it, since ESM top-level declarations stay private to
+// the module otherwise.
+globalThis.nb_build_form_edit_state = nb_build_form_edit_state;

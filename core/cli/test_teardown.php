@@ -77,6 +77,13 @@ if (!data_exists('test-records', '.meta')) {
     echo "ok    deleted resource 'test-records'\n";
 }
 
+if (!data_exists('test-i18n-records', '.meta')) {
+    echo "skip  resource 'test-i18n-records' not found\n";
+} else {
+    data_delete('test-i18n-records');
+    echo "ok    deleted resource 'test-i18n-records'\n";
+}
+
 // ── Thumbnail fixture ────────────────────────────────────────────────────────
 $test_image_uuid = '836dccc3121a25ebdcee594631b0a4a7';
 $test_image_meta = data_read('.files_meta', $test_image_uuid);
