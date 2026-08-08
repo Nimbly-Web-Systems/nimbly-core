@@ -18,6 +18,8 @@
  *   var    Variable path to read value from (e.g. "record.email")
  *   store  Alpine data store prefix (default: "form_data")
  *   source Image/file base path (for image and gallery fields)
+ *   uuid   Record UUID — only used to resolve def="resource.field" against a
+ *          record's own embedded schema when the resource has no external .meta
  */
 function render_field_sc($params)
 {
@@ -38,6 +40,7 @@ function render_field_sc($params)
     $field_name = get_param_value($params, 'name') ?? '';
     $store      = get_param_value($params, 'store', 'form_data');
     $source     = get_param_value($params, 'source', null);
+    $uuid       = get_param_value($params, 'uuid', null);
 
     $def = trim($def);
 
@@ -74,7 +77,7 @@ function render_field_sc($params)
         return;
     }
 
-    $meta = data_meta($resource);
+    $meta = data_meta($resource, $uuid);
     if (empty($meta['fields'][$field_name])) {
         return;
     }
