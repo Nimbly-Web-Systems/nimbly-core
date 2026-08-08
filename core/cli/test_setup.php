@@ -47,13 +47,25 @@ load_library('encrypt');
 cli_section('test:setup', true);
 
 // ── Role ─────────────────────────────────────────────────────────────────────
+$test_role_features = [
+    'view-admin-dashboard', 'view-nimblybar', 'manage-test-records', 'manage-test-i18n-records', 'test',
+];
 if (data_exists('roles', 'test')) {
-    echo "skip  role 'test' already exists\n";
+    $role = data_read('roles', 'test');
+    $existing_features = array_filter(array_map('trim', explode(',', (string)($role['features'] ?? ''))));
+    $missing_features = array_diff($test_role_features, $existing_features);
+    if (empty($missing_features)) {
+        echo "skip  role 'test' already exists\n";
+    } else {
+        $role['features'] = implode(',', array_unique(array_merge($existing_features, $test_role_features)));
+        data_update('roles', 'test', $role);
+        echo "ok    updated role 'test' with missing features: " . implode(',', $missing_features) . "\n";
+    }
 } else {
     data_create('roles', 'test', [
         'name'        => 'Test',
         'description' => 'Automated test role — created and removed by test:setup / test:teardown',
-        'features'    => 'view-admin-dashboard,view-nimblybar,manage-test-records,test',
+        'features'    => implode(',', $test_role_features),
     ]);
     echo "ok    created role 'test'\n";
 }
@@ -102,6 +114,37 @@ foreach ($records as $uuid => $data) {
         data_create('test-records', $uuid, $data);
         echo "ok    created record '$uuid'\n";
     }
+}
+
+// ── i18n + group-field resource ─────────────────────────────────────────────
+if (data_exists('test-i18n-records', '.meta')) {
+    echo "skip  resource 'test-i18n-records' already exists\n";
+} else {
+    data_create_resource('test-i18n-records', [
+        'languages' => ['en', 'nl'],
+        'fields' => [
+            'title' => ['type' => 'text', 'name' => 'Title', 'i18n' => true, 'required' => true],
+            'body'  => ['type' => 'html', 'name' => 'Body', 'i18n' => true, 'buttons' => 'bold,italic'],
+            'items' => ['type' => 'group', 'name' => 'Items', 'fields' => [
+                'label' => ['type' => 'text',   'name' => 'Label'],
+                'value' => ['type' => 'number', 'name' => 'Value'],
+            ]],
+        ],
+    ]);
+    echo "ok    created resource 'test-i18n-records'\n";
+}
+
+if (data_exists('test-i18n-records', 'test-i18n-001')) {
+    echo "skip  record 'test-i18n-001' already exists\n";
+} else {
+    data_create('test-i18n-records', 'test-i18n-001', [
+        'title' => ['en' => 'English title', 'nl' => 'Nederlandse titel'],
+        'body'  => ['en' => '<p>English body</p>', 'nl' => '<p>Nederlandse inhoud</p>'],
+        'items' => [
+            ['label' => 'First item', 'value' => 1],
+        ],
+    ]);
+    echo "ok    created record 'test-i18n-001'\n";
 }
 
 // ── Thumbnail fixture ────────────────────────────────────────────────────────

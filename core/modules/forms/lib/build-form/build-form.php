@@ -63,6 +63,7 @@ function build_form($form_def, $params = [], $uuid = null)
 {
     $resource = $form_def['resource'];
     set_variable('_bf_name', $form_def['name']);
+    set_variable('_bf_js_name', _bf_js_identifier($form_def['name']));
     set_variable('_bf_resource', $resource);
     set_variable('_bf_uuid', $uuid ?? '');
     set_variable('_bf_upload_field', $form_def['upload_field'] ?? false);
@@ -72,7 +73,14 @@ function build_form($form_def, $params = [], $uuid = null)
     $field_wrapper_class = _bf_field_wrapper_class($class_name, $params);
     set_variable('_bf_class_name', $class_name);
     set_variable('_bf_form_class', "nb-form nb-form-{$class_name}");
+    set_variable('_bf_form_visual_class', $form_def['form_class'] ?? 'mt-4 p-2 rounded-md');
     set_variable('_bf_field_wrapper_class', $field_wrapper_class);
+    // The honeypot is an anti-bot measure for public, anonymous submission
+    // forms — it makes no sense (and actively blocks fast automated saves,
+    // since it stays `required` for several seconds) on an authenticated
+    // edit of an existing record, so it defaults off whenever uuid= is used
+    // and can still be forced either way via $form_def['honeypot'].
+    set_variable('_bf_honeypot', ($form_def['honeypot'] ?? empty($uuid)) ? 'true' : '');
 
     if ($uuid) {
         load_library('get-resource-meta');
@@ -135,6 +143,21 @@ function _bf_class_suffix($raw_class_name)
     load_library('sanitize');
     $class_name = sanitize_id((string)$raw_class_name);
     return $class_name ?: 'form';
+}
+
+/**
+ * Sanitizes a form name into a safe bare JS identifier — used only where the
+ * name is embedded directly into a JS expression (the x-data attribute and
+ * the matching Alpine.data() registration key), unlike _bf_class_suffix()
+ * which allows hyphens because CSS classes don't need to be valid identifiers.
+ */
+function _bf_js_identifier($raw_name)
+{
+    $result = preg_replace('/[^A-Za-z0-9_$]/', '_', (string)$raw_name);
+    if ($result === '' || preg_match('/^[0-9]/', $result)) {
+        $result = '_' . $result;
+    }
+    return $result;
 }
 
 function _bf_field_wrapper_class($class_name, $params)

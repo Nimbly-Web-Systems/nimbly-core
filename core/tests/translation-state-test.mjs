@@ -1,28 +1,16 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 
-let alpine_callback;
-let form_edit_factory;
-
-globalThis.document = {
-  addEventListener: (_name, callback) => {
-    alpine_callback = callback;
-  },
-};
-globalThis.Alpine = {
-  data: (_name, factory) => {
-    form_edit_factory = factory;
-  },
-};
 globalThis.nb = { base_url: "/jereis", forms: {} };
 globalThis._initial_lang = "nl";
+globalThis._translation_mode = "field";
 globalThis._ai_record_action_fields = ["location_name", "title", "body"];
 globalThis._translation_languages = ["nl", "en"];
+globalThis._resource_url = "";
 
-await import("../modules/admin/tpl/edit-resource-form/form_edit.js");
-alpine_callback();
+await import("../modules/forms/lib/build-form/edit-form-state.js");
 
-const state = form_edit_factory("articles", "test-record");
+const state = globalThis.nb_build_form_edit_state("articles", "test-record");
 state.form_data = {
   location_name: { nl: "Locatie", en: "" },
   title: { nl: "Titel", en: "Title" },
@@ -77,11 +65,39 @@ state.sync_ai_editor({
 }, "en");
 assert.equal(state.translation_field_empty("body", "en"), true);
 
-const edit_template = await readFile(
-  new URL("../modules/admin/tpl/edit-resource-form/index.tpl", import.meta.url),
+// edit_submit() must strip the get_resource_record_sc()-added lang/translations
+// bookkeeping before persisting, in "field" (new-way) i18n mode — otherwise it
+// leaks into the stored record on every save.
+{
+  let put_payload = null;
+  globalThis.nb.api = {
+    put: (_url, payload) => {
+      put_payload = payload;
+      return Promise.resolve({ success: true });
+    },
+  };
+  globalThis.nb.text = { record_updated: "Updated" };
+  globalThis.nb.edit = { get_field_values: () => ({}) };
+  globalThis.nb.system_message = () => Promise.resolve();
+  globalThis.document = { referrer: "" };
+  globalThis.window = { location: { href: "" } };
+
+  const submit_state = globalThis.nb_build_form_edit_state("articles", "test-record");
+  submit_state.form_data = { title: { nl: "Titel", en: "Title" }, lang: "nl", translations: { nl: true } };
+  submit_state.redirect_on_submit = false;
+  await submit_state.edit_submit();
+
+  assert.equal("lang" in put_payload, false, "lang bookkeeping key leaked into PUT payload");
+  assert.equal("translations" in put_payload, false, "translations bookkeeping key leaked into PUT payload");
+  assert.equal(put_payload.title.en, "Title");
+}
+
+const build_form_script = await readFile(
+  new URL("../modules/forms/lib/build-form/fscript.js", import.meta.url),
   "utf8",
 );
-assert.match(edit_template, /data\.ai_record_action_fields type=json empty=\[\]/);
-assert.match(edit_template, /data\.translation_languages type=json empty=\[\]/);
+assert.match(build_form_script, /data\.ai_record_action_fields type=json empty=\[\]/);
+assert.match(build_form_script, /data\.translation_languages type=json empty=\[\]/);
+assert.match(build_form_script, /edit-form-state\.js/);
 
 console.log("Translation state tests passed");
