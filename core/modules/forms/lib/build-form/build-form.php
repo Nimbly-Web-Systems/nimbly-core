@@ -1,26 +1,70 @@
 <?php
 
+/**
+ * [#build-form#] — build a form from a definition.
+ *
+ * Two schema sources:
+ *   1. {uri_path}/{name}.json — the original, unchanged create-only path.
+ *   2. resource=/uuid= with no matching .json file — reads the schema via
+ *      data_meta($resource, $uuid), which resolves either the resource's own
+ *      external .meta or a record's embedded _fields/_languages.
+ *
+ * With uuid=, the form edits that existing record (prefill + PUT) instead of
+ * creating a new one — reusing get_resource_meta_sc()/get_resource_record_sc(),
+ * the same functions the admin resource-edit page relies on, so i18n
+ * normalization, decryption, and translation-mode detection all behave
+ * identically. Without uuid=, behavior is unchanged from before.
+ */
 function build_form_sc($params)
 {
     if (empty($params)) {
         return;
     }
-    $file = $GLOBALS['SYSTEM']['uri_path'] . '/' . current($params) . '.json';
-    if (!file_exists($file) || is_dir($file)) {
+    $resource = get_param_value($params, 'resource', null);
+    $uuid     = get_param_value($params, 'uuid', null);
+    $name     = get_param_value($params, 'name', null);
+    if ($name === null) {
+        // Bare positional form name, e.g. [#build-form lobbyform#] — a
+        // positional param's key equals its value (see run_single_sc()).
+        foreach ($params as $key => $value) {
+            if ($key === $value) {
+                $name = $value;
+                break;
+            }
+        }
+    }
+
+    $file = $name ? $GLOBALS['SYSTEM']['uri_path'] . '/' . $name . '.json' : null;
+    if ($file && file_exists($file) && !is_dir($file)) {
+        $form_def = json_decode(file_get_contents($file), true);
+    } elseif ($resource) {
+        load_library('data');
+        $meta = data_meta($resource, $uuid);
+        if (empty($meta['fields']) || !is_array($meta['fields'])) {
+            return;
+        }
+        $form_def = [
+            'name' => is_string($name) && $name !== '' ? $name : ($uuid ?: $resource),
+            'resource' => $resource,
+            'fields' => $meta['fields'],
+            'buttons' => [['type' => 'submit', 'title' => 'Save']],
+        ];
+    } else {
         return;
     }
-    $contents = file_get_contents($file);
-    $form_def = json_decode($contents, true);
+
     if (empty($form_def) || empty($form_def['name']) || empty($form_def['resource']) || empty($form_def['fields'])) {
         return;
     }
-    build_form($form_def, $params);
+    build_form($form_def, $params, $uuid);
 }
 
-function build_form($form_def, $params = [])
+function build_form($form_def, $params = [], $uuid = null)
 {
+    $resource = $form_def['resource'];
     set_variable('_bf_name', $form_def['name']);
-    set_variable('_bf_resource', $form_def['resource']);
+    set_variable('_bf_resource', $resource);
+    set_variable('_bf_uuid', $uuid ?? '');
     set_variable('_bf_upload_field', $form_def['upload_field'] ?? false);
     set_variable('_bf_success_message', $form_def['success_message'] ?? '[#text Send#]');
     set_variable('_bf_status', $form_def['status'] ?? 'new');
@@ -29,12 +73,23 @@ function build_form($form_def, $params = [])
     set_variable('_bf_class_name', $class_name);
     set_variable('_bf_form_class', "nb-form nb-form-{$class_name}");
     set_variable('_bf_field_wrapper_class', $field_wrapper_class);
+
+    if ($uuid) {
+        load_library('get-resource-meta');
+        load_library('get-resource-record');
+        get_resource_meta_sc(['resource' => $resource, 'uuid' => $uuid]);
+        get_resource_record_sc(['resource' => $resource, 'uuid' => $uuid]);
+    }
+
     echo '<script>' . run_buffered(dirname(__FILE__) . '/fscript.js') . '</script>';
     echo run_buffered(dirname(__FILE__) . '/fheader.tpl');
     echo run_buffered(dirname(__FILE__) . '/fbody.tpl');
     $fields = $form_def['fields'];
     set_variable('_fbg', $form_def['bg_color'] ?? 'bg-neutral-50');
     load_library('render-field');
+    if ($uuid) {
+        set_variable('nb_form_edit', 'true');
+    }
     foreach ($fields as $key => $def) {
         $type = $def['type'] ?? 'text';
         if ($type === 'group_end') {
@@ -47,7 +102,10 @@ function build_form($form_def, $params = [])
             continue;
         }
 
-        _bf_render_field($key, $def, null, null, $field_wrapper_class);
+        _bf_render_field($key, $def, $uuid, null, null, $field_wrapper_class);
+    }
+    if ($uuid) {
+        set_variable('nb_form_edit', 'false');
     }
     $buttons = $form_def['buttons'] ?? [];
     foreach ($buttons as $button) {
@@ -57,14 +115,15 @@ function build_form($form_def, $params = [])
     echo run_buffered(dirname(__FILE__) . '/ffooter.tpl');
 }
 
-function _bf_render_field($key, $def, $group = null, $ix = null, $field_wrapper_class = '')
+function _bf_render_field($key, $def, $uuid = null, $group = null, $ix = null, $field_wrapper_class = '')
 {
     $type  = $def['type'] ?? 'text';
     $model = ($group && $ix) ? "form_data.{$group}[{$ix}].{$key}" : null;
     $def['wrapper_class'] = $field_wrapper_class ?: 'nb-field relative my-10';
+    $value = $uuid ? get_variable("record.{$key}") : null;
 
     echo '<div>';
-    render_field($def, $key, null, 'form_data', null, $model);
+    render_field($def, $key, $value, 'form_data', null, $model);
     if (isset($def['help'])) {
         echo run_buffered(dirname(__FILE__) . '/fhelp.tpl');
     }

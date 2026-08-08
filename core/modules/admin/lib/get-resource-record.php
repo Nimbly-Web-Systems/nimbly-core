@@ -22,7 +22,7 @@ function get_resource_record_sc($params)
         return;
     }
 
-    $meta = data_meta($resource);
+    $meta = data_meta($resource, $uuid);
     $record = data_read($resource, $uuid);
 
     // decrypt 2-way encrypted fields

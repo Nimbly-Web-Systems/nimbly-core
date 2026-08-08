@@ -6,12 +6,13 @@ function get_resource_meta_sc($params) {
         load_library('get');
         $resource = get_variable('resource-name', '(unkown)');
     }
+    $uuid = get_param_value($params, 'uuid', null);
 
     if (!data_exists($resource)) {
         return;
     }
 
-    $meta = data_meta($resource);
+    $meta = data_meta($resource, $uuid);
 
     load_library("set");
     set_variable("data.resource", $resource);
