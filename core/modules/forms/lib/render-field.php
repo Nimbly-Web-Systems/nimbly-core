@@ -120,6 +120,11 @@ function render_field(array $def, string $field = '', $value = null, string $sto
         }
     }
 
+    // Each render gets a fresh context. Definitions often omit optional keys,
+    // so retaining the previous field's _f.* values can change how the next
+    // field behaves (for example a slug's source leaking into an image field).
+    clear_variable_dot('_f');
+
     // Spread entire definition into _f.* so templates have access to all
     // field attributes without this function needing to enumerate them.
     set_variable_dot('_f', $def);
