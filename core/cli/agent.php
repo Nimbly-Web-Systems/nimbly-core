@@ -30,7 +30,17 @@ require_once BASE_DIR . 'core/modules/agent/lib/agent-runtime.php';
 $command = $argv[1] ?? '';
 if ($command === 'agent:enqueue') {
     $agent_id = trim((string)($argv[2] ?? ''));
-    $run_uuid = agent_enqueue($agent_id);
+    $manual = '';
+    foreach (array_slice($argv, 3) as $argument) {
+        if (str_starts_with($argument, '--manual=')) {
+            $manual = substr($argument, 9);
+        }
+    }
+    $dependencies = $manual === '' ? [] : [
+        'trigger' => 'manual',
+        'idempotency_suffix' => 'manual-' . $manual,
+    ];
+    $run_uuid = agent_enqueue($agent_id, null, $dependencies);
     echo "Agent run enqueued: {$run_uuid}\n";
     exit(0);
 }
@@ -46,5 +56,5 @@ if ($command === 'agent:recover') {
     exit(0);
 }
 
-fwrite(STDERR, "Usage: agent:enqueue <agent-id> | agent:run <run-uuid> | agent:recover\n");
+fwrite(STDERR, "Usage: agent:enqueue <agent-id> [--manual=<key>] | agent:run <run-uuid> | agent:recover\n");
 exit(64);

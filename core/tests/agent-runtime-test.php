@@ -157,6 +157,25 @@ agent_test_assert($run_uuid === $duplicate_uuid, 'scheduled enqueue is idempoten
 agent_test_assert(count($test_data['.agent_runs']) === 2, 'one run plus meta exists');
 agent_test_assert(count($test_jobs) === 1, 'one deterministic job exists');
 
+$manual_uuid = agent_enqueue('test-agent', $now, [
+    'trigger' => 'manual',
+    'idempotency_suffix' => 'manual-shadow-1',
+]);
+$manual_duplicate_uuid = agent_enqueue('test-agent', $now, [
+    'trigger' => 'manual',
+    'idempotency_suffix' => 'manual-shadow-1',
+]);
+agent_test_assert($manual_uuid === $manual_duplicate_uuid, 'manual enqueue is idempotent for its explicit key');
+agent_test_assert($manual_uuid !== $run_uuid, 'manual enqueue does not consume the scheduled occurrence');
+
+$invalid_suffix_denied = false;
+try {
+    agent_enqueue('test-agent', $now, ['idempotency_suffix' => '../invalid']);
+} catch (InvalidArgumentException) {
+    $invalid_suffix_denied = true;
+}
+agent_test_assert($invalid_suffix_denied, 'manual idempotency suffix is strictly validated');
+
 $openai_calls = 0;
 $openai_request = function (array $request) use (&$openai_calls) {
     $openai_calls++;
