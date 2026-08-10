@@ -142,7 +142,7 @@ function _bf_render_field($key, $def, $uuid = null, $group = null, $ix = null, $
 {
     $type  = $def['type'] ?? 'text';
     $model = ($group && $ix) ? "form_data.{$group}[{$ix}].{$key}" : null;
-    $def['wrapper_class'] = $field_wrapper_class ?: 'nb-field relative my-10';
+    $def['wrapper_class'] = $def['wrapper_class'] ?? ($field_wrapper_class ?: 'nb-field relative my-10');
     $value = $uuid ? get_variable("record.{$key}") : null;
 
     echo '<div>';
