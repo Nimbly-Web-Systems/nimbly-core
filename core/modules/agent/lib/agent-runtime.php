@@ -38,7 +38,12 @@ function agent_enqueue(string $agent_id, ?int $now = null, array $dependencies =
     $timezone = new DateTimeZone($definition['timezone'] ?? 'UTC');
     $scheduled = (new DateTimeImmutable('@' . $now))->setTimezone($timezone);
     $occurrence = $scheduled->format('Y-m-d');
-    $idempotency_key = $agent_id . ':' . $occurrence;
+    $idempotency_suffix = trim((string)($dependencies['idempotency_suffix'] ?? ''));
+    if ($idempotency_suffix !== '' && preg_match('/^[a-z0-9][a-z0-9-]{0,63}$/', $idempotency_suffix) !== 1) {
+        throw new InvalidArgumentException('Invalid agent idempotency suffix');
+    }
+    $idempotency_key = $agent_id . ':' . $occurrence
+        . ($idempotency_suffix === '' ? '' : ':' . $idempotency_suffix);
     $run_uuid = substr(hash('sha256', $idempotency_key), 0, 16);
 
     $lock = agent_lock('enqueue-' . $run_uuid);
