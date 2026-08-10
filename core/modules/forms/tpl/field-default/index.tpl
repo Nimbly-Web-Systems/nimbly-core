@@ -1,4 +1,4 @@
-<div class="[#_f.wrapper_class#]">
+<div class="[#_f.wrapper_class#] max-w-md">
     <input type="[#_f.type#]" value="[#_f.value#]" name="[#_f.key#]" placeholder="" [#_f.x_init#]
         x-model="[#_f.model#]" [#if _f.required=(not-empty) echo=required#]
         class="input input-bordered w-full" />

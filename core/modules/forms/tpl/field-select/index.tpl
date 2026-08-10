@@ -1,4 +1,4 @@
-<div class="[#_f.wrapper_class#]">
+<div class="[#_f.wrapper_class#] max-w-md">
     [#if _f.multi=(not-empty) tpl=multi#]
     [#if _f.multi=(empty) tpl=single#]
     [#field-actions#]
