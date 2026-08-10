@@ -34,7 +34,7 @@ function add_resource_form_sc($params)
         'name'                => 'add_resource_' . $resource,
         'resource'            => $resource,
         'fields'              => $meta['fields'],
-        'form_class'          => 'rounded-md bg-neutral-50 p-3 shadow-md sm:p-4 md:p-6 lg:p-8 xl:p-10',
+        'form_class'          => 'w-full max-w-3xl',
         'redirect_on_success' => true,
         // Authenticated admin page, not a public submission form.
         'honeypot'            => false,
