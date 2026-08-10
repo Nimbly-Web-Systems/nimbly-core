@@ -2017,6 +2017,52 @@ Do not put credentials in the audit configuration or output. Public DNS, TLS,
 and HTTP reachability belong in the external collector: an audit running on a
 host cannot reliably report that the host itself is unreachable.
 
+#### `agent:*`
+
+The Core agent runtime runs versioned, project-defined agents without exposing
+the server to the model. Definitions live in `ext/agents/<agent-id>/agent.php`
+and provide instructions, strict structured tools, input preparation, result
+validation, and report delivery callbacks.
+
+```bash
+php core/cli/nimbly.php agent:enqueue infra-expert
+php core/cli/nimbly.php agent:run <run-uuid>
+php core/cli/nimbly.php agent:recover
+```
+
+Scheduled agents should enqueue quickly and execute through the existing job
+runner. Runs use deterministic occurrence IDs, append-only `.agent_events`,
+terminally immutable `.agent_runs`, and runtime-only `.agent_approvals` and
+`.agent_state` resources. Ignore these resources in Git and include them in the
+host's persistent backup policy.
+
+Agent tools are named PHP callbacks with strict JSON schemas and an explicit
+risk class. Never expose generic shell, SSH, sudo, filesystem, database, or API
+tools. A tool must validate logical targets and map them to fixed local
+operations. The model's arguments are requests, not authorization.
+
+`agent:gateway` is the read-only remote forced-command endpoint for restricted
+SSH identities. It reads `SSH_ORIGINAL_COMMAND`, accepts only registered verbs
+and enum-constrained parameters, and maps them to fixed argument-array
+processes. Configure its SSH key with `restrict` and a forced command; do not
+grant the key an interactive shell or forwarding.
+
+Agent schedules may set an explicit IANA timezone:
+
+```php
+[
+    'id' => 'daily-agent',
+    'command' => 'agent:enqueue example-agent',
+    'daily_at' => '08:00',
+    'timezone' => 'America/Sao_Paulo',
+]
+```
+
+OpenAI-backed agents use the Responses API with provider-side storage disabled;
+Nimbly owns the tool loop, audit trail, retries, permissions, and durable state.
+Record the model, instruction hash, provider request IDs, token usage, and a
+versioned pricing snapshot on every run.
+
 ---
 
 ## 8. Build

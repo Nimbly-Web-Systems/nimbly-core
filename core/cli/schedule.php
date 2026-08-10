@@ -227,6 +227,13 @@ function schedule_normalize_task($task, $index)
     }
 
     $task['command'] = $command;
+    if (!empty($task['timezone'])) {
+        try {
+            new DateTimeZone((string)$task['timezone']);
+        } catch (Throwable) {
+            return null;
+        }
+    }
     $task['id'] = trim((string)($task['id'] ?? ''));
     if ($task['id'] === '') {
         $task['id'] = 'task-' . $index . '-' . substr(md5($command), 0, 8);
@@ -238,60 +245,86 @@ function schedule_normalize_task($task, $index)
 function schedule_task_due($task, $task_state, $now)
 {
     $last_run = (int)($task_state['last_run_at'] ?? 0);
+    $timezone = schedule_task_timezone($task);
 
     if (($task['every'] ?? '') === 'minute') {
-        return date('YmdHi', $last_run) !== date('YmdHi', $now);
+        return schedule_date('YmdHi', $last_run, $timezone) !== schedule_date('YmdHi', $now, $timezone);
     }
 
     if (($task['every'] ?? '') === 'hour') {
-        return date('YmdH', $last_run) !== date('YmdH', $now);
+        return schedule_date('YmdH', $last_run, $timezone) !== schedule_date('YmdH', $now, $timezone);
     }
 
     if (($task['every'] ?? '') === 'day') {
-        return date('Ymd', $last_run) !== date('Ymd', $now);
+        return schedule_date('Ymd', $last_run, $timezone) !== schedule_date('Ymd', $now, $timezone);
     }
 
     if (!empty($task['daily_at'])) {
-        return schedule_due_today_at((string)$task['daily_at'], $last_run, $now);
+        return schedule_due_today_at((string)$task['daily_at'], $last_run, $now, $timezone);
     }
 
     if (!empty($task['weekly_at']) && !empty($task['day'])) {
-        return schedule_due_weekly_at((string)$task['day'], (string)$task['weekly_at'], $last_run, $now);
+        return schedule_due_weekly_at((string)$task['day'], (string)$task['weekly_at'], $last_run, $now, $timezone);
     }
 
     return false;
 }
 
-function schedule_due_today_at($time, $last_run, $now)
+function schedule_due_today_at($time, $last_run, $now, ?DateTimeZone $timezone = null)
 {
     if (!preg_match('/^\d{2}:\d{2}$/', $time)) {
         return false;
     }
 
-    if (date('Ymd', $last_run) === date('Ymd', $now)) {
+    if (schedule_date('Ymd', $last_run, $timezone) === schedule_date('Ymd', $now, $timezone)) {
         return false;
     }
 
-    return date('H:i', $now) >= $time;
+    return schedule_date('H:i', $now, $timezone) >= $time;
 }
 
-function schedule_due_weekly_at($day, $time, $last_run, $now)
+function schedule_due_weekly_at($day, $time, $last_run, $now, ?DateTimeZone $timezone = null)
 {
     if (!preg_match('/^\d{2}:\d{2}$/', $time)) {
         return false;
     }
 
     $day = strtolower($day);
-    $today = strtolower(date('l', $now));
+    $today = strtolower(schedule_date('l', $now, $timezone));
     if ($day !== $today) {
         return false;
     }
 
-    if (date('oW', $last_run) === date('oW', $now)) {
+    if (schedule_date('oW', $last_run, $timezone) === schedule_date('oW', $now, $timezone)) {
         return false;
     }
 
-    return date('H:i', $now) >= $time;
+    return schedule_date('H:i', $now, $timezone) >= $time;
+}
+
+function schedule_task_timezone(array $task): ?DateTimeZone
+{
+    $name = trim((string)($task['timezone'] ?? ''));
+    if ($name === '') {
+        return null;
+    }
+    try {
+        return new DateTimeZone($name);
+    } catch (Throwable) {
+        return null;
+    }
+}
+
+function schedule_date(string $format, int $timestamp, ?DateTimeZone $timezone = null): string
+{
+    if ($timestamp <= 0) {
+        return '';
+    }
+    $date = new DateTimeImmutable('@' . $timestamp);
+    if ($timezone !== null) {
+        $date = $date->setTimezone($timezone);
+    }
+    return $date->format($format);
 }
 
 function schedule_run_command($command)
