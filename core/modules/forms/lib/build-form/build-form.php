@@ -100,6 +100,9 @@ function build_form($form_def, $params = [], $uuid = null)
     }
     echo '<script>' . run_buffered(dirname(__FILE__) . '/fscript.js') . '</script>';
     echo run_buffered(dirname(__FILE__) . '/fheader.tpl');
+    if (!empty($form_def['content_class'])) {
+        echo '<div class="' . htmlspecialchars($form_def['content_class'], ENT_QUOTES, 'UTF-8') . '">';
+    }
     echo run_buffered(dirname(__FILE__) . '/fbody.tpl');
     $fields = $form_def['fields'];
     set_variable('_fbg', $form_def['bg_color'] ?? 'bg-neutral-50');
@@ -128,6 +131,9 @@ function build_form($form_def, $params = [], $uuid = null)
     foreach ($buttons as $button) {
         set_variable("_ftitle", $button['title'] ?? 'Send');
         echo run_buffered(dirname(__FILE__) . '/fbutton-' . $button['type'] . '.tpl');
+    }
+    if (!empty($form_def['content_class'])) {
+        echo '</div>';
     }
     echo run_buffered(dirname(__FILE__) . '/ffooter.tpl');
 }
