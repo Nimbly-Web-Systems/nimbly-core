@@ -32,7 +32,7 @@ function edit_resource_form_sc($params)
         'name'       => 'edit_resource_' . $resource,
         'resource'   => $resource,
         'fields'     => $meta['fields'],
-        'form_class' => 'max-w-3xl rounded-md bg-neutral-50 p-3 shadow-md sm:p-4 md:p-6 lg:p-8 xl:p-10',
+        'form_class' => 'w-full',
         'content_class' => 'pr-12',
         'redirect_on_success' => true,
         'buttons'    => [
