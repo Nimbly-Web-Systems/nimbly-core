@@ -264,7 +264,7 @@ agent_test_assert($gateway['active'] === true && $gateway['service'] === 'apache
 
 $host_health = agent_gateway_execute('inspect_host_health', function (array $command) {
     agent_test_assert($command === ['/usr/bin/sudo', '-n', '/usr/local/bin/nimbly-host-audit', '--format=json'], 'host audit maps to one fixed privileged command');
-    return ['exit_code' => 0, 'stdout' => json_encode([
+    return ['exit_code' => 2, 'stdout' => json_encode([
         'overall' => 'critical', 'summary' => ['critical' => 1], 'findings' => [[
             'id' => 'jobs:failed', 'severity' => 'critical', 'scope' => 'jobs', 'evidence' => 'One job failed',
         ]],
