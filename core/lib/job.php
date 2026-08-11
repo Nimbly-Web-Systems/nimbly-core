@@ -205,9 +205,22 @@ function job_run_queued($limit = 1)
         try {
             $current = data_read('.jobs', $uuid);
             $start = microtime(true);
+            if (function_exists('email_clear_last_result')) {
+                email_clear_last_result();
+            }
             $result = job_dispatch($current);
             if ($result === false) {
-                throw new Exception('Job handler returned false');
+                $reason = 'Job handler returned false';
+                if (function_exists('email_last_result')) {
+                    $email_result = email_last_result();
+                    if (!empty($email_result) && empty($email_result['success'])) {
+                        $email_error = trim((string)($email_result['error'] ?? ''));
+                        if ($email_error !== '') {
+                            $reason .= ': email delivery: ' . substr($email_error, 0, 500);
+                        }
+                    }
+                }
+                throw new Exception($reason);
             }
             data_update('.jobs', $uuid, [
                 'status'         => 'done',

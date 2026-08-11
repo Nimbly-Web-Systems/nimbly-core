@@ -6,6 +6,8 @@ function env($key, $default = null) { return $default; }
 function plain_text($html) { return trim(strip_tags($html)); }
 function find_template($name) { return false; }
 function run_buffered($template) { return ''; }
+function set_variable($key, $value) {}
+function log_system($message) {}
 
 require_once __DIR__ . '/../lib/email/email.php';
 
@@ -59,5 +61,14 @@ $error = email_result([
     'request' => fn() => ['success' => false, 'body' => [], 'error' => 'Safe provider error'],
 ]);
 email_test_assert(!$error['success'] && $error['error'] === 'Safe provider error', 'provider errors remain safe and actionable');
+
+$sent = email([
+    'service' => 'resend', 'recipient' => 'person@example.com', 'subject' => 'Failure', 'html' => '<p>Failure</p>',
+    'request' => fn() => ['success' => false, 'body' => [], 'error' => 'Safe provider error'],
+]);
+email_test_assert($sent === false, 'boolean email API remains backwards compatible');
+email_test_assert(email_last_result()['error'] === 'Safe provider error', 'the latest structured failure remains available to the job runner');
+email_clear_last_result();
+email_test_assert(email_last_result() === [], 'email failure context can be reset between jobs');
 
 echo "Email adapter tests passed.\n";

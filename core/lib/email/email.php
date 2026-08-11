@@ -5,6 +5,7 @@ use PHPMailer\PHPMailer\PHPMailer;
 function email($email_data)
 {
 	$result = email_result($email_data);
+	$GLOBALS['NB_LAST_EMAIL_RESULT'] = $result;
 	if (empty($result['success'])) {
 		load_library("log");
 		load_library("set");
@@ -12,6 +13,18 @@ function email($email_data)
 		log_system("Error: " . ($result['error'] ?? 'email not sent'));
 	}
 	return !empty($result['success']);
+}
+
+function email_last_result(): array
+{
+	return is_array($GLOBALS['NB_LAST_EMAIL_RESULT'] ?? null)
+		? $GLOBALS['NB_LAST_EMAIL_RESULT']
+		: [];
+}
+
+function email_clear_last_result(): void
+{
+	unset($GLOBALS['NB_LAST_EMAIL_RESULT']);
 }
 
 function email_result($email_data)
