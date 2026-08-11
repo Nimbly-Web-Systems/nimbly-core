@@ -41,7 +41,6 @@ AddType application/manifest+json .webmanifest
 # cache control headers
 <IfModule mod_headers.c>
 
-    Header unset ETag
     FileETag None
 
     # 480 weeks

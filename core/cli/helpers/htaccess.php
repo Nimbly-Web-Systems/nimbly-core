@@ -57,6 +57,7 @@ function upgrade_11_htaccess_state($pepper, $base_path, $rewrite_base_path)
     $has_pwa_headers = str_contains($htaccess_content, 'application/manifest+json')
         && str_contains($htaccess_content, 'service-worker\.js');
     $has_default_language = (bool)preg_match('/^DefaultLanguage\s+/m', $htaccess_content);
+    $unsets_etag = (bool)preg_match('/^\s*Header\s+unset\s+ETag\s*$/mi', $htaccess_content);
     $existing_base = null;
     if (preg_match('/^RewriteBase\s+(.+)$/m', $htaccess_content, $m)) {
         $existing_base = trim($m[1]);
@@ -90,10 +91,10 @@ function upgrade_11_htaccess_state($pepper, $base_path, $rewrite_base_path)
         ];
     }
 
-    if ($has_default_language) {
+    if ($has_default_language || $unsets_etag) {
         return [
-            'action' => 'recreate_default_language',
-            'message' => '.htaccess contains a generated hardcoded DefaultLanguage — will recreate it.',
+            'action' => 'recreate_seo_headers',
+            'message' => '.htaccess contains generated directives that override application SEO headers — will recreate it.',
             'path' => $htaccess_file,
             'content' => upgrade_11_render_htaccess($pepper, $base_path, $rewrite_base_path),
         ];
