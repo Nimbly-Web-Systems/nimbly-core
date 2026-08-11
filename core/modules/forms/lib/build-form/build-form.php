@@ -122,7 +122,7 @@ function build_form($form_def, $params = [], $uuid = null)
             continue;
         }
 
-        _bf_render_field($key, $def, $uuid, null, null, $field_wrapper_class);
+        _bf_render_field($key, $def, $uuid, null, null, $field_wrapper_class, $fields);
     }
     if ($uuid) {
         set_variable('nb_form_edit', 'false');
@@ -138,7 +138,7 @@ function build_form($form_def, $params = [], $uuid = null)
     echo run_buffered(dirname(__FILE__) . '/ffooter.tpl');
 }
 
-function _bf_render_field($key, $def, $uuid = null, $group = null, $ix = null, $field_wrapper_class = '')
+function _bf_render_field($key, $def, $uuid = null, $group = null, $ix = null, $field_wrapper_class = '', $fields = [])
 {
     $type  = $def['type'] ?? 'text';
     $model = ($group && $ix) ? "form_data.{$group}[{$ix}].{$key}" : null;
@@ -146,7 +146,12 @@ function _bf_render_field($key, $def, $uuid = null, $group = null, $ix = null, $
     $value = $uuid ? get_variable("record.{$key}") : null;
 
     echo '<div>';
-    render_field($def, $key, $value, 'form_data', null, $model);
+    // Keep the complete schema available while rendering. Slug fields inherit
+    // i18n from their source fields, which cannot be determined from the slug
+    // definition in isolation.
+    $render_fields = $fields ?: [$key => $def];
+    $render_fields[$key] = $def;
+    render_field($render_fields, $key, $value, 'form_data', null, $model);
     if (isset($def['help'])) {
         echo run_buffered(dirname(__FILE__) . '/fhelp.tpl');
     }
