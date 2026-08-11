@@ -1229,11 +1229,13 @@ function host_audit_scheduler(array $context, array &$findings): array
 
     $last_run = null;
     $failures = 0;
+    $latest_by_project = [];
+    $last_success = 0;
     host_audit_each_line($log_path, function (string $line) use (
         $context,
-        &$findings,
         &$last_run,
-        &$failures
+        &$latest_by_project,
+        &$last_success
     ): void {
         if (!preg_match('/^(?<date>\S+).*project=(?<project>\S+).*exit_code=(?<exit>\d+)/', $line, $match)) {
             return;
@@ -1243,19 +1245,33 @@ function host_audit_scheduler(array $context, array &$findings): array
             return;
         }
         $last_run = max($last_run ?? 0, $timestamp);
-        if ($timestamp >= $context['since'] && (int)$match['exit'] !== 0) {
-            $failures++;
-            $findings[] = host_audit_finding(
-                'scheduler:failure:' . host_audit_id($match['project']),
-                'critical',
-                'project',
-                'Project scheduler failed',
-                trim($line),
-                $timestamp,
-                $match['project']
-            );
+        if ((int)$match['exit'] === 0) {
+            $last_success = max($last_success, $timestamp);
         }
+        $latest_by_project[$match['project']] = [
+            'timestamp' => $timestamp,
+            'exit_code' => (int)$match['exit'],
+            'line' => trim($line),
+        ];
     });
+
+    foreach ($latest_by_project as $project => $latest) {
+        $resolved_orchestrator_failure = $project === 'orchestrator'
+            && $last_success > $latest['timestamp'];
+        if ($latest['timestamp'] < $context['since'] || $latest['exit_code'] === 0 || $resolved_orchestrator_failure) {
+            continue;
+        }
+        $failures++;
+        $findings[] = host_audit_finding(
+            'scheduler:failure:' . host_audit_id($project),
+            'critical',
+            'project',
+            'Project scheduler failed',
+            $latest['line'],
+            $latest['timestamp'],
+            $project
+        );
+    }
 
     $max_age = (int)$context['config']['scheduler_max_age_minutes'] * 60;
     if ($last_run === null || $last_run < $context['now'] - $max_age) {

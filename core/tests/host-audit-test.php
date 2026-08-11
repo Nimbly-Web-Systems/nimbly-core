@@ -34,6 +34,22 @@ function audit_remove_fixture(string $path): void
 audit_assert(host_audit_duration_seconds('24h') === 86400, 'parses hour duration');
 audit_assert(host_audit_duration_seconds('2d') === 172800, 'parses day duration');
 audit_assert(host_audit_duration_seconds('tomorrow') === null, 'rejects invalid duration');
+
+$scheduler_log = tempnam(sys_get_temp_dir(), 'nimbly-scheduler-test-');
+$scheduler_now = time();
+file_put_contents($scheduler_log, implode("\n", [
+    gmdate('c', $scheduler_now - 120) . ' project=orchestrator duration=0.000s exit_code=1 message=lock unavailable',
+    gmdate('c', $scheduler_now - 60) . ' project=example path=/var/www/example duration=0.100s exit_code=0',
+]) . "\n");
+$scheduler_findings = [];
+$scheduler_check = host_audit_scheduler([
+    'now' => $scheduler_now,
+    'since' => $scheduler_now - 3600,
+    'config' => ['scheduler_log' => $scheduler_log, 'scheduler_max_age_minutes' => 5],
+], $scheduler_findings);
+unlink($scheduler_log);
+audit_assert($scheduler_check['failures'] === 0, 'later scheduler success resolves an orchestrator lock collision');
+audit_assert($scheduler_findings === [], 'resolved scheduler collision is omitted from findings');
 audit_assert(
     host_audit_project_log_is_informational(
         'Nimbly: Error: password reset requested for unknown email example@example.com'
