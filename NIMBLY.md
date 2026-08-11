@@ -751,6 +751,7 @@ The following variables influence the HTML shell when set before `[#html#]`:
 | `page-description` | Overrides the site-wide meta description for this page. Falls back to the site config description. |
 | `og-image` | Image for social sharing. Accepts a **UUID** (expanded to an absolute `/img/UUID/1200w` URL), a **relative path** (`img/og-card.png`), or an **absolute URL**. Falls back to the project default set in `ext/tpl/meta/index.tpl`. |
 | `og-type` | OG type for this page. Defaults to `website`. Use `article` for content detail pages. |
+| `page-canonical-url` | Overrides the normalized canonical URL and matching `og:url`. Set it before `[#html#]`. |
 
 ```
 [#set page-title="[#get record.title#]"#]
@@ -1189,6 +1190,7 @@ the resource retains simple scalar coordinates:
 | `splitdir` | Boolean. When `true`, records are stored in a two-level subdirectory tree by UUID prefix for filesystem performance at scale (> ~10,000 records). See §12 API — Scalability. |
 | `index` | Array of field names to index. Creates fast lookup paths for those fields. See §4 Indexes below. |
 | `upsert` | Boolean. When `true`, `data_update()` (and therefore `PUT /api/v1/{resource}/{uuid}`) creates a missing record instead of failing. Use only for key-value-style resources where "record may not exist yet" is the normal, expected state (e.g. core's `.config`, used for per-page settings) — not for regular content resources, where updating a non-existent record should stay an error. |
+| `sitemap` | Lazy sitemap declaration. `url` is a string or language-keyed URL template; optional `published` names a publication field and optional `each` names one array field to expand. Rendering exposes `record`, `language`, and `sitemap_item`. |
 
 ### Resource lifecycle events
 
@@ -1817,6 +1819,7 @@ Prompts: **Site name**, **Admin email**, **Admin password**. Steps that are alre
 | `PEPPER` | Encryption pepper — set to reuse an existing value; omit to auto-generate |
 | `EXT_REPO` | Git remote URL for the ext repo (written to `ext/readme.md`) |
 | `SITE_NAME` | Site name written to `.config/site` |
+| `SITE_LANGUAGE` | Validated lowercase two-letter primary language for a new site (default `en`) |
 | `ADMIN_EMAIL` | Initial admin user email |
 | `ADMIN_PASSWORD` | Initial admin user password (min 8 chars) |
 

@@ -289,6 +289,7 @@ function run_docker_php() {
     'EXT_REPO',
     'PEPPER',
     'SITE_NAME',
+    'SITE_LANGUAGE',
     'ADMIN_EMAIL',
     'ADMIN_PASSWORD',
     'SCHEDULE_FILE',
@@ -363,7 +364,7 @@ if (command === 'test:run') {
   banner(command_label(command));
 
   const env_keys_test = [
-    'APP_ENV', 'BASE_PATH', 'EXT_REPO', 'PEPPER', 'SITE_NAME', 'ADMIN_EMAIL',
+    'APP_ENV', 'BASE_PATH', 'EXT_REPO', 'PEPPER', 'SITE_NAME', 'SITE_LANGUAGE', 'ADMIN_EMAIL',
     'ADMIN_PASSWORD', 'SCHEDULE_FILE', 'SCHEDULE_ENV', 'NIMBLY_ENV', 'NIMBLY_INIT',
     'MAIL_SERVICE', 'MAIL_FROM', 'MAIL_FROM_NAME', 'RESEND_API_KEY',
     'SMTP_HOST', 'SMTP_PORT', 'SMTP_USER', 'SMTP_PASSWORD', 'SMTP_SECURE', 'OPENAI_API_KEY',

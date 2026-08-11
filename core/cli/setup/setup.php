@@ -476,6 +476,10 @@ if ($need_site || $need_user) {
 
     if ($need_site) {
         $sitename = nb_prompt('Site name', 'My Nimbly Site', 'SITE_NAME');
+        $site_language = strtolower(trim((string)(getenv('SITE_LANGUAGE') ?: 'en')));
+        if (!preg_match('/^[a-z]{2}$/', $site_language)) {
+            die("Error: SITE_LANGUAGE env var must be a two-letter language code.\n");
+        }
     }
 
     if ($need_user) {
@@ -504,6 +508,7 @@ if ($need_site) {
     data_create('.config', 'site', [
         'name'        => $sitename,
         'description' => $sitename . ': a Nimbly site',
+        'languages'   => [$site_language],
     ]);
     nb_status("Created: .config/site");
 } else {

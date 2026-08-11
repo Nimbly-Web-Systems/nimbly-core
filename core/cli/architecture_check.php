@@ -28,6 +28,7 @@ if (!is_dir($ext_path)) {
 architecture_check_php_libraries($ext_path, $warnings);
 architecture_check_dynamic_routes($ext_path, $warnings);
 architecture_check_templates($ext_path, $warnings);
+architecture_check_languages($ext_path, $warnings);
 
 if (empty($warnings)) {
     echo "Architecture check passed: no warnings.\n";
@@ -82,6 +83,29 @@ function architecture_check_ext_path(string $path): string
     }
 
     return realpath($path) ?: $path;
+}
+
+function architecture_check_languages(string $ext_path, array &$warnings): void
+{
+    $site_file = $ext_path . '/data/.config/site';
+    if (!is_file($site_file)) {
+        return;
+    }
+    $site = json_decode((string)file_get_contents($site_file), true);
+    $languages = $site['languages'] ?? null;
+    if (!is_array($languages) || $languages === []) {
+        $warnings[] = 'data/.config/site has no languages array; runtime will use the legacy English fallback.';
+        return;
+    }
+    foreach ($languages as $language) {
+        if (!is_string($language) || !preg_match('/^[a-z]{2}$/', $language)) {
+            $warnings[] = 'data/.config/site contains an invalid language; use unique lowercase two-letter codes.';
+            return;
+        }
+    }
+    if (count($languages) !== count(array_unique($languages))) {
+        $warnings[] = 'data/.config/site contains duplicate languages.';
+    }
 }
 
 function architecture_check_php_libraries(string $ext_path, array &$warnings): void

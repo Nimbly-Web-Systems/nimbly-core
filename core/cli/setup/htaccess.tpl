@@ -23,9 +23,6 @@ DirectoryIndex index.php
 # pass the default character set
 AddDefaultCharset utf-8
 
-# set the default language
-DefaultLanguage en-US
-
 # set the security pepper hash code (unique per installation)
 SetEnv PEPPER %%PEPPER%%
 
