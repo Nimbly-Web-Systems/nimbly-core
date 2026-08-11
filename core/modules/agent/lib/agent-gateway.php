@@ -3,6 +3,9 @@
 function agent_gateway_execute(string $original_command, ?callable $runner = null): array
 {
     $parts = preg_split('/\s+/', trim($original_command));
+    if ($parts === ['inspect_host_health']) {
+        return agent_gateway_inspect_host_health($runner);
+    }
     if (count($parts) !== 2 || $parts[0] !== 'inspect_service') {
         throw new RuntimeException('Gateway command is not permitted');
     }
@@ -42,6 +45,37 @@ function agent_gateway_execute(string $original_command, ?callable $runner = nul
             $properties['SubState'] ?? 'unknown',
             $properties['UnitFileState'] ?? 'unknown'
         ),
+    ];
+}
+
+function agent_gateway_inspect_host_health(?callable $runner = null): array
+{
+    $runner = $runner ?? 'agent_gateway_run_process';
+    $result = $runner(['/usr/bin/sudo', '-n', '/usr/local/bin/nimbly-host-audit', '--format=json']);
+    if (!is_array($result) || (int)($result['exit_code'] ?? 1) !== 0) {
+        throw new RuntimeException('Gateway host audit failed');
+    }
+    $audit = json_decode((string)($result['stdout'] ?? ''), true);
+    if (!is_array($audit) || !isset($audit['overall'], $audit['findings'])) {
+        throw new RuntimeException('Gateway host audit returned invalid evidence');
+    }
+    $findings = [];
+    foreach (array_slice((array)$audit['findings'], 0, 50) as $finding) {
+        if (!is_array($finding)) {
+            continue;
+        }
+        $findings[] = [
+            'id' => substr((string)($finding['id'] ?? $finding['check'] ?? 'finding'), 0, 120),
+            'severity' => substr((string)($finding['severity'] ?? 'unknown'), 0, 20),
+            'scope' => substr((string)($finding['scope'] ?? 'host'), 0, 80),
+            'evidence' => substr((string)($finding['evidence'] ?? $finding['message'] ?? ''), 0, 500),
+        ];
+    }
+    return [
+        'overall' => substr((string)$audit['overall'], 0, 20),
+        'summary' => array_intersect_key((array)($audit['summary'] ?? []), array_flip(['critical', 'warning', 'ok', 'unknown'])),
+        'findings' => $findings,
+        'observed_at' => time(),
     ];
 }
 
