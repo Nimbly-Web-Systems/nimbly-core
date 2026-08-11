@@ -262,6 +262,16 @@ $gateway = agent_gateway_execute('inspect_service apache2', function (array $com
 });
 agent_test_assert($gateway['active'] === true && $gateway['service'] === 'apache2', 'gateway returns structured evidence');
 
+$host_health = agent_gateway_execute('inspect_host_health', function (array $command) {
+    agent_test_assert($command === ['/usr/bin/sudo', '-n', '/usr/local/bin/nimbly-host-audit', '--format=json'], 'host audit maps to one fixed privileged command');
+    return ['exit_code' => 0, 'stdout' => json_encode([
+        'overall' => 'critical', 'summary' => ['critical' => 1], 'findings' => [[
+            'id' => 'jobs:failed', 'severity' => 'critical', 'scope' => 'jobs', 'evidence' => 'One job failed',
+        ]],
+    ]), 'stderr' => ''];
+});
+agent_test_assert($host_health['overall'] === 'critical' && count($host_health['findings']) === 1, 'gateway normalizes a fresh host audit');
+
 $denied = 0;
 foreach (['inspect_service ssh', 'inspect_service apache2 extra', 'sh -c id', ''] as $command) {
     try {
