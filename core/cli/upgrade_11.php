@@ -800,7 +800,7 @@ $has_work = migrate_10_has_work($migration)
     || users_email_index_has_work($users_email)
     || !empty($users_email['duplicates'])
     || !empty($moves)
-    || in_array($htaccess['action'], ['write', 'recreate_mod_php', 'recreate_cgi_pass_auth', 'recreate_pwa_headers', 'recreate_default_language'], true)
+    || in_array($htaccess['action'], ['write', 'recreate_mod_php', 'recreate_cgi_pass_auth', 'recreate_pwa_headers', 'recreate_seo_headers'], true)
     || !empty($tw_elements)
     || !empty($ui_migration['footer_class'])
     || !empty($ui_migration['borderless_fields'])
@@ -1017,7 +1017,7 @@ if (!empty($moves)) {
     echo "\nMigrated {$migrated} library entr" . ($migrated === 1 ? 'y' : 'ies') . ".\n";
 }
 
-if (in_array($htaccess['action'], ['write', 'recreate_mod_php', 'recreate_cgi_pass_auth', 'recreate_pwa_headers', 'recreate_default_language'], true)) {
+if (in_array($htaccess['action'], ['write', 'recreate_mod_php', 'recreate_cgi_pass_auth', 'recreate_pwa_headers', 'recreate_seo_headers'], true)) {
     echo "\n=== Repairing .htaccess ===\n";
     upgrade_11_apply_htaccess($htaccess);
     if ($htaccess['action'] === 'write') {
@@ -1026,8 +1026,8 @@ if (in_array($htaccess['action'], ['write', 'recreate_mod_php', 'recreate_cgi_pa
         echo "Recreated: .htaccess (added CGIPassAuth for Bearer token API support under PHP-FPM)\n";
     } elseif ($htaccess['action'] === 'recreate_pwa_headers') {
         echo "Recreated: .htaccess (added manifest MIME type and service-worker cache headers)\n";
-    } elseif ($htaccess['action'] === 'recreate_default_language') {
-        echo "Recreated: .htaccess (removed hardcoded DefaultLanguage)\n";
+    } elseif ($htaccess['action'] === 'recreate_seo_headers') {
+        echo "Recreated: .htaccess (preserved application language and ETag headers)\n";
     } else {
         echo "Recreated: .htaccess (removed mod_php directives, not supported under PHP-FPM)\n";
     }
