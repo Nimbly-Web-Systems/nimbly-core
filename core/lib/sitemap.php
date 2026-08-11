@@ -1,6 +1,6 @@
 <?php
 
-const SITEMAP_CACHE_VERSION = 1;
+const SITEMAP_CACHE_VERSION = 2;
 
 function sitemap_sc($params = null): string
 {
