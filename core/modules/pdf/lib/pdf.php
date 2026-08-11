@@ -10,19 +10,21 @@
  *   'pages' => ['<html>...</html>', '<html>...</html>'],
  * ]
  *
- * Returns raw PDF bytes. Requires the pdf module to be installed
- * (php core/cli/nimbly.php module:install pdf) — that fetches Dompdf into
- * ext/vendor/, committed like any other project file, not fetched at
- * request time.
+ * Returns raw PDF bytes. Requires Dompdf in ext/vendor/. Install it during
+ * development with `php core/cli/nimbly.php module:install pdf`, then deploy
+ * the resulting Composer files and vendor directory with the application.
  */
 function pdf_render_document(array $config): string
 {
-    load_library('module');
-    if (!module_is_installed('pdf')) {
-        throw new Exception('The pdf module is not installed. Run: php core/cli/nimbly.php module:install pdf');
+    $autoload_file = $GLOBALS['SYSTEM']['file_base'] . 'ext/vendor/autoload.php';
+    if (!is_file($autoload_file)) {
+        throw new Exception('Dompdf is unavailable. Run: php core/cli/nimbly.php module:install pdf');
     }
 
-    require_once $GLOBALS['SYSTEM']['file_base'] . 'ext/vendor/autoload.php';
+    require_once $autoload_file;
+    if (!class_exists(\Dompdf\Dompdf::class) || !class_exists(\Dompdf\Options::class)) {
+        throw new Exception('Dompdf is unavailable. Run: php core/cli/nimbly.php module:install pdf');
+    }
 
     $font_cache_dir = $GLOBALS['SYSTEM']['file_base'] . 'ext/data/.pdf_font_cache/';
     if (!is_dir($font_cache_dir)) {
