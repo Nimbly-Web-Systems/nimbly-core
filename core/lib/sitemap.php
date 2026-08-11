@@ -97,9 +97,12 @@ function sitemap_static_route_files(): array
         }
         $relative = trim(substr(dirname($file->getPathname()), strlen($uri_root)), '/');
         $parts = $relative === '' ? [] : explode('/', $relative);
+        $template = (string)file_get_contents($file->getPathname());
         $excluded = ['api', 'nb-admin', 'login', 'logout', 'forgot-password', 'password-reset', 'change-email', 'errors', 'img', 'video', 'download', 'sitemap.xml', 'robots.txt'];
         if (array_filter($parts, fn($part) => $part === '' || $part[0] === '.' || str_contains($part, '('))
-            || ($parts && in_array($parts[0], $excluded, true))) {
+            || ($parts && in_array($parts[0], $excluded, true))
+            || str_contains($template, '[#access')
+            || ($relative !== '' && !str_contains($template, '[#html#]'))) {
             continue;
         }
         $files[$relative] = $file->getMTime();
