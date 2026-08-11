@@ -56,6 +56,7 @@ function upgrade_11_htaccess_state($pepper, $base_path, $rewrite_base_path)
     $has_cgi_pass_auth = str_contains($htaccess_content, 'CGIPassAuth');
     $has_pwa_headers = str_contains($htaccess_content, 'application/manifest+json')
         && str_contains($htaccess_content, 'service-worker\.js');
+    $has_default_language = (bool)preg_match('/^DefaultLanguage\s+/m', $htaccess_content);
     $existing_base = null;
     if (preg_match('/^RewriteBase\s+(.+)$/m', $htaccess_content, $m)) {
         $existing_base = trim($m[1]);
@@ -84,6 +85,15 @@ function upgrade_11_htaccess_state($pepper, $base_path, $rewrite_base_path)
         return [
             'action' => 'recreate_pwa_headers',
             'message' => '.htaccess is missing manifest and service-worker cache headers. Will recreate it.',
+            'path' => $htaccess_file,
+            'content' => upgrade_11_render_htaccess($pepper, $base_path, $rewrite_base_path),
+        ];
+    }
+
+    if ($has_default_language) {
+        return [
+            'action' => 'recreate_default_language',
+            'message' => '.htaccess contains a generated hardcoded DefaultLanguage — will recreate it.',
             'path' => $htaccess_file,
             'content' => upgrade_11_render_htaccess($pepper, $base_path, $rewrite_base_path),
         ];

@@ -9,7 +9,8 @@
 <meta property="og:type" content="[#og-type#]">
 <meta property="og:title" content='[#if page-title=(not-empty) echo="[#page-title#]" echo_else="[#site-name#]"#]'>
 <meta property="og:description" content="[#page-description#]">
-<meta property="og:url" content="[#url absolute#]">
+<link rel="canonical" href="[#page-canonical-url#]">
+<meta property="og:url" content="[#page-canonical-url#]">
 <meta property="og:site_name" content="[#site-name#]">
 <meta property="og:locale" content="[#language#]">
 [#if og-image=(not-empty) tpl=meta-og-image#]

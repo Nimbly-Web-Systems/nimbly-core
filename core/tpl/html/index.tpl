@@ -2,6 +2,7 @@
 [#set site-name="[#get data.config.site.name#]"#]
 [#set app-name="Nimbly Framework"#]
 [#set language=[#detect-language#]#]
+[#seo-page#]
 [#set body-classes=#]
 [#set html-classes="[#logged-in#]"#]
 [#set head=#]
