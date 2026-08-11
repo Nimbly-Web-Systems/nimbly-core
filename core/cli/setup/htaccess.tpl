@@ -72,7 +72,7 @@ RewriteCond %{QUERY_STRING} ^$ [OR]
 RewriteCond %{ENV:IMG_RATIO} !^$
 RewriteCond %{REQUEST_URI} ^/%%REWRITE_BASE_PATH%%img/(.*)
 RewriteCond ext/static/_thumb_/img/%1%{ENV:IMG_RATIO} -F
-Header set Content-Type "image/webp" "expr=-z %{CONTENT_TYPE}"
+Header set Content-Type "image/webp" "expr=%{REQUEST_URI} =~ m#^/%%REWRITE_BASE_PATH%%img/# && -z %{CONTENT_TYPE}"
 RewriteRule ^ ext/static/_thumb_/img/%1%{ENV:IMG_RATIO} [END]
 
 # rewrite: use EXT static if available for the requested file

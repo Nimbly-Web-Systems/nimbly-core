@@ -4,10 +4,14 @@ $fixture = sys_get_temp_dir() . '/nimbly-sitemap-' . bin2hex(random_bytes(5));
 mkdir($fixture . '/ext/uri/about', 0755, true);
 mkdir($fixture . '/ext/uri/api/v1', 0755, true);
 mkdir($fixture . '/ext/uri/article/(slug)', 0755, true);
+mkdir($fixture . '/ext/uri/private', 0755, true);
+mkdir($fixture . '/ext/uri/watchdog', 0755, true);
 file_put_contents($fixture . '/ext/uri/index.tpl', 'home');
-file_put_contents($fixture . '/ext/uri/about/index.tpl', 'about');
+file_put_contents($fixture . '/ext/uri/about/index.tpl', '[#html#]');
 file_put_contents($fixture . '/ext/uri/api/v1/index.tpl', 'api');
 file_put_contents($fixture . '/ext/uri/article/(slug)/index.tpl', 'article');
+file_put_contents($fixture . '/ext/uri/private/index.tpl', '[#access feature=view-private#][#html#]');
+file_put_contents($fixture . '/ext/uri/watchdog/index.tpl', '[#watchdog#]');
 
 $GLOBALS['SYSTEM'] = ['file_base' => $fixture . '/', 'request_uri' => '', 'uri_base' => '/', 'variables' => []];
 function load_library($name) {}
@@ -24,7 +28,7 @@ function sitemap_test_assert($condition, $message): void
 }
 
 $routes = sitemap_static_route_files();
-sitemap_test_assert(array_keys($routes) === ['', 'about'], 'Static route discovery included a private or dynamic route.');
+sitemap_test_assert(array_keys($routes) === ['', 'about'], 'Static route discovery included a private, non-HTML, or dynamic route.');
 $xml = sitemap_xml([
     ['loc' => 'https://example.test/?a=1&b=2'],
     ['loc' => 'https://example.test/news/', 'lastmod' => '2026-08-11T00:00:00+00:00'],
