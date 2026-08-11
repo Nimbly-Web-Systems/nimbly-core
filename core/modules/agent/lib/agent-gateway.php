@@ -52,7 +52,7 @@ function agent_gateway_inspect_host_health(?callable $runner = null): array
 {
     $runner = $runner ?? 'agent_gateway_run_process';
     $result = $runner(['/usr/bin/sudo', '-n', '/usr/local/bin/nimbly-host-audit', '--format=json']);
-    if (!is_array($result) || (int)($result['exit_code'] ?? 1) !== 0) {
+    if (!is_array($result) || !in_array((int)($result['exit_code'] ?? 3), [0, 1, 2], true)) {
         throw new RuntimeException('Gateway host audit failed');
     }
     $audit = json_decode((string)($result['stdout'] ?? ''), true);
