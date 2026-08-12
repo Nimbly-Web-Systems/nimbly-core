@@ -107,7 +107,15 @@ function action_gateway_run(array $envelope, array $environment, ?callable $runn
 
 if (realpath($_SERVER['SCRIPT_FILENAME'] ?? '') === __FILE__) {
     try {
-        $result = action_gateway_run(action_gateway_decode((string)($argv[1] ?? '')), $_SERVER);
+        $environment = $_SERVER;
+        $config_file = '/etc/nimbly/agent-action-gateway.json';
+        if (is_readable($config_file)) {
+            $config = json_decode((string)file_get_contents($config_file), true);
+            if (is_array($config)) {
+                $environment = array_merge($environment, $config);
+            }
+        }
+        $result = action_gateway_run(action_gateway_decode((string)($argv[1] ?? '')), $environment);
         echo json_encode($result, JSON_UNESCAPED_SLASHES) . "\n";
         exit(0);
     } catch (Throwable) {
