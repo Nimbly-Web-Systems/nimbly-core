@@ -1,5 +1,9 @@
 <?php
 
+if (!defined('BASE_DIR')) {
+    define('BASE_DIR', dirname(__DIR__, 4) . '/');
+}
+
 require_once __DIR__ . '/agent-runtime.php';
 
 function agent_watchdog_sc($params)
