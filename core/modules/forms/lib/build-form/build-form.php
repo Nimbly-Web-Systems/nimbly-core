@@ -47,6 +47,8 @@ function build_form_sc($params)
             'name' => is_string($name) && $name !== '' ? $name : ($uuid ?: $resource),
             'resource' => $resource,
             'fields' => $meta['fields'],
+            'form_class' => get_param_value($params, 'form-class', null),
+            'actions_align' => get_param_value($params, 'actions-align', 'center'),
             'buttons' => [['type' => 'submit', 'title' => 'Save']],
         ];
     } else {
@@ -75,6 +77,7 @@ function build_form($form_def, $params = [], $uuid = null)
     set_variable('_bf_form_class', "nb-form nb-form-{$class_name}");
     set_variable('_bf_form_visual_class', $form_def['form_class'] ?? 'mt-4 p-2 rounded-md');
     set_variable('_bf_field_wrapper_class', $field_wrapper_class);
+    set_variable('_bf_actions_class', _bf_actions_class($form_def['actions_align'] ?? 'center'));
     // The honeypot is an anti-bot measure for public, anonymous submission
     // forms — it makes no sense (and actively blocks fast automated saves,
     // since it stays `required` for several seconds) on an authenticated
@@ -198,4 +201,13 @@ function _bf_field_wrapper_class($class_name, $params)
     ];
 
     return trim(preg_replace('/\s+/', ' ', implode(' ', $classes)));
+}
+
+function _bf_actions_class($alignment)
+{
+    return match ($alignment) {
+        'start', 'left' => 'justify-start',
+        'end', 'right' => 'justify-end',
+        default => 'justify-center',
+    };
 }
