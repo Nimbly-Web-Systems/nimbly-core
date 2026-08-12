@@ -61,7 +61,7 @@ function agent_gateway_diagnose(string $encoded_command, ?callable $runner = nul
         throw new RuntimeException('Diagnostic command is invalid');
     }
     $runner = $runner ?? 'agent_gateway_run_process';
-    $result = $runner(['/bin/sh', '-lc', $command]);
+    $result = $runner(['/bin/bash', '-lc', $command]);
     if (!is_array($result)) {
         throw new RuntimeException('Diagnostic command returned invalid evidence');
     }

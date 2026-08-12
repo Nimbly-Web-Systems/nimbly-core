@@ -330,7 +330,7 @@ agent_test_assert($host_health['overall'] === 'critical' && count($host_health['
 $diagnostic_command = 'systemctl status apache2 --no-pager';
 $diagnostic_encoded = rtrim(strtr(base64_encode($diagnostic_command), '+/', '-_'), '=');
 $diagnostic = agent_gateway_execute('diagnose ' . $diagnostic_encoded, function (array $command) use ($diagnostic_command) {
-    agent_test_assert($command === ['/bin/sh', '-lc', $diagnostic_command], 'diagnostic gateway executes the exact decoded command');
+    agent_test_assert($command === ['/bin/bash', '-lc', $diagnostic_command], 'diagnostic gateway executes the exact decoded command');
     return ['exit_code' => 0, 'stdout' => 'active', 'stderr' => ''];
 });
 agent_test_assert($diagnostic['exit_code'] === 0 && $diagnostic['stdout'] === 'active', 'diagnostic gateway returns bounded command evidence');
