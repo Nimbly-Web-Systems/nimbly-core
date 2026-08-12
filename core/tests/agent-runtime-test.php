@@ -327,6 +327,21 @@ $host_health = agent_gateway_execute('inspect_host_health', function (array $com
 });
 agent_test_assert($host_health['overall'] === 'critical' && count($host_health['findings']) === 1, 'gateway normalizes a fresh host audit');
 
+$diagnostic_command = 'systemctl status apache2 --no-pager';
+$diagnostic_encoded = rtrim(strtr(base64_encode($diagnostic_command), '+/', '-_'), '=');
+$diagnostic = agent_gateway_execute('diagnose ' . $diagnostic_encoded, function (array $command) use ($diagnostic_command) {
+    agent_test_assert($command === ['/bin/sh', '-lc', $diagnostic_command], 'diagnostic gateway executes the exact decoded command');
+    return ['exit_code' => 0, 'stdout' => 'active', 'stderr' => ''];
+});
+agent_test_assert($diagnostic['exit_code'] === 0 && $diagnostic['stdout'] === 'active', 'diagnostic gateway returns bounded command evidence');
+
+$action_envelope = rtrim(strtr(base64_encode('{"signed":true}'), '+/', '-_'), '=');
+$action_result = agent_gateway_execute('execute_action ' . $action_envelope, function (array $command) use ($action_envelope) {
+    agent_test_assert($command === ['/usr/bin/sudo', '-n', '/usr/local/bin/nimbly-agent-action-gateway', $action_envelope], 'governed actions map only to the root-owned gateway');
+    return ['exit_code' => 0, 'stdout' => json_encode(['exit_code' => 0, 'executed_at' => time()]), 'stderr' => ''];
+});
+agent_test_assert($action_result['exit_code'] === 0, 'governed gateway result is normalized');
+
 $denied = 0;
 foreach (['inspect_service ssh', 'inspect_service apache2 extra', 'sh -c id', ''] as $command) {
     try {
