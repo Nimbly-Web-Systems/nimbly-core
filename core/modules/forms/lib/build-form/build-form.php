@@ -128,9 +128,13 @@ function build_form($form_def, $params = [], $uuid = null)
         set_variable('nb_form_edit', 'false');
     }
     $buttons = $form_def['buttons'] ?? [];
-    foreach ($buttons as $button) {
-        set_variable("_ftitle", $button['title'] ?? 'Send');
-        echo run_buffered(dirname(__FILE__) . '/fbutton-' . $button['type'] . '.tpl');
+    if (!empty($buttons)) {
+        echo run_buffered(dirname(__FILE__) . '/fbuttons-header.tpl');
+        foreach ($buttons as $button) {
+            set_variable("_ftitle", $button['title'] ?? 'Send');
+            echo run_buffered(dirname(__FILE__) . '/fbutton-' . $button['type'] . '.tpl');
+        }
+        echo run_buffered(dirname(__FILE__) . '/fbuttons-footer.tpl');
     }
     if (!empty($form_def['content_class'])) {
         echo '</div>';

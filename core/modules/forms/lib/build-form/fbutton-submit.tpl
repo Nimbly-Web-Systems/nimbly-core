@@ -1,5 +1,4 @@
-<div class="flex flex-row align-middle justify-center items-center">
-    <button type="submit" class="[#btn-class-primary#] mb-4 flex flex-row align-middle" disabled="true"
+<button type="submit" class="[#btn-class-primary#] flex flex-row align-middle" disabled="true"
         x-bind:disabled="uploading || busy">
         <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="animate-spin w-5 h-5" x-cloak
             x-show="uploading || busy">
@@ -9,7 +8,6 @@
             <path d="M2 12C2 6.47715 6.47715 2 12 2V5C8.13401 5 5 8.13401 5 12H2Z" fill="#ffffff" />
         </svg>
         <div class="text-sm font-bold px-2">[#text [#_ftitle#]#]</div>
-    </button>
+</button>
 
-    <div x-cloak x-show="uploading" class="text-xs pt-2 pl-2">[#text Sending#]</div>
-</div>
+<div x-cloak x-show="uploading" class="text-xs">[#text Sending#]</div>
