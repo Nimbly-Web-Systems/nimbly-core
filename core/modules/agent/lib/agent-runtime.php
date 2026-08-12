@@ -549,7 +549,8 @@ function agent_redact($value)
     if (is_array($value)) {
         $result = [];
         foreach ($value as $key => $item) {
-            if (preg_match('/(secret|token|password|api[_-]?key|authorization|private[_-]?key)/i', (string)$key)) {
+            $usage_counter = preg_match('/^(?:input|output|total|cached)_tokens(?:_details)?$/', (string)$key) === 1;
+            if (!$usage_counter && preg_match('/(secret|token|password|api[_-]?key|authorization|private[_-]?key)/i', (string)$key)) {
                 $result[$key] = '[REDACTED]';
             } else {
                 $result[$key] = agent_redact($item);
