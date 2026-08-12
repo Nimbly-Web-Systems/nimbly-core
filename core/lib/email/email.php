@@ -60,7 +60,6 @@ function email_result($email_data)
 
 function email_prepare($email_data)
 {
-	load_library('util');
 	if (isset($email_data['html'])) {
 		$email_data['html'] = (string)$email_data['html'];
 	} else {
@@ -72,7 +71,6 @@ function email_prepare($email_data)
 			throw new Exception('Email template not found');
 		}
 		$email_data['tpl'] = $tpl;
-		load_library('run');
 		$email_data['html'] = run_buffered($tpl);
 	}
 	$email_data['text'] = isset($email_data['text']) ? (string)$email_data['text'] : plain_text($email_data['html']);
