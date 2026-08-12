@@ -34,6 +34,7 @@ function edit_resource_form_sc($params)
         'fields'     => $meta['fields'],
         'form_class' => 'w-full max-w-3xl',
         'content_class' => 'pr-12',
+        'actions_align' => 'start',
         'redirect_on_success' => true,
         'buttons'    => [
             ['type' => 'submit', 'title' => 'Save'],
