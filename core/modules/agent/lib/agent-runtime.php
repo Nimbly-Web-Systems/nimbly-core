@@ -216,8 +216,9 @@ function agent_execute_tool(string $run_uuid, array $tools, array $call, array $
         throw new RuntimeException('Agent tool arguments are invalid');
     }
     $tool = $tools[$name];
-    if (($tool['risk'] ?? '') !== 'read_only') {
-        throw new RuntimeException('The first agent slice permits read-only tools only');
+    $risk = (string)($tool['risk'] ?? '');
+    if (!in_array($risk, ['read_only', 'governed'], true)) {
+        throw new RuntimeException('Agent tool risk class is invalid');
     }
     agent_validate_arguments($arguments, $tool['parameters'] ?? []);
     $tool_key = hash('sha256', $run_uuid . "\n" . $name . "\n" . agent_canonical_json($arguments));
@@ -232,7 +233,34 @@ function agent_execute_tool(string $run_uuid, array $tools, array $call, array $
         'risk' => $tool['risk'],
         'arguments' => agent_redact($arguments),
     ]);
+    $authorization = null;
+    if ($risk === 'governed') {
+        if (empty($tool['authorize']) || !is_callable($tool['authorize'])) {
+            throw new RuntimeException('Governed agent tool has no authorizer');
+        }
+        $authorization = ($tool['authorize'])($arguments, $run_uuid, $dependencies);
+        $authorization = agent_validate_tool_authorization($run_uuid, $name, $arguments, $authorization);
+        agent_append_event($run_uuid, 'risk_decision', agent_redact($authorization));
+        if (($authorization['status'] ?? '') !== 'authorized') {
+            $result = [
+                'status' => (string)$authorization['status'],
+                'reason' => (string)($authorization['reason'] ?? ''),
+                'action_digest' => (string)$authorization['action_digest'],
+            ];
+            agent_append_event($run_uuid, 'tool_completed', [
+                'tool_key' => $tool_key,
+                'tool' => $name,
+                'duration_ms' => 0,
+                'result' => $result,
+            ]);
+            return $result;
+        }
+        agent_consume_tool_authorization($run_uuid, $authorization);
+    }
     $started = microtime(true);
+    if ($authorization !== null) {
+        $dependencies['authorization'] = $authorization;
+    }
     $result = ($tool['execute'])($arguments, $dependencies);
     if (!is_array($result)) {
         throw new RuntimeException('Agent tool returned an invalid result');
@@ -245,6 +273,58 @@ function agent_execute_tool(string $run_uuid, array $tools, array $call, array $
         'result' => $result,
     ]);
     return $result;
+}
+
+function agent_tool_action_digest(string $run_uuid, string $tool_name, array $arguments): string
+{
+    return hash('sha256', $run_uuid . "\n" . $tool_name . "\n" . agent_canonical_json($arguments));
+}
+
+function agent_validate_tool_authorization(string $run_uuid, string $tool_name, array $arguments, $authorization): array
+{
+    if (!is_array($authorization)) {
+        throw new RuntimeException('Governed tool authorization is invalid');
+    }
+    $status = (string)($authorization['status'] ?? '');
+    if (!in_array($status, ['authorized', 'denied', 'human_approval_required'], true)) {
+        throw new RuntimeException('Governed tool authorization status is invalid');
+    }
+    $expected_digest = agent_tool_action_digest($run_uuid, $tool_name, $arguments);
+    if (!hash_equals($expected_digest, (string)($authorization['action_digest'] ?? ''))) {
+        throw new RuntimeException('Governed tool authorization is not bound to the exact action');
+    }
+    $authorization['run_uuid'] = $run_uuid;
+    $authorization['tool'] = $tool_name;
+    $authorization['status'] = $status;
+    $authorization['expires_at'] = (int)($authorization['expires_at'] ?? 0);
+    if ($status === 'authorized' && $authorization['expires_at'] <= time()) {
+        throw new RuntimeException('Governed tool authorization has expired');
+    }
+    return $authorization;
+}
+
+function agent_consume_tool_authorization(string $run_uuid, array $authorization): void
+{
+    load_library('data');
+    $digest = (string)$authorization['action_digest'];
+    $uuid = substr(hash('sha256', 'agent-authorization:' . $digest), 0, 16);
+    if (data_exists('.agent_approvals', $uuid)) {
+        throw new RuntimeException('Governed tool authorization has already been used');
+    }
+    $record = [
+        'run_uuid' => $run_uuid,
+        'status' => 'consumed',
+        'action_digest' => $digest,
+        'target' => (string)($authorization['target'] ?? ''),
+        'tool' => (string)($authorization['tool'] ?? ''),
+        'authorized_at' => (int)($authorization['authorized_at'] ?? time()),
+        'expires_at' => (int)$authorization['expires_at'],
+        'consumed_at' => time(),
+        'decision' => $authorization,
+    ];
+    if (!data_create('.agent_approvals', $uuid, $record)) {
+        throw new RuntimeException('Could not consume governed tool authorization');
+    }
 }
 
 function agent_openai_tools(array $tools): array
@@ -559,7 +639,12 @@ function agent_approval_meta(): array
         'run_uuid' => ['name' => 'Run', 'type' => 'text', 'required' => true],
         'status' => ['name' => 'Status', 'type' => 'text', 'required' => true],
         'action_digest' => ['name' => 'Action digest', 'type' => 'text', 'required' => true],
+        'target' => ['name' => 'Target', 'type' => 'text'],
+        'tool' => ['name' => 'Tool', 'type' => 'text'],
+        'authorized_at' => ['name' => 'Authorized at', 'type' => 'number'],
         'expires_at' => ['name' => 'Expires at', 'type' => 'number'],
+        'consumed_at' => ['name' => 'Consumed at', 'type' => 'number'],
+        'decision' => ['name' => 'Decision', 'type' => 'text', 'admin_col' => false],
     ], 'index' => ['run_uuid', 'status', 'action_digest']];
 }
 
