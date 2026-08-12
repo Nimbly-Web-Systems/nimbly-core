@@ -230,6 +230,10 @@ $floor_call = ['call_id' => 'governed-floor', 'name' => 'remediate', 'arguments'
 ])];
 $floor_result = agent_execute_tool($run_uuid, $floor_tools, $floor_call, []);
 agent_test_assert(($floor_result['status'] ?? '') === 'human_approval_required' && $governed_executions === 1, 'human approval floor never executes the action');
+agent_test_assert(agent_redact(['input_tokens' => 12, 'api_token' => 'secret']) === [
+    'input_tokens' => 12,
+    'api_token' => '[REDACTED]',
+], 'usage counters remain auditable while credentials are redacted');
 
 $openai_calls = 0;
 $openai_request = function (array $request) use (&$openai_calls) {
