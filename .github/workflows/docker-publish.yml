@@ -2,6 +2,7 @@ name: Publish base image
 
 on:
   push:
+    branches: [master]
     tags: ['v*']
 
 jobs:
@@ -29,6 +30,7 @@ jobs:
         with:
           images: ghcr.io/nimbly-web-systems/nimbly-core
           tags: |
+            type=ref,event=branch
             type=semver,pattern={{version}}
 
       - uses: docker/build-push-action@v6

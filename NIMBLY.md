@@ -2116,18 +2116,18 @@ From the project checkout, generate the app image files in `ext/`:
 
 Commit the generated `ext/Dockerfile`, `ext/.dockerignore`, and
 `ext/.github/workflows/docker-publish.yml` in the `ext/` repository. On push,
-GitHub Actions builds the app image from the versioned Nimbly core image and
-publishes it to GHCR. Release tags should use full semantic versions such as
-`v1.1.0`; Docker image references should use the matching full version tag such
-as `ghcr.io/nimbly-web-systems/nimbly-core:1.1.0`.
+GitHub Actions builds the app image from the current Nimbly `master` image and
+publishes it to GHCR. Core continuously publishes
+`ghcr.io/nimbly-web-systems/nimbly-core:master`; generated application builds
+use that image and clone the matching `master` source for their asset build.
 
 For local deployment testing without waiting for GitHub Actions to publish a
 new core image, build a local core image and pass it as the app build base:
 
 ```bash
-docker build -t nimbly-core-local:1.1.0 -f docker/prod/Dockerfile .
+docker build -t nimbly-core-local:master -f docker/prod/Dockerfile .
 docker build -t nimbly-app-local:test \
-  --build-arg NIMBLY_BASE_IMAGE=nimbly-core-local:1.1.0 \
+  --build-arg NIMBLY_BASE_IMAGE=nimbly-core-local:master \
   -f ext/Dockerfile ext
 ```
 
