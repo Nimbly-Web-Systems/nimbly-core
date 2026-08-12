@@ -1,3 +1,4 @@
+#!/usr/bin/php
 <?php
 
 if (php_sapi_name() !== 'cli') {
