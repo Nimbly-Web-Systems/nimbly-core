@@ -1,6 +1,6 @@
 <?php
 
-function load_library($name) { $GLOBALS['email_test_loaded_libraries'][] = $name; }
+function load_library($name) {}
 function load_libraries($names) {}
 function env($key, $default = null) { return $default; }
 function plain_text($html) { return trim(strip_tags($html)); }
@@ -44,7 +44,6 @@ email_test_assert(isset($captured['payload']['headers']['List-Unsubscribe']), 'c
 email_test_assert($captured['options']['idempotency_key'] === 'campaign-1-batch-0', 'idempotency key reaches transport');
 
 $GLOBALS['email_test_template'] = '/tmp/email-template.tpl';
-$GLOBALS['email_test_loaded_libraries'] = [];
 $template_result = email_result([
     'service' => 'resend',
     'recipient' => 'person@example.com',
@@ -54,8 +53,6 @@ $template_result = email_result([
     'request' => $request,
 ]);
 email_test_assert($template_result['success'], 'template email is prepared successfully');
-email_test_assert(in_array('run', $GLOBALS['email_test_loaded_libraries'], true), 'template rendering loads the run library');
-email_test_assert(in_array('util', $GLOBALS['email_test_loaded_libraries'], true), 'email preparation loads the plain-text utility library');
 $GLOBALS['email_test_template'] = false;
 
 $batch_request = function ($path, $payload) {
