@@ -17,4 +17,10 @@ if (!function_exists('agent_watchdog_sc') || !function_exists('agent_watchdog_st
     exit(1);
 }
 
+$source = (string)file_get_contents(dirname(__DIR__) . '/modules/agent/lib/agent-watchdog.php');
+if (!str_contains($source, "load_library('data')")) {
+    fwrite(STDERR, "FAIL: watchdog does not load its data dependency\n");
+    exit(1);
+}
+
 echo "Agent watchdog bootstrap tests passed.\n";
