@@ -8,6 +8,8 @@ document.addEventListener("alpine:init", () => {
         can_pull_core,
         site_updates: null,
         core_updates: null,
+        site_updated_label: null,
+        core_updated_label: null,
         get attention_visible() {
             return this.failed_jobs > 0 || this.has_recent_error || this.low_disk;
         },
@@ -35,6 +37,7 @@ document.addEventListener("alpine:init", () => {
             this.busy = true;
             nb.api.get(nb.base_url + "/api/v1/git-pull?dir=ext").then((data) => {
                 this.site_updates = data.error ? this.site_updates : 0;
+                this.site_updated_label = data.error ? this.site_updated_label : "now";
             }).finally(() => {
                 this.busy = false;
             });
@@ -43,6 +46,7 @@ document.addEventListener("alpine:init", () => {
             this.busy = true;
             nb.api.get(nb.base_url + "/api/v1/git-pull").then((data) => {
                 this.core_updates = data.error ? this.core_updates : 0;
+                this.core_updated_label = data.error ? this.core_updated_label : "now";
             }).finally(() => {
                 this.busy = false;
             });

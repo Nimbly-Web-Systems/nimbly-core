@@ -78,7 +78,8 @@ function dashboard_site_status_section(bool $can_pull_ext, bool $can_pull_core):
             'Core',
             dashboard_repo_last_update(['core/lib', 'core/modules', 'core/tpl', 'core/uri']),
             'core_updates',
-            'pull_core'
+            'pull_core',
+            'core_updated_label'
         );
     }
 
@@ -87,7 +88,8 @@ function dashboard_site_status_section(bool $can_pull_ext, bool $can_pull_core):
             'Ext',
             dashboard_repo_last_update(['ext/lib', 'ext/modules', 'ext/tpl', 'ext/uri']),
             'site_updates',
-            'pull_site'
+            'pull_site',
+            'site_updated_label'
         );
     }
 
@@ -379,7 +381,13 @@ function dashboard_data_status_item(string $resource_label, int $last_update): s
         . '</li>';
 }
 
-function dashboard_repo_status_item(string $label, int $last_update, string $count_var, string $pull_fn): string
+function dashboard_repo_status_item(
+    string $label,
+    int $last_update,
+    string $count_var,
+    string $pull_fn,
+    string $updated_label_var
+): string
 {
     $ago = $last_update > 0 ? fmt_ago_short($last_update) : 'never';
 
@@ -389,7 +397,8 @@ function dashboard_repo_status_item(string $label, int $last_update, string $cou
         . ' <div class="text-xl font-semibold" x-cloak x-show="' . $count_var . ' !== null"'
         . ' :class="' . $count_var . ' > 0 ? \'text-amber-500\' : \'text-neutral-500\'"'
         . ' x-text="' . $count_var . ' > 0 ? (' . $count_var . ' + (' . $count_var . ' === 1 ? \' update\' : \' updates\')) : \'Up to date\'"></div>'
-        . '<div class="text-xs text-neutral-500">Updated ' . htmlspecialchars($ago, ENT_QUOTES, 'UTF-8') . '</div>'
+        . '<div class="text-xs text-neutral-500">Updated <span x-text="' . $updated_label_var . ' || \''
+        . htmlspecialchars($ago, ENT_QUOTES, 'UTF-8') . '\'"></span></div>'
         . ' <button type="button" class="' . dashboard_touch_link_class() . ' disabled:cursor-not-allowed disabled:opacity-50" x-cloak x-show="' . $count_var . ' > 0" @click="' . $pull_fn . '" :disabled="busy">Update now</button>'
         . '</li>';
 }
