@@ -176,6 +176,61 @@ try {
 }
 agent_test_assert($invalid_suffix_denied, 'manual idempotency suffix is strictly validated');
 
+$governed_executions = 0;
+$governed_arguments = ['server' => 'nimbly1.stage', 'command' => 'systemctl start apache2'];
+$governed_tools = [
+    'remediate' => [
+        'description' => 'Test a governed action.',
+        'risk' => 'governed',
+        'parameters' => [
+            'type' => 'object',
+            'properties' => [
+                'server' => ['type' => 'string', 'enum' => ['nimbly1.stage']],
+                'command' => ['type' => 'string'],
+            ],
+            'required' => ['server', 'command'],
+            'additionalProperties' => false,
+        ],
+        'authorize' => function (array $arguments, string $authorized_run_uuid) {
+            return [
+                'status' => 'authorized',
+                'action_digest' => agent_tool_action_digest($authorized_run_uuid, 'remediate', $arguments),
+                'target' => $arguments['server'],
+                'authorized_at' => time(),
+                'expires_at' => time() + 60,
+                'reason' => 'Bounded reversible test action',
+            ];
+        },
+        'execute' => function (array $_arguments, array $dependencies) use (&$governed_executions) {
+            $governed_executions++;
+            agent_test_assert(($dependencies['authorization']['status'] ?? '') === 'authorized', 'executor receives the exact authorization');
+            return ['status' => 'executed'];
+        },
+    ],
+];
+$governed_call = ['call_id' => 'governed-1', 'name' => 'remediate', 'arguments' => json_encode($governed_arguments)];
+$governed_result = agent_execute_tool($manual_uuid, $governed_tools, $governed_call, []);
+agent_test_assert(($governed_result['status'] ?? '') === 'executed' && $governed_executions === 1, 'authorized governed action executes once');
+
+$replayed_result = agent_execute_tool($manual_uuid, $governed_tools, $governed_call, []);
+agent_test_assert(($replayed_result['status'] ?? '') === 'executed' && $governed_executions === 1, 'governed action replay returns recorded evidence without re-execution');
+
+$floor_tools = $governed_tools;
+$floor_tools['remediate']['authorize'] = function (array $arguments, string $authorized_run_uuid) {
+    return [
+        'status' => 'human_approval_required',
+        'action_digest' => agent_tool_action_digest($authorized_run_uuid, 'remediate', $arguments),
+        'target' => $arguments['server'],
+        'expires_at' => time() + 300,
+        'reason' => 'Credential changes require a human',
+    ];
+};
+$floor_call = ['call_id' => 'governed-floor', 'name' => 'remediate', 'arguments' => json_encode([
+    'server' => 'nimbly1.stage', 'command' => 'change ssh authorization',
+])];
+$floor_result = agent_execute_tool($run_uuid, $floor_tools, $floor_call, []);
+agent_test_assert(($floor_result['status'] ?? '') === 'human_approval_required' && $governed_executions === 1, 'human approval floor never executes the action');
+
 $openai_calls = 0;
 $openai_request = function (array $request) use (&$openai_calls) {
     $openai_calls++;
