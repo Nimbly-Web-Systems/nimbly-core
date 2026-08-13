@@ -330,7 +330,11 @@ file_put_contents(
 );
 file_put_contents(
     $fixture . '/ext/data/.jobs/failed-job',
-    json_encode(['status' => 'failed', 'last_error' => 'Example failure'])
+    json_encode(['status' => 'failed', 'last_error' => 'Example failure', '_modified' => time()])
+);
+file_put_contents(
+    $fixture . '/ext/data/.jobs/old-failed-job',
+    json_encode(['status' => 'failed', 'last_error' => 'Historical failure', '_modified' => time() - 172800])
 );
 file_put_contents(
     $fixture . '/ext/data/.jobs/running-job',
@@ -344,6 +348,7 @@ file_put_contents($fixture . '/ext/.git/refs/heads/live', str_repeat('a', 40) . 
 $fixture_findings = [];
 $fixture_context = [
     'now' => time(),
+    'since' => time() - 86400,
     'config' => ['job_running_stale_minutes' => 30],
 ];
 $job_counts = host_audit_project_jobs(
@@ -352,8 +357,16 @@ $job_counts = host_audit_project_jobs(
     $fixture_context,
     $fixture_findings
 );
-audit_assert($job_counts['failed'] === 1, 'counts failed jobs');
+audit_assert($job_counts['failed'] === 2, 'counts retained failed jobs');
+audit_assert($job_counts['failed_recent'] === 1, 'counts failed jobs inside the audit window');
 audit_assert($job_counts['running'] === 1, 'counts running jobs');
+audit_assert(
+    count(array_filter(
+        $fixture_findings,
+        fn(array $finding): bool => str_starts_with($finding['id'], 'job:failed:')
+    )) === 1,
+    'reports only failed jobs inside the audit window'
+);
 audit_assert(
     count(array_filter(
         $fixture_findings,
