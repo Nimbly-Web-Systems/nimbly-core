@@ -73,6 +73,9 @@ function agent_definition(string $agent_id): array
     if (!is_array($definition) || ($definition['id'] ?? '') !== $agent_id) {
         throw new RuntimeException('Agent definition is invalid: ' . $agent_id);
     }
+    if (!empty($definition['abstract'])) {
+        throw new RuntimeException('Agent definition requires an ext configuration: ' . $agent_id);
+    }
     foreach (['version', 'instructions', 'tools', 'prepare_input', 'validate_result', 'deliver'] as $key) {
         if (empty($definition[$key])) {
             throw new RuntimeException('Agent definition is missing ' . $key);
@@ -97,6 +100,24 @@ function agent_definition_merge(array $base, array $override): array
         }
     }
     return $base;
+}
+
+function agent_config(array $dependencies, string $path = '', $default = null)
+{
+    $value = $dependencies['agent_definition'] ?? null;
+    if (!is_array($value)) {
+        return $default;
+    }
+    if ($path === '') {
+        return $value;
+    }
+    foreach (explode('.', $path) as $segment) {
+        if (!is_array($value) || !array_key_exists($segment, $value)) {
+            return $default;
+        }
+        $value = $value[$segment];
+    }
+    return $value;
 }
 
 function agent_instructions(array $definition): string
@@ -183,17 +204,21 @@ function agent_run(string $run_uuid, array $dependencies = []): array
         ]);
         agent_append_event($run_uuid, 'run_started', []);
 
-        $prepared = ($definition['prepare_input'])($run, $dependencies);
+        $agent_dependencies = array_merge($dependencies, [
+            'agent_definition' => $definition,
+            'run_uuid' => $run_uuid,
+        ]);
+        $prepared = ($definition['prepare_input'])($run, $agent_dependencies);
         if (!is_array($prepared) || !isset($prepared['input'])) {
             throw new RuntimeException('Agent input preparation failed');
         }
         agent_update_run($run_uuid, ['source_report_uuids' => $prepared['source_report_uuids'] ?? []]);
-        $result = agent_reason($run_uuid, $definition, $prepared['input'], $dependencies);
-        $validated = ($definition['validate_result'])($result, $run_uuid, $dependencies);
+        $result = agent_reason($run_uuid, $definition, $prepared['input'], $agent_dependencies);
+        $validated = ($definition['validate_result'])($result, $run_uuid, $agent_dependencies);
         if (!is_array($validated)) {
             throw new RuntimeException('Agent result validation failed');
         }
-        $delivery = ($definition['deliver'])($validated, $run_uuid, $dependencies);
+        $delivery = ($definition['deliver'])($validated, $run_uuid, $agent_dependencies);
         if (!is_array($delivery) || empty($delivery['success'])) {
             throw new RuntimeException($delivery['error'] ?? 'Agent report delivery failed');
         }

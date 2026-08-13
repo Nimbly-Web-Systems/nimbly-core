@@ -2022,10 +2022,20 @@ host cannot reliably report that the host itself is unreachable.
 
 #### `agent:*`
 
-The Core agent runtime runs versioned, project-defined agents without exposing
-the server to the model. Definitions live in `ext/agents/<agent-id>/agent.php`
-and provide instructions, strict structured tools, input preparation, result
-validation, and report delivery callbacks.
+The Core agent runtime runs versioned agents without exposing the server to the
+model. Reusable definitions and neutral behaviour live in
+`core/agents/<agent-id>/`; project identity, targets, authority, and delivery
+configuration live in the matching `ext/agents/<agent-id>/` directory. An ext
+definition deep-merges over its core definition: maps merge recursively and
+lists replace. Instruction files compose core first and ext second unless ext
+sets `instructions_mode` to `replace`. A core definition may set
+`"abstract": true` when it requires ext configuration before it can run.
+
+Definitions use `agent.json` plus optional bootstrap and instruction files.
+Generic callbacks can read the fully resolved definition from their dependency
+argument with `agent_config($dependencies, 'path.to.value', $default)`. Keep
+callback behaviour and evidence rules neutral in core; do not put a named
+persona, project host, recipient, or project-specific authority there.
 
 ```bash
 php core/cli/nimbly.php agent:enqueue infra-expert

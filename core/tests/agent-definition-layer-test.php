@@ -69,6 +69,10 @@ agent_layer_assert(
     agent_instructions($definition) === "Core evidence rules.\n\nExt personality rules.",
     'core and ext instructions were not composed in order'
 );
+agent_layer_assert(
+    agent_config(['agent_definition' => $definition], 'tools.inspect.description') === 'Layered inspection',
+    'layered agent configuration is not available to generic callbacks'
+);
 
 agent_layer_remove($fixture);
 echo "Agent definition layer tests passed.\n";
