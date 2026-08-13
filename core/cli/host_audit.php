@@ -17,7 +17,7 @@ if (!defined('BASE_DIR')) {
 }
 
 const HOST_AUDIT_SCHEMA_VERSION = 1;
-const HOST_AUDIT_VERSION = '1.2.0';
+const HOST_AUDIT_VERSION = '1.2.1';
 
 if (!defined('NIMBLY_HOST_AUDIT_LIBRARY')) {
     $host_audit_command = $argv[1] ?? 'host:audit';
@@ -1153,7 +1153,7 @@ function host_audit_project_jobs(
     array &$findings
 ): array {
     $job_dir = $path . '/ext/data/.jobs';
-    $counts = ['queued' => 0, 'running' => 0, 'done' => 0, 'failed' => 0, 'invalid' => 0];
+    $counts = ['queued' => 0, 'running' => 0, 'done' => 0, 'failed' => 0, 'failed_recent' => 0, 'invalid' => 0];
     if (!is_dir($job_dir)) {
         return $counts;
     }
@@ -1183,6 +1183,14 @@ function host_audit_project_jobs(
         }
         $counts[$status]++;
         if ($status === 'failed') {
+            $failed_at = (int)($job['_modified'] ?? 0);
+            if ($failed_at <= 0) {
+                $failed_at = filemtime($file) ?: $context['now'];
+            }
+            if ($failed_at < $context['since']) {
+                continue;
+            }
+            $counts['failed_recent']++;
             $message = (string)($job['last_error'] ?? $job['error'] ?? basename($file));
             $findings[] = host_audit_finding(
                 'job:failed:' . host_audit_id($name) . ':' . host_audit_id(basename($file)),
@@ -1190,7 +1198,7 @@ function host_audit_project_jobs(
                 'project',
                 'Nimbly job failed',
                 host_audit_normalize_message($message),
-                null,
+                $failed_at,
                 $name
             );
         }
