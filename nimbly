@@ -1,15 +1,32 @@
 #!/usr/bin/env sh
 
-if ! command -v node >/dev/null 2>&1; then
-  echo "Nimbly requires Node.js 20+ for setup and asset builds." >&2
-  echo "Install Node.js 20+ or activate it first, for example: nvm use --lts" >&2
-  exit 1
+command_name="${1:-}"
+case "$command_name" in
+  deps|build|watch|up|init|test|test:run|--docker)
+    node_required=1
+    ;;
+  *)
+    node_required=0
+    ;;
+esac
+
+node_major=""
+if command -v node >/dev/null 2>&1; then
+  node_major="$(node -p 'process.versions.node.split(".")[0]' 2>/dev/null)"
 fi
 
-node_major="$(node -p 'process.versions.node.split(".")[0]' 2>/dev/null)"
-if [ -z "$node_major" ] || [ "$node_major" -lt 20 ]; then
+if [ -n "$node_major" ] && [ "$node_major" -ge 20 ]; then
+  exec node core/cli/nimbly-runner.mjs "$@"
+fi
+
+if [ "$node_required" -eq 0 ] && command -v php >/dev/null 2>&1; then
+  exec php core/cli/nimbly.php "$@"
+fi
+
+if [ -n "$node_major" ]; then
   echo "Nimbly requires Node.js 20+ for setup and asset builds. Current version: $(node --version 2>/dev/null || echo unknown)" >&2
-  exit 1
+else
+  echo "Nimbly requires Node.js 20+ for setup and asset builds." >&2
 fi
-
-exec node core/cli/nimbly-runner.mjs "$@"
+echo "Install Node.js 20+ or activate it first, for example: nvm use --lts" >&2
+exit 1
