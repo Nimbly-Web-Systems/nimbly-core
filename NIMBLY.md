@@ -2040,6 +2040,13 @@ and event state; `agent-support.php` owns bounded utility and resource setup;
 `agent-report.php` implements the standard report-agent pipeline. Keep named
 agent policy out of these framework modules.
 
+Definitions are validated after core/ext layering and bootstrap loading. Invalid
+callbacks, target identities or authorities, tool risk classes, executors,
+governed authorizers, schemas, and connector target references must fail before
+a run starts. Declare targets once in the root `targets` list with `scope`,
+`identity`, and `authority`; tool connectors reference that list and enforce
+membership at execution time. Do not duplicate target identities in tool enums.
+
 Definitions use `agent.json` plus optional bootstrap and instruction files.
 Generic callbacks can read the fully resolved definition from their dependency
 argument with `agent_config($dependencies, 'path.to.value', $default)`. Keep

@@ -3,19 +3,27 @@
 function agent_gateway_execute(string $original_command, ?callable $runner = null): array
 {
     $parts = preg_split('/\s+/', trim($original_command));
-    if (count($parts) === 2 && $parts[0] === 'diagnose') {
-        return agent_gateway_diagnose($parts[1], $runner);
-    }
-    if (count($parts) === 2 && $parts[0] === 'execute_action') {
-        return agent_gateway_execute_action($parts[1], $runner);
-    }
-    if ($parts === ['inspect_host_health']) {
-        return agent_gateway_inspect_host_health($runner);
-    }
-    if (count($parts) !== 2 || $parts[0] !== 'inspect_service') {
+    $verb = (string)($parts[0] ?? '');
+    $adapters = agent_gateway_adapters();
+    $adapter = $adapters[$verb] ?? null;
+    if (!is_array($adapter) || count($parts) - 1 !== (int)$adapter['arguments']) {
         throw new RuntimeException('Gateway command is not permitted');
     }
-    $service = $parts[1];
+    return ($adapter['callback'])(array_slice($parts, 1), $runner);
+}
+
+function agent_gateway_adapters(): array
+{
+    return [
+        'diagnose' => ['arguments' => 1, 'callback' => fn($args, $runner) => agent_gateway_diagnose($args[0], $runner)],
+        'execute_action' => ['arguments' => 1, 'callback' => fn($args, $runner) => agent_gateway_execute_action($args[0], $runner)],
+        'inspect_host_health' => ['arguments' => 0, 'callback' => fn($_args, $runner) => agent_gateway_inspect_host_health($runner)],
+        'inspect_service' => ['arguments' => 1, 'callback' => fn($args, $runner) => agent_gateway_inspect_service($args[0], $runner)],
+    ];
+}
+
+function agent_gateway_inspect_service(string $service, ?callable $runner = null): array
+{
     if (!in_array($service, ['apache2', 'cron', 'fail2ban'], true)) {
         throw new RuntimeException('Gateway service is not permitted');
     }

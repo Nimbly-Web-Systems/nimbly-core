@@ -324,6 +324,22 @@ try {
 }
 agent_test_assert($immutable, 'terminal run is immutable');
 
+require_once BASE_DIR . 'core/modules/agent/lib/agent-run.php';
+$test_data['.agent_runs']['failed-handler-run'] = [
+    'status' => 'failed',
+    'failure_reason' => 'Specific safe validation failure',
+];
+$handler_reason = '';
+try {
+    agent_run_job(['payload' => ['run_uuid' => 'failed-handler-run'], 'attempts' => 3, 'max_attempts' => 3]);
+} catch (RuntimeException $error) {
+    $handler_reason = $error->getMessage();
+}
+agent_test_assert(
+    $handler_reason === 'Specific safe validation failure',
+    'failed agent jobs expose the safe underlying run reason'
+);
+
 $gateway = agent_gateway_execute('inspect_service apache2', function (array $command) {
     agent_test_assert($command === [
         '/usr/bin/systemctl', 'show', 'apache2',

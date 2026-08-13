@@ -5,11 +5,9 @@ require_once BASE_DIR . 'core/modules/agent/lib/agent-report.php';
 
 function infra_expert_configure(array $dependencies = []): array
 {
-    $configured = function_exists('agent_config')
-        ? agent_config($dependencies, 'infrastructure', [])
-        : [];
+    $configured = function_exists('agent_config') ? agent_config($dependencies, 'infrastructure', []) : [];
     $defaults = [
-        'targets' => [],
+        'targets' => function_exists('agent_config') ? agent_config($dependencies, 'targets', []) : [],
         'inventory_env' => 'INFRA_AGENT_INVENTORY',
         'greeting' => '',
     ];
@@ -35,7 +33,7 @@ function infra_expert_target_map(): array
 {
     $result = [];
     foreach (infra_expert_targets() as $target) {
-        $result[(string)($target['server'] ?? '')] = (string)($target['environment'] ?? '');
+        $result[(string)($target['identity'] ?? '')] = (string)($target['scope'] ?? '');
     }
     return array_filter($result, fn($environment, $server) => $server !== '' && $environment !== '', ARRAY_FILTER_USE_BOTH);
 }
@@ -151,7 +149,7 @@ function infra_expert_execute_remediation(array $arguments, array $dependencies)
 {
     infra_expert_configure($dependencies);
     $server = (string)($arguments['server'] ?? '');
-    $remediation_servers = array_column(infra_expert_targets('autonomous_remediation'), 'server');
+    $remediation_servers = array_column(infra_expert_targets('autonomous_remediation'), 'identity');
     if (!in_array($server, $remediation_servers, true)) {
         throw new RuntimeException('Remediation target is not configured for autonomous authority');
     }
