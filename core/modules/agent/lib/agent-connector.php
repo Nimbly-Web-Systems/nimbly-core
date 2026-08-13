@@ -12,7 +12,7 @@ function agent_connector_targets(array $dependencies, array $connector): array
         if (!is_array($target) || ($authority !== '' && ($target['authority'] ?? '') !== $authority)) {
             continue;
         }
-        $key = (string)($target['server'] ?? '');
+        $key = (string)($target['identity'] ?? $target['server'] ?? '');
         if ($key !== '') {
             $result[$key] = $target;
         }

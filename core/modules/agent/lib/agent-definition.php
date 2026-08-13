@@ -82,6 +82,7 @@ function agent_definition(string $agent_id): array
             throw new RuntimeException('Agent instructions are unavailable');
         }
     }
+    agent_validate_definition($definition);
     return $definition;
 }
 
@@ -133,12 +134,12 @@ function agent_instructions(array $definition): string
 function agent_scope_definition(array $definition, array $run): array
 {
     $target = trim((string)($run['target'] ?? ''));
-    if ($target !== '' && isset($definition['infrastructure']['targets'])) {
-        $definition['infrastructure']['targets'] = array_values(array_filter(
-            (array)$definition['infrastructure']['targets'],
-            fn($item) => is_array($item) && ($item['server'] ?? '') === $target
+    if ($target !== '' && isset($definition['targets'])) {
+        $definition['targets'] = array_values(array_filter(
+            (array)$definition['targets'],
+            fn($item) => is_array($item) && ($item['identity'] ?? '') === $target
         ));
-        if (empty($definition['infrastructure']['targets'])) {
+        if (empty($definition['targets'])) {
             throw new RuntimeException('Agent run target is not configured');
         }
         $definition['runtime_instruction'] = 'This is a scoped manual run. Review only ' . $target
@@ -153,4 +154,45 @@ function agent_scope_definition(array $definition, array $run): array
             . ' This run is strictly read-only. Governed tools are unavailable and no mutation may be requested or claimed.');
     }
     return $definition;
+}
+
+function agent_validate_definition(array $definition): void
+{
+    foreach (['prepare_input', 'validate_result', 'deliver'] as $callback) {
+        if (!is_callable($definition[$callback] ?? null)) {
+            throw new RuntimeException('Agent definition callback is invalid: ' . $callback);
+        }
+    }
+    $identities = [];
+    foreach ((array)($definition['targets'] ?? []) as $target) {
+        if (!is_array($target)
+            || trim((string)($target['scope'] ?? '')) === ''
+            || preg_match('/^[A-Za-z0-9][A-Za-z0-9._-]*$/', (string)($target['identity'] ?? '')) !== 1
+            || !in_array(($target['authority'] ?? ''), ['inspection_only', 'autonomous_remediation'], true)) {
+            throw new RuntimeException('Agent target configuration is invalid');
+        }
+        if (isset($identities[$target['identity']])) {
+            throw new RuntimeException('Agent target identity is duplicated');
+        }
+        $identities[$target['identity']] = true;
+    }
+    foreach ((array)$definition['tools'] as $name => $tool) {
+        if (!is_array($tool)
+            || preg_match('/^[a-z][a-z0-9_-]*$/', (string)$name) !== 1
+            || !in_array(($tool['risk'] ?? ''), ['read_only', 'governed'], true)
+            || !is_callable($tool['execute'] ?? null)
+            || !is_array($tool['parameters'] ?? null)) {
+            throw new RuntimeException('Agent tool definition is invalid: ' . $name);
+        }
+        if (($tool['risk'] ?? '') === 'governed' && !is_callable($tool['authorize'] ?? null)) {
+            throw new RuntimeException('Governed agent tool authorizer is invalid: ' . $name);
+        }
+        $connector = $tool['connector'] ?? null;
+        if (is_array($connector) && !empty($connector['targets'])) {
+            $targets = agent_config(['agent_definition' => $definition], (string)$connector['targets'], null);
+            if (!is_array($targets)) {
+                throw new RuntimeException('Agent tool target reference is invalid: ' . $name);
+            }
+        }
+    }
 }

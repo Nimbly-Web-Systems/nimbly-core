@@ -11,5 +11,9 @@ function agent_run_job(array $job)
     $attempts = (int)($job['attempts'] ?? 1);
     $max_attempts = (int)($job['max_attempts'] ?? 3);
     $result = agent_run($run_uuid, ['terminal_on_failure' => $attempts >= $max_attempts]);
-    return ($result['status'] ?? '') === 'completed';
+    if (($result['status'] ?? '') !== 'completed') {
+        $reason = agent_safe_error((string)($result['failure_reason'] ?? 'Agent run failed'));
+        throw new RuntimeException($reason === '' ? 'Agent run failed' : $reason);
+    }
+    return true;
 }

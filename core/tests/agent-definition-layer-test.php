@@ -36,6 +36,11 @@ file_put_contents($fixture . '/ext/agents/example/agent.json', json_encode([
 define('BASE_DIR', $fixture . '/');
 require_once dirname(__DIR__) . '/modules/agent/lib/agent-runtime.php';
 
+function example_prepare() {}
+function example_validate() {}
+function example_deliver() {}
+function example_inspect() {}
+
 function agent_layer_assert(bool $condition, string $message): void
 {
     if (!$condition) {
@@ -75,9 +80,9 @@ agent_layer_assert(
 );
 
 $scoped_definition = $definition;
-$scoped_definition['infrastructure']['targets'] = [
-    ['server' => 'stage.example', 'authority' => 'autonomous_remediation'],
-    ['server' => 'prod.example', 'authority' => 'inspection_only'],
+$scoped_definition['targets'] = [
+    ['scope' => 'stage', 'identity' => 'stage.example', 'authority' => 'autonomous_remediation'],
+    ['scope' => 'prod', 'identity' => 'prod.example', 'authority' => 'inspection_only'],
 ];
 $scoped_definition['tools']['mutate'] = ['risk' => 'governed'];
 $scoped_definition = agent_scope_definition($scoped_definition, [
@@ -85,14 +90,27 @@ $scoped_definition = agent_scope_definition($scoped_definition, [
     'read_only' => true,
 ]);
 agent_layer_assert(
-    count($scoped_definition['infrastructure']['targets']) === 1
-        && $scoped_definition['infrastructure']['targets'][0]['server'] === 'prod.example',
+    count($scoped_definition['targets']) === 1
+        && $scoped_definition['targets'][0]['identity'] === 'prod.example',
     'manual target scope does not isolate the configured target'
 );
 agent_layer_assert(
     !isset($scoped_definition['tools']['mutate']) && isset($scoped_definition['tools']['inspect']),
     'read-only scope does not remove governed tools'
 );
+
+$invalid_definition = $definition;
+$invalid_definition['targets'] = [
+    ['scope' => 'prod', 'identity' => 'duplicate.example', 'authority' => 'inspection_only'],
+    ['scope' => 'stage', 'identity' => 'duplicate.example', 'authority' => 'inspection_only'],
+];
+$invalid_denied = false;
+try {
+    agent_validate_definition($invalid_definition);
+} catch (RuntimeException) {
+    $invalid_denied = true;
+}
+agent_layer_assert($invalid_denied, 'invalid target definitions are rejected before execution');
 
 agent_layer_remove($fixture);
 echo "Agent definition layer tests passed.\n";
