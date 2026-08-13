@@ -157,6 +157,12 @@ agent_test_assert($run_uuid === $duplicate_uuid, 'scheduled enqueue is idempoten
 agent_test_assert(count($test_data['.agent_runs']) === 2, 'one run plus meta exists');
 agent_test_assert(count($test_jobs) === 1, 'one deterministic job exists');
 
+$test_data['.agent_runs'][$run_uuid]['status'] = 'failed';
+$terminal_job_count = count($test_jobs);
+agent_test_assert(agent_enqueue('test-agent', $now, ['trigger' => 'test']) === $run_uuid, 'terminal enqueue returns the existing run');
+agent_test_assert(count($test_jobs) === $terminal_job_count, 'terminal run is not re-enqueued');
+$test_data['.agent_runs'][$run_uuid]['status'] = 'scheduled';
+
 $manual_uuid = agent_enqueue('test-agent', $now, [
     'trigger' => 'manual',
     'idempotency_suffix' => 'manual-shadow-1',
