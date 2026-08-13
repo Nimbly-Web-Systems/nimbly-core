@@ -275,11 +275,9 @@ $openai_request = function (array $request) use (&$openai_calls) {
         'output_text' => json_encode(['environments' => [
             [
                 'environment' => 'stage', 'server' => 'nimbly1.stage', 'source_report_uuid' => 'stage-report', 'review_status' => 'reviewed',
-                'automatically_fixed' => [], 'still_needs_fixing' => [], 'what_you_can_do' => [], 'verification' => ['active' => true],
             ],
             [
                 'environment' => 'prod', 'server' => 'nimbly2.prod', 'source_report_uuid' => 'prod-report', 'review_status' => 'reviewed',
-                'automatically_fixed' => [], 'still_needs_fixing' => ['A reboot requires approval.'], 'what_you_can_do' => ['Review the maintenance window.'], 'verification' => ['active' => true],
             ],
         ]]),
         'output' => [],
