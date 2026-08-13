@@ -11,33 +11,64 @@ function agent_definition(string $agent_id): array
         && is_array($GLOBALS['AGENT_TEST_DEFINITIONS'][$agent_id])) {
         return $GLOBALS['AGENT_TEST_DEFINITIONS'][$agent_id];
     }
-    $directory = BASE_DIR . 'ext/agents/' . $agent_id . '/';
-    $json_path = $directory . 'agent.json';
-    $php_path = $directory . 'agent.php';
-    if (is_file($json_path)) {
-        $definition = json_decode((string)file_get_contents($json_path), true);
-        if (!is_array($definition)) {
+    $core_directory = BASE_DIR . 'core/agents/' . $agent_id . '/';
+    $ext_directory = BASE_DIR . 'ext/agents/' . $agent_id . '/';
+    $layers = [];
+    foreach ([$core_directory, $ext_directory] as $directory) {
+        $json_path = $directory . 'agent.json';
+        if (!is_file($json_path)) {
+            continue;
+        }
+        $layer = json_decode((string)file_get_contents($json_path), true);
+        if (!is_array($layer)) {
             throw new RuntimeException('Agent configuration is invalid JSON: ' . $agent_id);
         }
-        foreach ((array)($definition['bootstrap'] ?? []) as $bootstrap) {
-            if (!is_string($bootstrap) || preg_match('#^[a-z0-9][a-z0-9._/-]*\.php$#i', $bootstrap) !== 1
-                || str_contains($bootstrap, '..')) {
-                throw new RuntimeException('Agent bootstrap path is invalid: ' . $agent_id);
+        $layers[] = ['directory' => $directory, 'definition' => $layer];
+    }
+    if (!empty($layers)) {
+        $definition = [];
+        $instruction_files = [];
+        foreach ($layers as $layer) {
+            $directory = $layer['directory'];
+            $layer_definition = $layer['definition'];
+            foreach ((array)($layer_definition['bootstrap'] ?? []) as $bootstrap) {
+                if (!is_string($bootstrap) || preg_match('#^[a-z0-9][a-z0-9._/-]*\.php$#i', $bootstrap) !== 1
+                    || str_contains($bootstrap, '..')) {
+                    throw new RuntimeException('Agent bootstrap path is invalid: ' . $agent_id);
+                }
+                $bootstrap_path = $directory . $bootstrap;
+                if (!is_file($bootstrap_path)) {
+                    throw new RuntimeException('Agent bootstrap is unavailable: ' . $agent_id);
+                }
+                require_once $bootstrap_path;
             }
-            $bootstrap_path = $directory . $bootstrap;
-            if (!is_file($bootstrap_path)) {
-                throw new RuntimeException('Agent bootstrap is unavailable: ' . $agent_id);
+            $instructions = (string)($layer_definition['instructions'] ?? '');
+            if ($instructions !== '') {
+                $instruction_path = str_starts_with($instructions, '/')
+                    ? $instructions
+                    : $directory . $instructions;
+                if (!is_file($instruction_path)) {
+                    throw new RuntimeException('Agent instructions are unavailable: ' . $agent_id);
+                }
+                if (($layer_definition['instructions_mode'] ?? 'append') === 'replace') {
+                    $instruction_files = [];
+                }
+                $instruction_files[] = $instruction_path;
             }
-            require_once $bootstrap_path;
+            unset($layer_definition['bootstrap'], $layer_definition['instructions_mode']);
+            $definition = agent_definition_merge($definition, $layer_definition);
         }
-        $instructions = (string)($definition['instructions'] ?? '');
-        if ($instructions !== '' && !str_starts_with($instructions, '/')) {
-            $definition['instructions'] = $directory . $instructions;
-        }
-    } elseif (is_file($php_path)) {
-        $definition = require $php_path;
+        $definition['instruction_files'] = array_values(array_unique($instruction_files));
+        $definition['instructions'] = end($instruction_files) ?: '';
     } else {
-        throw new RuntimeException('Agent definition not found: ' . $agent_id);
+        $php_path = $ext_directory . 'agent.php';
+        if (!is_file($php_path)) {
+            throw new RuntimeException('Agent definition not found: ' . $agent_id);
+        }
+        $definition = require $php_path;
+        if (is_array($definition) && !empty($definition['instructions'])) {
+            $definition['instruction_files'] = [(string)$definition['instructions']];
+        }
     }
     if (!is_array($definition) || ($definition['id'] ?? '') !== $agent_id) {
         throw new RuntimeException('Agent definition is invalid: ' . $agent_id);
@@ -47,10 +78,36 @@ function agent_definition(string $agent_id): array
             throw new RuntimeException('Agent definition is missing ' . $key);
         }
     }
-    if (!is_file($definition['instructions'])) {
-        throw new RuntimeException('Agent instructions are unavailable');
+    foreach ((array)($definition['instruction_files'] ?? [$definition['instructions']]) as $instruction_file) {
+        if (!is_file($instruction_file)) {
+            throw new RuntimeException('Agent instructions are unavailable');
+        }
     }
     return $definition;
+}
+
+function agent_definition_merge(array $base, array $override): array
+{
+    foreach ($override as $key => $value) {
+        if (is_array($value) && isset($base[$key]) && is_array($base[$key])
+            && !array_is_list($value) && !array_is_list($base[$key])) {
+            $base[$key] = agent_definition_merge($base[$key], $value);
+        } else {
+            $base[$key] = $value;
+        }
+    }
+    return $base;
+}
+
+function agent_instructions(array $definition): string
+{
+    $parts = [];
+    foreach ((array)($definition['instruction_files'] ?? [$definition['instructions'] ?? '']) as $path) {
+        if (is_string($path) && $path !== '') {
+            $parts[] = trim((string)file_get_contents($path));
+        }
+    }
+    return implode("\n\n", array_filter($parts, fn($part) => $part !== ''));
 }
 
 function agent_enqueue(string $agent_id, ?int $now = null, array $dependencies = []): string
@@ -72,7 +129,7 @@ function agent_enqueue(string $agent_id, ?int $now = null, array $dependencies =
     $lock = agent_lock('enqueue-' . $run_uuid);
     try {
         if (!data_exists('.agent_runs', $run_uuid)) {
-            $instructions = (string)file_get_contents($definition['instructions']);
+            $instructions = agent_instructions($definition);
             $run = [
                 'agent_id' => $agent_id,
                 'agent_version' => (string)$definition['version'],
@@ -186,7 +243,7 @@ function agent_retry(string $failed_run_uuid): string
     }
     $retry_uuid = substr(hash('sha256', $failed_run_uuid . ':retry:' . $retry_number), 0, 16);
     if (!data_exists('.agent_runs', $retry_uuid)) {
-        $instructions = (string)file_get_contents($definition['instructions']);
+        $instructions = agent_instructions($definition);
         $run = [
             'agent_id' => $agent_id,
             'agent_version' => (string)$definition['version'],
@@ -221,7 +278,7 @@ function agent_retry(string $failed_run_uuid): string
 
 function agent_reason(string $run_uuid, array $definition, array $initial_input, array $dependencies): array
 {
-    $instructions = (string)file_get_contents($definition['instructions']);
+    $instructions = agent_instructions($definition);
     $input = $initial_input;
     $usage = agent_empty_usage();
     $max_turns = (int)($definition['max_turns'] ?? 8);
