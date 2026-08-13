@@ -2031,6 +2031,15 @@ lists replace. Instruction files compose core first and ext second unless ext
 sets `instructions_mode` to `replace`. A core definition may set
 `"abstract": true` when it requires ext configuration before it can run.
 
+The framework is split by responsibility under `core/modules/agent/lib/`:
+`agent-runtime.php` orchestrates enqueue/run/retry and the reasoning loop;
+`agent-definition.php` loads and scopes definitions; `agent-tool.php` owns tool
+execution, authorization, and provider calls; `agent-state.php` owns durable run
+and event state; `agent-support.php` owns bounded utility and resource setup;
+`agent-connector.php` implements reusable external transports; and
+`agent-report.php` implements the standard report-agent pipeline. Keep named
+agent policy out of these framework modules.
+
 Definitions use `agent.json` plus optional bootstrap and instruction files.
 Generic callbacks can read the fully resolved definition from their dependency
 argument with `agent_config($dependencies, 'path.to.value', $default)`. Keep
