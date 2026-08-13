@@ -123,7 +123,12 @@ function agent_gateway_inspect_host_health(?callable $runner = null): array
             'id' => substr((string)($finding['id'] ?? $finding['check'] ?? 'finding'), 0, 120),
             'severity' => substr((string)($finding['severity'] ?? 'unknown'), 0, 20),
             'scope' => substr((string)($finding['scope'] ?? 'host'), 0, 80),
+            'title' => substr((string)($finding['title'] ?? ''), 0, 160),
             'evidence' => substr((string)($finding['evidence'] ?? $finding['message'] ?? ''), 0, 500),
+            'count' => max(1, (int)($finding['count'] ?? 1)),
+            'project' => substr((string)($finding['project'] ?? ''), 0, 160),
+            'first_seen' => substr((string)($finding['first_seen'] ?? ''), 0, 40),
+            'last_seen' => substr((string)($finding['last_seen'] ?? ''), 0, 40),
         ];
     }
     return [
