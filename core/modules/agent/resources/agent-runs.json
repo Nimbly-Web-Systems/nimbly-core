@@ -1,0 +1,13 @@
+{
+  "fields": {
+    "agent_id": {"name": "Agent", "type": "text", "required": true},
+    "status": {"name": "Status", "type": "text", "required": true},
+    "scheduled_at": {"name": "Scheduled at", "type": "number"},
+    "completed_at": {"name": "Completed at", "type": "number"},
+    "idempotency_key": {"name": "Idempotency key", "type": "text", "admin_col": false},
+    "structured_result": {"name": "Result", "type": "text", "admin_col": false},
+    "failure_reason": {"name": "Failure", "type": "text", "admin_col": false}
+  },
+  "index": ["agent_id", "status", "idempotency_key"],
+  "sort": {"field": "scheduled_at", "flags": "numeric", "order": "desc"}
+}

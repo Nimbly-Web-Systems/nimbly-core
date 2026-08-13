@@ -1,6 +1,7 @@
 <?php
 
 require_once BASE_DIR . 'core/modules/agent/lib/agent-connector.php';
+require_once BASE_DIR . 'core/modules/agent/lib/agent-report.php';
 
 function infra_expert_configure(array $dependencies = []): array
 {
@@ -41,126 +42,6 @@ function infra_expert_target_map(): array
     return array_filter($result, fn($environment, $server) => $server !== '' && $environment !== '', ARRAY_FILTER_USE_BOTH);
 }
 
-function infra_expert_prepare_input(array $_run, array $_dependencies): array
-{
-    load_library('data');
-    infra_expert_configure($_dependencies);
-    $expected = infra_expert_targets();
-    $environments = data_read('.infra_health_environments') ?: [];
-    $all_reports = data_read('.infra_health_reports') ?: [];
-    $input = [];
-    $source_uuids = [];
-    foreach ($expected as $target) {
-        $environment_record = null;
-        foreach ($environments as $candidate) {
-            if (($candidate['environment'] ?? '') === $target['environment']
-                && ($candidate['server'] ?? '') === $target['server']) {
-                $environment_record = $candidate;
-                break;
-            }
-        }
-        $report_uuid = (string)($environment_record['last_report_uuid'] ?? '');
-        $report = $report_uuid === '' ? null : data_read('.infra_health_reports', $report_uuid);
-        $late_after = (int)($environment_record['late_after'] ?? 93600);
-        $received_at = (int)($report['received_at'] ?? 0);
-        $review_status = !is_array($report) ? 'missing' : (time() - $received_at > $late_after ? 'stale' : 'reviewed');
-        if (is_array($report)) {
-            $source_uuids[] = $report_uuid;
-        }
-        $findings = [];
-        foreach (($report['audit']['findings'] ?? []) as $finding) {
-            if (!is_array($finding)) {
-                continue;
-            }
-            $findings[] = [
-                'id' => (string)($finding['id'] ?? ''),
-                'severity' => (string)($finding['severity'] ?? ''),
-                'scope' => (string)($finding['scope'] ?? ''),
-                'evidence' => (string)($finding['evidence'] ?? ''),
-            ];
-        }
-        $input[] = [
-            'environment' => $target['environment'],
-            'server' => $target['server'],
-            'source_report_uuid' => $report_uuid,
-            'review_status' => $review_status,
-            'generated_at' => (int)($report['generated_at'] ?? 0),
-            'overall' => (string)($report['overall'] ?? 'unknown'),
-            'findings' => $findings,
-            'recent_reports' => infra_expert_recent_report_history($all_reports, $target['server'], 7),
-        ];
-    }
-    return [
-        'source_report_uuids' => array_values(array_unique($source_uuids)),
-        'input' => [[
-            'role' => 'user',
-            'content' => [[
-                'type' => 'input_text',
-                'text' => json_encode([
-                    'expected_environments' => $input,
-                    'recent_agent_actions' => infra_expert_recent_action_history(30),
-                    'authority' => array_reduce(
-                        $expected,
-                        function (array $carry, array $target): array {
-                            $carry[(string)($target['authority'] ?? 'inspection_only')][] = (string)$target['server'];
-                            return $carry;
-                        },
-                        []
-                    ),
-                ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
-            ]],
-        ]],
-    ];
-}
-
-function infra_expert_recent_report_history(array $reports, string $server, int $limit): array
-{
-    $history = [];
-    foreach ($reports as $report) {
-        if (!is_array($report) || ($report['server'] ?? '') !== $server) {
-            continue;
-        }
-        $history[] = [
-            'uuid' => (string)($report['uuid'] ?? ''),
-            'generated_at' => (int)($report['generated_at'] ?? 0),
-            'overall' => (string)($report['overall'] ?? 'unknown'),
-            'findings' => array_map(
-                fn($finding) => [
-                    'id' => substr((string)($finding['id'] ?? ''), 0, 160),
-                    'severity' => substr((string)($finding['severity'] ?? ''), 0, 20),
-                    'evidence' => substr((string)($finding['evidence'] ?? ''), 0, 500),
-                ],
-                array_slice((array)($report['audit']['findings'] ?? []), 0, 50)
-            ),
-        ];
-    }
-    usort($history, fn($a, $b) => $b['generated_at'] <=> $a['generated_at']);
-    return array_slice($history, 0, $limit);
-}
-
-function infra_expert_recent_action_history(int $limit): array
-{
-    $history = [];
-    foreach (data_read('.agent_events') ?: [] as $event) {
-        if (!in_array(($event['type'] ?? ''), ['risk_decision', 'tool_completed'], true)) {
-            continue;
-        }
-        $payload = (array)($event['payload'] ?? []);
-        if (($event['type'] ?? '') === 'tool_completed'
-            && !in_array(($payload['tool'] ?? ''), ['execute_remediation', 'run_diagnostic'], true)) {
-            continue;
-        }
-        $history[] = [
-            'occurred_at' => (int)($event['occurred_at'] ?? 0),
-            'type' => (string)$event['type'],
-            'tool' => (string)($payload['tool'] ?? ''),
-            'payload' => $payload,
-        ];
-    }
-    usort($history, fn($a, $b) => $b['occurred_at'] <=> $a['occurred_at']);
-    return array_slice($history, 0, $limit);
-}
-
 function infra_expert_authorize_resolution(array $arguments, string $run_uuid, array $_dependencies): array
 {
     infra_expert_configure($_dependencies);
@@ -193,7 +74,13 @@ function infra_expert_authorize_resolution(array $arguments, string $run_uuid, a
             break;
         }
     }
-    $fresh_audits = infra_expert_completed_host_audits($run_uuid);
+    $fresh_audits = agent_report_tool_results(
+        $run_uuid,
+        'inspect_host_health',
+        array_keys($expected),
+        [],
+        true
+    );
     $authorized = $authorized
         && is_array($report)
         && $latest_report_uuid === $report_uuid
@@ -316,10 +203,19 @@ function infra_expert_validate_result(array $result, string $run_uuid = '', arra
         throw new RuntimeException('Infrastructure result must contain every configured environment');
     }
     $canonical_reviews = infra_expert_canonical_reviews();
-    $observed = $run_uuid === '' ? [] : infra_expert_completed_inspections($run_uuid);
-    $fresh_audits = $run_uuid === '' ? [] : infra_expert_completed_host_audits($run_uuid);
-    $remediations = $run_uuid === '' ? [] : infra_expert_completed_remediations($run_uuid);
-    $diagnostics = $run_uuid === '' ? [] : infra_expert_completed_diagnostics($run_uuid);
+    $identities = array_keys($expected);
+    $observed = $run_uuid === '' ? [] : agent_report_tool_results(
+        $run_uuid, 'inspect_service', $identities, ['service' => 'apache2'], true
+    );
+    $fresh_audits = $run_uuid === '' ? [] : agent_report_tool_results(
+        $run_uuid, 'inspect_host_health', $identities, [], true
+    );
+    $remediations = $run_uuid === '' ? [] : agent_report_tool_results(
+        $run_uuid, 'execute_remediation', $identities
+    );
+    $diagnostics = $run_uuid === '' ? [] : agent_report_tool_results(
+        $run_uuid, 'run_diagnostic', $identities
+    );
     $validated = [];
     foreach ($items as $item) {
         if (!is_array($item)) {
@@ -421,32 +317,6 @@ function infra_expert_validate_result(array $result, string $run_uuid = '', arra
     return ['environments' => array_values($validated)];
 }
 
-function infra_expert_completed_remediations(string $run_uuid): array
-{
-    return infra_expert_completed_tool_results($run_uuid, 'execute_remediation');
-}
-
-function infra_expert_completed_diagnostics(string $run_uuid): array
-{
-    return infra_expert_completed_tool_results($run_uuid, 'run_diagnostic');
-}
-
-function infra_expert_completed_tool_results(string $run_uuid, string $tool): array
-{
-    $result = [];
-    foreach (data_read('.agent_events') ?: [] as $event) {
-        $payload = $event['payload'] ?? [];
-        $evidence = $payload['result'] ?? [];
-        $server = (string)($evidence['server'] ?? '');
-        if (($event['run_uuid'] ?? '') === $run_uuid && ($event['type'] ?? '') === 'tool_completed'
-            && ($payload['tool'] ?? '') === $tool
-            && isset(infra_expert_target_map()[$server])) {
-            $result[$server][] = $evidence;
-        }
-    }
-    return $result;
-}
-
 function infra_expert_digest_findings(array $findings): array
 {
     $job_groups = [];
@@ -505,40 +375,6 @@ function infra_expert_canonical_reviews(): array
         ];
     }
     return $reviews;
-}
-
-function infra_expert_completed_host_audits(string $run_uuid): array
-{
-    $result = [];
-    foreach (data_read('.agent_events') ?: [] as $event) {
-        $payload = $event['payload'] ?? [];
-        $evidence = $payload['result'] ?? [];
-        if (($event['run_uuid'] ?? '') === $run_uuid && ($event['type'] ?? '') === 'tool_completed'
-            && ($payload['tool'] ?? '') === 'inspect_host_health'
-            && isset(infra_expert_target_map()[$evidence['server'] ?? ''])) {
-            $result[$evidence['server']] = $evidence;
-        }
-    }
-    return $result;
-}
-
-function infra_expert_completed_inspections(string $run_uuid): array
-{
-    $result = [];
-    foreach (data_read('.agent_events') ?: [] as $event) {
-        if (($event['run_uuid'] ?? '') !== $run_uuid || ($event['type'] ?? '') !== 'tool_completed') {
-            continue;
-        }
-        $payload = $event['payload'] ?? [];
-        $evidence = $payload['result'] ?? [];
-        if (($payload['tool'] ?? '') !== 'inspect_service'
-            || ($evidence['service'] ?? '') !== 'apache2'
-            || !isset(infra_expert_target_map()[$evidence['server'] ?? ''])) {
-            continue;
-        }
-        $result[$evidence['server']] = $evidence;
-    }
-    return $result;
 }
 
 function infra_expert_render_report(array $environment): string
