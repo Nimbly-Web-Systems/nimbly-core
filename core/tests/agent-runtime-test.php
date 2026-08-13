@@ -168,6 +168,19 @@ $manual_duplicate_uuid = agent_enqueue('test-agent', $now, [
 agent_test_assert($manual_uuid === $manual_duplicate_uuid, 'manual enqueue is idempotent for its explicit key');
 agent_test_assert($manual_uuid !== $run_uuid, 'manual enqueue does not consume the scheduled occurrence');
 
+$failed_uuid = 'failed-scheduled';
+$test_data['.agent_runs'][$failed_uuid] = [
+    'agent_id' => 'test-agent', 'agent_version' => '1.0.0', 'trigger' => 'scheduled',
+    'scheduled_at' => $now, 'scheduled_occurrence' => '2026-08-10',
+    'timezone' => 'America/Sao_Paulo', 'status' => 'failed',
+    'idempotency_key' => 'test-agent:2026-08-10',
+];
+$retry_uuid = agent_retry($failed_uuid);
+agent_test_assert(($test_data['.agent_runs'][$retry_uuid]['retry_of'] ?? '') === $failed_uuid, 'failed scheduled run creates an auditable retry');
+agent_test_assert(($test_data['.agent_runs'][$retry_uuid]['trigger'] ?? '') === 'scheduled_retry', 'retry retains scheduled watchdog authority');
+$test_data['.agent_runs'][$retry_uuid]['status'] = 'completed';
+agent_test_assert(agent_watchdog_status('test-agent', $now)['state'] === 'completed', 'successful retry restores the same occurrence watchdog');
+
 $invalid_suffix_denied = false;
 try {
     agent_enqueue('test-agent', $now, ['idempotency_suffix' => '../invalid']);

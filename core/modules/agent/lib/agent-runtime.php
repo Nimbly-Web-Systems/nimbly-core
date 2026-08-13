@@ -169,6 +169,56 @@ function agent_run(string $run_uuid, array $dependencies = []): array
     return data_read('.agent_runs', $run_uuid) ?: [];
 }
 
+function agent_retry(string $failed_run_uuid): string
+{
+    agent_ensure_resources();
+    $failed = data_read('.agent_runs', $failed_run_uuid);
+    if (!is_array($failed) || ($failed['status'] ?? '') !== 'failed') {
+        throw new RuntimeException('Only a failed agent run can be retried');
+    }
+    $agent_id = (string)$failed['agent_id'];
+    $definition = agent_definition($agent_id);
+    $retry_number = 1;
+    foreach (data_read('.agent_runs') ?: [] as $run) {
+        if (($run['retry_of'] ?? '') === $failed_run_uuid) {
+            $retry_number = max($retry_number, (int)($run['retry_number'] ?? 0) + 1);
+        }
+    }
+    $retry_uuid = substr(hash('sha256', $failed_run_uuid . ':retry:' . $retry_number), 0, 16);
+    if (!data_exists('.agent_runs', $retry_uuid)) {
+        $instructions = (string)file_get_contents($definition['instructions']);
+        $run = [
+            'agent_id' => $agent_id,
+            'agent_version' => (string)$definition['version'],
+            'instructions_sha256' => hash('sha256', $instructions),
+            'trigger' => 'scheduled_retry',
+            'scheduled_at' => time(),
+            'scheduled_occurrence' => (string)$failed['scheduled_occurrence'],
+            'timezone' => (string)$failed['timezone'],
+            'status' => 'scheduled',
+            'idempotency_key' => (string)$failed['idempotency_key'] . ':retry:' . $retry_number,
+            'retry_of' => $failed_run_uuid,
+            'retry_number' => $retry_number,
+            'source_report_uuids' => [],
+            'usage' => agent_empty_usage(),
+            'estimated_cost_usd' => 0.0,
+            'email_delivery' => [],
+            'failure_reason' => '',
+            'lease_expires_at' => 0,
+        ];
+        if (!data_create('.agent_runs', $retry_uuid, $run)) {
+            throw new RuntimeException('Could not create agent retry');
+        }
+        agent_append_event($retry_uuid, 'run_scheduled', ['occurrence' => $run['scheduled_occurrence'], 'retry_of' => $failed_run_uuid]);
+    }
+    load_library('job');
+    job_enqueue('agent-run', ['run_uuid' => $retry_uuid], [
+        'uuid' => substr(hash('sha256', 'agent-job:' . $retry_uuid), 0, 16),
+        'max_attempts' => 3,
+    ]);
+    return $retry_uuid;
+}
+
 function agent_reason(string $run_uuid, array $definition, array $initial_input, array $dependencies): array
 {
     $instructions = (string)file_get_contents($definition['instructions']);
@@ -528,8 +578,15 @@ function agent_watchdog_status(string $agent_id, ?int $now = null): array
     $timezone = new DateTimeZone($definition['timezone'] ?? 'UTC');
     $local = (new DateTimeImmutable('@' . $now))->setTimezone($timezone);
     $occurrence = $local->format('Y-m-d');
-    $run_uuid = substr(hash('sha256', $agent_id . ':' . $occurrence), 0, 16);
-    $run = data_read('.agent_runs', $run_uuid);
+    $run = null;
+    foreach (data_read('.agent_runs') ?: [] as $candidate) {
+        if (($candidate['agent_id'] ?? '') === $agent_id
+            && ($candidate['scheduled_occurrence'] ?? '') === $occurrence
+            && in_array($candidate['trigger'] ?? '', ['scheduled', 'scheduled_retry'], true)
+            && ($run === null || (int)($candidate['scheduled_at'] ?? 0) > (int)($run['scheduled_at'] ?? 0))) {
+            $run = $candidate;
+        }
+    }
     $deadline = DateTimeImmutable::createFromFormat(
         'Y-m-d H:i',
         $occurrence . ' ' . ($definition['deadline_at'] ?? '23:59'),
