@@ -11,8 +11,6 @@ function infra_expert_configure(array $dependencies = []): array
     $defaults = [
         'targets' => [],
         'inventory_env' => 'INFRA_AGENT_INVENTORY',
-        'report_recipient_env' => 'INFRA_EXPERT_REPORT_RECIPIENT',
-        'report_recipient_default' => '',
         'greeting' => '',
     ];
     $GLOBALS['INFRA_EXPERT_CONFIG'] = array_replace($defaults, is_array($configured) ? $configured : []);
@@ -204,9 +202,6 @@ function infra_expert_validate_result(array $result, string $run_uuid = '', arra
     }
     $canonical_reviews = infra_expert_canonical_reviews();
     $identities = array_keys($expected);
-    $observed = $run_uuid === '' ? [] : agent_report_tool_results(
-        $run_uuid, 'inspect_service', $identities, ['service' => 'apache2'], true
-    );
     $fresh_audits = $run_uuid === '' ? [] : agent_report_tool_results(
         $run_uuid, 'inspect_host_health', $identities, [], true
     );
@@ -235,15 +230,6 @@ function infra_expert_validate_result(array $result, string $run_uuid = '', arra
         if ($item['review_status'] !== 'missing' && $item['source_report_uuid'] === '') {
             throw new RuntimeException('Infrastructure source report UUID is missing');
         }
-        foreach (['automatically_fixed', 'still_needs_fixing', 'what_you_can_do'] as $section) {
-            if (!isset($item[$section]) || !is_array($item[$section])) {
-                throw new RuntimeException('Infrastructure report section is invalid');
-            }
-            $item[$section] = array_values(array_map(
-                fn($value) => substr(trim((string)$value), 0, 500),
-                $item[$section]
-            ));
-        }
         $item['status'] = (string)($item['status'] ?? 'warning');
         if (!in_array($item['status'], ['healthy', 'warning', 'degraded', 'critical'], true)) {
             throw new RuntimeException('Infrastructure status is invalid');
@@ -254,46 +240,14 @@ function infra_expert_validate_result(array $result, string $run_uuid = '', arra
         if ($item['email_subject'] === '' || !str_starts_with($item['executive_summary'], $greeting)) {
             throw new RuntimeException('Infrastructure executive email is invalid');
         }
-        if (!is_array($item['action_evidence'] ?? null)) {
-            throw new RuntimeException('Infrastructure action evidence is invalid');
-        }
-        $item['action_evidence'] = array_values(array_unique(array_map(
-            fn($digest) => strtolower(trim((string)$digest)),
-            $item['action_evidence']
-        )));
-        if (empty($item['automatically_fixed'])) {
-            $item['action_evidence'] = [];
-        }
-        if (!is_array($item['verification'] ?? null)) {
-            throw new RuntimeException('Infrastructure verification is missing');
-        }
         if ($run_uuid !== '') {
             if (($canonical_review['overall'] ?? 'unknown') !== 'ok' && !isset($fresh_audits[$server])) {
                 throw new RuntimeException('A non-healthy infrastructure report requires a fresh host audit');
-            }
-            if (isset($observed[$server])) {
-                $item['verification'] = $observed[$server];
             }
             if (isset($fresh_audits[$server])) {
                 $item['fresh_audit'] = $fresh_audits[$server];
             }
             $server_remediations = $remediations[$server] ?? [];
-            $executed_digests = array_values(array_filter(array_map(
-                fn($remediation) => strtolower((string)($remediation['action_digest'] ?? '')),
-                $server_remediations
-            )));
-            if (empty($server_remediations)) {
-                $item['automatically_fixed'] = [];
-                $item['action_evidence'] = [];
-            }
-            foreach ($item['action_evidence'] as $digest) {
-                if (preg_match('/^[a-f0-9]{64}$/', $digest) !== 1 || !in_array($digest, $executed_digests, true)) {
-                    throw new RuntimeException('Infrastructure report references unknown action evidence');
-                }
-            }
-            if (!empty($item['automatically_fixed']) && empty($item['action_evidence'])) {
-                throw new RuntimeException('Automatic recovery claim has no executed action evidence');
-            }
             foreach ($server_remediations as $remediation) {
                 $executed_at = (int)($remediation['executed_at'] ?? 0);
                 if ((int)($fresh_audits[$server]['observed_at'] ?? 0) <= $executed_at) {
@@ -307,7 +261,6 @@ function infra_expert_validate_result(array $result, string $run_uuid = '', arra
                     throw new RuntimeException('Executed remediation has no post-action endpoint, service, or log verification');
                 }
             }
-            $item['still_needs_fixing'] = array_values(array_unique($item['still_needs_fixing']));
         }
         $validated[$server] = $item;
     }
@@ -315,43 +268,6 @@ function infra_expert_validate_result(array $result, string $run_uuid = '', arra
         throw new RuntimeException('Infrastructure result duplicates an environment');
     }
     return ['environments' => array_values($validated)];
-}
-
-function infra_expert_digest_findings(array $findings): array
-{
-    $job_groups = [];
-    $other = [];
-    foreach ($findings as $finding) {
-        $id = (string)($finding['id'] ?? 'health finding');
-        $severity = strtolower((string)($finding['severity'] ?? 'unknown'));
-        if (preg_match('/^job:failed:([^:]+):[0-9a-f]+$/i', $id, $match) === 1) {
-            $key = $severity . ':' . $match[1];
-            $job_groups[$key]['severity'] = $severity;
-            $job_groups[$key]['project'] = $match[1];
-            $job_groups[$key]['count'] = (int)($job_groups[$key]['count'] ?? 0) + 1;
-            $evidence = trim((string)($finding['evidence'] ?? ''));
-            if ($evidence !== '' && strcasecmp($evidence, 'Job handler returned false') !== 0) {
-                $job_groups[$key]['reasons'][$evidence] = true;
-            }
-            continue;
-        }
-        $other[] = substr(ucfirst($severity) . ': ' . preg_replace('/:[0-9a-f]{24,}$/i', '', $id), 0, 500);
-    }
-    foreach ($job_groups as $group) {
-        $text = sprintf(
-            '%d %s job %s for %s',
-            $group['count'],
-            $group['severity'],
-            $group['count'] === 1 ? 'failure' : 'failures',
-            $group['project']
-        );
-        $reasons = array_keys($group['reasons'] ?? []);
-        $text .= count($reasons) === 1
-            ? ': ' . $reasons[0]
-            : '; no specific cause was recorded';
-        $other[] = substr($text, 0, 500);
-    }
-    return $other;
 }
 
 function infra_expert_canonical_reviews(): array
