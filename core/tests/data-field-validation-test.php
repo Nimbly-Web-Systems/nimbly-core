@@ -34,13 +34,16 @@ data_field_assert(
     _data_validate_field_definitions($meta, ['label' => '', 'position' => 0.5]) === false,
     'empty required value was accepted'
 );
+data_field_assert(data_error_detail_get() === 'label:required', 'required-field failure detail was not recorded');
 data_field_assert(
     _data_validate_field_definitions($meta, ['label' => 'Point', 'position' => 1.1]) === false,
     'value above maximum was accepted'
 );
+data_field_assert(data_error_detail_get() === 'position:max', 'maximum failure detail was not recorded');
 data_field_assert(
     _data_validate_field_definitions($meta, ['label' => 'Point', 'position' => 'invalid']) === false,
     'non-numeric constrained value was accepted'
 );
+data_field_assert(data_error_detail_get() === 'position:numeric', 'numeric failure detail was not recorded');
 
 echo "Data field validation tests passed.\n";

@@ -144,9 +144,10 @@ function data_exists($resource, $uuid = "")
     return file_exists(data_path($resource, $uuid));
 }
 
-function data_error_set($message)
+function data_error_set($message, $detail = null)
 {
     $GLOBALS['SYSTEM']['data_error'] = $message;
+    $GLOBALS['SYSTEM']['data_error_detail'] = is_string($detail) ? $detail : null;
 }
 
 function data_error_get()
@@ -154,9 +155,15 @@ function data_error_get()
     return $GLOBALS['SYSTEM']['data_error'];
 }
 
+function data_error_detail_get()
+{
+    return $GLOBALS['SYSTEM']['data_error_detail'] ?? null;
+}
+
 function data_error_clear()
 {
     $GLOBALS['SYSTEM']['data_error'] = null;
+    $GLOBALS['SYSTEM']['data_error_detail'] = null;
 }
 
 
@@ -1125,7 +1132,7 @@ function _data_validate($resource, $uuid, &$data_ls)
     }
     $meta = data_meta($resource);
     if (_data_validate_field_definitions($meta, $data_ls) !== true) {
-        data_error_set('VALIDATION_FAILED');
+        data_error_set('VALIDATION_FAILED', data_error_detail_get());
         return false;
     }
     if (!empty($meta['validate'])) {
@@ -1134,12 +1141,12 @@ function _data_validate($resource, $uuid, &$data_ls)
             foreach ($fields as $field) {
                 if ($rule === 'natural-short-text') {
                     if (_validate_natural_short_text($data_ls[$field] ?? '') !== true) {
-                        data_error_set('VALIDATION_FAILED');
+                        data_error_set('VALIDATION_FAILED', $field . ':natural-short-text');
                         return false;
                     }
                 } else if ($rule === 'natural-text') {
                     if (_validate_natural_text($data_ls[$field] ?? '') !== true) {
-                        data_error_set('VALIDATION_FAILED');
+                        data_error_set('VALIDATION_FAILED', $field . ':natural-text');
                         return false;
                     }
                 }
@@ -1163,19 +1170,23 @@ function _data_validate_field_definitions($meta, $data_ls)
     foreach ($fields as $field => $definition) {
         $has_value = array_key_exists($field, $data_ls) && _data_value_is_present($data_ls[$field]);
         if (!empty($definition['required']) && !$has_value) {
+            $GLOBALS['SYSTEM']['data_error_detail'] = $field . ':required';
             return false;
         }
         if (!$has_value || (!isset($definition['min']) && !isset($definition['max']))) {
             continue;
         }
         if (!is_numeric($data_ls[$field])) {
+            $GLOBALS['SYSTEM']['data_error_detail'] = $field . ':numeric';
             return false;
         }
         $value = (float)$data_ls[$field];
         if (isset($definition['min']) && $value < (float)$definition['min']) {
+            $GLOBALS['SYSTEM']['data_error_detail'] = $field . ':min';
             return false;
         }
         if (isset($definition['max']) && $value > (float)$definition['max']) {
+            $GLOBALS['SYSTEM']['data_error_detail'] = $field . ':max';
             return false;
         }
     }
