@@ -149,7 +149,11 @@ function agent_enqueue(string $agent_id, ?int $now = null, array $dependencies =
 
     $lock = agent_lock('enqueue-' . $run_uuid);
     try {
-        if (!data_exists('.agent_runs', $run_uuid)) {
+        $existing = data_read('.agent_runs', $run_uuid);
+        if (is_array($existing) && in_array(($existing['status'] ?? ''), ['completed', 'failed'], true)) {
+            return $run_uuid;
+        }
+        if (!is_array($existing)) {
             $instructions = agent_instructions($definition);
             $run = [
                 'agent_id' => $agent_id,
