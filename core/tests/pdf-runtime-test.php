@@ -38,11 +38,12 @@ class Options
 
 class Dompdf
 {
+    public static int $renders = 0;
     public function __construct(Options $options) {}
     public function setPaper($size, string $orientation): void {}
     public function loadHtml(string $html): void {}
-    public function render(): void {}
-    public function output(): string { return '%PDF-test'; }
+    public function render(): void { self::$renders++; }
+    public function output(): string { return '%PDF-test-' . self::$renders; }
 }
 PHP;
 file_put_contents($fixture . '/ext/vendor/autoload.php', $autoload);
@@ -60,10 +61,28 @@ pdf_runtime_test_assert(str_contains($html, '<body><div><p>First</p></div>'), 'f
 pdf_runtime_test_assert(str_contains($html, '<div class="pdf-page-break"><p>Second</p></div>'), 'later PDF pages render with page breaks');
 
 $pdf = pdf_render_document(['pages' => ['<p>Test</p>']]);
-pdf_runtime_test_assert($pdf === '%PDF-test', 'PDF renders without an environment-local module state record');
+pdf_runtime_test_assert($pdf === '%PDF-test-1', 'PDF renders without an environment-local module state record');
 pdf_runtime_test_assert(
     is_dir($fixture . '/ext/data/.pdf_font_cache'),
     'PDF font cache is created on first render'
+);
+
+$cached_config = ['pages' => ['<p>Cached</p>']];
+$cached_first = pdf_render_cached_document($cached_config);
+$cached_second = pdf_render_cached_document($cached_config);
+pdf_runtime_test_assert($cached_first === '%PDF-test-2', 'cached PDF renders on first request');
+pdf_runtime_test_assert($cached_second === $cached_first, 'cached PDF bytes are reused for identical content');
+pdf_runtime_test_assert(\Dompdf\Dompdf::$renders === 2, 'identical cached PDF content renders only once');
+
+$cached_changed = pdf_render_cached_document(['pages' => ['<p>Changed</p>']]);
+pdf_runtime_test_assert($cached_changed === '%PDF-test-3', 'changed PDF content invalidates the cache');
+pdf_runtime_test_assert(
+    pdf_safe_download_filename('Invoice 2026/01') === 'Invoice-2026-01.pdf',
+    'PDF download filenames are sanitized and receive the PDF extension'
+);
+pdf_runtime_test_assert(
+    pdf_safe_download_filename('') === 'document.pdf',
+    'empty PDF download filenames use a safe fallback'
 );
 
 pdf_runtime_test_remove_fixture($fixture);

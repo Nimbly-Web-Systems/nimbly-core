@@ -768,6 +768,31 @@ The project default OG image is set once in `ext/tpl/meta/index.tpl` without `ov
 - `[#img-url UUID-or-path-or-URL#]` — normalises any image reference to an absolute URL (useful outside meta, e.g. for JSON-LD)
 - `[#first-img-uuid var=record.main_text#]` — extracts the UUID of the first embedded image from an HTML field; returns `(empty)` when none is found
 
+### PDF documents
+
+Install the core PDF module dependency with `php core/cli/nimbly.php module:install pdf`.
+Application routes provide their project-specific HTML and use the core PDF
+library for rendering, content-addressed caching, and safe browser downloads:
+
+```php
+load_library('pdf');
+$pdf_bytes = pdf_render_cached_document([
+    'paper_size' => 'a4',
+    'orientation' => 'portrait',
+    'margins' => ['top' => 20, 'right' => 18, 'bottom' => 20, 'left' => 18],
+    'pages' => [$document_html],
+]);
+pdf_send_download($pdf_bytes, 'Document-123.pdf');
+exit();
+```
+
+`pdf_render_document()` always renders fresh bytes. Prefer
+`pdf_render_cached_document()` for downloads: its cache identity includes the
+complete document configuration and core renderer files, so changed content or
+renderer code invalidates automatically. Do not build resource timestamps or
+template dependency lists in individual routes. `pdf_send_download()` sanitizes
+the filename and sends private, non-browser-cacheable PDF download headers.
+
 ---
 
 ### Utilities
