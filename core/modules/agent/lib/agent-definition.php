@@ -124,5 +124,33 @@ function agent_instructions(array $definition): string
             $parts[] = trim((string)file_get_contents($path));
         }
     }
+    if (!empty($definition['runtime_instruction'])) {
+        $parts[] = trim((string)$definition['runtime_instruction']);
+    }
     return implode("\n\n", array_filter($parts, fn($part) => $part !== ''));
+}
+
+function agent_scope_definition(array $definition, array $run): array
+{
+    $target = trim((string)($run['target'] ?? ''));
+    if ($target !== '' && isset($definition['infrastructure']['targets'])) {
+        $definition['infrastructure']['targets'] = array_values(array_filter(
+            (array)$definition['infrastructure']['targets'],
+            fn($item) => is_array($item) && ($item['server'] ?? '') === $target
+        ));
+        if (empty($definition['infrastructure']['targets'])) {
+            throw new RuntimeException('Agent run target is not configured');
+        }
+        $definition['runtime_instruction'] = 'This is a scoped manual run. Review only ' . $target
+            . '. Return exactly one environment object for that configured target; this overrides any normal target-count instruction.';
+    }
+    if (!empty($run['read_only'])) {
+        $definition['tools'] = array_filter(
+            (array)$definition['tools'],
+            fn($tool) => is_array($tool) && ($tool['risk'] ?? '') === 'read_only'
+        );
+        $definition['runtime_instruction'] = trim((string)($definition['runtime_instruction'] ?? '')
+            . ' This run is strictly read-only. Governed tools are unavailable and no mutation may be requested or claimed.');
+    }
+    return $definition;
 }

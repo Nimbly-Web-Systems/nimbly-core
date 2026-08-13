@@ -44,6 +44,8 @@ function agent_enqueue(string $agent_id, ?int $now = null, array $dependencies =
                 'email_delivery' => [],
                 'failure_reason' => '',
                 'lease_expires_at' => 0,
+                'target' => (string)($dependencies['target'] ?? ''),
+                'read_only' => !empty($dependencies['read_only']),
             ];
             if (!data_create('.agent_runs', $run_uuid, $run)) {
                 throw new RuntimeException('Could not create agent run');
@@ -73,7 +75,7 @@ function agent_run(string $run_uuid, array $dependencies = []): array
         if (in_array($run['status'] ?? '', AGENT_TERMINAL_STATUSES, true)) {
             return $run;
         }
-        $definition = agent_definition((string)$run['agent_id']);
+        $definition = agent_scope_definition(agent_definition((string)$run['agent_id']), $run);
         agent_update_run($run_uuid, [
             'status' => 'running',
             'started_at' => (int)($run['started_at'] ?? 0) ?: time(),

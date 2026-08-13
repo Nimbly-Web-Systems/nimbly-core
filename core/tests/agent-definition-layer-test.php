@@ -74,5 +74,25 @@ agent_layer_assert(
     'layered agent configuration is not available to generic callbacks'
 );
 
+$scoped_definition = $definition;
+$scoped_definition['infrastructure']['targets'] = [
+    ['server' => 'stage.example', 'authority' => 'autonomous_remediation'],
+    ['server' => 'prod.example', 'authority' => 'inspection_only'],
+];
+$scoped_definition['tools']['mutate'] = ['risk' => 'governed'];
+$scoped_definition = agent_scope_definition($scoped_definition, [
+    'target' => 'prod.example',
+    'read_only' => true,
+]);
+agent_layer_assert(
+    count($scoped_definition['infrastructure']['targets']) === 1
+        && $scoped_definition['infrastructure']['targets'][0]['server'] === 'prod.example',
+    'manual target scope does not isolate the configured target'
+);
+agent_layer_assert(
+    !isset($scoped_definition['tools']['mutate']) && isset($scoped_definition['tools']['inspect']),
+    'read-only scope does not remove governed tools'
+);
+
 agent_layer_remove($fixture);
 echo "Agent definition layer tests passed.\n";
