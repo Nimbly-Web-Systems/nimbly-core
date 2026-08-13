@@ -11,11 +11,34 @@ function agent_definition(string $agent_id): array
         && is_array($GLOBALS['AGENT_TEST_DEFINITIONS'][$agent_id])) {
         return $GLOBALS['AGENT_TEST_DEFINITIONS'][$agent_id];
     }
-    $path = BASE_DIR . 'ext/agents/' . $agent_id . '/agent.php';
-    if (!is_file($path)) {
+    $directory = BASE_DIR . 'ext/agents/' . $agent_id . '/';
+    $json_path = $directory . 'agent.json';
+    $php_path = $directory . 'agent.php';
+    if (is_file($json_path)) {
+        $definition = json_decode((string)file_get_contents($json_path), true);
+        if (!is_array($definition)) {
+            throw new RuntimeException('Agent configuration is invalid JSON: ' . $agent_id);
+        }
+        foreach ((array)($definition['bootstrap'] ?? []) as $bootstrap) {
+            if (!is_string($bootstrap) || preg_match('#^[a-z0-9][a-z0-9._/-]*\.php$#i', $bootstrap) !== 1
+                || str_contains($bootstrap, '..')) {
+                throw new RuntimeException('Agent bootstrap path is invalid: ' . $agent_id);
+            }
+            $bootstrap_path = $directory . $bootstrap;
+            if (!is_file($bootstrap_path)) {
+                throw new RuntimeException('Agent bootstrap is unavailable: ' . $agent_id);
+            }
+            require_once $bootstrap_path;
+        }
+        $instructions = (string)($definition['instructions'] ?? '');
+        if ($instructions !== '' && !str_starts_with($instructions, '/')) {
+            $definition['instructions'] = $directory . $instructions;
+        }
+    } elseif (is_file($php_path)) {
+        $definition = require $php_path;
+    } else {
         throw new RuntimeException('Agent definition not found: ' . $agent_id);
     }
-    $definition = require $path;
     if (!is_array($definition) || ($definition['id'] ?? '') !== $agent_id) {
         throw new RuntimeException('Agent definition is invalid: ' . $agent_id);
     }
