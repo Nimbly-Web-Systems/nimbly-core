@@ -2054,6 +2054,15 @@ risk class. Never expose generic shell, SSH, sudo, filesystem, database, or API
 tools. A tool must validate logical targets and map them to fixed local
 operations. The model's arguments are requests, not authorization.
 
+Reusable tools may use `agent_connector_ssh_gateway_tool` and declare their
+restricted transport contract in the tool's `connector` block. The declaration
+selects a configured target set, optional authority class, fixed gateway verb,
+argument mapping, timeout, required response fields, output types, and length
+limits. The connector still invokes only the forced-command SSH gateway; the
+definition cannot supply an SSH command or bypass the tool's JSON schema.
+Agent-specific PHP should be reserved for domain policy that cannot be expressed
+by these connector constraints.
+
 `agent:gateway` is the read-only remote forced-command endpoint for restricted
 SSH identities. It reads `SSH_ORIGINAL_COMMAND`, accepts only registered verbs
 and enum-constrained parameters, and maps them to fixed argument-array

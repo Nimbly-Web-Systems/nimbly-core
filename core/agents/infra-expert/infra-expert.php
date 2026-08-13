@@ -1,5 +1,7 @@
 <?php
 
+require_once BASE_DIR . 'core/modules/agent/lib/agent-connector.php';
+
 function infra_expert_configure(array $dependencies = []): array
 {
     $configured = function_exists('agent_config')
