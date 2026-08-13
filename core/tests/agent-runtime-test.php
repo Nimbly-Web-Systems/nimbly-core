@@ -338,11 +338,19 @@ $host_health = agent_gateway_execute('inspect_host_health', function (array $com
     agent_test_assert($command === ['/usr/bin/sudo', '-n', '/usr/local/bin/nimbly-host-audit', '--format=json'], 'host audit maps to one fixed privileged command');
     return ['exit_code' => 2, 'stdout' => json_encode([
         'overall' => 'critical', 'summary' => ['critical' => 1], 'findings' => [[
-            'id' => 'jobs:failed', 'severity' => 'critical', 'scope' => 'jobs', 'evidence' => 'One job failed',
+            'id' => 'jobs:failed', 'severity' => 'critical', 'scope' => 'jobs', 'title' => 'Job failed',
+            'evidence' => 'One job failed', 'count' => 2, 'project' => 'Example',
+            'first_seen' => '2026-08-13T10:00:00+00:00', 'last_seen' => '2026-08-13T10:05:00+00:00',
         ]],
     ]), 'stderr' => ''];
 });
 agent_test_assert($host_health['overall'] === 'critical' && count($host_health['findings']) === 1, 'gateway normalizes a fresh host audit');
+agent_test_assert(
+    $host_health['findings'][0]['count'] === 2
+        && $host_health['findings'][0]['project'] === 'Example'
+        && $host_health['findings'][0]['last_seen'] === '2026-08-13T10:05:00+00:00',
+    'gateway preserves bounded finding chronology and occurrence evidence'
+);
 
 $diagnostic_command = 'systemctl status apache2 --no-pager';
 $diagnostic_encoded = rtrim(strtr(base64_encode($diagnostic_command), '+/', '-_'), '=');
