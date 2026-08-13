@@ -67,6 +67,28 @@ state.sync_ai_editor({
 }, "en");
 assert.equal(state.translation_field_empty("body", "en"), true);
 
+// Switching translation tabs keeps editor content in local form state without
+// persisting the record. The explicit Save action remains the only PUT path.
+{
+  let synced_language = null;
+  let put_count = 0;
+  globalThis.nb.api = {
+    put: () => {
+      put_count += 1;
+      return Promise.resolve({ success: true });
+    },
+  };
+  state.lang = "nl";
+  state.sync_editors = (lang) => {
+    synced_language = lang;
+  };
+  state.switch_language("en");
+
+  assert.equal(synced_language, "nl");
+  assert.equal(state.lang, "en");
+  assert.equal(put_count, 0);
+}
+
 function install_submit_environment(put) {
   const notifications = [];
   globalThis.nb.api = { put };
