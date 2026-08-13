@@ -570,6 +570,10 @@ function infra_expert_validate_result(array $result, string $run_uuid = '', arra
                 fn($remediation) => strtolower((string)($remediation['action_digest'] ?? '')),
                 $server_remediations
             )));
+            if (empty($server_remediations)) {
+                $item['automatically_fixed'] = [];
+                $item['action_evidence'] = [];
+            }
             foreach ($item['action_evidence'] as $digest) {
                 if (preg_match('/^[a-f0-9]{64}$/', $digest) !== 1 || !in_array($digest, $executed_digests, true)) {
                     throw new RuntimeException('Infrastructure report references unknown action evidence');
