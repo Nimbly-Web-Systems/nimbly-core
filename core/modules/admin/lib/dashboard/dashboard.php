@@ -67,10 +67,8 @@ function dashboard_site_status_section(bool $can_pull_ext, bool $can_pull_core):
 {
     $items = [];
 
-    $resources = get_variable('data.user-resources', []);
-    if (!empty($resources)) {
-        [$data_ts, $data_label] = dashboard_data_freshness($resources);
-        $items[] = dashboard_data_status_item($data_label ?? '', $data_ts);
+    if (access_by_feature('view-debug')) {
+        $items[] = dashboard_system_status_item();
     }
 
     if ($can_pull_core) {
@@ -93,8 +91,10 @@ function dashboard_site_status_section(bool $can_pull_ext, bool $can_pull_core):
         );
     }
 
-    if (access_by_feature('view-debug')) {
-        $items[] = dashboard_system_status_item();
+    $resources = get_variable('data.user-resources', []);
+    if (!empty($resources)) {
+        [$data_ts, $data_label] = dashboard_data_freshness($resources);
+        $items[] = dashboard_data_status_item($data_label ?? '', $data_ts);
     }
 
     if (empty($items)) {
