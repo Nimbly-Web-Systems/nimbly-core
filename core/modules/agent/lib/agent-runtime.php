@@ -417,6 +417,8 @@ function agent_execute_tool(string $run_uuid, array $tools, array $call, array $
         agent_consume_tool_authorization($run_uuid, $authorization);
     }
     $started = microtime(true);
+    $dependencies['tool_name'] = $name;
+    $dependencies['tool_definition'] = $tool;
     if ($authorization !== null) {
         $dependencies['authorization'] = $authorization;
     }
