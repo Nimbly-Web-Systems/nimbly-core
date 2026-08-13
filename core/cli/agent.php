@@ -50,11 +50,17 @@ if ($command === 'agent:run') {
     echo json_encode($result, JSON_UNESCAPED_SLASHES) . "\n";
     exit(($result['status'] ?? '') === 'completed' ? 0 : 1);
 }
+if ($command === 'agent:retry') {
+    $run_uuid = trim((string)($argv[2] ?? ''));
+    $retry_uuid = agent_retry($run_uuid);
+    echo "Agent retry enqueued: {$retry_uuid}\n";
+    exit(0);
+}
 if ($command === 'agent:recover') {
     $count = agent_recover_expired_runs();
     echo "Recovered agent runs: {$count}\n";
     exit(0);
 }
 
-fwrite(STDERR, "Usage: agent:enqueue <agent-id> [--manual=<key>] | agent:run <run-uuid> | agent:recover\n");
+fwrite(STDERR, "Usage: agent:enqueue <agent-id> [--manual=<key>] | agent:run <run-uuid> | agent:retry <failed-run-uuid> | agent:recover\n");
 exit(64);

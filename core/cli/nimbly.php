@@ -27,6 +27,7 @@ $commands = [
     'jobs:prune'       => ['file' => 'core/cli/jobs_prune.php',     'desc' => 'Delete completed jobs older than N days (--days=30)', 'public' => false],
     'agent:enqueue'     => ['file' => 'core/cli/agent.php',          'desc' => 'Enqueue an idempotent agent run', 'public' => false],
     'agent:run'         => ['file' => 'core/cli/agent.php',          'desc' => 'Run or resume an agent run', 'public' => false],
+    'agent:retry'       => ['file' => 'core/cli/agent.php',          'desc' => 'Retry a failed scheduled agent run', 'public' => false],
     'agent:recover'     => ['file' => 'core/cli/agent.php',          'desc' => 'Recover expired agent run leases', 'public' => false],
     'agent:gateway'     => ['file' => 'core/cli/agent_gateway.php',  'desc' => 'Restricted remote agent command gateway', 'public' => false],
     'schedule:run'     => ['file' => 'core/cli/schedule.php',       'desc' => 'Run due scheduled commands', 'public' => false],
