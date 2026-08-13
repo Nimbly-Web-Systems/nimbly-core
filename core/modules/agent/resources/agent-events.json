@@ -1,0 +1,11 @@
+{
+  "fields": {
+    "run_uuid": {"name": "Run", "type": "text", "required": true},
+    "sequence": {"name": "Sequence", "type": "number", "required": true},
+    "occurred_at": {"name": "Occurred at", "type": "number", "required": true},
+    "type": {"name": "Type", "type": "text", "required": true},
+    "payload": {"name": "Payload", "type": "text", "admin_col": false}
+  },
+  "index": ["run_uuid", "type"],
+  "sort": {"field": "occurred_at", "flags": "numeric", "order": "asc"}
+}

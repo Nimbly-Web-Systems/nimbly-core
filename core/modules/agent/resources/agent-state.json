@@ -1,0 +1,8 @@
+{
+  "fields": {
+    "agent_id": {"name": "Agent", "type": "text", "required": true},
+    "scope": {"name": "Scope", "type": "text", "required": true},
+    "value": {"name": "Value", "type": "text", "admin_col": false}
+  },
+  "index": ["agent_id", "scope"]
+}

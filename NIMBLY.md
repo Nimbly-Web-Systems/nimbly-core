@@ -2037,6 +2037,12 @@ argument with `agent_config($dependencies, 'path.to.value', $default)`. Keep
 callback behaviour and evidence rules neutral in core; do not put a named
 persona, project host, recipient, or project-specific authority there.
 
+Report-style agents use the shared report framework for configured targets,
+canonical resource ingestion, freshness calculation, bounded report and event
+history, authority grouping, and tool-ledger evidence lookup. Declare this in
+the definition's `report` block instead of assembling model input in a named
+agent PHP file.
+
 ```bash
 php core/cli/nimbly.php agent:enqueue infra-expert
 php core/cli/nimbly.php agent:run <run-uuid>
@@ -2048,6 +2054,10 @@ runner. Runs use deterministic occurrence IDs, append-only `.agent_events`,
 terminally immutable `.agent_runs`, and runtime-only `.agent_approvals` and
 `.agent_state` resources. Ignore these resources in Git and include them in the
 host's persistent backup policy.
+
+The schemas for these internal resources are declarative JSON files under
+`core/modules/agent/resources/`. The runtime installs them through one generic
+loader; do not embed resource `.meta` arrays in runtime PHP.
 
 Agent tools are named PHP callbacks with strict JSON schemas and an explicit
 risk class. Never expose generic shell, SSH, sudo, filesystem, database, or API

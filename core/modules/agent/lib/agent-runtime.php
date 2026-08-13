@@ -766,62 +766,19 @@ function agent_ensure_resources(): void
 {
     load_library('data');
     $resources = [
-        '.agent_runs' => agent_run_meta(),
-        '.agent_events' => agent_event_meta(),
-        '.agent_approvals' => agent_approval_meta(),
-        '.agent_state' => agent_state_meta(),
+        '.agent_runs' => 'agent-runs.json',
+        '.agent_events' => 'agent-events.json',
+        '.agent_approvals' => 'agent-approvals.json',
+        '.agent_state' => 'agent-state.json',
     ];
-    foreach ($resources as $resource => $meta) {
+    foreach ($resources as $resource => $definition) {
         if (!data_exists($resource, '.meta')) {
+            $path = BASE_DIR . 'core/modules/agent/resources/' . $definition;
+            $meta = json_decode((string)file_get_contents($path), true);
+            if (!is_array($meta)) {
+                throw new RuntimeException('Agent resource definition is invalid: ' . $resource);
+            }
             data_create_resource($resource, $meta);
         }
     }
-}
-
-function agent_run_meta(): array
-{
-    return ['fields' => [
-        'agent_id' => ['name' => 'Agent', 'type' => 'text', 'required' => true],
-        'status' => ['name' => 'Status', 'type' => 'text', 'required' => true],
-        'scheduled_at' => ['name' => 'Scheduled at', 'type' => 'number'],
-        'completed_at' => ['name' => 'Completed at', 'type' => 'number'],
-        'idempotency_key' => ['name' => 'Idempotency key', 'type' => 'text', 'admin_col' => false],
-        'structured_result' => ['name' => 'Result', 'type' => 'text', 'admin_col' => false],
-        'failure_reason' => ['name' => 'Failure', 'type' => 'text', 'admin_col' => false],
-    ], 'index' => ['agent_id', 'status', 'idempotency_key'], 'sort' => ['field' => 'scheduled_at', 'flags' => 'numeric', 'order' => 'desc']];
-}
-
-function agent_event_meta(): array
-{
-    return ['fields' => [
-        'run_uuid' => ['name' => 'Run', 'type' => 'text', 'required' => true],
-        'sequence' => ['name' => 'Sequence', 'type' => 'number', 'required' => true],
-        'occurred_at' => ['name' => 'Occurred at', 'type' => 'number', 'required' => true],
-        'type' => ['name' => 'Type', 'type' => 'text', 'required' => true],
-        'payload' => ['name' => 'Payload', 'type' => 'text', 'admin_col' => false],
-    ], 'index' => ['run_uuid', 'type'], 'sort' => ['field' => 'occurred_at', 'flags' => 'numeric', 'order' => 'asc']];
-}
-
-function agent_approval_meta(): array
-{
-    return ['fields' => [
-        'run_uuid' => ['name' => 'Run', 'type' => 'text', 'required' => true],
-        'status' => ['name' => 'Status', 'type' => 'text', 'required' => true],
-        'action_digest' => ['name' => 'Action digest', 'type' => 'text', 'required' => true],
-        'target' => ['name' => 'Target', 'type' => 'text'],
-        'tool' => ['name' => 'Tool', 'type' => 'text'],
-        'authorized_at' => ['name' => 'Authorized at', 'type' => 'number'],
-        'expires_at' => ['name' => 'Expires at', 'type' => 'number'],
-        'consumed_at' => ['name' => 'Consumed at', 'type' => 'number'],
-        'decision' => ['name' => 'Decision', 'type' => 'text', 'admin_col' => false],
-    ], 'index' => ['run_uuid', 'status', 'action_digest']];
-}
-
-function agent_state_meta(): array
-{
-    return ['fields' => [
-        'agent_id' => ['name' => 'Agent', 'type' => 'text', 'required' => true],
-        'scope' => ['name' => 'Scope', 'type' => 'text', 'required' => true],
-        'value' => ['name' => 'Value', 'type' => 'text', 'admin_col' => false],
-    ], 'index' => ['agent_id', 'scope']];
 }
