@@ -47,6 +47,78 @@ function pdf_render_document(array $config): string
     return $dompdf->output();
 }
 
+/**
+ * Renders a PDF once and reuses it while the complete document config remains
+ * unchanged. Because the rendered pages are part of the cache identity, callers
+ * do not need to maintain separate modification timestamps or dependency lists.
+ */
+function pdf_render_cached_document(array $config): string
+{
+    $cache_dir = $GLOBALS['SYSTEM']['file_base'] . 'ext/data/.tmp/cache/pdf/';
+    $cache_key = hash('sha256', serialize([
+        'config' => $config,
+        'renderer' => pdf_renderer_fingerprint(),
+    ]));
+    $cache_file = $cache_dir . $cache_key . '.pdf';
+    $cached = is_file($cache_file) ? file_get_contents($cache_file) : false;
+    if ($cached !== false) {
+        return $cached;
+    }
+
+    $pdf_bytes = pdf_render_document($config);
+    if (!is_dir($cache_dir)) {
+        mkdir($cache_dir, 0775, true);
+    }
+
+    $temporary_file = tempnam($cache_dir, 'pdf-');
+    if ($temporary_file !== false) {
+        if (file_put_contents($temporary_file, $pdf_bytes, LOCK_EX) !== false) {
+            rename($temporary_file, $cache_file);
+        } else {
+            unlink($temporary_file);
+        }
+    }
+
+    return $pdf_bytes;
+}
+
+/**
+ * Streams PDF bytes as a private browser download and ends the request.
+ */
+function pdf_send_download(string $pdf_bytes, string $filename): void
+{
+    $safe_filename = pdf_safe_download_filename($filename);
+
+    header('Content-Type: application/pdf');
+    header('Content-Disposition: attachment; filename="' . $safe_filename . '"');
+    header('Content-Length: ' . strlen($pdf_bytes));
+    header('Cache-Control: private, no-store');
+    echo $pdf_bytes;
+}
+
+function pdf_safe_download_filename(string $filename): string
+{
+    $safe_filename = trim(preg_replace('/[^a-zA-Z0-9_.-]+/', '-', $filename), '-');
+    if ($safe_filename === '') {
+        return 'document.pdf';
+    }
+    return str_ends_with(strtolower($safe_filename), '.pdf') ? $safe_filename : $safe_filename . '.pdf';
+}
+
+function pdf_renderer_fingerprint(): array
+{
+    $files = [
+        __FILE__,
+        dirname(__DIR__) . '/tpl/document.tpl',
+        dirname(__DIR__) . '/tpl/page.tpl',
+    ];
+
+    return array_map(
+        static fn(string $file): string => is_file($file) ? hash_file('sha256', $file) : '',
+        $files
+    );
+}
+
 function pdf_build_document_html(array $config): string
 {
     $margins = $config['margins'] ?? [];
