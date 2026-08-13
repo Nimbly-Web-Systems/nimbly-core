@@ -161,95 +161,6 @@ function infra_expert_recent_action_history(int $limit): array
     return array_slice($history, 0, $limit);
 }
 
-function infra_expert_inspect_service(array $arguments, array $dependencies): array
-{
-    infra_expert_configure($dependencies);
-    $server = (string)($arguments['server'] ?? '');
-    $service = (string)($arguments['service'] ?? '');
-    if (!isset(infra_expert_target_map()[$server])
-        || !in_array($service, ['apache2', 'cron', 'fail2ban'], true)) {
-        throw new RuntimeException('SSH tool target is not permitted');
-    }
-    $inventory = $dependencies['ssh_inventory'] ?? infra_expert_ssh_inventory();
-    $target = $inventory[$server] ?? null;
-    if (!is_array($target)) {
-        throw new RuntimeException('SSH target is not configured');
-    }
-    foreach (['ssh_target', 'identity_file', 'known_hosts_file'] as $key) {
-        if (trim((string)($target[$key] ?? '')) === '') {
-            throw new RuntimeException('SSH target configuration is incomplete');
-        }
-    }
-    if (preg_match('/^[A-Za-z0-9._-]+@[A-Za-z0-9.-]+$/', $target['ssh_target']) !== 1
-        || !str_starts_with($target['identity_file'], '/')
-        || !str_starts_with($target['known_hosts_file'], '/')) {
-        throw new RuntimeException('SSH target configuration is invalid');
-    }
-    $command = [
-        '/usr/bin/timeout', '30', '/usr/bin/ssh', '-T',
-        '-o', 'BatchMode=yes',
-        '-o', 'IdentitiesOnly=yes',
-        '-o', 'ConnectTimeout=10',
-        '-o', 'StrictHostKeyChecking=yes',
-        '-o', 'UserKnownHostsFile=' . $target['known_hosts_file'],
-        '-i', $target['identity_file'],
-        $target['ssh_target'],
-        'inspect_service', $service,
-    ];
-    $runner = $dependencies['process_runner'] ?? 'infra_expert_run_process';
-    $result = $runner($command);
-    if (!is_array($result) || (int)($result['exit_code'] ?? 1) !== 0) {
-        throw new RuntimeException('Restricted SSH service inspection failed');
-    }
-    $decoded = json_decode((string)($result['stdout'] ?? ''), true);
-    if (!is_array($decoded)
-        || ($decoded['service'] ?? '') !== $service
-        || !isset($decoded['active'])) {
-        throw new RuntimeException('Restricted SSH gateway returned invalid evidence');
-    }
-    return [
-        'server' => $server,
-        'service' => $service,
-        'active' => (bool)$decoded['active'],
-        'sub_state' => substr((string)($decoded['sub_state'] ?? ''), 0, 80),
-        'observed_at' => (int)($decoded['observed_at'] ?? time()),
-        'evidence' => substr((string)($decoded['evidence'] ?? ''), 0, 2000),
-    ];
-}
-
-function infra_expert_inspect_host_health(array $arguments, array $dependencies): array
-{
-    infra_expert_configure($dependencies);
-    $server = (string)($arguments['server'] ?? '');
-    if (!isset(infra_expert_target_map()[$server])) {
-        throw new RuntimeException('SSH host-audit target is not permitted');
-    }
-    $inventory = $dependencies['ssh_inventory'] ?? infra_expert_ssh_inventory();
-    $target = $inventory[$server] ?? null;
-    if (!is_array($target)) {
-        throw new RuntimeException('SSH target is not configured');
-    }
-    $command = [
-        '/usr/bin/timeout', '60', '/usr/bin/ssh', '-T', '-o', 'BatchMode=yes', '-o', 'IdentitiesOnly=yes',
-        '-o', 'ConnectTimeout=10', '-o', 'StrictHostKeyChecking=yes',
-        '-o', 'UserKnownHostsFile=' . $target['known_hosts_file'], '-i', $target['identity_file'],
-        $target['ssh_target'], 'inspect_host_health',
-    ];
-    $runner = $dependencies['process_runner'] ?? 'infra_expert_run_process';
-    $result = $runner($command);
-    $decoded = json_decode((string)($result['stdout'] ?? ''), true);
-    if (!is_array($result) || (int)($result['exit_code'] ?? 1) !== 0 || !is_array($decoded) || !isset($decoded['overall'], $decoded['findings'])) {
-        throw new RuntimeException('Restricted SSH host audit failed');
-    }
-    return [
-        'server' => $server,
-        'overall' => substr((string)$decoded['overall'], 0, 20),
-        'summary' => (array)($decoded['summary'] ?? []),
-        'findings' => array_values((array)$decoded['findings']),
-        'observed_at' => (int)($decoded['observed_at'] ?? time()),
-    ];
-}
-
 function infra_expert_authorize_resolution(array $arguments, string $run_uuid, array $_dependencies): array
 {
     infra_expert_configure($_dependencies);
@@ -351,36 +262,6 @@ function infra_expert_resolve_health_finding(array $arguments, array $dependenci
     ];
 }
 
-function infra_expert_run_diagnostic(array $arguments, array $dependencies): array
-{
-    infra_expert_configure($dependencies);
-    $server = (string)($arguments['server'] ?? '');
-    $command_text = trim((string)($arguments['command'] ?? ''));
-    $diagnostic_servers = array_column(infra_expert_targets('autonomous_remediation'), 'server');
-    if (!in_array($server, $diagnostic_servers, true)) {
-        throw new RuntimeException('Diagnostic target is not permitted');
-    }
-    if ($command_text === '' || strlen($command_text) > 2000 || str_contains($command_text, "\0")) {
-        throw new RuntimeException('Diagnostic command is invalid');
-    }
-    $target = infra_expert_ssh_target($server, $dependencies);
-    $encoded = rtrim(strtr(base64_encode($command_text), '+/', '-_'), '=');
-    $result = infra_expert_run_ssh_gateway($target, ['diagnose', $encoded], 60, $dependencies);
-    $decoded = json_decode((string)($result['stdout'] ?? ''), true);
-    if (!is_array($decoded) || !isset($decoded['exit_code'], $decoded['observed_at'])) {
-        throw new RuntimeException('Diagnostic gateway returned invalid evidence');
-    }
-    return [
-        'server' => $server,
-        'command' => $command_text,
-        'hypothesis' => substr(trim((string)($arguments['hypothesis'] ?? '')), 0, 500),
-        'exit_code' => (int)$decoded['exit_code'],
-        'stdout' => substr((string)($decoded['stdout'] ?? ''), 0, 20000),
-        'stderr' => substr((string)($decoded['stderr'] ?? ''), 0, 4000),
-        'observed_at' => (int)$decoded['observed_at'],
-    ];
-}
-
 function infra_expert_execute_remediation(array $arguments, array $dependencies): array
 {
     infra_expert_configure($dependencies);
@@ -393,7 +274,8 @@ function infra_expert_execute_remediation(array $arguments, array $dependencies)
     if (!is_array($authorization) || ($authorization['status'] ?? '') !== 'authorized') {
         throw new RuntimeException('Remediation authorization is missing');
     }
-    $target = infra_expert_ssh_target($server, $dependencies);
+    $connector = $dependencies['tool_definition']['connector'] ?? [];
+    $target = agent_connector_ssh_target($server, $dependencies, $connector);
     $signing_key = (string)($target['gateway_signing_key'] ?? '');
     if ($signing_key === '') {
         throw new RuntimeException('Remediation gateway signing key is unavailable');
@@ -408,7 +290,7 @@ function infra_expert_execute_remediation(array $arguments, array $dependencies)
     $canonical = agent_canonical_json($envelope);
     $envelope['signature'] = hash_hmac('sha256', $canonical, $signing_key);
     $encoded = rtrim(strtr(base64_encode(json_encode($envelope, JSON_UNESCAPED_SLASHES)), '+/', '-_'), '=');
-    $result = infra_expert_run_ssh_gateway($target, ['execute_action', $encoded], 90, $dependencies);
+    $result = agent_connector_ssh_gateway($target, ['execute_action', $encoded], 90, $dependencies);
     $decoded = json_decode((string)($result['stdout'] ?? ''), true);
     if (!is_array($decoded) || !isset($decoded['exit_code'], $decoded['executed_at'])) {
         throw new RuntimeException('Remediation gateway returned invalid evidence');
@@ -422,74 +304,6 @@ function infra_expert_execute_remediation(array $arguments, array $dependencies)
         'stderr' => substr((string)($decoded['stderr'] ?? ''), 0, 3000),
         'executed_at' => (int)$decoded['executed_at'],
         'rollback' => (string)$arguments['rollback'],
-    ];
-}
-
-function infra_expert_ssh_target(string $server, array $dependencies): array
-{
-    $inventory = $dependencies['ssh_inventory'] ?? infra_expert_ssh_inventory();
-    $target = $inventory[$server] ?? null;
-    if (!is_array($target)) {
-        throw new RuntimeException('SSH target is not configured');
-    }
-    foreach (['ssh_target', 'identity_file', 'known_hosts_file'] as $key) {
-        if (trim((string)($target[$key] ?? '')) === '') {
-            throw new RuntimeException('SSH target configuration is incomplete');
-        }
-    }
-    return $target;
-}
-
-function infra_expert_run_ssh_gateway(array $target, array $gateway_arguments, int $timeout, array $dependencies): array
-{
-    $command = [
-        '/usr/bin/timeout', (string)$timeout, '/usr/bin/ssh', '-T',
-        '-o', 'BatchMode=yes', '-o', 'IdentitiesOnly=yes', '-o', 'ConnectTimeout=10',
-        '-o', 'StrictHostKeyChecking=yes', '-o', 'UserKnownHostsFile=' . $target['known_hosts_file'],
-        '-i', $target['identity_file'], $target['ssh_target'], ...$gateway_arguments,
-    ];
-    $runner = $dependencies['process_runner'] ?? 'infra_expert_run_process';
-    $result = $runner($command);
-    if (!is_array($result) || (int)($result['exit_code'] ?? 1) !== 0) {
-        throw new RuntimeException('Infrastructure SSH gateway command failed');
-    }
-    return $result;
-}
-
-function infra_expert_ssh_inventory(): array
-{
-    load_library('env');
-    $path = env((string)(infra_expert_config()['inventory_env'] ?? 'INFRA_AGENT_INVENTORY'));
-    if ($path === '' || !str_starts_with($path, '/') || !is_readable($path)) {
-        throw new RuntimeException('Infrastructure agent inventory is unavailable');
-    }
-    $inventory = json_decode((string)file_get_contents($path), true);
-    if (!is_array($inventory)) {
-        throw new RuntimeException('Infrastructure agent inventory is invalid');
-    }
-    return $inventory;
-}
-
-function infra_expert_run_process(array $command): array
-{
-    $pipes = [];
-    $process = proc_open($command, [
-        0 => ['file', '/dev/null', 'r'],
-        1 => ['pipe', 'w'],
-        2 => ['pipe', 'w'],
-    ], $pipes, null, null, ['bypass_shell' => true]);
-    if (!is_resource($process)) {
-        throw new RuntimeException('Could not start restricted SSH process');
-    }
-    $stdout = stream_get_contents($pipes[1]);
-    $stderr = stream_get_contents($pipes[2]);
-    fclose($pipes[1]);
-    fclose($pipes[2]);
-    $exit_code = proc_close($process);
-    return [
-        'exit_code' => $exit_code,
-        'stdout' => substr((string)$stdout, 0, 12000),
-        'stderr' => substr((string)$stderr, 0, 2000),
     ];
 }
 
