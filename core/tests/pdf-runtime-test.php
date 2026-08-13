@@ -51,6 +51,14 @@ $GLOBALS['SYSTEM'] = ['file_base' => $fixture . '/'];
 
 require_once __DIR__ . '/../modules/pdf/lib/pdf.php';
 
+$html = pdf_build_document_html([
+    'margins' => ['top' => 10, 'right' => 11, 'bottom' => 12, 'left' => 13],
+    'pages' => ['<p>First</p>', '<p>Second</p>'],
+]);
+pdf_runtime_test_assert(str_contains($html, '@page { margin: 10mm 11mm 12mm 13mm; }'), 'PDF margins render through the document template');
+pdf_runtime_test_assert(str_contains($html, '<body><div><p>First</p></div>'), 'first PDF page renders without a page break');
+pdf_runtime_test_assert(str_contains($html, '<div class="pdf-page-break"><p>Second</p></div>'), 'later PDF pages render with page breaks');
+
 $pdf = pdf_render_document(['pages' => ['<p>Test</p>']]);
 pdf_runtime_test_assert($pdf === '%PDF-test', 'PDF renders without an environment-local module state record');
 pdf_runtime_test_assert(

@@ -55,14 +55,26 @@ function pdf_build_document_html(array $config): string
     $bottom = (float)($margins['bottom'] ?? 20);
     $left = (float)($margins['left'] ?? 18);
 
-    $pages = $config['pages'] ?? [];
+    $page_template = pdf_read_template('page.tpl');
     $body = '';
-    foreach ($pages as $ix => $page_html) {
-        $style = $ix > 0 ? ' style="page-break-before: always;"' : '';
-        $body .= '<div' . $style . '>' . $page_html . '</div>';
+    foreach (($config['pages'] ?? []) as $ix => $page_html) {
+        $body .= strtr($page_template, [
+            '[#pdf.page_class#]' => $ix > 0 ? ' class="pdf-page-break"' : '',
+            '[#pdf.page_body#]' => (string)$page_html,
+        ]);
     }
 
-    return '<html><head><style>'
-        . '@page { margin: ' . $top . 'mm ' . $right . 'mm ' . $bottom . 'mm ' . $left . 'mm; }'
-        . '</style></head><body>' . $body . '</body></html>';
+    return strtr(pdf_read_template('document.tpl'), [
+        '[#pdf.margins#]' => $top . 'mm ' . $right . 'mm ' . $bottom . 'mm ' . $left . 'mm',
+        '[#pdf.body#]' => $body,
+    ]);
+}
+
+function pdf_read_template(string $name): string
+{
+    $template = file_get_contents(dirname(__DIR__) . '/tpl/' . $name);
+    if ($template === false) {
+        throw new RuntimeException('PDF document template is unavailable');
+    }
+    return $template;
 }
