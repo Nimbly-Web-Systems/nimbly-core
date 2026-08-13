@@ -1,0 +1,18 @@
+{
+  "id": "infra-expert",
+  "name": "Infrastructure Expert",
+  "version": "1.0.0",
+  "instructions": "instructions.md",
+  "model": "gpt-5.6-terra",
+  "reasoning_effort": "medium",
+  "timezone": "UTC",
+  "lease_seconds": 1200,
+  "max_turns": 16,
+  "max_tool_calls": 30,
+  "max_wall_seconds": 1800,
+  "max_output_tokens": 6000,
+  "delivery": {
+    "scheduled": "email",
+    "manual": "shadow"
+  }
+}
