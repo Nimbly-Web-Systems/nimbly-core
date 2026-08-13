@@ -2063,6 +2063,12 @@ definition cannot supply an SSH command or bypass the tool's JSON schema.
 Agent-specific PHP should be reserved for domain policy that cannot be expressed
 by these connector constraints.
 
+Scheduled report agents may use `agent_connector_deliver_email` with a
+`report_delivery` definition. Configuration selects the result collection and
+item identity fields, subject field, renderer, recipient environment variable,
+provider, and triggers that remain in shadow mode. Idempotency remains derived
+from the immutable run UUID and configured item identity.
+
 `agent:gateway` is the read-only remote forced-command endpoint for restricted
 SSH identities. It reads `SSH_ORIGINAL_COMMAND`, accepts only registered verbs
 and enum-constrained parameters, and maps them to fixed argument-array

@@ -541,56 +541,6 @@ function infra_expert_completed_inspections(string $run_uuid): array
     return $result;
 }
 
-function infra_expert_deliver(array $result, string $run_uuid, array $dependencies): array
-{
-    infra_expert_configure($dependencies);
-    $run = data_read('.agent_runs', $run_uuid);
-    if (($run['trigger'] ?? '') === 'manual' && empty($dependencies['force_delivery'])) {
-        $shadow = [];
-        foreach (infra_expert_targets() as $target) {
-            $shadow[(string)$target['environment']] = [
-                'accepted' => false,
-                'shadow' => true,
-                'provider_message_id' => '',
-            ];
-        }
-        return [
-            'success' => true,
-            'environments' => $shadow,
-        ];
-    }
-    load_libraries(['email', 'env']);
-    $config = infra_expert_config();
-    $recipient = env(
-        (string)($config['report_recipient_env'] ?? 'INFRA_EXPERT_REPORT_RECIPIENT'),
-        (string)($config['report_recipient_default'] ?? '')
-    );
-    $deliveries = [];
-    foreach ($result['environments'] as $environment) {
-        $renderer = $dependencies['render_report'] ?? 'infra_expert_render_report';
-        $html = $renderer($environment);
-        $email_data = [
-            'service' => 'resend',
-            'recipient' => $recipient,
-            'subject' => $environment['email_subject'],
-            'html' => $html,
-            'idempotency_key' => $run_uuid . ':' . $environment['environment'],
-        ];
-        if (!empty($dependencies['email_request'])) {
-            $email_data['request'] = $dependencies['email_request'];
-        }
-        $sent = email_result($email_data);
-        $deliveries[$environment['environment']] = [
-            'accepted' => !empty($sent['success']),
-            'provider_message_id' => $sent['id'] ?? '',
-        ];
-        if (empty($sent['success']) || empty($sent['id'])) {
-            return ['success' => false, 'environments' => $deliveries, 'error' => 'Resend did not accept both reports'];
-        }
-    }
-    return ['success' => count($deliveries) === 2, 'environments' => $deliveries];
-}
-
 function infra_expert_render_report(array $environment): string
 {
     load_library('set');

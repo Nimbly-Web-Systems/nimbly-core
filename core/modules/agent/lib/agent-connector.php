@@ -157,3 +157,59 @@ function agent_connector_run_process(array $command): array
         'stderr' => substr((string)$stderr, 0, 4000),
     ];
 }
+
+function agent_connector_deliver_email(array $result, string $run_uuid, array $dependencies): array
+{
+    $config = agent_config($dependencies, 'report_delivery', []);
+    if (!is_array($config)) {
+        throw new RuntimeException('Agent email delivery configuration is invalid');
+    }
+    $items_key = (string)($config['items_key'] ?? 'items');
+    $item_key = (string)($config['item_key'] ?? 'id');
+    $items = $result[$items_key] ?? null;
+    if (!is_array($items)) {
+        throw new RuntimeException('Agent email delivery items are invalid');
+    }
+    $run = data_read('.agent_runs', $run_uuid);
+    $shadow_triggers = (array)($config['shadow_triggers'] ?? ['manual']);
+    if (in_array(($run['trigger'] ?? ''), $shadow_triggers, true) && empty($dependencies['force_delivery'])) {
+        $shadow = [];
+        foreach ($items as $item) {
+            $key = (string)($item[$item_key] ?? '');
+            $shadow[$key] = ['accepted' => false, 'shadow' => true, 'provider_message_id' => ''];
+        }
+        return ['success' => true, 'environments' => $shadow];
+    }
+    load_libraries(['email', 'env']);
+    $recipient = env(
+        (string)($config['recipient_env'] ?? ''),
+        (string)($config['recipient_default'] ?? '')
+    );
+    $renderer = (string)($config['renderer'] ?? '');
+    if ($recipient === '' || !is_callable($renderer)) {
+        throw new RuntimeException('Agent email delivery is incomplete');
+    }
+    $deliveries = [];
+    foreach ($items as $item) {
+        $key = (string)($item[$item_key] ?? '');
+        $email_data = [
+            'service' => (string)($config['service'] ?? 'resend'),
+            'recipient' => $recipient,
+            'subject' => (string)($item[$config['subject_field'] ?? 'email_subject'] ?? ''),
+            'html' => $renderer($item),
+            'idempotency_key' => $run_uuid . ':' . $key,
+        ];
+        if (!empty($dependencies['email_request'])) {
+            $email_data['request'] = $dependencies['email_request'];
+        }
+        $sent = email_result($email_data);
+        $deliveries[$key] = [
+            'accepted' => !empty($sent['success']),
+            'provider_message_id' => $sent['id'] ?? '',
+        ];
+        if (empty($sent['success']) || empty($sent['id'])) {
+            return ['success' => false, 'environments' => $deliveries, 'error' => 'Email provider did not accept every report'];
+        }
+    }
+    return ['success' => count($deliveries) === count($items), 'environments' => $deliveries];
+}
