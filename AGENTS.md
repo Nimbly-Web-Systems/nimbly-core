@@ -70,9 +70,9 @@ For every task, follow this workflow unless explicitly instructed otherwise.
 7. Complete migration bookkeeping.
    - For every Nimbly 1.1 project migration, reconcile the Intra project record
      before considering the migration complete.
-   - Set `core_version` to `master`, record the exact live `core_commit` and
-     `core_verified_on`, and set `core_status` to `verified` only when live
-     matches the current published core target.
+   - All projects are expected to run the current `master` core. Record any
+     temporary exception in the project's free-form notes instead of structured
+     version or verification fields.
    - Book two hours to the migrated project for the migration and production
      verification. Reuse or normalize an existing migration booking instead of
      creating a duplicate.
