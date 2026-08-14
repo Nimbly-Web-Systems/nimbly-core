@@ -142,7 +142,7 @@ function agent_scope_definition(array $definition, array $run): array
         if (empty($definition['targets'])) {
             throw new RuntimeException('Agent run target is not configured');
         }
-        $definition['runtime_instruction'] = 'This is a scoped manual run. Review only ' . $target
+        $definition['runtime_instruction'] = 'This is a scoped run. Review only ' . $target
             . '. Return exactly one environment object for that configured target; this overrides any normal target-count instruction.';
     }
     if (!empty($run['read_only'])) {

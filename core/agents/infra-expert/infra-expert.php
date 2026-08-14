@@ -199,6 +199,8 @@ function infra_expert_validate_result(array $result, string $run_uuid = '', arra
         throw new RuntimeException('Infrastructure result must contain every configured environment');
     }
     $canonical_reviews = infra_expert_canonical_reviews();
+    $event_context = (array)($_dependencies['run']['event_context'] ?? []);
+    $uptime_event = ($event_context['type'] ?? '') === 'uptime_outage';
     $identities = array_keys($expected);
     $fresh_audits = $run_uuid === '' ? [] : agent_report_tool_results(
         $run_uuid, 'inspect_host_health', $identities, [], true
@@ -219,6 +221,15 @@ function infra_expert_validate_result(array $result, string $run_uuid = '', arra
             throw new RuntimeException('Infrastructure result contains an unexpected environment');
         }
         $canonical_review = $canonical_reviews[$server] ?? null;
+        if (!is_array($canonical_review) && $uptime_event && ($event_context['server'] ?? '') === $server) {
+            $canonical_review = [
+                'source_report_uuid' => '',
+                'review_status' => 'missing',
+                'overall' => 'unknown',
+                'generated_at' => 0,
+                'age_seconds' => 0,
+            ];
+        }
         if (!is_array($canonical_review)) {
             throw new RuntimeException('Infrastructure canonical review is unavailable');
         }
@@ -247,6 +258,9 @@ function infra_expert_validate_result(array $result, string $run_uuid = '', arra
             throw new RuntimeException('Infrastructure email uses the friendly cadence too often');
         }
         if ($run_uuid !== '') {
+            if ($uptime_event && !isset($fresh_audits[$server])) {
+                throw new RuntimeException('An uptime incident requires a fresh host audit');
+            }
             if (($canonical_review['overall'] ?? 'unknown') !== 'ok' && !isset($fresh_audits[$server])) {
                 throw new RuntimeException('A non-healthy infrastructure report requires a fresh host audit');
             }

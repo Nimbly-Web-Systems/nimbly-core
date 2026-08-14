@@ -5,6 +5,7 @@
     "scheduled_at": {"name": "Scheduled at", "type": "number"},
     "completed_at": {"name": "Completed at", "type": "number"},
     "idempotency_key": {"name": "Idempotency key", "type": "text", "admin_col": false},
+    "event_context": {"name": "Event context", "type": "text", "admin_col": false},
     "structured_result": {"name": "Result", "type": "text", "admin_col": false},
     "failure_reason": {"name": "Failure", "type": "text", "admin_col": false}
   },

@@ -247,6 +247,17 @@ function schedule_task_due($task, $task_state, $now)
     $last_run = (int)($task_state['last_run_at'] ?? 0);
     $timezone = schedule_task_timezone($task);
 
+    if (array_key_exists('every_minutes', $task)) {
+        $minutes = filter_var($task['every_minutes'], FILTER_VALIDATE_INT);
+        if ($minutes === false || $minutes < 1) {
+            return false;
+        }
+        if ($last_run <= 0) {
+            return true;
+        }
+        return intdiv($last_run, $minutes * 60) !== intdiv((int)$now, $minutes * 60);
+    }
+
     if (($task['every'] ?? '') === 'minute') {
         return schedule_date('YmdHi', $last_run, $timezone) !== schedule_date('YmdHi', $now, $timezone);
     }

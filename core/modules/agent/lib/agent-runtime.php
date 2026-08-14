@@ -19,6 +19,7 @@ function agent_enqueue(string $agent_id, ?int $now = null, array $dependencies =
     $idempotency_key = $agent_id . ':' . $occurrence
         . ($idempotency_suffix === '' ? '' : ':' . $idempotency_suffix);
     $run_uuid = substr(hash('sha256', $idempotency_key), 0, 16);
+    $event_context = agent_event_context($dependencies['event_context'] ?? []);
 
     $lock = agent_lock('enqueue-' . $run_uuid);
     try {
@@ -46,6 +47,7 @@ function agent_enqueue(string $agent_id, ?int $now = null, array $dependencies =
                 'lease_expires_at' => 0,
                 'target' => (string)($dependencies['target'] ?? ''),
                 'read_only' => !empty($dependencies['read_only']),
+                'event_context' => $event_context,
             ];
             if (!data_create('.agent_runs', $run_uuid, $run)) {
                 throw new RuntimeException('Could not create agent run');
@@ -86,10 +88,23 @@ function agent_run(string $run_uuid, array $dependencies = []): array
         $agent_dependencies = array_merge($dependencies, [
             'agent_definition' => $definition,
             'run_uuid' => $run_uuid,
+            'run' => $run,
         ]);
         $prepared = ($definition['prepare_input'])($run, $agent_dependencies);
         if (!is_array($prepared) || !isset($prepared['input'])) {
             throw new RuntimeException('Agent input preparation failed');
+        }
+        if (!empty($run['event_context'])) {
+            $prepared['input'][] = [
+                'role' => 'user',
+                'content' => [[
+                    'type' => 'input_text',
+                    'text' => json_encode(
+                        ['event_context' => $run['event_context']],
+                        JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR
+                    ),
+                ]],
+            ];
         }
         agent_update_run($run_uuid, ['source_report_uuids' => $prepared['source_report_uuids'] ?? []]);
         $result = agent_reason($run_uuid, $definition, $prepared['input'], $agent_dependencies);
@@ -130,6 +145,21 @@ function agent_run(string $run_uuid, array $dependencies = []): array
     return data_read('.agent_runs', $run_uuid) ?: [];
 }
 
+function agent_event_context($context): array
+{
+    if ($context === null || $context === []) {
+        return [];
+    }
+    if (!is_array($context)) {
+        throw new InvalidArgumentException('Agent event context must be an object');
+    }
+    $encoded = json_encode($context, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
+    if (strlen($encoded) > 32768) {
+        throw new InvalidArgumentException('Agent event context is too large');
+    }
+    return $context;
+}
+
 function agent_retry(string $failed_run_uuid): string
 {
     agent_ensure_resources();
@@ -166,6 +196,9 @@ function agent_retry(string $failed_run_uuid): string
             'email_delivery' => [],
             'failure_reason' => '',
             'lease_expires_at' => 0,
+            'target' => (string)($failed['target'] ?? ''),
+            'read_only' => !empty($failed['read_only']),
+            'event_context' => agent_event_context($failed['event_context'] ?? []),
         ];
         if (!data_create('.agent_runs', $retry_uuid, $run)) {
             throw new RuntimeException('Could not create agent retry');
