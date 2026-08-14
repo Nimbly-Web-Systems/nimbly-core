@@ -1930,6 +1930,20 @@ Environment aliases are normalized: `production` → `prod`, `staging` → `stag
 
 Use environment-specific schedule files when staging or development must run background jobs but must not run production-only tasks such as member reminders.
 
+Schedule tasks may use `every_minutes` for intervals longer than one minute:
+
+```php
+[
+    'id' => 'uptime-poll',
+    'command' => 'uptime:poll',
+    'every_minutes' => 2,
+]
+```
+
+The value must be a positive integer. A new task is due immediately; after it
+runs, it becomes due when the clock enters the next interval bucket. Existing
+`every`, `daily_at`, and optional `timezone` schedules remain supported.
+
 Scheduler last-run state is stored in `ext/data/.state/schedule`. Existing installs with older `ext/data/.config/schedule` state are read as a migration fallback until the scheduler writes the new state file.
 
 #### `scheduler:*`
@@ -2078,6 +2092,14 @@ argument with `agent_config($dependencies, 'path.to.value', $default)`. Keep
 callback behaviour and evidence rules neutral in core; do not put a named
 persona, project host, recipient, or project-specific authority there.
 
+`id` is the stable machine identifier used by CLI commands, schedules, runs,
+and resource indexes. `name` is the human-facing identity of the configured
+agent. When a project refers to an agent by that name, treat it as the Nimbly
+software agent and inspect its `ext/agents/<agent-id>/` definition, schedule,
+and run state; do not assume the name identifies an external email contact.
+Record important project-specific agent identities in shared `ext/.context/`
+when future operators and AI agents need that association.
+
 Report-style agents use the shared report framework for configured targets,
 canonical resource ingestion, freshness calculation, bounded report and event
 history, authority grouping, and tool-ledger evidence lookup. Declare this in
@@ -2089,6 +2111,14 @@ php core/cli/nimbly.php agent:enqueue infra-expert
 php core/cli/nimbly.php agent:run <run-uuid>
 php core/cli/nimbly.php agent:recover
 ```
+
+Code may enqueue a scoped event-driven run with `target`, `read_only`, an
+idempotency suffix, and `event_context`. Event context must be a JSON-encodable
+object no larger than 32 KiB. It is persisted on `.agent_runs`, supplied to the
+agent as an additional user input, exposed to callbacks through
+`$dependencies['run']['event_context']`, and preserved on retry. Use it for
+bounded facts about the triggering event, such as an incident and monitor ID;
+it does not expand the run's configured targets or authority.
 
 Scheduled agents should enqueue quickly and execute through the existing job
 runner. Runs use deterministic occurrence IDs, append-only `.agent_events`,
