@@ -24,8 +24,12 @@ function thumbnail_sharpen($img)
     imageconvolution($img, $sharpen, $divisor, 0);
 }
 
-function thumbnail_create($uuid, $size, $ratio = 0, $mode = 'h')
+function thumbnail_create($uuid, $size, $ratio = 0, $mode = 'h', $format = '')
 {
+    if ($format !== 'jpg' && $format !== 'png') {
+        $format = '';
+    }
+
     $MAX_UPSCALE = 1.0;
 
     // 1. Create thumbnail from original
@@ -140,7 +144,10 @@ function thumbnail_create($uuid, $size, $ratio = 0, $mode = 'h')
     if (!empty($query_ratio)) {
         $static_path .= '_r' . $query_ratio;
     }
-    
+    if ($format !== '') {
+        $static_path .= '_f' . $format;
+    }
+
     @mkdir(dirname($static_path), 0750, true);
 
     switch ($org_type) {
@@ -158,7 +165,15 @@ function thumbnail_create($uuid, $size, $ratio = 0, $mode = 'h')
                 $result = $static_path;
             }
             */
-            if (imagewebp($thumb_img, $static_path, 85)) {
+            if ($format === 'jpg') {
+                if (imagejpeg($thumb_img, $static_path, 85)) {
+                    $result = $static_path;
+                }
+            } else if ($format === 'png') {
+                if (imagepng($thumb_img, $static_path, 6)) {
+                    $result = $static_path;
+                }
+            } else if (imagewebp($thumb_img, $static_path, 85)) {
                 $result = $static_path;
             }
             break;
@@ -169,7 +184,20 @@ function thumbnail_create($uuid, $size, $ratio = 0, $mode = 'h')
             thumbnail_sharpen($thumb_img);
             imagesavealpha($thumb_img, true);
 
-            if (imagewebp($thumb_img, $static_path, 85)) {
+            if ($format === 'jpg') {
+                // JPEG has no alpha channel: flatten onto white before encoding.
+                $flat_img = imagecreatetruecolor($w, $h);
+                imagefill($flat_img, 0, 0, imagecolorallocate($flat_img, 255, 255, 255));
+                imagecopy($flat_img, $thumb_img, 0, 0, 0, 0, $w, $h);
+                if (imagejpeg($flat_img, $static_path, 85)) {
+                    $result = $static_path;
+                }
+                imagedestroy($flat_img);
+            } else if ($format === 'png') {
+                if (imagepng($thumb_img, $static_path, 6)) {
+                    $result = $static_path;
+                }
+            } else if (imagewebp($thumb_img, $static_path, 85)) {
                 $result = $static_path;
             }
             break;
@@ -179,7 +207,19 @@ function thumbnail_create($uuid, $size, $ratio = 0, $mode = 'h')
             $bg = imagecolorallocate($thumb_img, 0, 0, 0);
             imagecolortransparent($thumb_img, $bg);
             imagesavealpha($thumb_img, true);
-            if (imagewebp($thumb_img, $static_path)) {
+            if ($format === 'jpg') {
+                $flat_img = imagecreatetruecolor($w, $h);
+                imagefill($flat_img, 0, 0, imagecolorallocate($flat_img, 255, 255, 255));
+                imagecopy($flat_img, $thumb_img, 0, 0, 0, 0, $w, $h);
+                if (imagejpeg($flat_img, $static_path, 85)) {
+                    $result = $static_path;
+                }
+                imagedestroy($flat_img);
+            } else if ($format === 'png') {
+                if (imagepng($thumb_img, $static_path, 6)) {
+                    $result = $static_path;
+                }
+            } else if (imagewebp($thumb_img, $static_path)) {
                 $result = $static_path;
             }
             break;

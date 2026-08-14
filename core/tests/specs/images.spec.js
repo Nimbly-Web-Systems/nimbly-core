@@ -22,3 +22,21 @@ test('thumbnail ratios accept decimals and reject malformed values', async ({ re
     expect((await response.body()).length).toBe(0);
   }
 });
+
+test('thumbnail format overrides the default WebP output for email-safe clients', async ({ request }) => {
+  const jpg_response = await request.get(`${TEST_IMAGE_URL}?format=jpg`);
+  expect(jpg_response.status()).toBe(200);
+  expect(jpg_response.headers()['content-type']).toContain('image/jpeg');
+
+  const jpeg_alias_response = await request.get(`${TEST_IMAGE_URL}?format=jpeg`);
+  expect(jpeg_alias_response.status()).toBe(200);
+  expect(jpeg_alias_response.headers()['content-type']).toContain('image/jpeg');
+
+  const png_response = await request.get(`${TEST_IMAGE_URL}?format=png`);
+  expect(png_response.status()).toBe(200);
+  expect(png_response.headers()['content-type']).toContain('image/png');
+
+  const invalid_response = await request.get(`${TEST_IMAGE_URL}?format=gif`);
+  expect(invalid_response.status()).toBe(400);
+  expect((await invalid_response.body()).length).toBe(0);
+});
