@@ -69,6 +69,15 @@ if ($ratio_text !== '') {
 		exit();
 	}
 }
+$format = strtolower((string) get_variable('format', ''));
+if ($format === 'jpeg') {
+	$format = 'jpg';
+}
+if ($format !== '' && $format !== 'jpg' && $format !== 'png') {
+	http_response_code(400);
+	header('Content-Length: 0');
+	exit();
+}
 $m = substr($size, -1);
 if ($m === 'f' || $m === 'c') { // fit, crop
 	$mode = $m;
@@ -112,16 +121,22 @@ if ($size > $max_h && ($mode === 'h' || ($ratio > 0 && $ratio < 1))) {
 }
 
 load_library("thumbnail");
-$file = thumbnail_create($uuid, $size, $ratio, $mode);
+$file = thumbnail_create($uuid, $size, $ratio, $mode, $format);
 if (empty($file)) {
     return;
 }
 
-$type = $meta['type'] ?? 'image/jpg';
-if ($type === 'image/jpeg' || $type === 'image/bmp' || $type === 'image/jpg') {
-	$type = 'image/webp'; //'image/avif'; 
-} else if ($type === 'image/png') {
-	$type = 'image/webp';
+if ($format === 'jpg') {
+	$type = 'image/jpeg';
+} else if ($format === 'png') {
+	$type = 'image/png';
+} else {
+	$type = $meta['type'] ?? 'image/jpg';
+	if ($type === 'image/jpeg' || $type === 'image/bmp' || $type === 'image/jpg') {
+		$type = 'image/webp'; //'image/avif';
+	} else if ($type === 'image/png') {
+		$type = 'image/webp';
+	}
 }
 
 // return thumb with cache headers
