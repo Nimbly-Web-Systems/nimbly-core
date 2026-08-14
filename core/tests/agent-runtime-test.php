@@ -174,6 +174,18 @@ $manual_duplicate_uuid = agent_enqueue('test-agent', $now, [
 agent_test_assert($manual_uuid === $manual_duplicate_uuid, 'manual enqueue is idempotent for its explicit key');
 agent_test_assert($manual_uuid !== $run_uuid, 'manual enqueue does not consume the scheduled occurrence');
 
+$event_uuid = agent_enqueue('test-agent', $now, [
+    'trigger' => 'uptime',
+    'target' => 'nimbly2.prod',
+    'read_only' => true,
+    'idempotency_suffix' => 'uptime-incident-1',
+    'event_context' => ['incident_id' => 'incident-1', 'monitor_id' => 'monitor-2'],
+]);
+agent_test_assert(
+    ($test_data['.agent_runs'][$event_uuid]['event_context']['incident_id'] ?? '') === 'incident-1',
+    'event context is persisted on the scoped run'
+);
+
 $failed_uuid = 'failed-scheduled';
 $test_data['.agent_runs'][$failed_uuid] = [
     'agent_id' => 'test-agent', 'agent_version' => '1.0.0', 'trigger' => 'scheduled',
