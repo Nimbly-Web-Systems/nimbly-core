@@ -27,7 +27,17 @@ test.describe('admin edit — i18n and group fields (test-i18n-records)', () => 
 
     await expect(page.locator('[name=title]')).toHaveValue('Nederlandse titel');
 
-    await page.reload();
+    // Switching tabs must not save. The English edit should still be there,
+    // held in local form state, once we switch back.
+    await en_tab.click();
+    await page.waitForTimeout(500);
+    await expect(page.locator('[name=title]')).toHaveValue('Playwright English title');
+
+    const submit = page.locator('form button[type=submit]').first();
+    await submit.click();
+    await page.waitForURL(/\/nb-admin\/test-i18n-records$/);
+
+    await page.goto('/nb-admin/test-i18n-records/test-i18n-001');
     await expect(page.locator('body')).toContainText('Playwright English title');
   });
 
