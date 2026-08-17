@@ -29,5 +29,14 @@ function language_picker_sc($params)
         $variant = 'search';
     }
 
+    // This picks the single language a brand-new record is being authored
+    // in — not a switch between saved translations (that's the separate
+    // edit-mode form-translation-tabs component). Easy to mistake for one,
+    // so it gets a caption spelling that out.
+    load_library('text');
+    echo '<p class="text-xs font-medium text-neutral-500 mb-1">'
+        . htmlspecialchars(t('Adding content in this language:'), ENT_QUOTES, 'UTF-8')
+        . '</p>';
+
     run_single_sc('language-picker-' . $variant);
 }
