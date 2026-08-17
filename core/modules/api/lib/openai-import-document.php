@@ -255,7 +255,25 @@ function openai_import_document($resource)
         }
     }
 
-    return json_result(['values' => $result, 'detected_language' => $detected_language]);
+    // Human-readable labels for the confirmation message — an editor
+    // shouldn't see raw field keys like "location_lat", and it plus
+    // "location_lng" are one concept to them anyway: the location-picker
+    // field's own "Location" label, not two separate technical fields.
+    $longitude_fields = [];
+    foreach ($meta['fields'] as $definition) {
+        if (($definition['type'] ?? 'text') === 'location-picker' && !empty($definition['longitude_field'])) {
+            $longitude_fields[] = $definition['longitude_field'];
+        }
+    }
+    $labels = [];
+    foreach (array_keys($result) as $field) {
+        if (in_array($field, $longitude_fields, true)) {
+            continue;
+        }
+        $labels[] = $meta['fields'][$field]['name'] ?? ucfirst(str_replace(['-', '_'], ' ', $field));
+    }
+
+    return json_result(['values' => $result, 'labels' => $labels, 'detected_language' => $detected_language]);
 }
 
 /**
