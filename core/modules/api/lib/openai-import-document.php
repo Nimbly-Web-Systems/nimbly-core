@@ -81,7 +81,11 @@ function openai_import_document($resource)
         $instructions = [$type === 'html'
             ? "Extract the value for the field \"{$label}\". Return semantic HTML using only "
                 . '<p>, <h2>, <h3>, <strong>, <em>, <a>, <ul>, <ol>, <li> tags — no script, style, '
-                . 'or inline event handler attributes.'
+                . 'or inline event handler attributes. The document may contain bracketed notes '
+                . 'marking where an image belongs, such as "[stadsplattegrond Görlitz]" or '
+                . '"[photo: the market square]" — keep every one of these verbatim as its own '
+                . 'paragraph, exactly where it appears; never drop, summarize, or rewrite them, '
+                . 'since an editor uses them afterward to place the actual image.'
             : "Extract the value for the field \"{$label}\". Return plain text only, no HTML tags."];
         foreach ($definition['ai_prompts']['_all'] ?? [] as $extra) {
             $instructions[] = openai_import_document_extraction_instruction($extra);
@@ -134,6 +138,45 @@ function openai_import_document($resource)
         $geo_bounds[$lng_field] = [$lng_min, $lng_max];
     }
 
+    // select fields (a static `options` map, or a referenced `resource` of
+    // records) get the same treatment as location-picker: list the real
+    // choices and ask the model to pick from them by code, never a
+    // free-invented value. Works for either options shape, and for both
+    // single and multi (checkbox) select — field-select's own checkbox
+    // template already binds multi values as a plain form_data array
+    // (`x-model="form_data[key]"` on each checkbox), so the client-side
+    // apply logic needs no special casing for this field type at all.
+    $select_fields = [];
+    foreach ($meta['fields'] as $field => $definition) {
+        if (($definition['type'] ?? 'text') !== 'select') {
+            continue;
+        }
+        if (!openai_translation_value_is_empty($current_values[$field] ?? '', $definition)) {
+            continue;
+        }
+        $options = openai_import_document_select_options($definition);
+        if (empty($options)) {
+            continue;
+        }
+        $label = $definition['name'] ?? ucfirst(str_replace(['-', '_'], ' ', $field));
+        $multi = !empty($definition['multi']);
+        $option_list = [];
+        foreach ($options as $code => $opt_label) {
+            $option_list[] = "{$code} = {$opt_label}";
+        }
+        $fields[$field] = [
+            'instructions' => [
+                'Choose ' . ($multi ? 'the option(s)' : 'the single option') . ' for the field '
+                    . "\"{$label}\" whose meaning best matches this document's content. Available "
+                    . 'options (code = label): ' . implode('; ', $option_list) . '. Return only the '
+                    . 'chosen code' . ($multi ? '(s), comma-separated if more than one,' : '')
+                    . ' exactly as listed — never invent a code that is not in this list. If none '
+                    . 'fit, omit this field entirely.',
+            ],
+        ];
+        $select_fields[$field] = ['options' => array_keys($options), 'multi' => $multi];
+    }
+
     if (empty($fields)) {
         return json_result(['values' => (object)[], 'detected_language' => null]);
     }
@@ -175,6 +218,18 @@ function openai_import_document($resource)
             $result[$field] = (string)round((float)$value, 6);
             continue;
         }
+        if (isset($select_fields[$field])) {
+            $chosen = array_values(array_intersect(
+                array_map('trim', explode(',', (string)$value)),
+                $select_fields[$field]['options']
+            ));
+            if (empty($chosen)) {
+                unset($result[$field]);
+                continue;
+            }
+            $result[$field] = $select_fields[$field]['multi'] ? $chosen : $chosen[0];
+            continue;
+        }
         $type = $meta['fields'][$field]['type'] ?? 'text';
         // The model inconsistently HTML-entity-escapes markup instead of
         // returning raw tags for the html type (a JSON string needs neither —
@@ -201,6 +256,48 @@ function openai_import_document($resource)
     }
 
     return json_result(['values' => $result, 'detected_language' => $detected_language]);
+}
+
+/**
+ * Resolves a select field's valid {code: label} pairs regardless of which
+ * of the two shapes render-field.php supports it came from: a static
+ * `options` map, or a `resource` of records to read fresh (field-select's
+ * own resource-option.tpl reads `name`, falling back to `title`, so this
+ * matches that convention; a record whose label field is itself an i18n
+ * map gets every language folded into one label string — this is model
+ * input, not user-facing display, so a label usable regardless of which
+ * language the source document turns out to be in beats picking one).
+ */
+function openai_import_document_select_options(array $definition): array
+{
+    if (!empty($definition['options']) && is_array($definition['options'])) {
+        $result = [];
+        foreach ($definition['options'] as $code => $label) {
+            $result[(string)$code] = is_array($label) ? implode(' / ', $label) : (string)$label;
+        }
+        return $result;
+    }
+
+    if (empty($definition['resource'])) {
+        return [];
+    }
+    load_library('data');
+    $records = data_read($definition['resource']);
+    if (!is_array($records)) {
+        return [];
+    }
+    $result = [];
+    foreach ($records as $uuid => $record) {
+        if (!is_array($record)) {
+            continue;
+        }
+        $label_value = $record['name'] ?? ($record['title'] ?? null);
+        if ($label_value === null || $label_value === '') {
+            continue;
+        }
+        $result[(string)$uuid] = is_array($label_value) ? implode(' / ', $label_value) : (string)$label_value;
+    }
+    return $result;
 }
 
 /**
