@@ -9,10 +9,13 @@ function fatal_error_alert_job($job)
     }
 
     require_once __DIR__ . '/system-alert.php';
-    load_libraries(['data', 'email', 'env', 'lookup', 'set', 'text']);
+    load_libraries(['data', 'email', 'env', 'lookup', 'set', 'text', 'get']);
 
     $recipient = system_alert_require_recipient();
     $site_name = data_lookup('.config', 'site', 'name', env('MAIL_FROM_NAME', 'Nimbly'));
+    if (is_array($site_name)) {
+        $site_name = get_i18n_resolve($site_name, 'auto');
+    }
 
     set_variable('site_name', system_alert_html($site_name));
     set_variable('fatal_type', system_alert_html($payload['type'] ?? ''));
