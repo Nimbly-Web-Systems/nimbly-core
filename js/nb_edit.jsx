@@ -477,6 +477,18 @@ nb_edit.on_beforeunload = function (e) {
     if (nb_edit.inputs < 1) {
         return undefined;
     }
+    // Admin build-form fields are deliberately excluded from this dirty
+    // counter (see the as_form_field branch in init_editor, and
+    // nb_edit.save() — the only place that resets inputs — which build-form
+    // never calls), so on an admin page inputs can only reflect an
+    // incidental edit to inline-editable page chrome (e.g. an h1 rendered
+    // via the .content system), never the record actually being edited.
+    // That's never worth blocking a redirect over, and it was latching
+    // stale after a fully successful save.
+    var base_url = nb.base_url === "/" ? "" : nb.base_url;
+    if (window.location.pathname.startsWith(base_url + "/nb-admin")) {
+        return undefined;
+    }
     var msg = nb.text.unsaved_changes;
     e.returnValue = msg;
     return msg;
