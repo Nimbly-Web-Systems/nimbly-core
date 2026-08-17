@@ -48,7 +48,7 @@ cli_section('test:setup', true);
 
 // ── Role ─────────────────────────────────────────────────────────────────────
 $test_role_features = [
-    'view-admin-dashboard', 'view-nimblybar', 'manage-test-records', 'manage-test-i18n-records', 'test',
+    'view-admin-dashboard', 'view-nimblybar', 'edit-inline-content', 'manage-test-records', 'manage-test-i18n-records', 'test',
 ];
 if (data_exists('roles', 'test')) {
     $role = data_read('roles', 'test');
