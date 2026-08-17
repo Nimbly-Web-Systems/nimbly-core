@@ -4,23 +4,24 @@ import { test, expect } from '@playwright/test';
 // front-end inline-content-editing feature: it's incremented by an 'input'
 // listener attached to any [data-nb-edit] element NOT inside a <form>, and
 // is only ever cleared by nb_edit.save() — the inline-editing save button.
+// Admin build-form fields are deliberately excluded from it (see the
+// as_form_field branch in init_editor), so it should never see any input on
+// an admin page at all.
 //
-// Admin pages render their own inline-editable page chrome (e.g. the "Add
-// <Resource>" heading, wired through the same .content system) outside the
-// build-form <form> element, so it gets that same 'input' listener. If an
-// editor toggles "Edit" mode (the same control used on public pages) while
-// on an admin page and their cursor ever touches that chrome text, the
-// counter latches — and build-form's own save flow never calls
-// nb_edit.save(), so it never clears. The next successful record save then
-// redirects via window.location.href, and the browser's beforeunload
-// handler blocks it with an "unsaved changes" prompt over data that was
-// never actually at risk, leaving the Save button stuck disabled.
+// It briefly did: the admin add/edit/view/import page headings were made
+// inline-editable via the same .content system, sitting outside the
+// <form>. Toggling "Edit" mode and touching that heading (even briefly)
+// latched the counter for the rest of the page's life, since build-form's
+// own save flow never calls nb_edit.save() to clear it — so a fully
+// successful record save would redirect straight into a stale "unsaved
+// changes" prompt, leaving the Save button stuck disabled.
 //
-// Fix: nb_edit.on_beforeunload() skips the warning entirely on admin pages,
-// since admin build-form fields are deliberately excluded from this same
-// counter already (see the as_form_field branch in init_editor) — so on an
-// admin page the counter can only reflect incidental page-chrome edits,
-// never the record actually being worked on.
+// Fixed two ways: the admin page headings are no longer inline-editable
+// (they're already customizable via the resource's own name in .meta plus
+// the [#text#] i18n system — there was no real use case for editing them
+// inline on top of that), and nb_edit.on_beforeunload() also skips the
+// warning entirely on admin pages as a safety net, since the counter can
+// never legitimately reflect the record being worked on there.
 
 async function login(page) {
   await page.goto('/login');
@@ -30,22 +31,19 @@ async function login(page) {
   await page.waitForURL((url) => !url.toString().includes('/login'));
 }
 
-test('a latched dirty counter from page-chrome editing does not block leaving an admin page', async ({ page }) => {
-  await page.setViewportSize({ width: 1400, height: 900 });
+test('the admin add-form heading is not wired into inline-content editing', async ({ page }) => {
   await login(page);
   await page.goto('/nb-admin/test-records/add');
 
-  // Simulate an editor toggling inline "Edit" mode and touching the page's
-  // own heading — chrome text, not form data.
-  await page.locator('[data-nb-edit-toggle]:visible').first().click();
-  const heading = page.locator('h1[data-nb-edit]').first();
-  await expect(heading).toBeVisible();
-  await heading.click();
-  await page.evaluate(() => document.execCommand('insertText', false, 'x'));
-  await page.locator('[data-nb-edit-toggle]:visible').first().click();
+  await expect(page.locator('h1[data-nb-edit]')).toHaveCount(0);
+});
 
-  const inputs = await page.evaluate(() => window.nb.edit.inputs);
-  expect(inputs).toBeGreaterThanOrEqual(1);
+test('a stray latched dirty counter still does not block leaving an admin page', async ({ page }) => {
+  await login(page);
+  await page.goto('/nb-admin/test-records/add');
+  await page.evaluate(() => {
+    window.nb.edit.inputs = 1;
+  });
 
   const result = await page.evaluate(() => window.nb.edit.on_beforeunload({}));
   expect(result).toBeUndefined();
