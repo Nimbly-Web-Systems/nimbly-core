@@ -57,13 +57,18 @@ function nb_build_form_edit_state(resource_id, record_id, config = {}) {
             nb.notify(nb.text.record_updated);
             return;
           }
-          return nb.system_message(nb.text.record_updated).then(() => {
+          // The record is already updated at this point — data.success is
+          // true. This flash message is a nice-to-have for the next page;
+          // if it hangs or fails, that must not leave the editor stuck on
+          // a page whose Save button never re-enables.
+          const go_after_save = () => {
             if (document.referrer && !document.referrer.includes("/nb-admin/")) {
               window.location.href = document.referrer;
             } else {
               window.location.href = config.resource_url || nb.base_url + "/nb-admin/" + this.resource_id;
             }
-          });
+          };
+          return nb.system_message(nb.text.record_updated).then(go_after_save).catch(go_after_save);
         })
         .catch((error) => {
           this.busy = false;

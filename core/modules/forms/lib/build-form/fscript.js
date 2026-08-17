@@ -78,9 +78,15 @@ Alpine.data("[#_bf_js_name#]_form", (resource_id = "(empty)", record_id = "") =>
             return;
           }
           if (form_config.redirect_on_success) {
-            nb.system_message(nb.text.record_added).then(() => {
+            // The record is already created at this point — data.success is
+            // true. This flash message is a nice-to-have for the next page;
+            // if it hangs or fails, that must not leave the editor stuck on
+            // a page whose Save button never re-enables and whose record
+            // has, from their perspective, silently vanished.
+            const go_to_resource = () => {
               window.location.href = form_config.resource_url || nb.base_url + "/nb-admin/" + resource_id;
-            });
+            };
+            nb.system_message(nb.text.record_added).then(go_to_resource).catch(go_to_resource);
             return;
           }
           this.form_data = {};
