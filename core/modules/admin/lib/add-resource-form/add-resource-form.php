@@ -38,6 +38,8 @@ function add_resource_form_sc($params)
         'redirect_on_success' => true,
         // Authenticated admin page, not a public submission form.
         'honeypot'            => false,
+        // Match edit-resource-form.php's button alignment.
+        'actions_align'       => 'start',
         'buttons'             => [
             ['type' => 'submit', 'title' => 'Save'],
         ],
