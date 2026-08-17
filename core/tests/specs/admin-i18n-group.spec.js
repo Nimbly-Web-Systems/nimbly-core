@@ -41,6 +41,21 @@ test.describe('admin edit — i18n and group fields (test-i18n-records)', () => 
     await expect(page.locator('body')).toContainText('Playwright English title');
   });
 
+  test('add form has no AI-assist action and no console errors', async ({ page }) => {
+    const console_errors = [];
+    page.on('pageerror', (err) => console_errors.push(err.message));
+
+    await page.goto('/nb-admin/test-i18n-records/add');
+    await expect(page.locator('[name=title]')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Generate with AI' })).toHaveCount(0);
+    expect(console_errors).toEqual([]);
+  });
+
+  test('edit form still offers the AI-assist action', async ({ page }) => {
+    await page.goto('/nb-admin/test-i18n-records/test-i18n-001');
+    await expect(page.getByRole('button', { name: 'Generate with AI' }).first()).toBeVisible();
+  });
+
   test('add a group field item and save', async ({ page }) => {
     await page.goto('/nb-admin/test-i18n-records/test-i18n-001');
 

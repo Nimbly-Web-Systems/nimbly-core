@@ -134,7 +134,11 @@ function render_field(array $def, string $field = '', $value = null, string $sto
     set_variable('_f.title',    $def['name'] ?? ucfirst(str_replace(['-', '_'], ' ', $field)));
     set_variable('_f.bg',       'bg-white');
     set_variable('_f.required', !empty($def['required']));
-    $actions = _field_actions_normalize($def);
+    // nb_form_edit is a template variable — [#set nb_form_edit=false#] stores
+    // the literal string "false", which is truthy to PHP's empty(), so this
+    // must compare the string value rather than testing emptiness.
+    $is_edit_mode = get_variable('nb_form_edit') === 'true';
+    $actions = _field_actions_normalize($def, $is_edit_mode);
 
     set_variable('_f.ai',       !empty($def['ai_prompts']));
     set_variable('_f.actions',  $actions);
@@ -162,10 +166,7 @@ function render_field(array $def, string $field = '', $value = null, string $sto
     // form captures a single language at a time (chosen via the language
     // picker) and wraps the flat value into {lang: value} on submit — so its
     // i18n fields must stay flat scalars like any other field, not objects.
-    // nb_form_edit is a template variable — [#set nb_form_edit=false#] stores
-    // the literal string "false", which is truthy to PHP's empty(), so this
-    // must compare the string value rather than testing emptiness.
-    $is_edit_i18n = !empty($def['i18n']) && get_variable('nb_form_edit') === 'true';
+    $is_edit_i18n = !empty($def['i18n']) && $is_edit_mode;
 
     if ($model === null) {
         $model = "{$store}.{$field}";
@@ -255,7 +256,7 @@ function _field_is_single_definition(array $def): bool
     return false;
 }
 
-function _field_actions_normalize(array $def): array
+function _field_actions_normalize(array $def, bool $is_edit_mode): array
 {
     $actions = $def['actions'] ?? [];
     if (empty($actions)) {
@@ -266,7 +267,13 @@ function _field_actions_normalize(array $def): array
         $actions = [$actions];
     }
 
-    if (!empty($def['ai_prompts'])) {
+    // AI-assist actions read/write the edit form's per-language value map
+    // (form_data.field.lang) and the Alpine state that backs it, neither of
+    // which exist on the add form — a new record has one language, entered
+    // via the language picker, and translations are only added afterwards
+    // in edit mode. Offering the action before then is not just unsupported
+    // UI, it's a guaranteed Alpine ReferenceError on page load.
+    if ($is_edit_mode && !empty($def['ai_prompts'])) {
         $actions[] = [
             'type' => 'ai',
             'label' => $def['ai_label'] ?? 'Generate with AI',
@@ -274,5 +281,10 @@ function _field_actions_normalize(array $def): array
         ];
     }
 
-    return array_values(array_filter($actions, 'is_array'));
+    $actions = array_values(array_filter($actions, 'is_array'));
+    if (!$is_edit_mode) {
+        $actions = array_values(array_filter($actions, fn($action) => ($action['type'] ?? 'link') !== 'ai'));
+    }
+
+    return $actions;
 }
