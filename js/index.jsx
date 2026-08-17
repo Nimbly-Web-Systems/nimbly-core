@@ -48,6 +48,13 @@ window.nb.modal = {
         if (!el) {
             return;
         }
+        // aria-hidden on a subtree that still contains focus is invalid
+        // (and modern browsers warn/intervene on it) whenever whatever
+        // triggered the close — a click on a button inside the modal, most
+        // commonly — left that element focused.
+        if (document.activeElement && el.contains(document.activeElement)) {
+            document.activeElement.blur();
+        }
         el.classList.add('hidden');
         el.setAttribute('aria-hidden', 'true');
         el.removeAttribute('aria-modal');
