@@ -138,6 +138,11 @@ function render_field(array $def, string $field = '', $value = null, string $sto
     // the literal string "false", which is truthy to PHP's empty(), so this
     // must compare the string value rather than testing emptiness.
     $is_edit_mode = get_variable('nb_form_edit') === 'true';
+    // Some fields only make sense once a record exists — a decision the
+    // editor shouldn't be prompted for while still drafting a brand-new one.
+    if (!empty($def['hide_on_add']) && !$is_edit_mode) {
+        return;
+    }
     $actions = _field_actions_normalize($def, $is_edit_mode);
 
     set_variable('_f.ai',       !empty($def['ai_prompts']));
@@ -156,6 +161,9 @@ function render_field(array $def, string $field = '', $value = null, string $sto
     }
     set_variable('_f.wrapper_class', $def['wrapper_class'] ?? 'nb-field relative my-10');
     $field_value = $value ?? $def['default'] ?? '';
+    if ($type === 'date' && $field_value === 'today') {
+        $field_value = date('Y-m-d');
+    }
     if ($type === 'date' && is_string($field_value) && preg_match('/^\d{4}-\d{2}-\d{2}/', $field_value)) {
         $field_value = substr($field_value, 0, 10);
     }
