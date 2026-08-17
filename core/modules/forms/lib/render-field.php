@@ -133,7 +133,15 @@ function render_field(array $def, string $field = '', $value = null, string $sto
     set_variable('_f.name',     $field);
     set_variable('_f.title',    $def['name'] ?? ucfirst(str_replace(['-', '_'], ' ', $field)));
     set_variable('_f.bg',       'bg-white');
-    set_variable('_f.required', !empty($def['required']));
+    // A `required` HTML attribute on a field whose wrapper is CSS-hidden
+    // (the `wrapper_class: "hidden"` convention for companion fields the
+    // user never sees, e.g. location-picker's paired longitude input) is a
+    // browser trap: an invalid-but-unfocusable control blocks the whole
+    // form's submit with no visible error. The field can still be required
+    // for data integrity — just not as a native HTML constraint here.
+    $wrapper_classes = preg_split('/\s+/', trim((string)($def['wrapper_class'] ?? '')));
+    $is_hidden_wrapper = in_array('hidden', $wrapper_classes, true);
+    set_variable('_f.required', !empty($def['required']) && !$is_hidden_wrapper);
     // nb_form_edit is a template variable — [#set nb_form_edit=false#] stores
     // the literal string "false", which is truthy to PHP's empty(), so this
     // must compare the string value rather than testing emptiness.
