@@ -8,8 +8,7 @@
         <span class="text-neutral-700">[#resource-title [#resource-id#] [#get uuid#]#]</span>
     </nav>
     <div class="mb-4 flex flex-col items-stretch gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
-        <h1 class="text-2xl font-semibold text-neutral-800 md:text-3xl" data-nb-edit="[#cfield title#]"
-            data-nb-edit-options='{"buttons":""}'>
+        <h1 class="text-2xl font-semibold text-neutral-800 md:text-3xl">
             [#text View [#resource-name [#resource-id#]#]#]
         </h1>
         <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
