@@ -131,8 +131,19 @@ function openai_source_content($values, array $languages, string $target_lang): 
     return null;
 }
 
-function openai_get_record_completion(string $api_key, array $fields, string $target_lang, ?string $system_prompt = null, array $extra_keys = [])
+function openai_get_record_completion(string $api_key, array $fields, string $target_lang, ?string $system_prompt = null, array $extra_keys = [], ?string $shared_context = null)
 {
+    // The translate flow's per-field 'source' is legitimately different per
+    // field (each is a different existing language value), so that shape
+    // stays the default. Callers with one shared source for every field
+    // (e.g. one uploaded document) pass it once via $shared_context instead
+    // of repeating it inside every field entry — repeating a multi-paragraph
+    // document N times over is pure wasted input tokens (slower and pricier
+    // for no benefit, since it's the same text every time).
+    $payload = $shared_context !== null
+        ? ['document' => $shared_context, 'fields' => $fields]
+        : ['fields' => $fields];
+
     $response = curl_post("https://api.openai.com/v1/chat/completions", [
         "Content-Type: application/json",
         "Authorization: Bearer " . $api_key
@@ -150,7 +161,7 @@ function openai_get_record_completion(string $api_key, array $fields, string $ta
             ],
             [
                 "role" => "user",
-                "content" => json_encode(['fields' => $fields], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)
+                "content" => json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)
             ],
         ],
     ]));

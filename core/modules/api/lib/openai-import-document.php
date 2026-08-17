@@ -86,10 +86,7 @@ function openai_import_document($resource)
         foreach ($definition['ai_prompts']['_all'] ?? [] as $extra) {
             $instructions[] = openai_import_document_extraction_instruction($extra);
         }
-        $fields[$field] = [
-            'instructions' => $instructions,
-            'source' => $text,
-        ];
+        $fields[$field] = ['instructions' => $instructions];
     }
 
     // location-picker fields declare their own paired longitude field
@@ -124,7 +121,6 @@ function openai_import_document($resource)
                     . 'no real-world place at all — a named real place always gets an estimate, even '
                     . 'an approximate one. Return only a plain decimal number, nothing else.',
             ],
-            'source' => $text,
         ];
         $fields[$lng_field] = [
             'instructions' => [
@@ -133,7 +129,6 @@ function openai_import_document($resource)
                     . 'place as the latitude field. Only omit this field if the document names no '
                     . 'real-world place at all. Return only a plain decimal number, nothing else.',
             ],
-            'source' => $text,
         ];
         $geo_bounds[$field] = [$lat_min, $lat_max];
         $geo_bounds[$lng_field] = [$lng_min, $lng_max];
@@ -146,9 +141,9 @@ function openai_import_document($resource)
     $languages = $meta['languages'] ?? [];
     $detect_language = count($languages) > 1;
 
-    $system_prompt = 'Extract structured field values from the supplied document text. '
-        . "For each requested field, follow that field's own instructions to decide what "
-        . 'content (if any) to extract from the document. Do not translate — return the '
+    $system_prompt = 'Extract structured field values from the document text supplied under '
+        . '"document". For each requested field, follow that field\'s own instructions to decide '
+        . 'what content (if any) to extract from the document. Do not translate — return the '
         . "content in the document's own language. If a field's content cannot be found in "
         . 'the document, omit that key entirely rather than guessing.'
         . ($detect_language
@@ -159,7 +154,7 @@ function openai_import_document($resource)
         . ($detect_language ? ', plus "_detected_language".' : '.');
 
     $extra_keys = $detect_language ? ['_detected_language'] : [];
-    $result = openai_get_record_completion($api_key, $fields, '', $system_prompt, $extra_keys);
+    $result = openai_get_record_completion($api_key, $fields, '', $system_prompt, $extra_keys, $text);
     if ($result === false) {
         return json_result(['message' => 'OPENAI_FAIL'], 500);
     }
