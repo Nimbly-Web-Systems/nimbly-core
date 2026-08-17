@@ -45,7 +45,7 @@ document.addEventListener("alpine:init", () => {
             nb.notify(result.message || "Could not import document");
             return;
           }
-          this.filled = Object.keys(result.values || {});
+          this.filled = result.labels || Object.keys(result.values || {});
           if (form_el) {
             form_el.dispatchEvent(
               new CustomEvent("nb:import-document-result", { detail: result })
