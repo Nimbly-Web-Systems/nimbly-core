@@ -123,7 +123,10 @@ if (data_exists('test-i18n-records', '.meta')) {
     data_create_resource('test-i18n-records', [
         'languages' => ['en', 'nl'],
         'fields' => [
-            'title' => ['type' => 'text', 'name' => 'Title', 'i18n' => true, 'required' => true],
+            'title' => [
+                'type' => 'text', 'name' => 'Title', 'i18n' => true, 'required' => true,
+                'ai_prompts' => ['_all' => ['Translate the title.']],
+            ],
             'body'  => ['type' => 'html', 'name' => 'Body', 'i18n' => true, 'buttons' => 'bold,italic'],
             'items' => ['type' => 'group', 'name' => 'Items', 'fields' => [
                 'label' => ['type' => 'text',   'name' => 'Label'],
