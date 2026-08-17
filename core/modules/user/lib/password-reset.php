@@ -44,9 +44,12 @@ function password_reset_job($job)
 		return false;
 	}
 
-	load_libraries(['email', 'env', 'set', 'log', 'data', 'lookup']);
+	load_libraries(['email', 'env', 'set', 'log', 'data', 'lookup', 'get']);
 
 	$site_name = data_lookup('.config', 'site', 'name', 'our site');
+	if (is_array($site_name)) {
+		$site_name = get_i18n_resolve($site_name, 'auto');
+	}
 	$subject = data_lookup('.config', 'site', 'pw_reset_subject', 'Reset your ' . $site_name . ' password');
 
 	set_variable('name', $payload['name'] ?? $email);

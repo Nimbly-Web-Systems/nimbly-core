@@ -8,9 +8,12 @@ function change_email_job($job)
         return false;
     }
 
-    load_libraries(['email', 'env', 'set', 'log', 'data', 'lookup']);
+    load_libraries(['email', 'env', 'set', 'log', 'data', 'lookup', 'get']);
 
     $site_name = data_lookup('.config', 'site', 'name', 'our site');
+    if (is_array($site_name)) {
+        $site_name = get_i18n_resolve($site_name, 'auto');
+    }
     $subject = data_lookup('.config', 'site', 'change_email_subject', 'Confirm your new ' . $site_name . ' email address');
 
     set_variable('name', $payload['name'] ?? $email);
