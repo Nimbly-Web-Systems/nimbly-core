@@ -166,6 +166,41 @@ Alpine.data("[#_bf_js_name#]_form", (resource_id = "(empty)", record_id = "") =>
         });
     },
 
+    // Applies an action-import-document result (see
+    // core/modules/admin/lib/import-document-action/). That panel renders
+    // outside this component's x-data tree, so it hands over one final
+    // event rather than sharing state directly — this is the only place
+    // that needs to know both add-mode's flat form_data shape and the
+    // data-nb-edit rich-text fields nb_edit.get_field_values() actually
+    // reads from at submit time (form_data alone wouldn't reach those).
+    // Re-checks emptiness itself rather than trusting the panel's
+    // current_values snapshot, since editing can continue while the
+    // import request is in flight.
+    import_document_apply(detail) {
+      const values = detail?.values || {};
+      Object.keys(values).forEach((field) => {
+        const value = values[field];
+        const editor_el = this.$el.querySelector('[data-nb-edit="' + field + '"]');
+        if (editor_el) {
+          if (editor_el.innerHTML.trim() !== "") {
+            return;
+          }
+          editor_el.innerHTML = value;
+          return;
+        }
+        if (!this.form_data) {
+          this.form_data = {};
+        }
+        if (String(this.form_data[field] ?? "").trim() !== "") {
+          return;
+        }
+        this.form_data[field] = value;
+      });
+      if (detail?.detected_language) {
+        this.lang = detail.detected_language;
+      }
+    },
+
     [#if _bf_uuid=(not-empty) echo="...nb_build_form_edit_state(resource_id, record_id, form_config),"#]
     ...nb.forms,
   }));

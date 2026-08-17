@@ -12,5 +12,12 @@
         [#text Add [#resource-name [#resource-id#]#]#]
     </h1>
 
-    [#add-resource-form#]
+    <div class="flex flex-col gap-6 lg:flex-row lg:items-start">
+        <div class="order-2 min-w-0 flex-1 lg:order-1">
+            [#add-resource-form#]
+        </div>
+        <div class="order-1 empty:hidden lg:order-2 lg:sticky lg:top-4 lg:w-80 lg:shrink-0">
+            [#resource-record-actions#]
+        </div>
+    </div>
 </section>
