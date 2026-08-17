@@ -97,6 +97,9 @@ if (data_exists('test-records', '.meta')) {
             'score' => ['type' => 'number',   'name' => 'Score'],
             'notes' => ['type' => 'textarea', 'name' => 'Notes'],
         ],
+        'record_actions' => [
+            ['template' => 'action-import-document', 'feature' => 'manage-test-records', 'scope' => 'add'],
+        ],
     ]);
     echo "ok    created resource 'test-records'\n";
 }

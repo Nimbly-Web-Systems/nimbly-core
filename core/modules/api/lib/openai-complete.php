@@ -131,7 +131,7 @@ function openai_source_content($values, array $languages, string $target_lang): 
     return null;
 }
 
-function openai_get_record_completion(string $api_key, array $fields, string $target_lang)
+function openai_get_record_completion(string $api_key, array $fields, string $target_lang, ?string $system_prompt = null, array $extra_keys = [])
 {
     $response = curl_post("https://api.openai.com/v1/chat/completions", [
         "Content-Type: application/json",
@@ -142,9 +142,11 @@ function openai_get_record_completion(string $api_key, array $fields, string $ta
         "messages" => [
             [
                 "role" => "system",
-                "content" => "Translate every supplied field to language code {$target_lang}. "
+                "content" => $system_prompt ?? (
+                    "Translate every supplied field to language code {$target_lang}. "
                     . "Follow each field's own instructions independently. Return one JSON object "
                     . "with exactly the supplied field keys and string values. Preserve HTML where requested."
+                )
             ],
             [
                 "role" => "user",
@@ -166,6 +168,11 @@ function openai_get_record_completion(string $api_key, array $fields, string $ta
     foreach ($fields as $field => $_definition) {
         if (isset($result[$field]) && is_string($result[$field])) {
             $completions[$field] = $result[$field];
+        }
+    }
+    foreach ($extra_keys as $key) {
+        if (isset($result[$key]) && is_string($result[$key])) {
+            $completions[$key] = $result[$key];
         }
     }
     return $completions;
