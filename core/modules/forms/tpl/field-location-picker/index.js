@@ -73,6 +73,14 @@ document.addEventListener("alpine:init", () => {
         this.map.on("click", (event) => {
           this.set_location(event.latlng.lat, event.latlng.lng);
         });
+
+        // form_data's initial value is read once, above — this covers
+        // values that arrive afterward from outside the map's own click/drag
+        // handlers (currently: action-import-document's AI-estimated
+        // coordinates on the add form).
+        this.$watch(`form_data.${this.latitude_field}`, () => this.sync_from_fields());
+        this.$watch(`form_data.${this.longitude_field}`, () => this.sync_from_fields());
+
         this.loading = false;
         this.$nextTick(() => this.map.invalidateSize());
       } catch (error) {
@@ -87,6 +95,21 @@ document.addEventListener("alpine:init", () => {
       this.form_data[this.latitude_field] = latitude.toFixed(6);
       this.form_data[this.longitude_field] = normalized_longitude.toFixed(6);
       this.place_marker(latitude, normalized_longitude);
+    },
+
+    // Only reads form_data (never writes it), so this can't loop back into
+    // its own $watch triggers.
+    sync_from_fields() {
+      if (!this.map) {
+        return;
+      }
+      const latitude = Number.parseFloat(this.form_data[this.latitude_field]);
+      const longitude = Number.parseFloat(this.form_data[this.longitude_field]);
+      if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+        return;
+      }
+      this.place_marker(latitude, longitude);
+      this.map.setView([latitude, longitude], Math.max(this.map.getZoom(), 9));
     },
 
     place_marker(latitude, longitude) {

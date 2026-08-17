@@ -1,6 +1,6 @@
 <section x-data="nb_import_document_action('[#get import_document_resource#]')" class="space-y-3">
     <h3 class="font-semibold text-neutral-800">[#text Import from document#]</h3>
-    <p class="text-sm text-neutral-600">[#text Upload a Word document — empty fields below will be filled in for you.#]</p>
+    <p class="text-sm text-neutral-600">[#text Upload a Word document and AI will fill in the empty fields for you.#]</p>
 
     <input type="file" accept=".docx" x-ref="file" class="hidden"
         @change="import_document($event.target.files[0]); $event.target.value = '';">
@@ -12,15 +12,19 @@
                 fill="currentColor" />
             <path d="M2 12C2 6.47715 6.47715 2 12 2V5C8.13401 5 5 8.13401 5 12H2Z" fill="currentColor" />
         </svg>
+        <span x-show="!busy" class="inline-flex">[#include file=[#base-path#]core/modules/forms/lib/field-actions/icon-sparkles.tpl#]</span>
         <span x-show="!busy">[#text Import from document#]</span>
-        <span x-show="busy">[#text Importing…#]</span>
+        <span x-show="busy">[#text Reading document…#]</span>
     </button>
+    <p x-cloak x-show="busy" class="text-xs text-neutral-500">
+        [#text This can take up to 30 seconds.#]
+    </p>
 
     <p x-cloak x-show="attempted && !busy && filled.length > 0" class="text-xs text-neutral-600">
         [#text Filled in:#] <span x-text="filled.join(', ')"></span>
     </p>
     <p x-cloak x-show="attempted && !busy && filled.length === 0" class="text-xs text-neutral-600">
-        [#text Nothing could be extracted from that document — please fill in the fields manually.#]
+        [#text Nothing could be extracted from that document. Please fill in the fields manually.#]
     </p>
 </section>
 <script>

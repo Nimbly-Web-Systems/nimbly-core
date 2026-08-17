@@ -1,4 +1,4 @@
-<div class="relative mb-8 w-40" x-data="{ open: false, query: '' }">
+<div class="relative w-40" x-data="{ open: false, query: '' }">
     <button type="button" @click="open = !open"
         class="btn btn-outline btn-sm w-full justify-between uppercase">
         <span x-text="lang"></span>

@@ -7,16 +7,19 @@ load_library('openai-complete');
 /**
  * POST /api/v1/{resource}/import-document — upload a .docx, extract field
  * values from it via AI, and report which of the resource's still-empty
- * free-text fields could be filled, plus (only when the resource has
- * configured languages) the document's detected language. A generic
- * add-form building block, not article- or i18n-specific: every free-text
- * field defined on the resource is eligible, whether or not it's i18n, and
- * whether or not it has ai_prompts configured — the field's own name/type
- * from .meta is enough on its own to build an instruction; ai_prompts, when
- * present, is folded in as extra guidance, not a requirement. Companion to
- * api_import_resource()'s bulk CSV/JSON import, but for a single unsaved
- * record being drafted on the add form: the upload is read straight from
- * PHP's own tmp path and never persisted to `.files`, same as
+ * fields could be filled, plus (only when the resource has configured
+ * languages) the document's detected language. A generic add-form building
+ * block, not article- or i18n-specific: every free-text field (text,
+ * textarea, html) defined on the resource is eligible, whether or not it's
+ * i18n, and whether or not it has ai_prompts configured — the field's own
+ * name/type from .meta is enough on its own to build an instruction;
+ * ai_prompts, when present, is folded in as extra guidance, not a
+ * requirement. location-picker fields (plus their declared longitude_field
+ * pair) get the same treatment via geocoding instead of extraction — no
+ * per-project config needed there either, since the pairing is structural.
+ * Companion to api_import_resource()'s bulk CSV/JSON import, but for a
+ * single unsaved record being drafted on the add form: the upload is read
+ * straight from PHP's own tmp path and never persisted to `.files`, same as
  * api_import_resource()'s pattern.
  */
 function openai_import_document($resource)
@@ -89,6 +92,53 @@ function openai_import_document($resource)
         ];
     }
 
+    // location-picker fields declare their own paired longitude field
+    // (see field-location-picker/index.tpl's `longitude_field` option), so
+    // geocoding support needs no per-project configuration — it's a
+    // structural property of the field type, not project-specific copy the
+    // way ai_prompts is.
+    $geo_bounds = [];
+    foreach ($meta['fields'] as $field => $definition) {
+        if (($definition['type'] ?? 'text') !== 'location-picker') {
+            continue;
+        }
+        $lng_field = $definition['longitude_field'] ?? '';
+        $lng_definition = $meta['fields'][$lng_field] ?? null;
+        if ($lng_field === '' || $lng_definition === null) {
+            continue;
+        }
+        if (!openai_translation_value_is_empty($current_values[$field] ?? '', $definition)
+            || !openai_translation_value_is_empty($current_values[$lng_field] ?? '', $lng_definition)) {
+            continue;
+        }
+        $lat_min = $definition['min'] ?? -90;
+        $lat_max = $definition['max'] ?? 90;
+        $lng_min = $lng_definition['min'] ?? -180;
+        $lng_max = $lng_definition['max'] ?? 180;
+        $fields[$field] = [
+            'instructions' => [
+                'Name the single primary real-world place the document is actually about (a town, '
+                    . 'region, landmark, or address), then give your best-effort estimate of its '
+                    . "decimal WGS84 latitude (between {$lat_min} and {$lat_max}), from your own "
+                    . 'geographic knowledge of that place. Only omit this field if the document names '
+                    . 'no real-world place at all — a named real place always gets an estimate, even '
+                    . 'an approximate one. Return only a plain decimal number, nothing else.',
+            ],
+            'source' => $text,
+        ];
+        $fields[$lng_field] = [
+            'instructions' => [
+                'Give your best-effort estimate of the decimal WGS84 longitude of that same primary '
+                    . "place (between {$lng_min} and {$lng_max}); it must correspond to the same "
+                    . 'place as the latitude field. Only omit this field if the document names no '
+                    . 'real-world place at all. Return only a plain decimal number, nothing else.',
+            ],
+            'source' => $text,
+        ];
+        $geo_bounds[$field] = [$lat_min, $lat_max];
+        $geo_bounds[$lng_field] = [$lng_min, $lng_max];
+    }
+
     if (empty($fields)) {
         return json_result(['values' => (object)[], 'detected_language' => null]);
     }
@@ -121,6 +171,15 @@ function openai_import_document($resource)
     }
 
     foreach ($result as $field => $value) {
+        if (isset($geo_bounds[$field])) {
+            [$min, $max] = $geo_bounds[$field];
+            if (!is_numeric($value) || (float)$value < $min || (float)$value > $max) {
+                unset($result[$field]);
+                continue;
+            }
+            $result[$field] = (string)round((float)$value, 6);
+            continue;
+        }
         $type = $meta['fields'][$field]['type'] ?? 'text';
         // The model inconsistently HTML-entity-escapes markup instead of
         // returning raw tags for the html type (a JSON string needs neither —
@@ -130,6 +189,20 @@ function openai_import_document($resource)
         $result[$field] = $type === 'html'
             ? strip_tags($value, '<p><h2><h3><strong><em><a><ul><ol><li>')
             : strip_tags($value);
+    }
+    // If only one of the pair came back valid, geocoding is meaningless —
+    // drop the lone half rather than plot a point on the equator/prime
+    // meridian by accident.
+    foreach ($meta['fields'] as $field => $definition) {
+        if (($definition['type'] ?? 'text') !== 'location-picker') {
+            continue;
+        }
+        $lng_field = $definition['longitude_field'] ?? '';
+        $has_lat = array_key_exists($field, $result);
+        $has_lng = array_key_exists($lng_field, $result);
+        if ($has_lat !== $has_lng) {
+            unset($result[$field], $result[$lng_field]);
+        }
     }
 
     return json_result(['values' => $result, 'detected_language' => $detected_language]);

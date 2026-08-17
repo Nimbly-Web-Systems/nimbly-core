@@ -32,11 +32,13 @@ function language_picker_sc($params)
     // This picks the single language a brand-new record is being authored
     // in — not a switch between saved translations (that's the separate
     // edit-mode form-translation-tabs component). Easy to mistake for one,
-    // so it gets a caption spelling that out.
-    load_library('text');
-    echo '<p class="text-xs font-medium text-neutral-500 mb-1">'
-        . htmlspecialchars(t('Adding content in this language:'), ENT_QUOTES, 'UTF-8')
-        . '</p>';
-
+    // so it's boxed like field-location-picker's own explanatory box
+    // rather than left to look like an unrelated stray label.
+    load_library('set');
+    ob_start();
     run_single_sc('language-picker-' . $variant);
+    set_variable('language-picker-control', ob_get_clean());
+
+    $wrapper = find_template('language-picker-box');
+    echo $wrapper ? run_buffered($wrapper) : get_variable('language-picker-control');
 }
