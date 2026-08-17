@@ -5,6 +5,7 @@
         [#if _f.required=(not-empty) echo=required#]
         [#if _f.min=(not-empty) echo="min='[#_f.min#]'"#]
         [#if _f.max=(not-empty) echo="max='[#_f.max#]'"#]
+        step="[#get _f.step default=any#]"
         class="input input-bordered w-full" />
     <label for="[#_f.key#]" class="pointer-events-none absolute left-3 -top-2.5 px-1
             font-bold text-sm leading-tight [#get _f.bg default=bg-neutral-50#]
