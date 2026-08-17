@@ -166,13 +166,17 @@ function openai_get_record_completion(string $api_key, array $fields, string $ta
 
     $completions = [];
     foreach ($fields as $field => $_definition) {
-        if (isset($result[$field]) && is_string($result[$field])) {
-            $completions[$field] = $result[$field];
+        // JSON mode returns each value typed per its own content — a field
+        // asked for a plain decimal number (e.g. geocoding) comes back as a
+        // JSON number, not a quoted string, even though every other field
+        // here is text/HTML and does come back as one.
+        if (isset($result[$field]) && (is_string($result[$field]) || is_numeric($result[$field]))) {
+            $completions[$field] = (string)$result[$field];
         }
     }
     foreach ($extra_keys as $key) {
-        if (isset($result[$key]) && is_string($result[$key])) {
-            $completions[$key] = $result[$key];
+        if (isset($result[$key]) && (is_string($result[$key]) || is_numeric($result[$key]))) {
+            $completions[$key] = (string)$result[$key];
         }
     }
     return $completions;
