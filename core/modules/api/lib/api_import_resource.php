@@ -106,6 +106,8 @@ function import_row($resource, $headers, $data, &$import_results, &$seen_pk_valu
         $value = parse_value($data[$k], map_field($h));
         $record[$h] = $value;
     }
+    load_library('html-sanitize');
+    $record = sanitize_html_fields(data_meta($resource), $record);
 
     foreach ($required_fields as $req) {
         if (empty($record[$req])) {
@@ -268,6 +270,8 @@ function api_import_resource_json($resource, $tmp_path)
             $uuid = generate_uuid();
         }
         $record['uuid'] = $uuid;
+        load_library('html-sanitize');
+        $record = sanitize_html_fields(data_meta($resource), $record);
 
         $exists = data_exists($resource, $uuid);
         $result = $exists

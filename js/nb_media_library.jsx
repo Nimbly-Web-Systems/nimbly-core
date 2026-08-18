@@ -229,19 +229,27 @@ var nb_media_library = {
     },
     // populate_template() does a raw, unescaped {{var}} string replace —
     // safe for numeric/uuid data, but title/description are free text an
-    // editor typed, so escape before interpolating into HTML.
+    // editor typed. Used both as element text content (safe with just
+    // &/</> escaped) and inside a double-quoted attribute (alt="..."),
+    // so quotes need escaping too or the value breaks out of the attribute.
     _html_escape(str) {
         if (!str) {
             return '';
         }
         const div = document.createElement('div');
         div.textContent = str;
-        return div.innerHTML;
+        return div.innerHTML.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
     },
+    // Builds a fresh file_info rather than mutating the object passed in —
+    // that object is often the same one rendered elsewhere (the grid's
+    // page[ix], unfiltered[]), and normalizing title/description in place
+    // would silently corrupt those other views too.
     _load_file_info(info) {
-        this.file_info = info;
-        this.file_info.title = this._normalize_i18n_field(this.file_info.title);
-        this.file_info.description = this._normalize_i18n_field(this.file_info.description);
+        this.file_info = {
+            ...info,
+            title: this._normalize_i18n_field(info.title),
+            description: this._normalize_i18n_field(info.description),
+        };
         this._original_title = JSON.stringify(this.file_info.title);
         this._original_description = JSON.stringify(this.file_info.description);
     },
