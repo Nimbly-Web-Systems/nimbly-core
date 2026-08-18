@@ -99,4 +99,31 @@ if (($test_image_meta['name'] ?? '') !== 'nimbly-test-thumbnail-ratio.png') {
     echo "ok    deleted thumbnail fixture '$test_image_uuid'\n";
 }
 
+// ── .files_meta title shape fixtures ────────────────────────────────────────
+$legacy_title_uuid = '5a35bfd018bec408f337693097237e56';
+$legacy_title_meta = data_read('.files_meta', $legacy_title_uuid);
+if (($legacy_title_meta['name'] ?? '') !== 'nimbly-test-legacy-title.png') {
+    echo "skip  legacy-title fixture '$legacy_title_uuid' not found\n";
+} else {
+    data_delete('.files_meta', $legacy_title_uuid);
+    $legacy_title_path = data_path('.files', $legacy_title_uuid);
+    if (file_exists($legacy_title_path)) {
+        unlink($legacy_title_path);
+    }
+    echo "ok    deleted legacy-title fixture '$legacy_title_uuid'\n";
+}
+
+$i18n_title_uuid = 'c9b56515199456e2880f359079194343';
+$i18n_title_meta = data_read('.files_meta', $i18n_title_uuid);
+if (($i18n_title_meta['name'] ?? '') !== 'nimbly-test-i18n-title.png') {
+    echo "skip  i18n-title fixture '$i18n_title_uuid' not found\n";
+} else {
+    data_delete('.files_meta', $i18n_title_uuid);
+    $i18n_title_path = data_path('.files', $i18n_title_uuid);
+    if (file_exists($i18n_title_path)) {
+        unlink($i18n_title_path);
+    }
+    echo "ok    deleted i18n-title fixture '$i18n_title_uuid'\n";
+}
+
 echo "\ntest:teardown complete.\n";

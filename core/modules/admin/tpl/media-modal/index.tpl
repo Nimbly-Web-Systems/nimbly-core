@@ -141,12 +141,12 @@
 
 <template id="nb_media_insert_img_landscape_tpl">
     <img class="w-full" style="max-width: {{width}}px; max-height: {{height}}px;" loading="lazy" src="{{src}}"
-        srcset="{{srcset}}" sizes="{{sizes}}" height="{{height}}" width="{{width}}">
+        srcset="{{srcset}}" sizes="{{sizes}}" height="{{height}}" width="{{width}}" alt="{{alt}}">
 </template>
 
 <template id="nb_media_insert_img_portrait_tpl">
     <img class="w-full" style="max-width: {{width}}px; max-height: {{height}}px;" loading="lazy" src="{{src}}"
-        srcset="{{srcset}}" sizes="{{sizes}}" height="{{height}}" width="{{width}}">
+        srcset="{{srcset}}" sizes="{{sizes}}" height="{{height}}" width="{{width}}" alt="{{alt}}">
 </template>
 
 <template id="nb_media_insert_svg_tpl">
