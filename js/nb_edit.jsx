@@ -69,6 +69,9 @@ nb_edit.init_editor = function (ed, as_form_field = false) {
             text: placeholder
         };
         editor_options['imageDragging'] = typeof options.media === "boolean" && options.media === true;
+        if (typeof options.paste_html === "boolean" && options.paste_html === true) {
+            editor_options['paste'] = { cleanPastedHTML: true };
+        }
         var editor = new MediumEditor(ed, editor_options);
         ed._nb_medium_editor = editor;
         if (as_form_field) {

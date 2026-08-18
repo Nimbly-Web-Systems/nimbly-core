@@ -252,8 +252,10 @@ function resource_post($resource) { // create new
     $data = api_json_input($resource);
     $csrf_check = api_check_csrf($data);
     if ($csrf_check === false) { //can also be null, if no key is set
-        return json_result(array('message' => 'INVALID_DATA'), 400);   
+        return json_result(array('message' => 'INVALID_DATA'), 400);
     }
+    load_library('html-sanitize');
+    $data = sanitize_html_fields(data_meta($resource), $data);
     $uuid = $data['uuid'];
     if (data_exists($resource, $uuid)) {
         return json_result(array('message' => 'RESOURCE_EXISTS'), 409);
@@ -284,7 +286,14 @@ function resource_put($resource) { // update multiple
     $data = api_json_input($resource);
     $csrf_check = api_check_csrf($data);
     if ($csrf_check === false) { //can also be null, if no key is set
-        return json_result(array('message' => 'INVALID_DATA'), 400);   
+        return json_result(array('message' => 'INVALID_DATA'), 400);
+    }
+    load_library('html-sanitize');
+    $meta = data_meta($resource);
+    foreach ($data as $pk => $updates) {
+        if (is_array($updates)) {
+            $data[$pk] = sanitize_html_fields($meta, $updates);
+        }
     }
     $result = data_update($resource, null, $data);
 
@@ -326,8 +335,10 @@ function resource_id_post($resource, $uuid) { // create new with uuid
     $data = api_json_input($resource);
     $csrf_check = api_check_csrf($data);
     if ($csrf_check === false) { //can also be null, if no key is set
-        return json_result(array('message' => 'INVALID_DATA'), 400);   
+        return json_result(array('message' => 'INVALID_DATA'), 400);
     }
+    load_library('html-sanitize');
+    $data = sanitize_html_fields(data_meta($resource), $data);
     $data['uuid'] = $uuid;
     $result = data_create($resource, $uuid, $data);
     if ($result) {
@@ -347,8 +358,10 @@ function resource_id_put($resource, $uuid) { // update one
     $data = api_json_input($resource);
     $csrf_check = api_check_csrf($data);
     if ($csrf_check === false) { //can also be null, if no key is set
-        return json_result(array('message' => 'INVALID_DATA'), 400);   
+        return json_result(array('message' => 'INVALID_DATA'), 400);
     }
+    load_library('html-sanitize');
+    $data = sanitize_html_fields(data_meta($resource), $data);
     $data['uuid'] = $uuid;
     $result = data_update($resource, $uuid, $data);
     if (is_array($result)) {
