@@ -138,9 +138,9 @@ const alpine_media_insert = function () {
       return nb.populate_template("nb_media_insert_doc_" + this.embed_info.doc.insert_mode + "_tpl", {
         uuid: this.file_info.uuid,
         name: this.file_info.name,
-        title: this.file_info.title || this.file_info.name,
+        title: this._html_escape(this.resolve_title()) || this.file_info.name,
         description:
-          this.file_info.description ||
+          this._html_escape(this.resolve_description()) ||
           (this.file_info.size ? this.file_info.size.fileSize(1) : ""),
       });
     },
@@ -211,6 +211,7 @@ const alpine_media_insert = function () {
         sizes: media_sizes.join(", "),
         src: src,
         srcset: srcset.join(", "),
+        alt: this._html_escape(this.resolve_title()),
       });
     },
     set_media() {
@@ -241,6 +242,12 @@ const alpine_media_insert = function () {
       const file_type = this.file_type();
       if (file_type === "img") {
         html = this.insert_img_html();
+        const title = this.resolve_title();
+        if (title) {
+          // ordinary, freely editable text — not a protected/bound field,
+          // so the editor can edit or delete it like any other paragraph.
+          html += "<p>" + this._html_escape(title) + "</p>";
+        }
       } else if (file_type === "doc") {
         html = this.insert_doc_html();
       } else if (file_type === "vid") {

@@ -82,21 +82,21 @@
                 [#text Delete#]
             </button>
 
-            <!-- title input -->
+            <!-- title input (per active admin language: [#language#]) -->
             <div class="form-control mt-6 mb-4">
                 <label for="nb_media_title" class="label py-1">
-                    <span class="label-text text-xs">[#text Title#]</span>
+                    <span class="label-text text-xs">[#text Title#] ([#language#])</span>
                 </label>
-                <input type="text" x-model="file_info.title" class="input input-bordered input-sm w-full bg-neutral-50" id="nb_media_title"
+                <input type="text" x-model="file_info.title[nb.lang]" class="input input-bordered input-sm w-full bg-neutral-50" id="nb_media_title"
                     placeholder="[#text Title#]" />
             </div>
 
-            <!-- description input -->
+            <!-- description input (per active admin language: [#language#]) -->
             <div class="form-control">
                 <label for="nb_media_description" class="label py-1">
-                    <span class="label-text text-xs">[#text Description#]</span>
+                    <span class="label-text text-xs">[#text Description#] ([#language#])</span>
                 </label>
-                <textarea x-model="file_info.description" class="textarea textarea-bordered w-full bg-neutral-50 text-xs" id="nb_media_description" rows="3" placeholder="[#text Description#]"></textarea>
+                <textarea x-model="file_info.description[nb.lang]" class="textarea textarea-bordered w-full bg-neutral-50 text-xs" id="nb_media_description" rows="3" placeholder="[#text Description#]"></textarea>
             </div>
 
             <button class="[#btn-class-primary#] my-4" @click="save_media"

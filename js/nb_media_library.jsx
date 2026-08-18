@@ -197,24 +197,69 @@ var nb_media_library = {
         }
         return t[1];
     },
+    // .files_meta's title/description are i18n ({lang: value}), but older
+    // records (or a freshly-uploaded file that was never titled) may still
+    // be a plain string, missing entirely, or (via json_encode([])) an
+    // empty array — normalize all of those to a real per-language object
+    // so every binding/PUT downstream can assume the same shape.
+    _normalize_i18n_field(value) {
+        if (typeof value === 'string') {
+            return value === '' ? {} : { [nb.lang]: value };
+        }
+        if (value && typeof value === 'object' && !Array.isArray(value)) {
+            return value;
+        }
+        return {};
+    },
+    _resolve_i18n(value) {
+        if (!value) {
+            return '';
+        }
+        if (value[nb.lang]) {
+            return value[nb.lang];
+        }
+        const first = Object.values(value).find((v) => v);
+        return first || '';
+    },
+    resolve_title() {
+        return this.file_info ? this._resolve_i18n(this.file_info.title) : '';
+    },
+    resolve_description() {
+        return this.file_info ? this._resolve_i18n(this.file_info.description) : '';
+    },
+    // populate_template() does a raw, unescaped {{var}} string replace —
+    // safe for numeric/uuid data, but title/description are free text an
+    // editor typed, so escape before interpolating into HTML.
+    _html_escape(str) {
+        if (!str) {
+            return '';
+        }
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+    },
     handle_upload_ready(e) {
         if (typeof e.detail !== "undefined" && e.detail.success) {
             e.detail.files.size = e.detail.files.size || 0;
             this.file_info = e.detail.files;
-            this._original_title = this.file_info.title;
-            this._original_description = this.file_info.description;
+            this.file_info.title = this._normalize_i18n_field(this.file_info.title);
+            this.file_info.description = this._normalize_i18n_field(this.file_info.description);
+            this._original_title = JSON.stringify(this.file_info.title);
+            this._original_description = JSON.stringify(this.file_info.description);
             this.files.unshift(this.file_info);
             this.set_page(this.current_page);
         }
     },
     select_media(ix) {
         this.file_info = this.page[ix];
-        this._original_title = this.file_info.title;
-        this._original_description = this.file_info.description;
+        this.file_info.title = this._normalize_i18n_field(this.file_info.title);
+        this.file_info.description = this._normalize_i18n_field(this.file_info.description);
+        this._original_title = JSON.stringify(this.file_info.title);
+        this._original_description = JSON.stringify(this.file_info.description);
     },
     _file_info_changed() {
-        return this.file_info.title !== this._original_title ||
-            this.file_info.description !== this._original_description;
+        return JSON.stringify(this.file_info.title) !== this._original_title ||
+            JSON.stringify(this.file_info.description) !== this._original_description;
     },
     can_embed() {
         if (this.embed_info.active) {

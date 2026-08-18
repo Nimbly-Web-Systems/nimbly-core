@@ -179,4 +179,52 @@ if (data_exists('.files_meta', $test_image_uuid) || file_exists($test_image_path
     echo "ok    created thumbnail fixture '$test_image_uuid'\n";
 }
 
+// ── .files_meta title shape fixtures ────────────────────────────────────────
+// Covers the back-compat read path for the media-library title i18n change:
+// a record with a pre-migration scalar title, and one already in the
+// {lang: value} shape.
+$legacy_title_bytes = hex2bin(
+    '89504e470d0a1a0a0000000d494844520000000a0000000a0802000000025058ea' .
+    '000000097048597300000ec400000ec401952b0e1b0000001449444154189563e4' .
+    '51b260c00d98f0c88d60690087de007ac66e42290000000049454e44ae426082'
+) . 'nimbly-test-legacy-title';
+$legacy_title_uuid = md5($legacy_title_bytes);
+$legacy_title_path = data_path('.files', $legacy_title_uuid);
+
+if (data_exists('.files_meta', $legacy_title_uuid) || file_exists($legacy_title_path)) {
+    echo "skip  legacy-title fixture '$legacy_title_uuid' already exists\n";
+} else {
+    @mkdir(dirname($legacy_title_path), 0750, true);
+    file_put_contents($legacy_title_path, $legacy_title_bytes);
+    data_create('.files_meta', $legacy_title_uuid, [
+        'name' => 'nimbly-test-legacy-title.png',
+        'type' => 'image/png',
+        'size' => strlen($legacy_title_bytes),
+        'title' => 'Legacy scalar title',
+    ]);
+    echo "ok    created legacy-title fixture '$legacy_title_uuid'\n";
+}
+
+$i18n_title_bytes = hex2bin(
+    '89504e470d0a1a0a0000000d494844520000000a0000000a0802000000025058ea' .
+    '000000097048597300000ec400000ec401952b0e1b0000001449444154189563e4' .
+    '51b260c00d98f0c88d60690087de007ac66e42290000000049454e44ae426082'
+) . 'nimbly-test-i18n-title';
+$i18n_title_uuid = md5($i18n_title_bytes);
+$i18n_title_path = data_path('.files', $i18n_title_uuid);
+
+if (data_exists('.files_meta', $i18n_title_uuid) || file_exists($i18n_title_path)) {
+    echo "skip  i18n-title fixture '$i18n_title_uuid' already exists\n";
+} else {
+    @mkdir(dirname($i18n_title_path), 0750, true);
+    file_put_contents($i18n_title_path, $i18n_title_bytes);
+    data_create('.files_meta', $i18n_title_uuid, [
+        'name' => 'nimbly-test-i18n-title.png',
+        'type' => 'image/png',
+        'size' => strlen($i18n_title_bytes),
+        'title' => ['nl' => 'NL titel', 'en' => 'EN title'],
+    ]);
+    echo "ok    created i18n-title fixture '$i18n_title_uuid'\n";
+}
+
 echo "\ntest:setup complete.\n";
