@@ -2,9 +2,10 @@
     <div data-nb-edit="[#_f.key#]"
         data-nb-edit-i18n="[#if _f.i18n=(not-empty) echo=true echo_else=false#]"
         data-nb-edit-options='{
-            "buttons":"[#get _f.buttons default=bold,italic#]", 
+            "buttons":"[#get _f.buttons default=bold,italic#]",
             "media_sizes":"[#get _f.media_sizes default=#]",
-            "media": [#fmt var=_f.media type=boolean boolean=true|false#]}' 
+            "media": [#fmt var=_f.media type=boolean boolean=true|false#],
+            "paste_html": [#fmt var=_f.paste_html type=boolean boolean=true|false#]}'
             class="prose w-full max-w-none bg-white">
         [#get-html record.[#_f.key#] legacy-img-sizes=lg-70,xl-50#]
     </div>

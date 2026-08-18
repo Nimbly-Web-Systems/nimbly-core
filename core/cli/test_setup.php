@@ -130,7 +130,7 @@ if (data_exists('test-i18n-records', '.meta')) {
                 'type' => 'text', 'name' => 'Title', 'i18n' => true, 'required' => true,
                 'ai_prompts' => ['_all' => ['Translate the title.']],
             ],
-            'body'  => ['type' => 'html', 'name' => 'Body', 'i18n' => true, 'buttons' => 'bold,italic'],
+            'body'  => ['type' => 'html', 'name' => 'Body', 'i18n' => true, 'buttons' => 'bold,italic', 'paste_html' => true],
             'items' => ['type' => 'group', 'name' => 'Items', 'fields' => [
                 'label' => ['type' => 'text',   'name' => 'Label'],
                 'value' => ['type' => 'number', 'name' => 'Value'],
