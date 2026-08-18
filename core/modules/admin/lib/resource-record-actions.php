@@ -12,16 +12,25 @@ function resource_record_actions_sc()
         return;
     }
 
-    // Actions are add- or edit-only by nature (an import-from-document action
-    // makes no sense once a record exists; a create-newsletter action makes
-    // no sense before one does), so each entry opts into one via `scope`.
-    // Missing scope defaults to 'edit' — the only context this panel was
-    // rendered in before the add form gained one of its own.
-    // Uses _bf_uuid, not nb_form_edit — build_form() resets nb_form_edit to
-    // 'false' again right after its own fields loop, before this panel (a
-    // sibling of the form, rendered after it) ever runs; _bf_uuid is set
-    // once by build_form() and never reset.
-    $current_scope = get_variable('_bf_uuid', '') !== '' ? 'edit' : 'add';
+    // Actions are add-, edit-, or view-only by nature (an import-from-document
+    // action makes no sense once a record exists; a create-newsletter action
+    // makes no sense before one does), so each entry opts into one via
+    // `scope`. Missing scope defaults to 'edit' — the only context this panel
+    // was rendered in before the add form gained one of its own.
+    // The read-only view route (record-view.tpl) never runs build_form(), so
+    // it must be checked first via admin-record-view (set by the shared
+    // (resource)/(id)/route.inc from ?view=1) — otherwise it falls through
+    // to the same "no _bf_uuid" bucket as the add page and wrongly shows
+    // add-scoped actions. Uses _bf_uuid, not nb_form_edit, for the
+    // edit/add split — build_form() resets nb_form_edit to 'false' again
+    // right after its own fields loop, before this panel (a sibling of the
+    // form, rendered after it) ever runs; _bf_uuid is set once by
+    // build_form() and never reset.
+    if (get_variable('admin-record-view', '') !== '') {
+        $current_scope = 'view';
+    } else {
+        $current_scope = get_variable('_bf_uuid', '') !== '' ? 'edit' : 'add';
+    }
 
     $rendered = [];
     foreach ($actions as $action) {
