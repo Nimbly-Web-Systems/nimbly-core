@@ -18,11 +18,17 @@ test.describe('admin add form — import from document (test-records)', () => {
     await login(page);
   });
 
-  test('add form offers the import action; edit form does not', async ({ page }) => {
+  test('add form offers the import action; edit and view forms do not', async ({ page }) => {
     await page.goto('/nb-admin/test-records/add');
     await expect(page.getByRole('heading', { name: 'Import from document' })).toBeVisible();
 
     await page.goto('/nb-admin/test-records/test-001');
+    await expect(page.getByRole('heading', { name: 'Import from document' })).toHaveCount(0);
+
+    // The read-only view route never runs build_form(), so it has no
+    // _bf_uuid either — same as the add page. Regression coverage for that
+    // scope check wrongly bucketing "view" in with "add".
+    await page.goto('/nb-admin/test-records/test-001?view=1');
     await expect(page.getByRole('heading', { name: 'Import from document' })).toHaveCount(0);
   });
 
