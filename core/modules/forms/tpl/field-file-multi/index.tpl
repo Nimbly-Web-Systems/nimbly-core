@@ -7,7 +7,7 @@
             <div class="flex min-h-12 items-center gap-3 py-2" x-data="{ meta: null }"
                 x-init="nb.api.get(nb.base_url + '/api/v1/.files_meta/' + uuid).then(r => meta = r.success ? (r['.files_meta'][uuid] || null) : null)">
                 <div class="min-w-0 flex-1">
-                    <div class="truncate text-sm text-neutral-800" x-text="meta ? (meta.title || meta.name) : uuid"></div>
+                    <div class="truncate text-sm text-neutral-800" x-text="meta ? (nb.media_library._resolve_i18n(meta.title) || meta.name) : uuid"></div>
                     <div class="text-xs text-neutral-400" x-text="meta && meta.size ? (s => s < 1024 ? s + ' B' : s < 1048576 ? (s / 1024).toFixed(1) + ' KB' : (s / 1048576).toFixed(1) + ' MB')(meta.size) : ''"></div>
                 </div>
                 <a :href="`${nb.base_url}/download/${uuid}`" target="_blank"

@@ -32,7 +32,7 @@
         <!-- file info: title + size -->
         <div x-show="[#_f.model#]" class="flex flex-col min-w-0 flex-1 gap-0.5">
             <span class="text-sm text-neutral-800 truncate leading-tight"
-                x-text="_meta ? (_meta.title || _meta.name) : ''">
+                x-text="_meta ? (nb.media_library._resolve_i18n(_meta.title) || _meta.name) : ''">
             </span>
             <span class="text-xs text-neutral-400 leading-none"
                 x-text="_meta && _meta.size ? (s => s < 1024 ? s + ' B' : s < 1048576 ? (s / 1024).toFixed(1) + ' KB' : (s / 1048576).toFixed(1) + ' MB')(_meta.size) : ''">

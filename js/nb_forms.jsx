@@ -41,9 +41,7 @@ var nb_forms = {
         if (!file) {
             return;
         }
-        nb.media_alpine.file_info = file;
-        nb.media_alpine._original_title = file.title;
-        nb.media_alpine._original_description = file.description;
+        nb.media_alpine._load_file_info(file);
         try {
             const idx = nb.media_alpine.files.indexOf(file);
             if (idx >= 0) {

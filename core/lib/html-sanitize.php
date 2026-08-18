@@ -23,7 +23,9 @@ function sanitize_html_attrs(string $html): string
     libxml_use_internal_errors($prev_errors);
 
     if (!$loaded) {
-        return $html;
+        // Couldn't parse it even with libxml's very lenient HTML recovery —
+        // treat it as suspect and fail closed rather than storing it as-is.
+        return strip_tags($html);
     }
 
     $changed = false;
@@ -31,11 +33,14 @@ function sanitize_html_attrs(string $html): string
     foreach ($xpath->query('//*') as $el) {
         $remove = [];
         foreach ($el->attributes as $attr) {
-            if (stripos($attr->name, 'on') === 0) {
+            if (
+                stripos($attr->name, 'on') === 0
+                || $attr->name === 'srcdoc'
+            ) {
                 $remove[] = $attr->name;
             } elseif (
                 ($attr->name === 'href' || $attr->name === 'src')
-                && !_html_sanitize_url_allowed($attr->value, $el->tagName)
+                && !_html_sanitize_url_allowed($attr->value, $el->tagName, $attr->name)
             ) {
                 $remove[] = $attr->name;
             }
@@ -73,7 +78,8 @@ function sanitize_html_attrs(string $html): string
  */
 function sanitize_html_fields(array $meta, array $data): array
 {
-    foreach ($meta['fields'] ?? [] as $field => $def) {
+    $fields = is_array($meta['fields'] ?? null) ? $meta['fields'] : [];
+    foreach ($fields as $field => $def) {
         if (($def['type'] ?? null) !== 'html' || !isset($data[$field])) {
             continue;
         }
@@ -93,14 +99,20 @@ function sanitize_html_fields(array $meta, array $data): array
 /**
  * Denylist, not allowlist: only blocks schemes that can execute script
  * (javascript:, vbscript:) or smuggle an executable document (data:,
- * except the data:image/ placeholders already used elsewhere in this
- * codebase). Anything else — including odd-but-inert schemes like
- * file:// or applewebdata:// that show up in real pasted content — is
- * left alone rather than silently stripped from existing articles.
+ * except raster-image data: URIs on src, the lazy-load placeholder
+ * pattern already used elsewhere in this codebase). Anything else —
+ * including odd-but-inert schemes like file:// or applewebdata:// that
+ * show up in real pasted content — is left alone rather than silently
+ * stripped from existing articles.
  */
-function _html_sanitize_url_allowed(string $url, string $tag): bool
+function _html_sanitize_url_allowed(string $url, string $tag, string $attr): bool
 {
-    $url = trim($url);
+    // Browsers strip ASCII control characters (tabs, newlines, ...)
+    // anywhere in a URL before resolving its scheme, so a naive
+    // ^javascript: match can be defeated by hiding one inside the
+    // scheme name (java\tscript:...). Strip them everywhere, not just
+    // at the edges, before matching.
+    $url = trim(preg_replace('~[\x00-\x1F]~', '', $url) ?? '');
     if ($url === '' || strpos($url, ':') === false) {
         return true;
     }
@@ -108,7 +120,13 @@ function _html_sanitize_url_allowed(string $url, string $tag): bool
         return false;
     }
     if (preg_match('~^data:~i', $url)) {
-        return $tag !== 'iframe' && preg_match('~^data:image/~i', $url) === 1;
+        // Only on src, only raster formats — svg can carry <script>/
+        // onload and is never needed for the lazy-load placeholder use
+        // case this exists for. Never on href: a data:image/... link
+        // still executes as a full document on click/navigation, where
+        // the "img context can't run scripts" assumption doesn't hold.
+        return $attr === 'src' && $tag !== 'iframe'
+            && preg_match('~^data:image/(png|gif|jpe?g|webp);base64,~i', $url) === 1;
     }
     return true;
 }
