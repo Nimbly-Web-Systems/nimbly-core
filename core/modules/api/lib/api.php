@@ -164,6 +164,16 @@ function api_json_input($resource) {
     return $data;
 }
 
+/**
+ * Runs the html-field attribute sanitizer over a single resource-shaped
+ * record (as opposed to resource_put's bulk uuid-keyed map, which sanitizes
+ * per-record itself since the shape differs).
+ */
+function api_sanitize_html_fields($resource, $data) {
+    load_library('html-sanitize');
+    return sanitize_html_fields(data_meta($resource), $data);
+}
+
 /***
  * the honeypot anti-spam field, if it is there, should be empty.
  * only bots are tricked to fill it in.
@@ -254,8 +264,7 @@ function resource_post($resource) { // create new
     if ($csrf_check === false) { //can also be null, if no key is set
         return json_result(array('message' => 'INVALID_DATA'), 400);
     }
-    load_library('html-sanitize');
-    $data = sanitize_html_fields(data_meta($resource), $data);
+    $data = api_sanitize_html_fields($resource, $data);
     $uuid = $data['uuid'];
     if (data_exists($resource, $uuid)) {
         return json_result(array('message' => 'RESOURCE_EXISTS'), 409);
@@ -337,8 +346,7 @@ function resource_id_post($resource, $uuid) { // create new with uuid
     if ($csrf_check === false) { //can also be null, if no key is set
         return json_result(array('message' => 'INVALID_DATA'), 400);
     }
-    load_library('html-sanitize');
-    $data = sanitize_html_fields(data_meta($resource), $data);
+    $data = api_sanitize_html_fields($resource, $data);
     $data['uuid'] = $uuid;
     $result = data_create($resource, $uuid, $data);
     if ($result) {
@@ -360,8 +368,7 @@ function resource_id_put($resource, $uuid) { // update one
     if ($csrf_check === false) { //can also be null, if no key is set
         return json_result(array('message' => 'INVALID_DATA'), 400);
     }
-    load_library('html-sanitize');
-    $data = sanitize_html_fields(data_meta($resource), $data);
+    $data = api_sanitize_html_fields($resource, $data);
     $data['uuid'] = $uuid;
     $result = data_update($resource, $uuid, $data);
     if (is_array($result)) {

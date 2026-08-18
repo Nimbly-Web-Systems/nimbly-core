@@ -238,24 +238,23 @@ var nb_media_library = {
         div.textContent = str;
         return div.innerHTML;
     },
+    _load_file_info(info) {
+        this.file_info = info;
+        this.file_info.title = this._normalize_i18n_field(this.file_info.title);
+        this.file_info.description = this._normalize_i18n_field(this.file_info.description);
+        this._original_title = JSON.stringify(this.file_info.title);
+        this._original_description = JSON.stringify(this.file_info.description);
+    },
     handle_upload_ready(e) {
         if (typeof e.detail !== "undefined" && e.detail.success) {
             e.detail.files.size = e.detail.files.size || 0;
-            this.file_info = e.detail.files;
-            this.file_info.title = this._normalize_i18n_field(this.file_info.title);
-            this.file_info.description = this._normalize_i18n_field(this.file_info.description);
-            this._original_title = JSON.stringify(this.file_info.title);
-            this._original_description = JSON.stringify(this.file_info.description);
+            this._load_file_info(e.detail.files);
             this.files.unshift(this.file_info);
             this.set_page(this.current_page);
         }
     },
     select_media(ix) {
-        this.file_info = this.page[ix];
-        this.file_info.title = this._normalize_i18n_field(this.file_info.title);
-        this.file_info.description = this._normalize_i18n_field(this.file_info.description);
-        this._original_title = JSON.stringify(this.file_info.title);
-        this._original_description = JSON.stringify(this.file_info.description);
+        this._load_file_info(this.page[ix]);
     },
     _file_info_changed() {
         return JSON.stringify(this.file_info.title) !== this._original_title ||
