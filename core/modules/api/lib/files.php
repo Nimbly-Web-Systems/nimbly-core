@@ -12,31 +12,6 @@ function files_get()
     return json_result(array('files' => $files, 'count' => count($files)), 200);
 }
 
-/**
- * `.files_meta` starts out with no declared schema (`fields: false`,
- * auto-created lazily by data_meta()). This ensures it has a real, i18n-
- * capable `title`/`description` so per-language captions can be set from
- * the media side panel. Idempotent: no-ops once `title` is declared.
- * Existing scalar title/description values on individual records are left
- * as-is — they read through fine (get_i18n_resolve() no-ops on scalars)
- * and upgrade to the i18n shape lazily, the next time that record is saved.
- */
-function files_meta_ensure_schema()
-{
-    $meta = data_meta('.files_meta');
-    if (!empty($meta['fields']['title'])) {
-        return;
-    }
-    data_update('.files_meta', '.meta', [
-        'fields' => [
-            'title' => ['type' => 'text', 'name' => 'Title', 'i18n' => true],
-            'description' => ['type' => 'textarea', 'name' => 'Description', 'i18n' => true],
-        ],
-        'languages' => data_lookup('.config', 'site', 'languages', ['en']),
-    ]);
-    data_meta_invalidate('.files_meta');
-}
-
 function files_post()
 { // create a new file and it's meta data
     if (empty($_FILES) || empty($_FILES['file']['tmp_name'])) {
@@ -47,7 +22,6 @@ function files_post()
         }
         return json_result(['message' => 'BAD_REQUEST'], 400);
     }
-    files_meta_ensure_schema();
     $from = $_FILES['file']['tmp_name'];
     $uuid = hash_file('md5', $from); // use checksum as uuid
     if (data_exists('.files', $uuid)) {
@@ -110,7 +84,6 @@ function files_id_get($resource = ".files_meta", $uuid)
 
 function files_id_put($resource = ".files_meta", $uuid)
 { // update one
-    files_meta_ensure_schema();
     return resource_id_put($resource, $uuid);
 }
 

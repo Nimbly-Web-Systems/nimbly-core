@@ -971,15 +971,9 @@ function data_resources_list()
  * @param string|null $uuid Optional record UUID, for the embedded-schema fallback.
  * @return array Resource metadata array.
  */
-function &_data_meta_cache()
-{
-    static $meta_result = [];
-    return $meta_result;
-}
-
 function data_meta($resource, $uuid = null)
 {
-    $meta_result = &_data_meta_cache();
+    static $meta_result = [];
     $cache_key = $resource . '|' . $uuid;
     if (!empty($meta_result[$cache_key])) {
         return $meta_result[$cache_key];
@@ -1001,21 +995,6 @@ function data_meta($resource, $uuid = null)
     }
     $meta_result[$cache_key] = $meta;
     return $meta;
-}
-
-/**
- * data_meta() caches its result per-request with no invalidation, so code
- * that writes a resource's `.meta` and then needs data_meta() to reflect
- * that write within the same request must clear the stale entry first.
- */
-function data_meta_invalidate($resource)
-{
-    $meta_result = &_data_meta_cache();
-    foreach (array_keys($meta_result) as $key) {
-        if ($key === $resource || str_starts_with($key, $resource . '|')) {
-            unset($meta_result[$key]);
-        }
-    }
 }
 
 /**
