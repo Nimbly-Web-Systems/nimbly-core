@@ -48,8 +48,16 @@ cli_section('test:setup', true);
 
 // ── Role ─────────────────────────────────────────────────────────────────────
 $test_role_features = [
-    'view-admin-dashboard', 'view-nimblybar', 'edit-inline-content', 'manage-test-records', 'manage-test-i18n-records', 'test',
+    'view-admin-dashboard', 'view-nimblybar', 'edit-inline-content', 'view-.files', 'edit-.files',
+    'manage-test-records', 'manage-test-i18n-records', 'test',
 ];
+// Lets a project's own ext/tests add features the base fixtures above don't
+// cover (e.g. access to a real project resource like 'articles') without
+// hardcoding any project-specific feature name into shared core.
+$ext_test_role_features = __DIR__ . '/../../ext/tests/test-role-features.php';
+if (file_exists($ext_test_role_features)) {
+    $test_role_features = array_unique(array_merge($test_role_features, require $ext_test_role_features));
+}
 if (data_exists('roles', 'test')) {
     $role = data_read('roles', 'test');
     $existing_features = array_filter(array_map('trim', explode(',', (string)($role['features'] ?? ''))));
