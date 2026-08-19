@@ -94,7 +94,7 @@
                 </ul>
                 <button type="button" x-show="nb.ai_translate_available && nb.languages.length > 1"
                     class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-neutral-300 bg-white text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900 focus:outline-none focus:ring-2 focus:ring-neutral-300 disabled:pointer-events-none disabled:opacity-40"
-                    :disabled="ai_busy_caption"
+                    :disabled="ai_busy_caption || !has_empty_caption_fields(caption_lang)"
                     @click="ai_translate_caption(caption_lang)" title="[#text Translate with AI#]">
                     <span class="inline-flex" :class="{ 'animate-spin': ai_busy_caption === caption_lang }">[#include file=[#base-path#]core/modules/forms/lib/field-actions/icon-sparkles.tpl#]</span>
                 </button>
