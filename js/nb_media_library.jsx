@@ -259,6 +259,16 @@ var nb_media_library = {
     switch_caption_lang(lang) {
         this.caption_lang = lang;
     },
+    // Same PUT as save_media(), but without the "Saved" toast — used
+    // internally where persisting is an implementation detail of some
+    // other action (like translating) rather than something the editor
+    // asked for directly.
+    _save_media_silent() {
+        return nb.api.put(nb.base_url + "/api/v1/.files_meta/" + this.file_info.uuid, {
+            title: this.file_info.title,
+            description: this.file_info.description,
+        });
+    },
     // The AI endpoint translates from whatever's already saved on the
     // record (it reads the file fresh server-side), so the current
     // language's caption has to be persisted first or there's nothing to
@@ -266,7 +276,7 @@ var nb_media_library = {
     ai_translate_caption(lang) {
         this.ai_busy_caption = lang;
         const fields = ['title', 'description'];
-        this.save_media()
+        this._save_media_silent()
             .then(() =>
                 Promise.all(
                     fields.map((field) =>
