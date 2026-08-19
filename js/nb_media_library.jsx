@@ -8,6 +8,8 @@ var nb_media_library = {
     file_info: null,
     _original_title: null,
     _original_description: null,
+    caption_lang: null,
+    ai_busy_caption: null,
     embed_info: {
         active: 'vimeo',
         vimeo: {
@@ -252,6 +254,45 @@ var nb_media_library = {
         };
         this._original_title = JSON.stringify(this.file_info.title);
         this._original_description = JSON.stringify(this.file_info.description);
+        this.caption_lang = nb.lang;
+    },
+    switch_caption_lang(lang) {
+        this.caption_lang = lang;
+    },
+    // The AI endpoint translates from whatever's already saved on the
+    // record (it reads the file fresh server-side), so the current
+    // language's caption has to be persisted first or there's nothing to
+    // translate from. Title and description translate together, one click.
+    ai_translate_caption(lang) {
+        this.ai_busy_caption = lang;
+        const fields = ['title', 'description'];
+        this.save_media()
+            .then(() =>
+                Promise.all(
+                    fields.map((field) =>
+                        nb.api.post(nb.base_url + '/api/v1/openai/complete', {
+                            resource: '.files_meta',
+                            uuid: this.file_info.uuid,
+                            field: field,
+                            lang: lang,
+                        }).then((data) => ({ field, data }))
+                    )
+                )
+            )
+            .then((results) => {
+                this.ai_busy_caption = null;
+                results.forEach(({ field, data }) => {
+                    if (!data.success) {
+                        nb.notify(data.message);
+                    } else if (data.completion) {
+                        this.file_info[field][lang] = data.completion;
+                    }
+                });
+            })
+            .catch((err) => {
+                this.ai_busy_caption = null;
+                nb.notify(err.message || 'Could not complete AI request');
+            });
     },
     handle_upload_ready(e) {
         if (typeof e.detail !== "undefined" && e.detail.success) {
@@ -296,13 +337,14 @@ var nb_media_library = {
         });
     },
     save_media() {
-        nb.api.put(nb.base_url + "/api/v1/.files_meta/" + this.file_info.uuid, {
+        return nb.api.put(nb.base_url + "/api/v1/.files_meta/" + this.file_info.uuid, {
             title: this.file_info.title,
             description: this.file_info.description
         }).then((data) => {
             if (data.success) {
                 nb.notify(nb.text.saved);
             }
+            return data;
         })
     }
 };

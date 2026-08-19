@@ -2,6 +2,8 @@
 window.nb = {
     base_url: "[#base-url#]",
     lang: "[#language#]",
+    languages: [#site-languages-json#],
+    ai_translate_available: [#ai-translate-available#],
     max_upload_size: "[#max-upload-size bytes#]",
     text: {
         record_deleted: "[#text Record deleted#]",
