@@ -269,13 +269,27 @@ var nb_media_library = {
             description: this.file_info.description,
         });
     },
+    // Matches the article field-translate buttons: only offered, and only
+    // ever fills, an empty field — never overwrites something an editor
+    // already wrote.
+    _caption_field_empty(field, lang) {
+        const value = this.file_info?.[field]?.[lang];
+        return !value || String(value).trim() === '';
+    },
+    has_empty_caption_fields(lang) {
+        return ['title', 'description'].some((field) => this._caption_field_empty(field, lang));
+    },
     // The AI endpoint translates from whatever's already saved on the
     // record (it reads the file fresh server-side), so the current
     // language's caption has to be persisted first or there's nothing to
-    // translate from. Title and description translate together, one click.
+    // translate from. Title and description translate together, one click,
+    // but only whichever of the two is actually empty.
     ai_translate_caption(lang) {
+        const fields = ['title', 'description'].filter((field) => this._caption_field_empty(field, lang));
+        if (fields.length === 0) {
+            return;
+        }
         this.ai_busy_caption = lang;
-        const fields = ['title', 'description'];
         this._save_media_silent()
             .then(() =>
                 Promise.all(
