@@ -241,13 +241,16 @@ const alpine_media_insert = function () {
       let html = "";
       const file_type = this.file_type();
       if (file_type === "img") {
-        html = this.insert_img_html();
+        const img_html = this.insert_img_html();
         const title = this.resolve_title();
-        if (title) {
-          // ordinary, freely editable text — not a protected/bound field,
-          // so the editor can edit or delete it like any other paragraph.
-          html += "<p>" + this._html_escape(title) + "</p>";
-        }
+        // ordinary, freely editable text — not a protected/bound field, so
+        // the editor can edit or delete the caption like any other text.
+        const caption = title
+          ? '<figcaption class="mt-2 text-sm text-neutral-500">' +
+            this._html_escape(title) +
+            "</figcaption>"
+          : "";
+        html = "<figure>" + img_html + caption + "</figure>";
       } else if (file_type === "doc") {
         html = this.insert_doc_html();
       } else if (file_type === "vid") {

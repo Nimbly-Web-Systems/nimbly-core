@@ -107,7 +107,7 @@ function get_html_sc($params)
     if (get_single_param_value($params, 'plain', true) === true) {
         $result = strip_tags($html);
     } else {
-        $result = strip_tags($html, "<h1><h2><h3><h4><h5><h6><b><strong><a><i><p><blockquote><ol><ul><li><br><img><iframe><figure><video><source>");
+        $result = strip_tags($html, "<h1><h2><h3><h4><h5><h6><b><strong><a><i><p><blockquote><ol><ul><li><br><img><iframe><figure><figcaption><video><source>");
     }
     echo $result;
 }
