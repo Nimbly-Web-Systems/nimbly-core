@@ -43,7 +43,10 @@ function resource_record_actions_sc()
         if ($template === '' || !preg_match('/^[a-z0-9][a-z0-9-]*$/', $template)) {
             continue;
         }
-        if ($scope !== $current_scope) {
+        // Usually one scope, but an action can opt into more than one
+        // context (e.g. "view,edit") via a comma-separated list.
+        $scopes = array_map('trim', explode(',', $scope));
+        if (!in_array($current_scope, $scopes, true)) {
             continue;
         }
         if ($feature !== '' && !access_by_feature($feature)) {
