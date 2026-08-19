@@ -82,6 +82,9 @@ function dot2rs($rs)
         $uuid = $set[1];
         $field = $set[2];
     }
+    if ($uuid === '') {
+        return false;
+    }
     return [$resource, $uuid, $field];
 }
 
