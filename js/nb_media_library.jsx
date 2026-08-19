@@ -204,9 +204,14 @@ var nb_media_library = {
     // be a plain string, missing entirely, or (via json_encode([])) an
     // empty array — normalize all of those to a real per-language object
     // so every binding/PUT downstream can assume the same shape.
+    // A legacy scalar carries no language tag at all, so tagging it has to
+    // be a guess either way — but nb.lang (whatever language the admin
+    // happens to be browsing the site in right now) is an arbitrary UI
+    // state, unrelated to what language the text was actually written in.
+    // The site's primary configured language is a far better guess.
     _normalize_i18n_field(value) {
         if (typeof value === 'string') {
-            return value === '' ? {} : { [nb.lang]: value };
+            return value === '' ? {} : { [nb.languages[0] || nb.lang]: value };
         }
         if (value && typeof value === 'object' && !Array.isArray(value)) {
             return value;
