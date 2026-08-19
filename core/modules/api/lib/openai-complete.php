@@ -82,6 +82,12 @@ function openai_complete_post()
     }
 
     $prompts = openai_get_system_instructions($meta['fields'][$fn]['ai_prompts'], $data['lang']);
+    // The target language must always be explicit — per-language prompt
+    // entries in ai_prompts (e.g. "Translate the title to English...") are
+    // optional extra guidance, not the only way the model learns what to
+    // translate into. Without this, a field whose ai_prompts only has
+    // `_all` entries never tells the model which language to produce.
+    $prompts[] = ["role" => "system", "content" => "Translate the content into language (code) " . $data['lang'] . ". Respond with only the translation, nothing else."];
     $src_content = '';
     foreach ($meta['languages'] as $lang) {
         if ($lang === $data['lang'] || empty($record[$fn][$lang])) {
