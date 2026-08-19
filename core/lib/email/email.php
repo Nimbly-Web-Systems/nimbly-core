@@ -71,6 +71,7 @@ function email_prepare($email_data)
 			throw new Exception('Email template not found');
 		}
 		$email_data['tpl'] = $tpl;
+		load_library('run');
 		$email_data['html'] = run_buffered($tpl);
 	}
 	$email_data['text'] = isset($email_data['text']) ? (string)$email_data['text'] : plain_text($email_data['html']);
