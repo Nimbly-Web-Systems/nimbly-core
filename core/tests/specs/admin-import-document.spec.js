@@ -38,6 +38,12 @@ test.describe('admin add form — import from document (test-records)', () => {
 
     await page.goto('/nb-admin/test-records/add');
 
+    // The import action calls OPENAI_API_KEY-backed extraction server-side
+    // (openai-import-document.php returns 503 without it). CI environments
+    // don't have that key configured, so there's nothing to extract.
+    const ai_available = await page.evaluate(() => window.nb.ai_translate_available);
+    test.skip(!ai_available, 'OPENAI_API_KEY not configured in this environment');
+
     // A field the editor already typed into must survive the import untouched.
     await page.fill('[name=title]', 'Already typed title');
 
