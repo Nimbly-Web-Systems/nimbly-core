@@ -84,13 +84,14 @@
 
             <!-- caption language tabs -->
             <div class="mt-6 flex items-center justify-between gap-2">
-                <div class="join">
+                <ul class="flex flex-row">
                     <template x-for="l in nb.languages" :key="l">
-                        <button type="button" class="btn join-item btn-xs uppercase"
-                            :class="caption_lang === l ? 'btn-primary' : 'btn-outline'"
-                            @click="switch_caption_lang(l)" x-text="l"></button>
+                        <li><button type="button"
+                            class="uppercase text-xs px-4 py-2 border-b-2 hover:font-bold hover:text-black"
+                            :class="caption_lang === l ? 'border-b-primary' : 'border-b-transparent'"
+                            @click="switch_caption_lang(l)" x-text="l"></button></li>
                     </template>
-                </div>
+                </ul>
                 <button type="button" x-show="nb.ai_translate_available && nb.languages.length > 1"
                     class="[#btn-class-icon#] p-1 text-neutral-600" :disabled="ai_busy_caption"
                     @click="ai_translate_caption(caption_lang)" title="[#text Translate with AI#]">
