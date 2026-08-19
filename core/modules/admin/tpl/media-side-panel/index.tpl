@@ -82,21 +82,37 @@
                 [#text Delete#]
             </button>
 
-            <!-- title input (per active admin language: [#language#]) -->
-            <div class="form-control mt-6 mb-4">
+            <!-- caption language tabs -->
+            <div class="mt-6 flex items-center justify-between gap-2">
+                <div class="join">
+                    <template x-for="l in nb.languages" :key="l">
+                        <button type="button" class="btn join-item btn-xs uppercase"
+                            :class="caption_lang === l ? 'btn-primary' : 'btn-outline'"
+                            @click="switch_caption_lang(l)" x-text="l"></button>
+                    </template>
+                </div>
+                <button type="button" x-show="nb.ai_translate_available && nb.languages.length > 1"
+                    class="[#btn-class-icon#] p-1 text-neutral-600" :disabled="ai_busy_caption"
+                    @click="ai_translate_caption(caption_lang)" title="[#text Translate with AI#]">
+                    <span class="inline-flex" :class="{ 'animate-spin': ai_busy_caption === caption_lang }">[#include file=[#base-path#]core/modules/forms/lib/field-actions/icon-sparkles.tpl#]</span>
+                </button>
+            </div>
+
+            <!-- title input -->
+            <div class="form-control mb-4">
                 <label for="nb_media_title" class="label py-1">
-                    <span class="label-text text-xs">[#text Title#] ([#language#])</span>
+                    <span class="label-text text-xs">[#text Title#]</span>
                 </label>
-                <input type="text" x-model="file_info.title[nb.lang]" class="input input-bordered input-sm w-full bg-neutral-50" id="nb_media_title"
+                <input type="text" x-model="file_info.title[caption_lang]" class="input input-bordered input-sm w-full bg-neutral-50" id="nb_media_title"
                     placeholder="[#text Title#]" />
             </div>
 
-            <!-- description input (per active admin language: [#language#]) -->
+            <!-- description input -->
             <div class="form-control">
                 <label for="nb_media_description" class="label py-1">
-                    <span class="label-text text-xs">[#text Description#] ([#language#])</span>
+                    <span class="label-text text-xs">[#text Description#]</span>
                 </label>
-                <textarea x-model="file_info.description[nb.lang]" class="textarea textarea-bordered w-full bg-neutral-50 text-xs" id="nb_media_description" rows="3" placeholder="[#text Description#]"></textarea>
+                <textarea x-model="file_info.description[caption_lang]" class="textarea textarea-bordered w-full bg-neutral-50 text-xs" id="nb_media_description" rows="3" placeholder="[#text Description#]"></textarea>
             </div>
 
             <button class="[#btn-class-primary#] my-4" @click="save_media"
