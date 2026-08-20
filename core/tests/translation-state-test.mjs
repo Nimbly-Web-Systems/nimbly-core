@@ -87,6 +87,7 @@ assert.equal(state.translation_field_empty("body", "en"), true);
     },
   };
   state.lang = "nl";
+  state.$store = { form_language: { current: "nl" } };
   state.sync_editors = (lang) => {
     synced_language = lang;
   };
@@ -171,6 +172,7 @@ function install_submit_environment(put) {
     redirect_on_success: false,
   });
   for (const form_state of [first, second]) {
+    form_state.$store = { form_language: { current: null } };
     form_state.$watch = () => {};
     form_state.$nextTick = (callback) => callback();
     form_state.$el = null;

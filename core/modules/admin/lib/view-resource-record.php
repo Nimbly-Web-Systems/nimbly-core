@@ -12,37 +12,99 @@ function view_resource_record_sc($params)
     $uuid = get_param_value($params, 'uuid', end($params)) ?? get_variable('data.uuid');
     $record = get_variable('record') ?? [];
     $fields = get_variable('data.fields') ?? [];
+    $languages = get_variable('data.translation_languages') ?? [];
 
     if (empty($resource) || empty($uuid) || !is_array($record) || !is_array($fields)) {
         return '';
     }
 
+    $translation_languages = is_array($languages) && count($languages) > 1
+        ? array_values(array_filter($languages, 'is_string'))
+        : [];
+    $default_language = $translation_languages[0] ?? '';
     $rows = '';
     foreach ($fields as $field_id => $field) {
         if (!is_array($field)) {
             continue;
         }
-        $rows .= view_resource_record_row((string)$field_id, $field, $record[$field_id] ?? null);
+        $rows .= view_resource_record_row(
+            (string)$field_id,
+            $field,
+            $record[$field_id] ?? null,
+            $translation_languages
+        );
     }
 
     $rows .= view_resource_record_row('uuid', ['name' => 'UUID', 'type' => 'text'], $uuid);
 
-    return '<div class="overflow-hidden rounded-md border border-neutral-200 bg-white shadow-sm">'
+    $tabs = view_resource_record_translation_tabs($translation_languages, $default_language);
+    if ($tabs !== '') {
+        set_variable('record-view-translation-tabs', '1');
+    }
+
+    $details = '<div class="overflow-hidden rounded-md border border-neutral-200 bg-white shadow-sm">'
         . '<dl class="divide-y divide-neutral-200">'
         . $rows
         . '</dl>'
         . '</div>';
+    if ($tabs === '') {
+        return $details;
+    }
+
+    $alpine = $tabs === '' ? '' : ' x-data="{ lang: \''
+        . htmlspecialchars($default_language, ENT_QUOTES, 'UTF-8')
+        . '\' }" x-init="$store.form_language.current = lang"';
+
+    return '<div' . $alpine . '>'
+        . $tabs
+        . $details
+        . '</div>';
 }
 
-function view_resource_record_row(string $field_id, array $field, $value): string
+function view_resource_record_row(string $field_id, array $field, $value, array $languages = []): string
 {
     $label = htmlspecialchars((string)($field['name'] ?? ucfirst(str_replace(['-', '_'], ' ', $field_id))), ENT_QUOTES, 'UTF-8');
-    $body = view_resource_record_value((string)($field['type'] ?? 'text'), $value);
+    $type = (string)($field['type'] ?? 'text');
+    $body = !empty($field['i18n']) && !empty($languages)
+        ? view_resource_record_localized_value($type, $value, $languages)
+        : view_resource_record_value($type, $value);
 
     return '<div class="grid gap-2 px-4 py-4 sm:grid-cols-[14rem_minmax(0,1fr)] sm:gap-6">'
         . '<dt class="text-sm font-semibold text-neutral-700">' . $label . '</dt>'
         . '<dd class="min-w-0 text-sm text-neutral-900">' . $body . '</dd>'
         . '</div>';
+}
+
+function view_resource_record_translation_tabs(array $languages, string $default_language): string
+{
+    if (count($languages) < 2 || $default_language === '') {
+        return '';
+    }
+
+    $html = '<ul class="mb-10 flex flex-row" role="tablist">';
+    foreach ($languages as $language) {
+        $escaped = htmlspecialchars($language, ENT_QUOTES, 'UTF-8');
+        $html .= '<li><button type="button" role="tab" class="cursor-pointer border-b-2 px-4 py-2 text-xs uppercase text-gray-600 hover:font-bold hover:text-black"'
+            . ' :class="lang==\'' . $escaped . '\'? \'border-b-primary\' : \'border-b-transparent\'"'
+            . ' :aria-selected="lang==\'' . $escaped . '\'"'
+            . ' @click="lang=\'' . $escaped . '\'; $store.form_language.current=lang">'
+            . view_resource_record_text($language)
+            . '</button></li>';
+    }
+    return $html . '</ul>';
+}
+
+function view_resource_record_localized_value(string $type, $value, array $languages): string
+{
+    $translations = is_array($value) ? $value : [];
+    $html = '';
+    foreach ($languages as $language) {
+        $escaped = htmlspecialchars($language, ENT_QUOTES, 'UTF-8');
+        $html .= '<div x-cloak x-show="lang==\'' . $escaped . '\'">'
+            . view_resource_record_value($type, $translations[$language] ?? null)
+            . '</div>';
+    }
+    return $html;
 }
 
 function view_resource_record_value(string $type, $value): string
