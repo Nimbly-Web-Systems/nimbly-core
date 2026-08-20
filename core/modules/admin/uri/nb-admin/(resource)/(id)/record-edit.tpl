@@ -11,7 +11,10 @@
         <h1 class="text-2xl font-semibold text-neutral-800 md:text-3xl">
             [#text Edit [#resource-name [#resource-id#]#]#]
         </h1>
-        <a class="[#btn-class-secondary#] inline-flex min-h-11 items-center justify-center sm:min-h-0" href="[#base-url#]/nb-admin/[#resource-id#]">[#text Back to overview#]</a>
+        <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
+            [#feature-cond features="view-[#resource-id#]" tpl=record-edit-view-link#]
+            <a class="[#btn-class-secondary#] inline-flex min-h-11 items-center justify-center sm:min-h-0" href="[#base-url#]/nb-admin/[#resource-id#]">[#text Back to overview#]</a>
+        </div>
     </div>
 
     [#resource-switcher [#resource-id#] [#get uuid#]#]
