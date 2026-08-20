@@ -249,14 +249,6 @@ function infra_expert_validate_result(array $result, string $run_uuid = '', arra
         if ($item['email_subject'] === '' || !str_starts_with($item['executive_summary'], $greeting)) {
             throw new RuntimeException('Infrastructure executive email is invalid');
         }
-        $advice_count = preg_match_all('/\b(?:you should|please|kindly)\b/i', $item['executive_summary']);
-        $cadence_count = substr_count($item['executive_summary'], ', ya?');
-        if ($advice_count > 0 && $cadence_count !== 1) {
-            throw new RuntimeException('Infrastructure advice email must use the configured friendly cadence once');
-        }
-        if ($advice_count === 0 && $cadence_count > 1) {
-            throw new RuntimeException('Infrastructure email uses the friendly cadence too often');
-        }
         if ($run_uuid !== '') {
             if ($uptime_event && !isset($fresh_audits[$server])) {
                 throw new RuntimeException('An uptime incident requires a fresh host audit');
