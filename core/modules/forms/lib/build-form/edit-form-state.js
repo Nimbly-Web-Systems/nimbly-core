@@ -19,6 +19,7 @@ function nb_build_form_edit_state(resource_id, record_id, config = {}) {
 
     init_edit_state() {
       this.form_data = config.record || {};
+      this.$store.form_language.current = this.lang;
       this.initialize_translation_empty();
       this.$watch("lang", (lang) => {
         this.set_editors(lang);
@@ -84,6 +85,7 @@ function nb_build_form_edit_state(resource_id, record_id, config = {}) {
       }
       this.sync_editors(this.lang);
       this.lang = lang;
+      this.$store.form_language.current = lang;
     },
     set_editors(lang) {
       if (!this.$el) {
