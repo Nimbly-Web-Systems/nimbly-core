@@ -34,6 +34,14 @@ assert.equal(
   state.editor_html_for_storage('<img src="/jereis/img/12345678901234567890/1200w">'),
   '<img src="/img/12345678901234567890/1200w">',
 );
+assert.equal(
+  state.editor_html_for_display('<img src="/staging-alias/img/12345678901234567890/1200w">'),
+  '<img src="/jereis/img/12345678901234567890/1200w">',
+);
+assert.equal(
+  state.editor_html_for_storage('<img src="/staging-alias/img/12345678901234567890/1200w">'),
+  '<img src="/img/12345678901234567890/1200w">',
+);
 
 assert.equal(state.has_empty_translation_fields("nl"), false);
 assert.equal(state.has_empty_translation_fields("en"), true);
