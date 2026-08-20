@@ -13,6 +13,7 @@ function load_library($_name) {}
 function get_param_value($params, $key, $default = '') { return $params[$key] ?? $default; }
 function get_single_param_value($params, $key, $default = false) { return $params[$key] ?? $default; }
 
+require_once __DIR__ . '/../lib/base-url.php';
 require_once __DIR__ . '/../lib/get-html.php';
 
 function render_get_html(array $params): string
