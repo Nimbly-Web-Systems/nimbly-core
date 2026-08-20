@@ -1,7 +1,7 @@
 <div class="mb-10 flex flex-wrap items-center justify-between gap-3">
     <ul class="flex flex-row">
         <li><button type="button"
-            @click="switch_language('[#get record.lang#]')"
+            @click="switch_language('[#get record.lang#]'); window.dispatchEvent(new CustomEvent('nb-language-change', { detail: { language: '[#get record.lang#]' } }))"
             class="uppercase text-xs px-4 py-2 border-b-2 hover:font-bold hover:text-black"
             :class="lang=='[#get record.lang#]'? 'border-b-primary' : 'border-b-transparent'">[#text [#get record.lang#]#]</button></li>
         [#repeat languages tpl=form-translation-tab#]

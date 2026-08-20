@@ -84,9 +84,6 @@ function nb_build_form_edit_state(resource_id, record_id, config = {}) {
       }
       this.sync_editors(this.lang);
       this.lang = lang;
-      window.dispatchEvent(new CustomEvent("nb-language-change", {
-        detail: { language: lang },
-      }));
     },
     set_editors(lang) {
       if (!this.$el) {
