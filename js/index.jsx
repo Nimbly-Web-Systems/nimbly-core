@@ -7,6 +7,7 @@ import nb_media_library from './nb_media_library.jsx';
 import nb_breakpoints from './nb_breakpoints.jsx';
 
 window.Alpine = Alpine;
+Alpine.store('form_language', { current: null });
 window.nb.api = nb_api;
 window.nb.edit = nb_edit;
 window.nb.upload = nb_upload;
