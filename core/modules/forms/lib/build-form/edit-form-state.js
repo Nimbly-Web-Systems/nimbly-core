@@ -112,20 +112,25 @@ function nb_build_form_edit_state(resource_id, record_id, config = {}) {
     },
     editor_html_for_display(value) {
       const base_url = nb.base_url === "/" ? "" : nb.base_url.replace(/\/$/, "");
+      const normalized = String(value || "").replace(
+        /(["', (])\/[\w-]{2,}(\/(?:img\/[0-9a-z]{20,32}\/|download\/[0-9a-z]{20,32}(?=["', )<])))/gi,
+        "$1$2",
+      );
       if (!base_url) {
-        return String(value || "");
+        return normalized;
       }
-      return String(value || "").replace(
+      return normalized.replace(
         /(["', (])\/(img\/[0-9a-z]{20,32}\/|download\/[0-9a-z]{20,32}(?=["', )<]))/gi,
         `$1${base_url}/$2`,
       );
     },
     editor_html_for_storage(value) {
       const base_url = nb.base_url === "/" ? "" : nb.base_url.replace(/\/$/, "");
-      if (!base_url) {
-        return String(value || "");
-      }
-      return String(value || "").replaceAll(`${base_url}/img/`, "/img/")
+      const normalized = String(value || "").replace(
+        /(["', (])\/[\w-]{2,}(\/(?:img\/[0-9a-z]{20,32}\/|download\/[0-9a-z]{20,32}(?=["', )<])))/gi,
+        "$1$2",
+      );
+      return normalized.replaceAll(`${base_url}/img/`, "/img/")
         .replaceAll(`${base_url}/download/`, "/download/");
     },
     sync_editors(lang) {
