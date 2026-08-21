@@ -24,6 +24,29 @@ function thumbnail_sharpen($img)
     imageconvolution($img, $sharpen, $divisor, 0);
 }
 
+function thumbnail_cache_is_valid($path, $source_mtime, $format)
+{
+    if (!is_file($path) || filesize($path) <= 0 || filemtime($path) < $source_mtime) {
+        return false;
+    }
+
+    if ($format !== 'jpg') {
+        return true;
+    }
+
+    $handle = @fopen($path, 'rb');
+    if ($handle === false || fseek($handle, -2, SEEK_END) !== 0) {
+        if (is_resource($handle)) {
+            fclose($handle);
+        }
+        return false;
+    }
+
+    $end_marker = fread($handle, 2);
+    fclose($handle);
+    return $end_marker === "\xff\xd9";
+}
+
 function thumbnail_create($uuid, $size, $ratio = 0, $mode = 'h', $format = '')
 {
     if ($format !== 'jpg' && $format !== 'png') {
@@ -150,6 +173,21 @@ function thumbnail_create($uuid, $size, $ratio = 0, $mode = 'h', $format = '')
 
     @mkdir(dirname($static_path), 0750, true);
 
+    clearstatcache(true, $static_path);
+    $source_mtime = @filemtime($org_path) ?: 0;
+    if (thumbnail_cache_is_valid($static_path, $source_mtime, $format)) {
+        imagedestroy($org_img);
+        imagedestroy($thumb_img);
+        return $static_path;
+    }
+
+    $write_path = tempnam(dirname($static_path), basename($static_path) . '.tmp.');
+    if ($write_path === false) {
+        imagedestroy($org_img);
+        imagedestroy($thumb_img);
+        return $result;
+    }
+
     switch ($org_type) {
         case IMAGETYPE_AVIF:
         case IMAGETYPE_JPEG:
@@ -166,15 +204,15 @@ function thumbnail_create($uuid, $size, $ratio = 0, $mode = 'h', $format = '')
             }
             */
             if ($format === 'jpg') {
-                if (imagejpeg($thumb_img, $static_path, 85)) {
-                    $result = $static_path;
+                if (imagejpeg($thumb_img, $write_path, 85)) {
+                    $result = $write_path;
                 }
             } else if ($format === 'png') {
-                if (imagepng($thumb_img, $static_path, 6)) {
-                    $result = $static_path;
+                if (imagepng($thumb_img, $write_path, 6)) {
+                    $result = $write_path;
                 }
-            } else if (imagewebp($thumb_img, $static_path, 85)) {
-                $result = $static_path;
+            } else if (imagewebp($thumb_img, $write_path, 85)) {
+                $result = $write_path;
             }
             break;
         case IMAGETYPE_WEBP:
@@ -189,16 +227,16 @@ function thumbnail_create($uuid, $size, $ratio = 0, $mode = 'h', $format = '')
                 $flat_img = imagecreatetruecolor($w, $h);
                 imagefill($flat_img, 0, 0, imagecolorallocate($flat_img, 255, 255, 255));
                 imagecopy($flat_img, $thumb_img, 0, 0, 0, 0, $w, $h);
-                if (imagejpeg($flat_img, $static_path, 85)) {
-                    $result = $static_path;
+                if (imagejpeg($flat_img, $write_path, 85)) {
+                    $result = $write_path;
                 }
                 imagedestroy($flat_img);
             } else if ($format === 'png') {
-                if (imagepng($thumb_img, $static_path, 6)) {
-                    $result = $static_path;
+                if (imagepng($thumb_img, $write_path, 6)) {
+                    $result = $write_path;
                 }
-            } else if (imagewebp($thumb_img, $static_path, 85)) {
-                $result = $static_path;
+            } else if (imagewebp($thumb_img, $write_path, 85)) {
+                $result = $write_path;
             }
             break;
         case IMAGETYPE_GIF:
@@ -211,16 +249,16 @@ function thumbnail_create($uuid, $size, $ratio = 0, $mode = 'h', $format = '')
                 $flat_img = imagecreatetruecolor($w, $h);
                 imagefill($flat_img, 0, 0, imagecolorallocate($flat_img, 255, 255, 255));
                 imagecopy($flat_img, $thumb_img, 0, 0, 0, 0, $w, $h);
-                if (imagejpeg($flat_img, $static_path, 85)) {
-                    $result = $static_path;
+                if (imagejpeg($flat_img, $write_path, 85)) {
+                    $result = $write_path;
                 }
                 imagedestroy($flat_img);
             } else if ($format === 'png') {
-                if (imagepng($thumb_img, $static_path, 6)) {
-                    $result = $static_path;
+                if (imagepng($thumb_img, $write_path, 6)) {
+                    $result = $write_path;
                 }
-            } else if (imagewebp($thumb_img, $static_path)) {
-                $result = $static_path;
+            } else if (imagewebp($thumb_img, $write_path)) {
+                $result = $write_path;
             }
             break;
     }
@@ -228,6 +266,21 @@ function thumbnail_create($uuid, $size, $ratio = 0, $mode = 'h', $format = '')
     //4: clean up and return result
     imagedestroy($org_img);
     imagedestroy($thumb_img);
+
+    if ($result === $write_path) {
+        @chmod($write_path, 0644);
+    }
+
+    if ($result === $write_path && @rename($write_path, $static_path)) {
+        $result = $static_path;
+    } else {
+        @unlink($write_path);
+        clearstatcache(true, $static_path);
+        if (is_file($static_path) && filesize($static_path) > 0) {
+            $result = $static_path;
+        }
+    }
+
     return $result;
 }
 
