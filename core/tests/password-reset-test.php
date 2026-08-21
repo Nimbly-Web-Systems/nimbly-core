@@ -1,96 +1,107 @@
 <?php
 
-$password_reset_test_logs = [];
+$test_logs = $test_users = $test_jobs = [];
+$test_update_fails = $test_job_fails = false;
+$test_uuid = 0;
+$email_test_cfg = null;
 
-function load_library($library): void
-{
-}
-
-function load_libraries($libraries): void
-{
-}
-
-function t($message): string
-{
-    return $message;
-}
+function load_library($library): void {}
+function load_libraries($libraries): void {}
+function t($message): string { return $message; }
+function log_system($message): void { global $test_logs; $test_logs[] = $message; }
+function generate_uuid(): string { global $test_uuid; return 'generated-' . ++$test_uuid; }
+function generate_salt(): string { return 'salt-' . generate_uuid(); }
+function encrypt($password, $salt): string { return 'encrypted:' . $salt . ':' . $password; }
+function url_absolute($path): string { return 'https://example.com/' . ltrim($path, '/'); }
+function validate($type, $input) { return $type === 'password' && is_string($input) && strlen($input) >= 5 && strlen($input) <= 64; }
+function set_variable($key, $value): void {}
+function env($key, $default = null) { return $default; }
 
 function find_user_by_email($email): array
 {
+    global $test_users;
+    foreach ($test_users as $user) {
+        if (($user['email'] ?? '') === $email) { return $user; }
+    }
     return [];
 }
 
-function log_system($message): void
+function data_update($resource, $uuid, $updates)
 {
-    global $password_reset_test_logs;
-    $password_reset_test_logs[] = $message;
+    global $test_users, $test_update_fails;
+    if ($test_update_fails || $resource !== 'users' || !isset($test_users[$uuid])) { return false; }
+    return $test_users[$uuid] = array_merge($test_users[$uuid], $updates);
+}
+
+function data_read($resource, $uuid) { global $test_users; return $test_users[$uuid] ?? false; }
+
+function job_enqueue($type, $payload = [], $options = [])
+{
+    global $test_jobs, $test_job_fails;
+    if ($test_job_fails) { return false; }
+    $test_jobs[] = ['type' => $type, 'payload' => $payload];
+    return 'job-' . count($test_jobs);
+}
+
+function data_lookup($resource, $uuid, $key, $default = null)
+{
+    return $resource === '.config' && $uuid === 'site' && $key === 'name'
+        ? ['nl' => 'JE reis', 'en' => 'JE reis'] : $default;
+}
+function get_i18n_resolve(array $value, $lang = 'auto') { return $value['en'] ?? current($value); }
+function email($cfg): bool { global $email_test_cfg; $email_test_cfg = $cfg; return true; }
+
+function assert_reset($condition, $message): void
+{
+    if (!$condition) { fwrite(STDERR, 'FAIL: ' . $message . "\n"); exit(1); }
 }
 
 require_once __DIR__ . '/../modules/user/lib/password-reset.php';
 
 $result = password_reset_request('unknown@example.com');
-$message = $password_reset_test_logs[0] ?? '';
+assert_reset($result['sent'] === false, 'unknown email must use generic result');
+assert_reset(($test_logs[0] ?? '') === 'Password reset requested for unknown email unknown@example.com', 'unknown email log');
 
-if (($result['sent'] ?? null) !== false
-    || $message !== 'Password reset requested for unknown email unknown@example.com'
-    || stripos($message, 'error') !== false) {
-    fwrite(STDERR, "FAIL: unknown-email password reset must be informational\n");
-    exit(1);
-}
+$test_users['existing'] = ['uuid' => 'existing', 'email' => 'existing@example.com', 'name' => 'Existing', 'password' => 'hash', 'salt' => 'salt'];
+$result = password_reset_request('existing@example.com');
+$existing_token = $test_users['existing']['password_reset_token'] ?? '';
+assert_reset($result['sent'] === true && $existing_token !== '', 'password-bearing user reset');
+assert_reset($test_jobs[0]['payload']['reset_url'] === 'https://example.com/password-reset/existing/' . $existing_token, 'working reset URL');
 
-// A multi-language site stores site.name as an i18n array ({"nl": "...",
-// "en": "..."}), not a plain string. The reset email body already resolves
-// this correctly via [#get#], but the subject line used to concatenate the
-// raw array straight into a string — producing a literal "Array" in the
-// subject the user actually sees. Regression coverage for that.
-$site_config = [
-    'name' => ['nl' => 'JE reis', 'en' => 'JE reis'],
-];
+$test_users['imported'] = ['uuid' => 'imported', 'email' => 'imported@example.com', 'name' => ''];
+$result = password_reset_request('imported@example.com');
+$imported_token = $test_users['imported']['password_reset_token'] ?? '';
+assert_reset($result['sent'] === true, 'passwordless user reset');
+assert_reset(!empty($test_users['imported']['password']) && !empty($test_users['imported']['salt']), 'passwordless credential initialization');
+password_reset_request('imported@example.com');
+assert_reset($test_users['imported']['password_reset_token'] === $imported_token, 'outstanding token reuse');
 
-function data_lookup($resource, $uuid, $key, $default = null)
-{
-    global $site_config;
-    if ($resource === '.config' && $uuid === 'site' && $key === 'name') {
-        return $site_config['name'];
-    }
-    return $default;
-}
+$jobs_before = count($test_jobs);
+$test_update_fails = true;
+$result = password_reset_request('existing@example.com');
+$test_update_fails = false;
+assert_reset($result['sent'] === false && count($test_jobs) === $jobs_before, 'persistence failure must not enqueue');
 
-function get_i18n_resolve(array $val, $lang = 'auto')
-{
-    // Mirrors core/lib/get.php's real resolution shape closely enough for
-    // this test: pick a configured translation deterministically.
-    return $val['en'] ?? current($val);
-}
+$test_job_fails = true;
+$result = password_reset_request('existing@example.com');
+$test_job_fails = false;
+assert_reset($result['sent'] === false && $result['message'] === password_reset_public_message(), 'queue failure generic result');
+assert_reset(str_contains(implode("\n", $test_logs), 'job creation failed for existing'), 'queue failure log');
 
-function set_variable($key, $value): void
-{
-}
+$completed = password_reset_complete('imported', $imported_token, 'new-secure-password');
+assert_reset(is_array($completed), 'passwordless user first password');
+assert_reset(!password_reset_token_matches($completed, $imported_token), 'successful reset rotates token');
 
-function env($key, $default = null)
-{
-    return $default;
-}
+$valid_token = $test_users['existing']['password_reset_token'];
+assert_reset(password_reset_complete('existing', $valid_token, '') === false, 'empty password rejection');
+assert_reset(password_reset_complete('existing', $valid_token, 'tiny') === false, 'invalid password rejection');
+assert_reset($test_users['existing']['password_reset_token'] === $valid_token, 'invalid password preserves link');
+$test_update_fails = true;
+assert_reset(password_reset_complete('existing', $valid_token, 'valid-password') === false, 'completion save failure');
+$test_update_fails = false;
+assert_reset($test_users['existing']['password_reset_token'] === $valid_token, 'save failure preserves link');
 
-$email_test_cfg = null;
-function email($cfg): bool
-{
-    global $email_test_cfg;
-    $email_test_cfg = $cfg;
-    return true;
-}
-
-password_reset_job([
-    'payload' => [
-        'email' => 'someone@example.com',
-        'name' => 'Someone',
-        'reset_url' => 'https://example.com/password-reset/uuid/token',
-    ],
-]);
-
-if (($email_test_cfg['subject'] ?? '') !== 'Reset your JE reis password') {
-    fwrite(STDERR, "FAIL: password reset subject did not resolve the i18n site name, got: " . ($email_test_cfg['subject'] ?? '(none)') . "\n");
-    exit(1);
-}
+password_reset_job(['payload' => ['email' => 'someone@example.com', 'name' => 'Someone', 'reset_url' => 'https://example.com/reset']]);
+assert_reset(($email_test_cfg['subject'] ?? '') === 'Reset your JE reis password', 'i18n site name subject');
 
 echo "Password reset tests passed\n";

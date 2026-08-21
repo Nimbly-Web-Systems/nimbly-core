@@ -6,7 +6,7 @@ function password_reset_public_message() {
 }
 
 function password_reset_request($email) {
-	load_libraries(['url', 'log', 'uuid', 'job', 'data']);
+	load_libraries(['url', 'log', 'uuid', 'job', 'data', 'encrypt']);
 	load_library('get-user');
 
 	$email = trim((string)$email);
@@ -22,18 +22,69 @@ function password_reset_request($email) {
 		return ['message' => $message, 'sent' => false];
 	}
 
-	$reset_token = $user['password_reset_token'] ?? generate_uuid();
-	data_update('users', $user['uuid'], ['password_reset_token' => $reset_token]);
+	$reset_token = empty($user['password_reset_token']) ? generate_uuid() : $user['password_reset_token'];
+	$updates = ['password_reset_token' => $reset_token];
+	if (empty($user['password']) || empty($user['salt'])) {
+		$updates['salt'] = generate_salt();
+		$updates['password'] = encrypt(generate_uuid(), $updates['salt']);
+	}
 
-	job_enqueue('password-reset', [
+	$stored_user = data_update('users', $user['uuid'], $updates);
+	if (!is_array($stored_user) || !password_reset_token_matches($stored_user, $reset_token)) {
+		log_system('Error: password reset token persistence failed for ' . $user['uuid']);
+		return ['message' => $message, 'sent' => false];
+	}
+
+	$job_uuid = job_enqueue('password-reset', [
 		'email'     => $user['email'],
 		'name'      => $user['name'] ?? $user['email'],
 		'reset_url' => url_absolute('password-reset/' . $user['uuid'] . '/' . $reset_token),
 	]);
+	if ($job_uuid === false) {
+		log_system('Error: password reset job creation failed for ' . $user['uuid']);
+		return ['message' => $message, 'sent' => false];
+	}
 
 	log_system('Password reset email queued for ' . $user['email']);
 
 	return ['message' => $message, 'sent' => true];
+}
+
+function password_reset_token_matches($user, $reset_token)
+{
+	return !empty($user['password_reset_token'])
+		&& hash_equals((string)$user['password_reset_token'], (string)$reset_token);
+}
+
+function password_reset_complete($user_uuid, $reset_token, $password)
+{
+	load_libraries(['data', 'util', 'encrypt', 'validate', 'log']);
+
+	if (validate('password', $password) !== true) {
+		return false;
+	}
+
+	$user = data_read('users', $user_uuid);
+	if (!is_array($user) || !password_reset_token_matches($user, $reset_token)) {
+		return false;
+	}
+
+	$salt = generate_salt();
+	$rotated_token = generate_uuid();
+	$stored_user = data_update('users', $user_uuid, [
+		'salt' => $salt,
+		'password' => encrypt($password, $salt),
+		'password_reset_token' => $rotated_token,
+	]);
+	if (!is_array($stored_user)
+		|| ($stored_user['salt'] ?? '') !== $salt
+		|| !hash_equals((string)($stored_user['password_reset_token'] ?? ''), $rotated_token)
+	) {
+		log_system('Error: password reset completion persistence failed for ' . $user_uuid);
+		return false;
+	}
+
+	return $stored_user;
 }
 
 function password_reset_job($job)
