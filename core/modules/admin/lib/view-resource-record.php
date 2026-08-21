@@ -13,6 +13,7 @@ function view_resource_record_sc($params)
     $record = get_variable('record') ?? [];
     $fields = get_variable('data.fields') ?? [];
     $languages = get_variable('data.translation_languages') ?? [];
+    $i18n_fields = get_variable('data.i18n_fields') ?? [];
 
     if (empty($resource) || empty($uuid) || !is_array($record) || !is_array($fields)) {
         return '';
@@ -26,6 +27,9 @@ function view_resource_record_sc($params)
     foreach ($fields as $field_id => $field) {
         if (!is_array($field)) {
             continue;
+        }
+        if (view_resource_record_field_is_i18n((string)$field_id, $field, $i18n_fields)) {
+            $field['i18n'] = true;
         }
         $rows .= view_resource_record_row(
             (string)$field_id,
@@ -42,8 +46,9 @@ function view_resource_record_sc($params)
         set_variable('record-view-translation-tabs', '1');
     }
 
-    $details = '<div class="overflow-hidden rounded-md border border-neutral-200 bg-white shadow-sm">'
-        . '<dl class="divide-y divide-neutral-200">'
+    $details = '<div class="rounded-md bg-neutral-50 p-3 shadow-md sm:p-4 md:p-6 lg:p-8 xl:p-10">'
+        . $tabs
+        . '<dl class="max-w-3xl divide-y divide-neutral-200 pr-12">'
         . $rows
         . '</dl>'
         . '</div>';
@@ -56,9 +61,14 @@ function view_resource_record_sc($params)
         . '\' }" x-init="$store.form_language.current = lang"';
 
     return '<div' . $alpine . '>'
-        . $tabs
         . $details
         . '</div>';
+}
+
+function view_resource_record_field_is_i18n(string $field_id, array $field, $i18n_fields): bool
+{
+    return !empty($field['i18n'])
+        || (is_array($i18n_fields) && in_array($field_id, $i18n_fields, true));
 }
 
 function view_resource_record_row(string $field_id, array $field, $value, array $languages = []): string
@@ -81,7 +91,7 @@ function view_resource_record_translation_tabs(array $languages, string $default
         return '';
     }
 
-    $html = '<ul class="mb-10 flex flex-row" role="tablist">';
+    $html = '<div class="mb-10 flex flex-wrap items-center justify-between gap-3"><ul class="flex flex-row" role="tablist">';
     foreach ($languages as $language) {
         $escaped = htmlspecialchars($language, ENT_QUOTES, 'UTF-8');
         $html .= '<li><button type="button" role="tab" class="cursor-pointer border-b-2 px-4 py-2 text-xs uppercase text-gray-600 hover:font-bold hover:text-black"'
@@ -91,7 +101,7 @@ function view_resource_record_translation_tabs(array $languages, string $default
             . view_resource_record_text($language)
             . '</button></li>';
     }
-    return $html . '</ul>';
+    return $html . '</ul></div>';
 }
 
 function view_resource_record_localized_value(string $type, $value, array $languages): string

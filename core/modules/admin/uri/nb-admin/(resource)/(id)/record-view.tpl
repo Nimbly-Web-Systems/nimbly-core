@@ -20,6 +20,9 @@
     [#get-resource-meta [#resource-id#]#]
     [#get-resource-record [#resource-id#] [#get uuid#]#]
 
+    [#set resource-switcher-view=1 overwrite#]
+    [#resource-switcher [#resource-id#] [#get uuid#]#]
+
     <div class="flex flex-col gap-6 lg:flex-row lg:items-start">
         <div class="order-2 min-w-0 flex-1 lg:order-1">
             [#view-resource-record [#resource-id#] [#get uuid#]#]
