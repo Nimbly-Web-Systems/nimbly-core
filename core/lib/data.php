@@ -347,6 +347,45 @@ function _data_cache_file($op, $resource, $options)
 }
 
 /**
+ * Atomically replaces a file with complete contents.
+ *
+ * The temporary file is created beside the destination so rename() publishes
+ * it atomically on the same filesystem. Readers therefore see either the old
+ * complete file or the new complete file, never an in-progress write.
+ *
+ * @param string $file Destination file path.
+ * @param string $contents Complete file contents.
+ * @return int|false Number of bytes written, or false on failure.
+ */
+function _data_write_file_atomically($file, $contents)
+{
+    $directory = dirname($file);
+    if (!is_dir($directory)) {
+        return false;
+    }
+
+    $temporary = tempnam($directory, '.' . basename($file) . '.tmp.');
+    if ($temporary === false) {
+        return false;
+    }
+
+    $bytes = @file_put_contents($temporary, $contents, LOCK_EX);
+    if ($bytes === false || $bytes !== strlen($contents)) {
+        @unlink($temporary);
+        return false;
+    }
+
+    $permissions = is_file($file) ? (fileperms($file) & 0777) : 0644;
+    @chmod($temporary, $permissions);
+    if (!@rename($temporary, $file)) {
+        @unlink($temporary);
+        return false;
+    }
+
+    return $bytes;
+}
+
+/**
  * Reads cached data for a given operation and resource if cache is valid.
  *
  * Checks if the cache file exists and if its modification time is newer than
@@ -393,7 +432,7 @@ function _data_write_cache($op, $resource, $setting, $content)
 {
     $cache_file = _data_cache_file($op, $resource, $setting);
     $json_data = json_encode($content, JSON_UNESCAPED_UNICODE);
-    return file_put_contents($cache_file, $json_data);
+    return _data_write_file_atomically($cache_file, $json_data);
 }
 
 /**
@@ -672,7 +711,7 @@ function data_create($resource, $uuid, $data_ls)
     $data_ls['uuid'] = $uuid;
 
     $json_data = json_encode($data_ls, JSON_UNESCAPED_UNICODE);
-    if (@file_put_contents($file, $json_data) !== false) {
+    if (_data_write_file_atomically($file, $json_data) !== false) {
         touch($dir); // Update directory modification time to signal change and invalidate caches
         _data_clear_cache('_data_read_all', $resource);
 
