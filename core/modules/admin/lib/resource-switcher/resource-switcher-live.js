@@ -1,7 +1,8 @@
 document.addEventListener("alpine:init", () => {
-    Alpine.data("resource_switcher_live", (resource, title_field) => ({
+    Alpine.data("resource_switcher_live", (resource, title_field, record_query = "") => ({
         resource,
         title_field,
+        record_query,
         query: "",
         results: [],
         search() {
@@ -20,7 +21,7 @@ document.addEventListener("alpine:init", () => {
                     this.results = Object.keys(records).map((uuid) => ({
                         uuid,
                         title: (this.title_field && records[uuid][this.title_field]) || uuid,
-                        url: nb.base_url + "/nb-admin/" + this.resource + "/" + uuid,
+                        url: nb.base_url + "/nb-admin/" + this.resource + "/" + uuid + this.record_query,
                     }));
                 });
         },
