@@ -46,7 +46,7 @@ function get_resource_record_sc($params)
                 if (empty($field['i18n'])) {
                     continue;
                 }
-                if (!is_array($record[$fk])) {
+                if (!is_array($record[$fk] ?? null)) {
                     $record[$fk] = [
                         $lang => $record[$fk] ?? ''
                     ];
