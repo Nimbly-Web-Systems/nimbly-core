@@ -5,7 +5,7 @@ if ($parts === false || count($parts) !== 2) {
     return;
 }
 
-load_library('data');
+load_libraries(['data', 'password-reset']);
 $uuid = $parts[0];
 if (!(data_exists("users", $uuid))) {
     return;
@@ -13,7 +13,7 @@ if (!(data_exists("users", $uuid))) {
 
 $user = data_read("users", $uuid);
 $key = $parts[1];
-if (empty($user['password_reset_token']) || !hash_equals((string)$user['password_reset_token'], (string)$key)) {
+if (!password_reset_token_matches($user, $key)) {
 	return;
 }
 
@@ -26,5 +26,6 @@ if (!empty($loggedin_user['email'])) {
 load_library('set');
 set_variable('username', $user['name']);
 set_variable('useruuid', $uuid);
+set_variable('password_reset_token', $key);
 
 router_accept();
