@@ -2750,8 +2750,14 @@ POST   /api/v1/{resource}          → create a new record
 GET    /api/v1/{resource}/{uuid}   → get a single record
 PUT    /api/v1/{resource}/{uuid}   → update a record (partial update — only supplied fields are changed)
 DELETE /api/v1/{resource}/{uuid}   → delete a record
-DELETE /api/v1/{resource}          → delete all records
+DELETE /api/v1/{resource}          → delete all records (requires `api_delete_resource_{resource}` or `(all)`)
 ```
+
+Collection deletion is a distinct destructive capability. Record deletion
+permissions such as `api_delete_{resource}`, API wildcards, ordinary
+`delete-{resource}`, and `manage-{resource}` never grant it. A denied collection
+deletion returns HTTP 403 and names the required
+`api_delete_resource_{resource}` permission in `needs`.
 
 ### Authentication
 
