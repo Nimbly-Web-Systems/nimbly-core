@@ -25,6 +25,9 @@ function api_method_switch($func_prefix, $resource = null, $uuid = null) {
 
 function _api_access_str($method, $perm, $uuid) {
     $method = strtolower($method);
+    if ($method === 'delete' && empty($uuid)) {
+        return sprintf('api_delete_resource_%s', $perm);
+    }
     $operation = api_method_operation($method);
     $features = [
         sprintf('api_%1$s_%2$s_%3$s', $method, $perm, $uuid),
