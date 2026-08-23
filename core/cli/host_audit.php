@@ -130,8 +130,8 @@ function host_audit_default_config(): array
         'project_inventory' => '/var/www/nimbly-site/ext/data/projects',
         'project_alias_overrides' => [],
         'runtime_policy' => [
-            'ubuntu_version' => '26.04',
-            'php_minor' => '8.5',
+            'ubuntu_release' => 'current-lts',
+            'php_line' => 'ubuntu-default',
             'php_handler' => 'php-fpm',
         ],
         'known_routes' => ['/', '/login', '/forgot-password'],
@@ -1757,25 +1757,39 @@ function host_audit_runtime_policy_findings(
     array $platform,
     array $php,
     array $policy,
-    ?string $host = null
+    ?string $host = null,
+    ?string $ubuntu_default_php = null
 ): array {
     $host = $host ?: (gethostname() ?: php_uname('n'));
+    $ubuntu_target = host_audit_release_version((string)($platform['release_upgrade']['target'] ?? ''));
+    $ubuntu_is_current_lts = str_contains(strtoupper((string)($platform['name'] ?? '')), 'LTS')
+        && empty($platform['release_upgrade']['available']);
+    $ubuntu_default_php ??= host_audit_ubuntu_default_php_minor();
+    $web_php = host_audit_php_minor((string)($php['version'] ?? ''));
     $checks = [
         [
             'id' => 'runtime:ubuntu-version',
             'title' => 'Ubuntu release differs from infrastructure policy',
-            'expected' => (string)($policy['ubuntu_version'] ?? ''),
+            'enabled' => ($policy['ubuntu_release'] ?? '') === 'current-lts',
+            'aligned' => $ubuntu_is_current_lts,
+            'expected' => $ubuntu_target !== '' ? $ubuntu_target . ' LTS' : 'current Ubuntu LTS',
             'observed' => (string)($platform['version_id'] ?? ''),
         ],
         [
             'id' => 'runtime:php-version',
             'title' => 'Web PHP version differs from infrastructure policy',
-            'expected' => (string)($policy['php_minor'] ?? ''),
-            'observed' => host_audit_php_minor((string)($php['version'] ?? '')),
+            'enabled' => ($policy['php_line'] ?? '') === 'ubuntu-default',
+            'aligned' => $ubuntu_default_php !== 'unknown' && $web_php === $ubuntu_default_php,
+            'expected' => $ubuntu_default_php === 'unknown'
+                ? 'Ubuntu default PHP line'
+                : 'Ubuntu default PHP ' . $ubuntu_default_php,
+            'observed' => $web_php,
         ],
         [
             'id' => 'runtime:php-handler',
             'title' => 'Web PHP handler differs from infrastructure policy',
+            'enabled' => isset($policy['php_handler']),
+            'aligned' => (string)($policy['php_handler'] ?? '') === (string)($php['handler'] ?? 'unknown'),
             'expected' => (string)($policy['php_handler'] ?? ''),
             'observed' => (string)($php['handler'] ?? 'unknown'),
         ],
@@ -1786,13 +1800,15 @@ function host_audit_runtime_policy_findings(
         $checks[] = [
             'id' => 'runtime:php-cli-web-mismatch',
             'title' => 'CLI and web PHP versions differ',
+            'enabled' => true,
+            'aligned' => false,
             'expected' => $web_minor,
             'observed' => $cli_minor,
         ];
     }
     $findings = [];
     foreach ($checks as $check) {
-        if ($check['expected'] === '' || $check['expected'] === $check['observed']) {
+        if (!$check['enabled'] || $check['aligned']) {
             continue;
         }
         $finding = host_audit_finding(
@@ -1809,6 +1825,21 @@ function host_audit_runtime_policy_findings(
         $findings[] = $finding;
     }
     return $findings;
+}
+
+function host_audit_release_version(string $release): string
+{
+    return preg_match('/(\d+\.\d+)/', $release, $match) ? $match[1] : '';
+}
+
+function host_audit_ubuntu_default_php_minor(): string
+{
+    $result = host_audit_run_command(['apt-cache', 'show', 'php'], 10);
+    if ($result['exit_code'] !== 0
+        || !preg_match('/^Depends:\s*php(\d+\.\d+)\b/im', $result['stdout'], $match)) {
+        return 'unknown';
+    }
+    return $match[1];
 }
 
 function host_audit_php_minor(string $version): string

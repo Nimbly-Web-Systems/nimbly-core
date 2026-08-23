@@ -71,6 +71,7 @@ $result = password_reset_request('existing@example.com');
 $existing_token = $test_users['existing']['password_reset_token'] ?? '';
 assert_reset($result['sent'] === true && $existing_token !== '', 'password-bearing user reset');
 assert_reset($test_jobs[0]['payload']['reset_url'] === 'https://example.com/password-reset/existing/' . $existing_token, 'working reset URL');
+assert_reset(str_contains(implode("\n", $test_logs), '"user_uuid":"existing"'), 'known reset logs identify the user UUID');
 
 $test_users['imported'] = ['uuid' => 'imported', 'email' => 'imported@example.com', 'name' => ''];
 $result = password_reset_request('imported@example.com');
