@@ -17,6 +17,11 @@ if (!password_reset_token_matches($user, $key)) {
 	return;
 }
 
+$GLOBALS['SYSTEM']['validated_request_route'] = [
+    'route_pattern' => '/password-reset/(uuid)/(key)',
+    'reason' => 'validated_reset_route_not_accepted',
+];
+
 load_library('get-user');
 $loggedin_user = get_user();
 if (!empty($loggedin_user['email'])) {

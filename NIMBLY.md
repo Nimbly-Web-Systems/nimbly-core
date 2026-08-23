@@ -2019,6 +2019,22 @@ The audit is stateless and never repairs the host. It checks:
   attributed requests, 5xx responses, PHP errors, and derived health status;
 - scheduler freshness and nonzero project scheduler exits.
 
+The default infrastructure policy requires Ubuntu 26.04, PHP 8.5, and PHP-FPM.
+Configure it under `runtime_policy` in `/etc/nimbly/host-audit.json`. The audit
+emits warning findings for an Ubuntu, web PHP, command-line PHP, or handler
+mismatch, including the host and expected and observed values. Central health
+ingest compares staging and production and raises a critical environment-drift
+finding when their PHP versions or handlers differ; equal but outdated hosts
+still fail their individual baseline checks.
+
+Apache 404 analysis filters common probes and normalizes dynamic identifiers.
+Known routes warn on the first failure and become critical on the second in the
+24-hour audit period. Other dynamic patterns warn at two failures and become
+critical at ten. Password-reset routes are represented only as
+`/password-reset/(uuid)/(key)`. Core logs safe reset lifecycle event names and a
+validated-reset fallthrough, but never tokens, complete reset URLs, email
+addresses, or submitted values.
+
 JSON is the canonical automation format. Findings have stable IDs, severity,
 scope, evidence, count, and first/last timestamps where available, so a separate
 collector or monitoring task can compare runs without parsing prose. The exit

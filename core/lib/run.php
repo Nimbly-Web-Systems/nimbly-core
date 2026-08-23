@@ -68,7 +68,19 @@ function run_uri($uri) {
     /*
      * Not routed either.. fallback to page not found error
      */
+    run_log_validated_route_404();
     run_uri("errors/404");
+}
+
+function run_log_validated_route_404(): void
+{
+    $validated_route = $GLOBALS['SYSTEM']['validated_request_route'] ?? null;
+    if (!is_array($validated_route)) {
+        return;
+    }
+    load_library('log');
+    log_system_event('request.validated_route_404', $validated_route);
+    unset($GLOBALS['SYSTEM']['validated_request_route']);
 }
 
 /**

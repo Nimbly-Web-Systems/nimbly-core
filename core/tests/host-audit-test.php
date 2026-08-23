@@ -56,6 +56,16 @@ audit_assert(
     ),
     'ignores legacy unknown-email password reset events'
 );
+$runtime_findings = host_audit_runtime_policy_findings(
+    ['version_id' => '24.04'],
+    ['version' => '8.2.32', 'cli_version' => '8.4.24', 'handler' => 'apache-module'],
+    ['ubuntu_version' => '26.04', 'php_minor' => '8.5', 'php_handler' => 'php-fpm'],
+    'stage.example'
+);
+audit_assert(count($runtime_findings) === 4, 'reports every runtime policy mismatch');
+audit_assert($runtime_findings[0]['expected'] === '26.04', 'includes expected runtime value');
+audit_assert($runtime_findings[0]['observed'] === '24.04', 'includes observed runtime value');
+audit_assert($runtime_findings[0]['host'] === 'stage.example', 'includes affected host');
 audit_assert(
     host_audit_project_log_is_informational(
         'Nimbly: Password reset requested for unknown email example@example.com'
@@ -119,6 +129,11 @@ audit_assert(count($grouped) === 1, 'groups stable finding ids');
 audit_assert($grouped[0]['count'] === 2, 'counts grouped findings');
 audit_assert($grouped[0]['first_seen'] === gmdate('c', 100), 'keeps first timestamp');
 audit_assert($grouped[0]['last_seen'] === gmdate('c', 200), 'keeps last timestamp');
+$reset_404_findings = host_audit_group_findings([
+    host_audit_finding('request:validated-reset-404:example', 'warning', 'project', 'Reset 404', 'safe', 100, 'example'),
+    host_audit_finding('request:validated-reset-404:example', 'warning', 'project', 'Reset 404', 'safe', 200, 'example'),
+]);
+audit_assert($reset_404_findings[0]['severity'] === 'critical', 'escalates second validated reset 404');
 
 $jails = host_audit_fail2ban_jails("Status\n`- Jail list:\tsshd, recidive, apache-php-scan\n");
 audit_assert($jails === ['apache-php-scan', 'recidive', 'sshd'], 'parses jail list');
@@ -148,6 +163,11 @@ audit_assert(
 audit_assert(host_audit_404_is_probe('/wp-login.php'), 'filters WordPress login probes');
 audit_assert(host_audit_404_is_probe('/vendor/phpunit/phpunit/src/Util/PHP/eval-stdin.php'), 'filters PHPUnit probes');
 audit_assert(!host_audit_404_is_probe('/nimbly-site/about-us'), 'keeps genuine application paths');
+$reset_route = host_audit_normalize_route_pattern('/password-reset/user-uuid/secret-token');
+audit_assert($reset_route['pattern'] === '/password-reset/(uuid)/(key)', 'redacts reset route values');
+audit_assert($reset_route['type'] === 'known', 'classifies reset route as known');
+$dynamic_route = host_audit_normalize_route_pattern('/article/12345');
+audit_assert($dynamic_route['pattern'] === '/article/(id)', 'normalizes numeric dynamic route');
 audit_assert(
     host_audit_501_is_rejected_method_probe([
         'status' => 501,
