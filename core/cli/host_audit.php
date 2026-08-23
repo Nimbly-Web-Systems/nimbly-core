@@ -17,7 +17,7 @@ if (!defined('BASE_DIR')) {
 }
 
 const HOST_AUDIT_SCHEMA_VERSION = 1;
-const HOST_AUDIT_VERSION = '1.2.1';
+const HOST_AUDIT_VERSION = '1.3.0';
 
 if (!defined('NIMBLY_HOST_AUDIT_LIBRARY')) {
     $host_audit_command = $argv[1] ?? 'host:audit';
@@ -129,6 +129,12 @@ function host_audit_default_config(): array
         'apache_sites_enabled' => '/etc/apache2/sites-enabled',
         'project_inventory' => '/var/www/nimbly-site/ext/data/projects',
         'project_alias_overrides' => [],
+        'runtime_policy' => [
+            'ubuntu_version' => '26.04',
+            'php_minor' => '8.5',
+            'php_handler' => 'php-fpm',
+        ],
+        'known_routes' => ['/', '/login', '/forgot-password'],
     ];
 }
 
@@ -152,6 +158,10 @@ function host_audit_system(array $context, array &$findings): array
 {
     $config = $context['config'];
     $platform = host_audit_platform();
+    $php = host_audit_php_runtime();
+    foreach (host_audit_runtime_policy_findings($platform, $php, (array)$config['runtime_policy']) as $finding) {
+        $findings[] = $finding;
+    }
     if (!empty($platform['release_upgrade']['available'])) {
         $target = (string)($platform['release_upgrade']['target'] ?? 'new release');
         $findings[] = host_audit_finding(
@@ -270,7 +280,8 @@ function host_audit_system(array $context, array &$findings): array
         'services' => $services,
         'config_tests' => $config_test_status,
         'platform' => $platform,
-        'php' => host_audit_php_runtime(),
+        'php' => $php,
+        'runtime_policy' => (array)$config['runtime_policy'],
     ];
 }
 
@@ -479,13 +490,18 @@ function host_audit_apache(array $context, array &$findings): array
                 if (host_audit_404_is_probe($entry['path'])) {
                     $not_found_probe_count++;
                 } else {
-                    $route_key = $attribution['label'] . "\n" . $entry['path'];
+                    $route = host_audit_normalize_route_pattern(
+                        $entry['path'],
+                        (array)($context['config']['known_routes'] ?? [])
+                    );
+                    $route_key = $attribution['label'] . "\n" . $route['pattern'];
                     $not_found_routes[$route_key] ??= [
                         'project' => $project,
                         'target' => $attribution['label'],
                         'target_type' => $attribution['type'],
                         'host' => $entry['vhost'],
-                        'path' => $entry['path'],
+                        'path' => $route['pattern'],
+                        'route_type' => $route['type'],
                         'count' => 0,
                         'first_seen' => $entry['timestamp'],
                         'last_seen' => $entry['timestamp'],
@@ -605,6 +621,28 @@ function host_audit_apache(array $context, array &$findings): array
         return ($right['count'] <=> $left['count'])
             ?: strcmp((string)$left['path'], (string)$right['path']);
     });
+    foreach ($not_found_routes as $route) {
+        $threshold = $route['route_type'] === 'known' ? 1 : 2;
+        if ($route['count'] < $threshold) {
+            continue;
+        }
+        $critical_threshold = $route['route_type'] === 'known' ? 2 : 10;
+        $finding = host_audit_finding(
+            'apache:404:' . host_audit_id((string)$route['target']) . ':' . host_audit_id((string)$route['path']),
+            $route['count'] >= $critical_threshold ? 'critical' : 'warning',
+            $route['project'] === null ? 'host' : 'project',
+            $route['route_type'] === 'known' ? 'Known route returned 404' : 'Repeated dynamic route returned 404',
+            (string)$route['path'],
+            (int)$route['first_seen'],
+            $route['project']
+        );
+        $finding['count'] = (int)$route['count'];
+        $finding['last_seen'] = gmdate('c', (int)$route['last_seen']);
+        $finding['host'] = (string)($route['host'] ?? '');
+        $finding['expected'] = 'non-404 response';
+        $finding['observed'] = '404';
+        $findings[] = $finding;
+    }
     foreach ($not_found_routes as &$route) {
         $route['first_seen'] = gmdate('c', $route['first_seen']);
         $route['last_seen'] = gmdate('c', $route['last_seen']);
@@ -659,6 +697,27 @@ function host_audit_404_is_probe(string $path): bool
         . ')~ix',
         $normalized
     ) === 1;
+}
+
+function host_audit_normalize_route_pattern(string $path, array $known_routes = []): array
+{
+    $normalized = '/' . trim(rawurldecode(parse_url($path, PHP_URL_PATH) ?: $path), '/');
+    if ($normalized === '//') {
+        $normalized = '/';
+    }
+    if (preg_match('~^/password-reset/[^/]+/[^/]+/?$~', $normalized)) {
+        return ['pattern' => '/password-reset/(uuid)/(key)', 'type' => 'known'];
+    }
+    $known = array_map(
+        fn(string $route): string => '/' . trim($route, '/'),
+        array_map('strval', $known_routes)
+    );
+    if (in_array($normalized, $known, true)) {
+        return ['pattern' => $normalized, 'type' => 'known'];
+    }
+    $pattern = preg_replace('~/[0-9a-f]{16,}(?=/|$)~i', '/(id)', $normalized) ?? $normalized;
+    $pattern = preg_replace('~/\d+(?=/|$)~', '/(id)', $pattern) ?? $pattern;
+    return ['pattern' => $pattern, 'type' => 'dynamic'];
 }
 
 function host_audit_501_is_rejected_method_probe(array $entry): bool
@@ -1088,6 +1147,23 @@ function host_audit_project(string $name, string $path, array $context, array &$
                 return;
             }
             $message = $match['message'];
+            if (str_contains($message, 'event=request.validated_route_404')) {
+                $system_log_events++;
+                $finding = host_audit_finding(
+                    'request:validated-reset-404:' . host_audit_id($name),
+                    'warning',
+                    'project',
+                    'Validated password reset route returned 404',
+                    '/password-reset/(uuid)/(key) · validated_reset_route_not_accepted',
+                    $timestamp,
+                    $name
+                );
+                $finding['expected'] = 'password reset form';
+                $finding['observed'] = '404';
+                $finding['host'] = gethostname() ?: php_uname('n');
+                $findings[] = $finding;
+                return;
+            }
             if (host_audit_project_log_is_informational($message)) {
                 return;
             }
@@ -1408,6 +1484,10 @@ function host_audit_group_findings(array $findings): array
                 || $finding['last_seen'] > $grouped[$id]['last_seen'])) {
             $grouped[$id]['last_seen'] = $finding['last_seen'];
         }
+        if (str_starts_with((string)$id, 'request:validated-reset-404:')
+            && $grouped[$id]['count'] >= 2) {
+            $grouped[$id]['severity'] = 'critical';
+        }
     }
     return array_values($grouped);
 }
@@ -1671,6 +1751,69 @@ function host_audit_php_runtime(): array
         'sapi' => PHP_SAPI,
         'handler' => $handler,
     ];
+}
+
+function host_audit_runtime_policy_findings(
+    array $platform,
+    array $php,
+    array $policy,
+    ?string $host = null
+): array {
+    $host = $host ?: (gethostname() ?: php_uname('n'));
+    $checks = [
+        [
+            'id' => 'runtime:ubuntu-version',
+            'title' => 'Ubuntu release differs from infrastructure policy',
+            'expected' => (string)($policy['ubuntu_version'] ?? ''),
+            'observed' => (string)($platform['version_id'] ?? ''),
+        ],
+        [
+            'id' => 'runtime:php-version',
+            'title' => 'Web PHP version differs from infrastructure policy',
+            'expected' => (string)($policy['php_minor'] ?? ''),
+            'observed' => host_audit_php_minor((string)($php['version'] ?? '')),
+        ],
+        [
+            'id' => 'runtime:php-handler',
+            'title' => 'Web PHP handler differs from infrastructure policy',
+            'expected' => (string)($policy['php_handler'] ?? ''),
+            'observed' => (string)($php['handler'] ?? 'unknown'),
+        ],
+    ];
+    $cli_minor = host_audit_php_minor((string)($php['cli_version'] ?? ''));
+    $web_minor = host_audit_php_minor((string)($php['version'] ?? ''));
+    if ($cli_minor !== $web_minor) {
+        $checks[] = [
+            'id' => 'runtime:php-cli-web-mismatch',
+            'title' => 'CLI and web PHP versions differ',
+            'expected' => $web_minor,
+            'observed' => $cli_minor,
+        ];
+    }
+    $findings = [];
+    foreach ($checks as $check) {
+        if ($check['expected'] === '' || $check['expected'] === $check['observed']) {
+            continue;
+        }
+        $finding = host_audit_finding(
+            $check['id'],
+            'warning',
+            'host',
+            $check['title'],
+            'expected ' . $check['expected'] . ', observed ' . ($check['observed'] ?: 'unknown'),
+            time()
+        );
+        $finding['expected'] = $check['expected'];
+        $finding['observed'] = $check['observed'] ?: 'unknown';
+        $finding['host'] = $host;
+        $findings[] = $finding;
+    }
+    return $findings;
+}
+
+function host_audit_php_minor(string $version): string
+{
+    return preg_match('/^(\d+\.\d+)/', trim($version), $match) ? $match[1] : 'unknown';
 }
 
 function host_audit_php_handler(string $apache_modules, string $fpm_config): string

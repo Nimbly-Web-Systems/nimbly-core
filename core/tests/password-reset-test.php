@@ -9,6 +9,9 @@ function load_library($library): void {}
 function load_libraries($libraries): void {}
 function t($message): string { return $message; }
 function log_system($message): void { global $test_logs; $test_logs[] = $message; }
+function log_system_event(string $event, array $context = []): void {
+    log_system('event=' . $event . ' ' . json_encode($context));
+}
 function generate_uuid(): string { global $test_uuid; return 'generated-' . ++$test_uuid; }
 function generate_salt(): string { return 'salt-' . generate_uuid(); }
 function encrypt($password, $salt): string { return 'encrypted:' . $salt . ':' . $password; }
@@ -60,7 +63,8 @@ require_once __DIR__ . '/../modules/user/lib/password-reset.php';
 
 $result = password_reset_request('unknown@example.com');
 assert_reset($result['sent'] === false, 'unknown email must use generic result');
-assert_reset(($test_logs[0] ?? '') === 'Password reset requested for unknown email unknown@example.com', 'unknown email log');
+assert_reset(str_contains(($test_logs[0] ?? ''), 'event=password_reset.request_unknown'), 'unknown email event');
+assert_reset(!str_contains(implode("\n", $test_logs), 'unknown@example.com'), 'unknown email is not logged');
 
 $test_users['existing'] = ['uuid' => 'existing', 'email' => 'existing@example.com', 'name' => 'Existing', 'password' => 'hash', 'salt' => 'salt'];
 $result = password_reset_request('existing@example.com');
@@ -86,7 +90,8 @@ $test_job_fails = true;
 $result = password_reset_request('existing@example.com');
 $test_job_fails = false;
 assert_reset($result['sent'] === false && $result['message'] === password_reset_public_message(), 'queue failure generic result');
-assert_reset(str_contains(implode("\n", $test_logs), 'job creation failed for existing'), 'queue failure log');
+assert_reset(str_contains(implode("\n", $test_logs), 'event=password_reset.queue_failed'), 'queue failure event');
+assert_reset(!str_contains(implode("\n", $test_logs), 'existing@example.com'), 'reset lifecycle logs omit email addresses');
 
 $completed = password_reset_complete('imported', $imported_token, 'new-secure-password');
 assert_reset(is_array($completed), 'passwordless user first password');
@@ -96,6 +101,8 @@ $valid_token = $test_users['existing']['password_reset_token'];
 assert_reset(password_reset_complete('existing', $valid_token, '') === false, 'empty password rejection');
 assert_reset(password_reset_complete('existing', $valid_token, 'tiny') === false, 'invalid password rejection');
 assert_reset($test_users['existing']['password_reset_token'] === $valid_token, 'invalid password preserves link');
+password_reset_complete('existing', 'private-invalid-token', 'valid-password');
+assert_reset(!str_contains(implode("\n", $test_logs), 'private-invalid-token'), 'invalid reset token is never logged');
 $test_update_fails = true;
 assert_reset(password_reset_complete('existing', $valid_token, 'valid-password') === false, 'completion save failure');
 $test_update_fails = false;
