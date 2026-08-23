@@ -16,7 +16,7 @@ function log_system($str) {
 
 function log_system_event(string $event, array $context = []) {
     $safe_context = [];
-    foreach (['route_pattern', 'reason', 'stage'] as $key) {
+    foreach (['route_pattern', 'reason', 'stage', 'user_uuid'] as $key) {
         if (isset($context[$key]) && is_scalar($context[$key])) {
             $safe_context[$key] = (string)$context[$key];
         }

@@ -57,13 +57,14 @@ audit_assert(
     'ignores legacy unknown-email password reset events'
 );
 $runtime_findings = host_audit_runtime_policy_findings(
-    ['version_id' => '24.04'],
+    ['version_id' => '24.04', 'name' => 'Ubuntu 24.04.4 LTS', 'release_upgrade' => ['available' => true, 'target' => '26.04 LTS']],
     ['version' => '8.2.32', 'cli_version' => '8.4.24', 'handler' => 'apache-module'],
-    ['ubuntu_version' => '26.04', 'php_minor' => '8.5', 'php_handler' => 'php-fpm'],
-    'stage.example'
+    ['ubuntu_release' => 'current-lts', 'php_line' => 'ubuntu-default', 'php_handler' => 'php-fpm'],
+    'stage.example',
+    '8.5'
 );
 audit_assert(count($runtime_findings) === 4, 'reports every runtime policy mismatch');
-audit_assert($runtime_findings[0]['expected'] === '26.04', 'includes expected runtime value');
+audit_assert($runtime_findings[0]['expected'] === '26.04 LTS', 'resolves expected current LTS');
 audit_assert($runtime_findings[0]['observed'] === '24.04', 'includes observed runtime value');
 audit_assert($runtime_findings[0]['host'] === 'stage.example', 'includes affected host');
 audit_assert(

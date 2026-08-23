@@ -31,21 +31,25 @@ function password_reset_request($email) {
 
 	$stored_user = data_update('users', $user['uuid'], $updates);
 	if (!is_array($stored_user) || !password_reset_token_matches($stored_user, $reset_token)) {
-		log_system_event('password_reset.persistence_failed', ['stage' => 'request']);
+		log_system_event('password_reset.persistence_failed', [
+			'stage' => 'request',
+			'user_uuid' => $user['uuid'],
+		]);
 		return ['message' => $message, 'sent' => false];
 	}
 
 	$job_uuid = job_enqueue('password-reset', [
+		'user_uuid' => $user['uuid'],
 		'email'     => $user['email'],
 		'name'      => $user['name'] ?? $user['email'],
 		'reset_url' => url_absolute('password-reset/' . $user['uuid'] . '/' . $reset_token),
 	]);
 	if ($job_uuid === false) {
-		log_system_event('password_reset.queue_failed');
+		log_system_event('password_reset.queue_failed', ['user_uuid' => $user['uuid']]);
 		return ['message' => $message, 'sent' => false];
 	}
 
-	log_system_event('password_reset.queued');
+	log_system_event('password_reset.queued', ['user_uuid' => $user['uuid']]);
 
 	return ['message' => $message, 'sent' => true];
 }
@@ -67,7 +71,11 @@ function password_reset_complete($user_uuid, $reset_token, $password)
 
 	$user = data_read('users', $user_uuid);
 	if (!is_array($user) || !password_reset_token_matches($user, $reset_token)) {
-		log_system_event('password_reset.completion_failed', ['reason' => 'invalid_request']);
+		$context = ['reason' => 'invalid_request'];
+		if (is_array($user) && !empty($user['uuid'])) {
+			$context['user_uuid'] = $user['uuid'];
+		}
+		log_system_event('password_reset.completion_failed', $context);
 		return false;
 	}
 
@@ -82,10 +90,13 @@ function password_reset_complete($user_uuid, $reset_token, $password)
 		|| ($stored_user['salt'] ?? '') !== $salt
 		|| !hash_equals((string)($stored_user['password_reset_token'] ?? ''), $rotated_token)
 	) {
-		log_system_event('password_reset.persistence_failed', ['stage' => 'completion']);
+		log_system_event('password_reset.persistence_failed', [
+			'stage' => 'completion',
+			'user_uuid' => $user_uuid,
+		]);
 		return false;
 	}
-	log_system_event('password_reset.completed');
+	log_system_event('password_reset.completed', ['user_uuid' => $user_uuid]);
 
 	return $stored_user;
 }
@@ -94,6 +105,7 @@ function password_reset_job($job)
 {
 	$payload = $job['payload'] ?? [];
 	$email = $payload['email'] ?? '';
+	$user_uuid = (string)($payload['user_uuid'] ?? '');
 	if ($email === '') {
 		load_library('log');
 		log_system_event('password_reset.send_failed', ['reason' => 'missing_recipient']);
@@ -122,10 +134,10 @@ function password_reset_job($job)
 	];
 
 	if (!email($cfg)) {
-		log_system_event('password_reset.send_failed');
+		log_system_event('password_reset.send_failed', ['user_uuid' => $user_uuid]);
 		return false;
 	}
 
-	log_system_event('password_reset.sent');
+	log_system_event('password_reset.sent', ['user_uuid' => $user_uuid]);
 	return true;
 }
