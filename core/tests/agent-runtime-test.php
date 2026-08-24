@@ -452,7 +452,7 @@ $release_responses = [
 ];
 $release_calls = 0;
 $release_detail = agent_gateway_execute('inspect_host_detail releases', function (array $command) use (&$release_responses, &$release_calls) {
-    agent_test_assert($command[0] === '/usr/bin/curl' && str_starts_with(end($command), 'https://'), 'release detail fetches only fixed HTTPS vendor sources');
+    agent_test_assert($command[0] === '/usr/bin/wget' && str_starts_with(end($command), 'https://'), 'release detail fetches only fixed HTTPS vendor sources');
     return ['exit_code' => 0, 'stdout' => $release_responses[$release_calls++], 'stderr' => ''];
 });
 agent_test_assert(
