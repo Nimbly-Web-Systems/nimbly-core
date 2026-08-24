@@ -160,6 +160,28 @@ function agent_event_context($context): array
     return $context;
 }
 
+function agent_run_triggers(string $run_uuid): array
+{
+    $triggers = [];
+    $visited = [];
+    for ($depth = 0; $depth < 20 && $run_uuid !== ''; $depth++) {
+        if (isset($visited[$run_uuid])) {
+            break;
+        }
+        $visited[$run_uuid] = true;
+        $run = data_read('.agent_runs', $run_uuid);
+        if (!is_array($run)) {
+            break;
+        }
+        $trigger = (string)($run['trigger'] ?? '');
+        if ($trigger !== '') {
+            $triggers[] = $trigger;
+        }
+        $run_uuid = (string)($run['retry_of'] ?? '');
+    }
+    return array_values(array_unique($triggers));
+}
+
 function agent_retry(string $failed_run_uuid): string
 {
     agent_ensure_resources();

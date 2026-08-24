@@ -137,6 +137,7 @@ $GLOBALS['AGENT_TEST_DEFINITIONS']['test-agent'] = [
     'prepare_input' => 'agent_test_prepare_input',
     'validate_result' => 'agent_test_validate_result',
     'deliver' => 'agent_test_deliver',
+    'report_delivery' => ['shadow_triggers' => ['manual']],
 ];
 
 $now = (new DateTimeImmutable('2026-08-10 08:00:00', new DateTimeZone('America/Sao_Paulo')))->getTimestamp();
@@ -196,6 +197,7 @@ $test_data['.agent_runs'][$failed_uuid] = [
 $retry_uuid = agent_retry($failed_uuid);
 agent_test_assert(($test_data['.agent_runs'][$retry_uuid]['retry_of'] ?? '') === $failed_uuid, 'failed scheduled run creates an auditable retry');
 agent_test_assert(($test_data['.agent_runs'][$retry_uuid]['trigger'] ?? '') === 'scheduled_retry', 'retry retains scheduled watchdog authority');
+agent_test_assert(agent_run_triggers($retry_uuid) === ['scheduled_retry', 'scheduled'], 'retry preserves its originating trigger authority');
 $test_data['.agent_runs'][$retry_uuid]['status'] = 'completed';
 agent_test_assert(agent_watchdog_status('test-agent', $now)['state'] === 'completed', 'successful retry restores the same occurrence watchdog');
 
@@ -338,6 +340,8 @@ agent_test_assert($immutable, 'terminal run is immutable');
 
 require_once BASE_DIR . 'core/modules/agent/lib/agent-run.php';
 $test_data['.agent_runs']['failed-handler-run'] = [
+    'agent_id' => 'test-agent',
+    'trigger' => 'scheduled',
     'status' => 'failed',
     'failure_reason' => 'Specific safe validation failure',
 ];
@@ -350,6 +354,17 @@ try {
 agent_test_assert(
     $handler_reason === 'Specific safe validation failure',
     'failed agent jobs expose the safe underlying run reason'
+);
+$test_data['.agent_runs']['failed-shadow-handler-run'] = [
+    'agent_id' => 'test-agent',
+    'trigger' => 'scheduled_retry',
+    'retry_of' => $manual_uuid,
+    'status' => 'failed',
+    'failure_reason' => 'Shadow failure remains in the agent ledger',
+];
+agent_test_assert(
+    agent_run_job(['payload' => ['run_uuid' => 'failed-shadow-handler-run'], 'attempts' => 3, 'max_attempts' => 3]) === true,
+    'failed manual shadow retries do not create generic job failure alerts'
 );
 
 $gateway = agent_gateway_execute('inspect_service apache2', function (array $command) {

@@ -158,26 +158,28 @@ function agent_connector_run_process(array $command): array
     ];
 }
 
-function agent_connector_run_triggers(string $run_uuid): array
-{
-    $triggers = [];
-    $visited = [];
-    for ($depth = 0; $depth < 20 && $run_uuid !== ''; $depth++) {
-        if (isset($visited[$run_uuid])) {
-            break;
+if (!function_exists('agent_run_triggers')) {
+    function agent_run_triggers(string $run_uuid): array
+    {
+        $triggers = [];
+        $visited = [];
+        for ($depth = 0; $depth < 20 && $run_uuid !== ''; $depth++) {
+            if (isset($visited[$run_uuid])) {
+                break;
+            }
+            $visited[$run_uuid] = true;
+            $run = data_read('.agent_runs', $run_uuid);
+            if (!is_array($run)) {
+                break;
+            }
+            $trigger = (string)($run['trigger'] ?? '');
+            if ($trigger !== '') {
+                $triggers[] = $trigger;
+            }
+            $run_uuid = (string)($run['retry_of'] ?? '');
         }
-        $visited[$run_uuid] = true;
-        $run = data_read('.agent_runs', $run_uuid);
-        if (!is_array($run)) {
-            break;
-        }
-        $trigger = (string)($run['trigger'] ?? '');
-        if ($trigger !== '') {
-            $triggers[] = $trigger;
-        }
-        $run_uuid = (string)($run['retry_of'] ?? '');
+        return array_values(array_unique($triggers));
     }
-    return array_values(array_unique($triggers));
 }
 
 function agent_connector_deliver_email(array $result, string $run_uuid, array $dependencies): array
@@ -193,7 +195,7 @@ function agent_connector_deliver_email(array $result, string $run_uuid, array $d
         throw new RuntimeException('Agent email delivery items are invalid');
     }
     $shadow_triggers = (array)($config['shadow_triggers'] ?? ['manual']);
-    $run_triggers = agent_connector_run_triggers($run_uuid);
+    $run_triggers = agent_run_triggers($run_uuid);
     if (array_intersect($run_triggers, $shadow_triggers) !== [] && empty($dependencies['force_delivery'])) {
         $shadow = [];
         foreach ($items as $item) {
