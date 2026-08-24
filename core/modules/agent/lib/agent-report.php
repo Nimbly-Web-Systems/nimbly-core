@@ -155,7 +155,16 @@ function agent_report_project_findings(array $findings, array $fields): array
         }
         $item = [];
         foreach ($fields as $field) {
-            $item[(string)$field] = substr((string)($finding[$field] ?? ''), 0, $field === 'evidence' ? 500 : 160);
+            $value = $finding[$field] ?? '';
+            $max_length = $field === 'evidence' ? 500 : 160;
+            if (is_array($value)) {
+                $encoded = json_encode($value, JSON_UNESCAPED_SLASHES);
+                $item[(string)$field] = is_string($encoded) && strlen($encoded) <= $max_length
+                    ? $value
+                    : ['truncated' => true];
+                continue;
+            }
+            $item[(string)$field] = substr((string)$value, 0, $max_length);
         }
         $result[] = $item;
     }

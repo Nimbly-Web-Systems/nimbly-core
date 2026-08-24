@@ -233,5 +233,5 @@ function agent_gateway_run_process(array $command): array
     $stderr = stream_get_contents($pipes[2]);
     fclose($pipes[1]);
     fclose($pipes[2]);
-    return ['exit_code' => proc_close($process), 'stdout' => substr((string)$stdout, 0, 250000), 'stderr' => substr((string)$stderr, 0, 1000)];
+    return ['exit_code' => proc_close($process), 'stdout' => substr((string)$stdout, 0, 1048576), 'stderr' => substr((string)$stderr, 0, 1000)];
 }
