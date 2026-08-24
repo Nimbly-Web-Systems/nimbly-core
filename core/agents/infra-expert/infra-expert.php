@@ -211,6 +211,10 @@ function infra_expert_validate_result(array $result, string $run_uuid = '', arra
     $diagnostics = $run_uuid === '' ? [] : agent_report_tool_results(
         $run_uuid, 'run_diagnostic', $identities
     );
+    $canonical_drift = array_filter(
+        $canonical_reviews,
+        fn($review) => in_array('runtime:environment-drift', (array)($review['runtime_finding_ids'] ?? []), true)
+    );
     $validated = [];
     foreach ($items as $item) {
         if (!is_array($item)) {
@@ -245,6 +249,11 @@ function infra_expert_validate_result(array $result, string $run_uuid = '', arra
         }
         $item['email_subject'] = substr(trim((string)($item['email_subject'] ?? '')), 0, 160);
         $item['executive_summary'] = substr(trim((string)($item['executive_summary'] ?? '')), 0, 6000);
+        foreach (['the earlier report', 'the later clean report', "today's clean check", 'the old outage', 'the fresh health check'] as $vague_phrase) {
+            if (str_contains(strtolower($item['executive_summary']), $vague_phrase)) {
+                throw new RuntimeException('Infrastructure email contains an unidentified report or incident reference');
+            }
+        }
         $greeting = (string)(infra_expert_config()['greeting'] ?? 'Hi team,');
         if ($item['email_subject'] === '' || !str_starts_with($item['executive_summary'], $greeting)) {
             throw new RuntimeException('Infrastructure executive email is invalid');
@@ -258,6 +267,15 @@ function infra_expert_validate_result(array $result, string $run_uuid = '', arra
             }
             if (isset($fresh_audits[$server])) {
                 $item['fresh_audit'] = $fresh_audits[$server];
+            }
+            if ($item['status'] === 'healthy') {
+                infra_expert_validate_runtime_health(
+                    $server,
+                    $canonical_review,
+                    $fresh_audits,
+                    $identities,
+                    $canonical_drift !== []
+                );
             }
             $server_remediations = $remediations[$server] ?? [];
             foreach ($server_remediations as $remediation) {
@@ -282,6 +300,67 @@ function infra_expert_validate_result(array $result, string $run_uuid = '', arra
     return ['environments' => array_values($validated)];
 }
 
+function infra_expert_validate_runtime_health(
+    string $server,
+    array $canonical_review,
+    array $fresh_audits,
+    array $identities,
+    bool $canonical_drift
+): void {
+    $fresh = $fresh_audits[$server] ?? null;
+    $fresh_runtime_findings = infra_expert_runtime_finding_ids((array)($fresh['findings'] ?? []));
+    if ($fresh_runtime_findings !== []) {
+        throw new RuntimeException('A healthy conclusion cannot contain fresh runtime findings');
+    }
+    $canonical_runtime_findings = (array)($canonical_review['runtime_finding_ids'] ?? []);
+    if ($canonical_runtime_findings !== [] && !infra_expert_runtime_evidence_complete((array)($fresh['runtime'] ?? []))) {
+        throw new RuntimeException('A healthy conclusion cannot clear runtime findings without comparable fresh evidence');
+    }
+    if (!$canonical_drift) {
+        return;
+    }
+    $runtimes = [];
+    foreach ($identities as $identity) {
+        $runtime = (array)($fresh_audits[$identity]['runtime'] ?? []);
+        if (!infra_expert_runtime_evidence_complete($runtime)) {
+            throw new RuntimeException('Environment drift cannot be cleared without fresh runtime evidence from every host');
+        }
+        $runtimes[] = infra_expert_runtime_comparison($runtime);
+    }
+    if (count(array_unique(array_map('serialize', $runtimes))) !== 1) {
+        throw new RuntimeException('A healthy conclusion cannot hide confirmed environment drift');
+    }
+}
+
+function infra_expert_runtime_evidence_complete(array $runtime): bool
+{
+    foreach (['ubuntu_version', 'web_php_version', 'cli_php_version', 'php_handler'] as $field) {
+        if (trim((string)($runtime[$field] ?? '')) === '') {
+            return false;
+        }
+    }
+    return true;
+}
+
+function infra_expert_runtime_comparison(array $runtime): array
+{
+    return array_intersect_key($runtime, array_flip([
+        'ubuntu_version', 'web_php_version', 'cli_php_version', 'php_handler',
+    ]));
+}
+
+function infra_expert_runtime_finding_ids(array $findings): array
+{
+    $ids = [];
+    foreach ($findings as $finding) {
+        $id = is_array($finding) ? (string)($finding['id'] ?? '') : '';
+        if (str_starts_with($id, 'runtime:')) {
+            $ids[] = $id;
+        }
+    }
+    return array_values(array_unique($ids));
+}
+
 function infra_expert_canonical_reviews(): array
 {
     $reviews = [];
@@ -300,6 +379,7 @@ function infra_expert_canonical_reviews(): array
             'overall' => (string)($report['overall'] ?? 'unknown'),
             'generated_at' => (int)($report['generated_at'] ?? 0),
             'age_seconds' => max(0, time() - (int)($report['generated_at'] ?? time())),
+            'runtime_finding_ids' => infra_expert_runtime_finding_ids((array)($report['audit']['findings'] ?? [])),
         ];
     }
     return $reviews;
