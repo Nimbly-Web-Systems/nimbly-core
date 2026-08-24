@@ -158,6 +158,28 @@ function agent_connector_run_process(array $command): array
     ];
 }
 
+function agent_connector_run_triggers(string $run_uuid): array
+{
+    $triggers = [];
+    $visited = [];
+    for ($depth = 0; $depth < 20 && $run_uuid !== ''; $depth++) {
+        if (isset($visited[$run_uuid])) {
+            break;
+        }
+        $visited[$run_uuid] = true;
+        $run = data_read('.agent_runs', $run_uuid);
+        if (!is_array($run)) {
+            break;
+        }
+        $trigger = (string)($run['trigger'] ?? '');
+        if ($trigger !== '') {
+            $triggers[] = $trigger;
+        }
+        $run_uuid = (string)($run['retry_of'] ?? '');
+    }
+    return array_values(array_unique($triggers));
+}
+
 function agent_connector_deliver_email(array $result, string $run_uuid, array $dependencies): array
 {
     $config = agent_config($dependencies, 'report_delivery', []);
@@ -170,9 +192,9 @@ function agent_connector_deliver_email(array $result, string $run_uuid, array $d
     if (!is_array($items)) {
         throw new RuntimeException('Agent email delivery items are invalid');
     }
-    $run = data_read('.agent_runs', $run_uuid);
     $shadow_triggers = (array)($config['shadow_triggers'] ?? ['manual']);
-    if (in_array(($run['trigger'] ?? ''), $shadow_triggers, true) && empty($dependencies['force_delivery'])) {
+    $run_triggers = agent_connector_run_triggers($run_uuid);
+    if (array_intersect($run_triggers, $shadow_triggers) !== [] && empty($dependencies['force_delivery'])) {
         $shadow = [];
         foreach ($items as $item) {
             $key = (string)($item[$item_key] ?? '');

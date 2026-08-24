@@ -444,6 +444,25 @@ agent_test_assert(
     'allowlisted application detail exposes bounded deployment and log evidence'
 );
 
+$release_responses = [
+    json_encode(['8.5.9' => ['date' => '30 Jul 2026']]),
+    '<table><tr><td>8.2</td><td>8 Dec 2022</td><td>31 Dec 2024</td><td>31 Dec 2026</td></tr>'
+        . '<tr><td>8.5</td><td>20 Nov 2025</td><td>31 Dec 2027</td><td>31 Dec 2029</td></tr></table>',
+    '<h2>Ubuntu 26.04 LTS</h2>',
+];
+$release_calls = 0;
+$release_detail = agent_gateway_execute('inspect_host_detail releases', function (array $command) use (&$release_responses, &$release_calls) {
+    agent_test_assert($command[0] === '/usr/bin/curl' && str_starts_with(end($command), 'https://'), 'release detail fetches only fixed HTTPS vendor sources');
+    return ['exit_code' => 0, 'stdout' => $release_responses[$release_calls++], 'stderr' => ''];
+});
+agent_test_assert(
+    $release_calls === 3
+        && $release_detail['details']['php_latest_stable'] === '8.5.9'
+        && $release_detail['details']['php_supported_branches'][0]['security_support_until'] === '31 Dec 2026'
+        && $release_detail['details']['ubuntu_latest_lts'] === '26.04 LTS',
+    'release detail returns structured current vendor evidence'
+);
+
 $diagnostic_command = 'systemctl status apache2 --no-pager';
 $diagnostic_encoded = rtrim(strtr(base64_encode($diagnostic_command), '+/', '-_'), '=');
 $diagnostic = agent_gateway_execute('diagnose ' . $diagnostic_encoded, function (array $command) use ($diagnostic_command) {
