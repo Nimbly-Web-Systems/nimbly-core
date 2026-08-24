@@ -181,7 +181,13 @@ function agent_openai_request(array $request, array $dependencies): array
             }
         }
         if (!in_array($status, [429, 500, 502, 503, 504], true) || $attempt >= 3) {
-            throw new RuntimeException('OpenAI request failed');
+            $decoded_error = json_decode((string)$body, true);
+            $error_code = substr((string)($decoded_error['error']['code'] ?? $decoded_error['error']['type'] ?? ''), 0, 80);
+            $detail = $status > 0 ? 'HTTP ' . $status : 'transport error';
+            if ($error_code !== '') {
+                $detail .= ', ' . $error_code;
+            }
+            throw new RuntimeException('OpenAI request failed (' . $detail . ')');
         }
         usleep(250000 * $attempt);
     } while ($attempt < 3);
