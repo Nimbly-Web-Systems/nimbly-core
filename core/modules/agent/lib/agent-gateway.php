@@ -148,8 +148,17 @@ function agent_gateway_inspect_host_health(?callable $runner = null): array
 
 function agent_gateway_inspect_host_detail(string $check, ?callable $runner = null): array
 {
-    if (!in_array($check, ['runtime', 'applications', 'apache', 'scheduler', 'storage', 'certificates'], true)) {
+    if (!in_array($check, ['runtime', 'releases', 'applications', 'apache', 'scheduler', 'storage', 'certificates'], true)) {
         throw new RuntimeException('Gateway host detail is not permitted');
+    }
+    if ($check === 'releases') {
+        return [
+            'check' => $check,
+            'details' => agent_gateway_release_evidence($runner),
+            'audit_version' => '',
+            'generated_at' => gmdate(DATE_ATOM),
+            'observed_at' => time(),
+        ];
     }
     $audit = agent_gateway_run_host_audit($runner);
     $system = (array)($audit['checks']['system'] ?? []);
@@ -170,6 +179,60 @@ function agent_gateway_inspect_host_detail(string $check, ?callable $runner = nu
         'audit_version' => substr((string)($audit['audit_version'] ?? ''), 0, 80),
         'generated_at' => substr((string)($audit['generated_at'] ?? ''), 0, 40),
         'observed_at' => time(),
+    ];
+}
+
+function agent_gateway_release_evidence(?callable $runner = null): array
+{
+    $runner = $runner ?? 'agent_gateway_run_process';
+    $sources = [
+        'php_latest' => 'https://www.php.net/releases/index.php?json&version=8&max=1',
+        'php_support' => 'https://www.php.net/supported-versions.php',
+        'ubuntu_lts' => 'https://ubuntu.com/download/server',
+    ];
+    $documents = [];
+    foreach ($sources as $key => $url) {
+        $result = $runner(['/usr/bin/curl', '--fail', '--silent', '--show-error', '--location', '--max-time', '15', $url]);
+        if (!is_array($result) || (int)($result['exit_code'] ?? 1) !== 0 || trim((string)($result['stdout'] ?? '')) === '') {
+            throw new RuntimeException('Official release evidence is unavailable');
+        }
+        $documents[$key] = substr((string)$result['stdout'], 0, 500000);
+    }
+
+    $php_releases = json_decode($documents['php_latest'], true);
+    $php_latest = is_array($php_releases) ? (string)array_key_first($php_releases) : '';
+    if (preg_match('/^8\.\d+\.\d+$/', $php_latest) !== 1) {
+        throw new RuntimeException('Official PHP release evidence is invalid');
+    }
+
+    $supported = [];
+    preg_match_all('/<tr\b[^>]*>(.*?)<\/tr>/is', $documents['php_support'], $rows);
+    foreach ($rows[1] ?? [] as $row) {
+        preg_match_all('/<t[dh]\b[^>]*>(.*?)<\/t[dh]>/is', $row, $cell_matches);
+        $cells = array_map(
+            fn($cell) => trim(preg_replace('/\s+/', ' ', html_entity_decode(strip_tags($cell), ENT_QUOTES | ENT_HTML5))),
+            $cell_matches[1] ?? []
+        );
+        if (count($cells) < 4) {
+            continue;
+        }
+        $branch = $cells[0];
+        preg_match_all('/\b\d{1,2}\s+[A-Za-z]+\s+\d{4}\b/', implode(' ', array_slice($cells, 1)), $dates);
+        if (preg_match('/^8\.\d+$/', $branch) === 1 && count($dates[0] ?? []) >= 3) {
+            $supported[] = ['branch' => $branch, 'active_support_until' => $dates[0][1], 'security_support_until' => $dates[0][2]];
+        }
+    }
+    if ($supported === []) {
+        throw new RuntimeException('Official PHP support evidence is incomplete');
+    }
+    if (preg_match('/Ubuntu\s+(\d{2}\.\d{2}(?:\.\d+)?)\s+LTS/i', $documents['ubuntu_lts'], $ubuntu) !== 1) {
+        throw new RuntimeException('Official Ubuntu release evidence is invalid');
+    }
+    return [
+        'php_latest_stable' => $php_latest,
+        'php_supported_branches' => $supported,
+        'ubuntu_latest_lts' => $ubuntu[1] . ' LTS',
+        'sources' => array_values($sources),
     ];
 }
 
