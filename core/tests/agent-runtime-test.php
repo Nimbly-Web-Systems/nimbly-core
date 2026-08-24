@@ -381,7 +381,7 @@ $host_health = agent_gateway_execute('inspect_host_health', function (array $com
         ]], 'checks' => ['system' => [
             'platform' => ['name' => 'Ubuntu 26.04 LTS', 'version_id' => '26.04', 'release_upgrade' => ['target' => '']],
             'php' => ['version' => '8.2.32', 'cli_version' => '8.2.32', 'handler' => 'php-fpm'],
-            'runtime_policy' => ['ubuntu_release' => 'current-lts', 'php_line' => 'ubuntu-default', 'php_handler' => 'php-fpm'],
+            'runtime_policy' => ['ubuntu_release' => 'current-lts', 'php_line' => '8.5', 'php_handler' => 'php-fpm'],
         ]],
     ]), 'stderr' => ''];
 });
