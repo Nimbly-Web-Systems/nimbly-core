@@ -192,7 +192,7 @@ function agent_gateway_release_evidence(?callable $runner = null): array
     ];
     $documents = [];
     foreach ($sources as $key => $url) {
-        $result = $runner(['/usr/bin/curl', '--fail', '--silent', '--show-error', '--location', '--max-time', '15', $url]);
+        $result = $runner(['/usr/bin/wget', '--quiet', '--output-document=-', '--timeout=15', $url]);
         if (!is_array($result) || (int)($result['exit_code'] ?? 1) !== 0 || trim((string)($result['stdout'] ?? '')) === '') {
             throw new RuntimeException('Official release evidence is unavailable');
         }
