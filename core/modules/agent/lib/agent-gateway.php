@@ -192,6 +192,18 @@ function agent_gateway_runtime_evidence(array $audit): array
     $platform = (array)($system['platform'] ?? []);
     $php = (array)($system['php'] ?? []);
     $policy = (array)($system['runtime_policy'] ?? []);
+    $baseline_findings = [];
+    foreach ((array)($audit['findings'] ?? []) as $finding) {
+        if (!is_array($finding) || !str_starts_with((string)($finding['id'] ?? ''), 'runtime:')) {
+            continue;
+        }
+        $baseline_findings[] = [
+            'id' => substr((string)($finding['id'] ?? ''), 0, 120),
+            'title' => substr((string)($finding['title'] ?? ''), 0, 160),
+            'expected' => agent_gateway_bounded_value($finding['expected'] ?? null),
+            'observed' => agent_gateway_bounded_value($finding['observed'] ?? null),
+        ];
+    }
     return [
         'ubuntu_version' => substr((string)($platform['version_id'] ?? ''), 0, 40),
         'ubuntu_name' => substr((string)($platform['name'] ?? ''), 0, 120),
@@ -200,6 +212,7 @@ function agent_gateway_runtime_evidence(array $audit): array
         'cli_php_version' => substr((string)($php['cli_version'] ?? ''), 0, 40),
         'php_handler' => substr((string)($php['handler'] ?? ''), 0, 80),
         'policy' => agent_gateway_bounded_value($policy, 1000),
+        'baseline_findings' => array_slice($baseline_findings, 0, 10),
     ];
 }
 
