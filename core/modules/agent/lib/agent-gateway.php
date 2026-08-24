@@ -148,13 +148,14 @@ function agent_gateway_inspect_host_health(?callable $runner = null): array
 
 function agent_gateway_inspect_host_detail(string $check, ?callable $runner = null): array
 {
-    if (!in_array($check, ['runtime', 'apache', 'scheduler', 'storage', 'certificates'], true)) {
+    if (!in_array($check, ['runtime', 'applications', 'apache', 'scheduler', 'storage', 'certificates'], true)) {
         throw new RuntimeException('Gateway host detail is not permitted');
     }
     $audit = agent_gateway_run_host_audit($runner);
     $system = (array)($audit['checks']['system'] ?? []);
     $details = match ($check) {
         'runtime' => agent_gateway_runtime_evidence($audit),
+        'applications' => agent_gateway_application_evidence($audit),
         'apache' => (array)($audit['checks']['apache'] ?? []),
         'scheduler' => (array)($audit['checks']['scheduler'] ?? []),
         'certificates' => (array)($audit['checks']['certificates'] ?? []),
@@ -169,6 +170,41 @@ function agent_gateway_inspect_host_detail(string $check, ?callable $runner = nu
         'audit_version' => substr((string)($audit['audit_version'] ?? ''), 0, 80),
         'generated_at' => substr((string)($audit['generated_at'] ?? ''), 0, 40),
         'observed_at' => time(),
+    ];
+}
+
+function agent_gateway_application_evidence(array $audit): array
+{
+    $checks = (array)($audit['checks'] ?? []);
+    $apache = (array)($checks['apache'] ?? []);
+    $scheduler = (array)($checks['scheduler'] ?? []);
+    $applications = [];
+    foreach (array_slice((array)($checks['projects'] ?? []), 0, 50, true) as $name => $project) {
+        if (!is_array($project)) {
+            continue;
+        }
+        $path = substr((string)($project['path'] ?? ''), 0, 300);
+        $git = (array)($project['git'] ?? []);
+        $applications[] = [
+            'name' => substr((string)$name, 0, 160),
+            'path' => $path,
+            'available' => !empty($project['available']),
+            'environment' => substr((string)($project['environment'] ?? ''), 0, 40),
+            'status' => substr((string)($project['status'] ?? ''), 0, 40),
+            'scheduler' => substr((string)($project['scheduler'] ?? ''), 0, 80),
+            'core_branch' => substr((string)($git['core']['branch'] ?? ''), 0, 120),
+            'ext_branch' => substr((string)($git['ext']['branch'] ?? ''), 0, 120),
+            'application_log' => $path === '' ? '' : $path . '/ext/data/.tmp/logs/system.log',
+            'requests' => max(0, (int)($project['requests'] ?? 0)),
+            'http_5xx' => max(0, (int)($project['http_5xx'] ?? 0)),
+            'php_errors' => max(0, (int)($project['php_errors'] ?? 0)),
+        ];
+    }
+    return [
+        'applications' => $applications,
+        'apache_access_logs' => array_slice((array)($apache['access_logs'] ?? []), 0, 20),
+        'apache_error_logs' => array_slice((array)($apache['error_logs'] ?? []), 0, 20),
+        'scheduler_log' => substr((string)($scheduler['log'] ?? ''), 0, 300),
     ];
 }
 
@@ -211,6 +247,7 @@ function agent_gateway_runtime_evidence(array $audit): array
         'web_php_version' => substr((string)($php['version'] ?? ''), 0, 40),
         'cli_php_version' => substr((string)($php['cli_version'] ?? ''), 0, 40),
         'php_handler' => substr((string)($php['handler'] ?? ''), 0, 80),
+        'cli_extensions' => array_slice(array_values((array)($php['cli_extensions'] ?? [])), 0, 200),
         'policy' => agent_gateway_bounded_value($policy, 1000),
         'baseline_findings' => array_slice($baseline_findings, 0, 10),
     ];

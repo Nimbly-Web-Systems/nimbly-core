@@ -408,7 +408,7 @@ $runtime_detail = agent_gateway_execute('inspect_host_detail runtime', function 
     return ['exit_code' => 1, 'stdout' => json_encode([
         'overall' => 'warning', 'findings' => [], 'checks' => ['system' => [
             'platform' => ['name' => 'Ubuntu 24.04 LTS', 'version_id' => '24.04', 'release_upgrade' => ['target' => '26.04 LTS']],
-            'php' => ['version' => '8.2.0', 'cli_version' => '8.2.0', 'handler' => 'apache-module'],
+            'php' => ['version' => '8.2.0', 'cli_version' => '8.2.0', 'handler' => 'apache-module', 'cli_extensions' => ['Core', 'curl', 'json']],
             'runtime_policy' => ['ubuntu_release' => 'current-lts', 'php_line' => 'ubuntu-default', 'php_handler' => 'php-fpm'],
         ]],
     ]), 'stderr' => ''];
@@ -416,8 +416,32 @@ $runtime_detail = agent_gateway_execute('inspect_host_detail runtime', function 
 agent_test_assert(
     $runtime_detail['check'] === 'runtime'
         && $runtime_detail['details']['ubuntu_upgrade_target'] === '26.04 LTS'
-        && $runtime_detail['details']['web_php_version'] === '8.2.0',
+        && $runtime_detail['details']['web_php_version'] === '8.2.0'
+        && $runtime_detail['details']['cli_extensions'] === ['Core', 'curl', 'json'],
     'allowlisted runtime detail exposes the exact baseline evidence'
+);
+
+$application_detail = agent_gateway_execute('inspect_host_detail applications', function (array $command) {
+    agent_test_assert($command === ['/usr/bin/sudo', '-n', '/usr/local/bin/nimbly-host-audit', '--format=json'], 'application detail uses the fixed host audit command');
+    return ['exit_code' => 0, 'stdout' => json_encode([
+        'overall' => 'ok', 'findings' => [], 'checks' => [
+            'projects' => ['Nimbly Site' => [
+                'path' => '/var/www/nimbly-site', 'available' => true, 'environment' => 'prod',
+                'status' => 'healthy', 'scheduler' => 'Active', 'requests' => 120,
+                'http_5xx' => 0, 'php_errors' => 0,
+                'git' => ['core' => ['branch' => 'master'], 'ext' => ['branch' => 'live']],
+            ]],
+            'apache' => ['access_logs' => ['/var/log/apache2/access.log'], 'error_logs' => ['/var/log/apache2/error.log']],
+            'scheduler' => ['log' => '/var/log/nimbly-scheduler.log'],
+        ],
+    ]), 'stderr' => ''];
+});
+agent_test_assert(
+    $application_detail['details']['applications'][0]['ext_branch'] === 'live'
+        && $application_detail['details']['applications'][0]['application_log'] === '/var/www/nimbly-site/ext/data/.tmp/logs/system.log'
+        && $application_detail['details']['apache_error_logs'] === ['/var/log/apache2/error.log']
+        && $application_detail['details']['scheduler_log'] === '/var/log/nimbly-scheduler.log',
+    'allowlisted application detail exposes bounded deployment and log evidence'
 );
 
 $diagnostic_command = 'systemctl status apache2 --no-pager';
