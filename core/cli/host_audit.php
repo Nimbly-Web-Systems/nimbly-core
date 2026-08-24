@@ -1755,6 +1755,7 @@ function host_audit_php_runtime(): array
         'cli_version' => PHP_VERSION,
         'sapi' => PHP_SAPI,
         'handler' => $handler,
+        'cli_extensions' => array_values(array_map('strtolower', get_loaded_extensions())),
     ];
 }
 
