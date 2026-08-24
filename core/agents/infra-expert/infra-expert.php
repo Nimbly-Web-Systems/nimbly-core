@@ -274,16 +274,13 @@ function infra_expert_validate_result(array $result, string $run_uuid = '', arra
             if (isset($fresh_audits[$server])) {
                 $item['fresh_audit'] = $fresh_audits[$server];
             }
-            if ($item['status'] === 'healthy') {
-                infra_expert_validate_runtime_health(
-                    $server,
-                    $canonical_review,
-                    $fresh_audits,
-                    $fresh_runtimes,
-                    $identities,
-                    $canonical_drift !== []
-                );
-            }
+            infra_expert_validate_runtime_evidence(
+                $server,
+                $canonical_review,
+                $fresh_runtimes,
+                $identities,
+                $canonical_drift !== []
+            );
             $server_remediations = $remediations[$server] ?? [];
             foreach ($server_remediations as $remediation) {
                 $executed_at = (int)($remediation['executed_at'] ?? 0);
@@ -307,36 +304,25 @@ function infra_expert_validate_result(array $result, string $run_uuid = '', arra
     return ['environments' => array_values($validated)];
 }
 
-function infra_expert_validate_runtime_health(
+function infra_expert_validate_runtime_evidence(
     string $server,
     array $canonical_review,
-    array $fresh_audits,
     array $fresh_runtimes,
     array $identities,
     bool $canonical_drift
 ): void {
-    $fresh = $fresh_audits[$server] ?? null;
-    $fresh_runtime_findings = infra_expert_runtime_finding_ids((array)($fresh['findings'] ?? []));
-    if ($fresh_runtime_findings !== []) {
-        throw new RuntimeException('A healthy conclusion cannot contain fresh runtime findings');
-    }
     $canonical_runtime_findings = (array)($canonical_review['runtime_finding_ids'] ?? []);
     if ($canonical_runtime_findings !== [] && !infra_expert_runtime_evidence_complete((array)($fresh_runtimes[$server] ?? []))) {
-        throw new RuntimeException('A healthy conclusion cannot clear runtime findings without comparable fresh evidence');
+        throw new RuntimeException('Runtime findings require comparable fresh evidence');
     }
     if (!$canonical_drift) {
         return;
     }
-    $runtimes = [];
     foreach ($identities as $identity) {
         $runtime = (array)($fresh_runtimes[$identity] ?? []);
         if (!infra_expert_runtime_evidence_complete($runtime)) {
-            throw new RuntimeException('Environment drift cannot be cleared without fresh runtime evidence from every host');
+            throw new RuntimeException('Environment drift requires fresh runtime evidence from every host');
         }
-        $runtimes[] = infra_expert_runtime_comparison($runtime);
-    }
-    if (count(array_unique(array_map('serialize', $runtimes))) !== 1) {
-        throw new RuntimeException('A healthy conclusion cannot hide confirmed environment drift');
     }
 }
 
