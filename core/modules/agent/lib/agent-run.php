@@ -12,6 +12,11 @@ function agent_run_job(array $job)
     $max_attempts = (int)($job['max_attempts'] ?? 3);
     $result = agent_run($run_uuid, ['terminal_on_failure' => $attempts >= $max_attempts]);
     if (($result['status'] ?? '') !== 'completed') {
+        $definition = agent_definition((string)($result['agent_id'] ?? ''));
+        $shadow_triggers = (array)($definition['report_delivery']['shadow_triggers'] ?? []);
+        if (array_intersect(agent_run_triggers($run_uuid), $shadow_triggers) !== []) {
+            return true;
+        }
         $reason = agent_safe_error((string)($result['failure_reason'] ?? 'Agent run failed'));
         throw new RuntimeException($reason === '' ? 'Agent run failed' : $reason);
     }
