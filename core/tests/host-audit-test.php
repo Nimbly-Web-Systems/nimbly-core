@@ -67,6 +67,14 @@ audit_assert(count($runtime_findings) === 4, 'reports every runtime policy misma
 audit_assert($runtime_findings[0]['expected'] === '26.04 LTS', 'resolves expected current LTS');
 audit_assert($runtime_findings[0]['observed'] === '24.04', 'includes observed runtime value');
 audit_assert($runtime_findings[0]['host'] === 'stage.example', 'includes affected host');
+$explicit_runtime_findings = host_audit_runtime_policy_findings(
+    ['version_id' => '26.04', 'name' => 'Ubuntu 26.04 LTS', 'release_upgrade' => ['available' => false]],
+    ['version' => '8.4.24', 'cli_version' => '8.4.24', 'handler' => 'php-fpm'],
+    ['ubuntu_release' => 'current-lts', 'php_line' => '8.5', 'php_handler' => 'php-fpm'],
+    'stage.example'
+);
+audit_assert(count($explicit_runtime_findings) === 1, 'supports an explicit PHP infrastructure baseline');
+audit_assert($explicit_runtime_findings[0]['expected'] === 'PHP 8.5', 'reports the explicit PHP target');
 audit_assert(
     host_audit_project_log_is_informational(
         'Nimbly: Password reset requested for unknown email example@example.com'

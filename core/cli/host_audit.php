@@ -1764,7 +1764,10 @@ function host_audit_runtime_policy_findings(
     $ubuntu_target = host_audit_release_version((string)($platform['release_upgrade']['target'] ?? ''));
     $ubuntu_is_current_lts = str_contains(strtoupper((string)($platform['name'] ?? '')), 'LTS')
         && empty($platform['release_upgrade']['available']);
-    $ubuntu_default_php ??= host_audit_ubuntu_default_php_minor();
+    $required_php = (string)($policy['php_line'] ?? '');
+    if ($required_php === 'ubuntu-default') {
+        $required_php = $ubuntu_default_php ?? host_audit_ubuntu_default_php_minor();
+    }
     $web_php = host_audit_php_minor((string)($php['version'] ?? ''));
     $checks = [
         [
@@ -1778,11 +1781,13 @@ function host_audit_runtime_policy_findings(
         [
             'id' => 'runtime:php-version',
             'title' => 'Web PHP version differs from infrastructure policy',
-            'enabled' => ($policy['php_line'] ?? '') === 'ubuntu-default',
-            'aligned' => $ubuntu_default_php !== 'unknown' && $web_php === $ubuntu_default_php,
-            'expected' => $ubuntu_default_php === 'unknown'
+            'enabled' => $required_php !== '',
+            'aligned' => $required_php !== 'unknown' && $web_php === $required_php,
+            'expected' => $required_php === 'unknown'
                 ? 'Ubuntu default PHP line'
-                : 'Ubuntu default PHP ' . $ubuntu_default_php,
+                : (($policy['php_line'] ?? '') === 'ubuntu-default'
+                    ? 'Ubuntu default PHP ' . $required_php
+                    : 'PHP ' . $required_php),
             'observed' => $web_php,
         ],
         [
