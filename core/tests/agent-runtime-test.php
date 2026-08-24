@@ -374,14 +374,18 @@ $host_health = agent_gateway_execute('inspect_host_health', function (array $com
             'id' => 'jobs:failed', 'severity' => 'critical', 'scope' => 'jobs', 'title' => 'Job failed',
             'evidence' => 'One job failed', 'count' => 2, 'project' => 'Example',
             'first_seen' => '2026-08-13T10:00:00+00:00', 'last_seen' => '2026-08-13T10:05:00+00:00',
+        ], [
+            'id' => 'runtime:php-version', 'severity' => 'warning', 'scope' => 'host',
+            'title' => 'Web PHP version differs from infrastructure policy',
+            'expected' => 'Ubuntu default PHP 8.5', 'observed' => '8.2',
         ]], 'checks' => ['system' => [
             'platform' => ['name' => 'Ubuntu 26.04 LTS', 'version_id' => '26.04', 'release_upgrade' => ['target' => '']],
-            'php' => ['version' => '8.5.2', 'cli_version' => '8.5.2', 'handler' => 'php-fpm'],
+            'php' => ['version' => '8.2.32', 'cli_version' => '8.2.32', 'handler' => 'php-fpm'],
             'runtime_policy' => ['ubuntu_release' => 'current-lts', 'php_line' => 'ubuntu-default', 'php_handler' => 'php-fpm'],
         ]],
     ]), 'stderr' => ''];
 });
-agent_test_assert($host_health['overall'] === 'critical' && count($host_health['findings']) === 1, 'gateway normalizes a fresh host audit');
+agent_test_assert($host_health['overall'] === 'critical' && count($host_health['findings']) === 2, 'gateway normalizes a fresh host audit');
 agent_test_assert(
     $host_health['findings'][0]['count'] === 2
         && $host_health['findings'][0]['project'] === 'Example'
@@ -390,9 +394,13 @@ agent_test_assert(
 );
 agent_test_assert(
     $host_health['runtime']['ubuntu_version'] === '26.04'
-        && $host_health['runtime']['web_php_version'] === '8.5.2'
+        && $host_health['runtime']['web_php_version'] === '8.2.32'
         && $host_health['runtime']['php_handler'] === 'php-fpm',
     'gateway preserves bounded runtime evidence from the fresh audit'
+);
+agent_test_assert(
+    $host_health['runtime']['baseline_findings'][0]['expected'] === 'Ubuntu default PHP 8.5',
+    'runtime evidence exposes resolved baseline findings independently of the general finding limit'
 );
 
 $runtime_detail = agent_gateway_execute('inspect_host_detail runtime', function (array $command) {
