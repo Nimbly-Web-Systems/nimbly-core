@@ -65,6 +65,7 @@ $runtime_findings = host_audit_runtime_policy_findings(
 );
 audit_assert(count($runtime_findings) === 4, 'reports every runtime policy mismatch');
 audit_assert($runtime_findings[0]['expected'] === '26.04 LTS', 'resolves expected current LTS');
+audit_assert($runtime_findings[0]['severity'] === 'notice', 'runtime policy drift is maintenance information');
 audit_assert($runtime_findings[0]['observed'] === '24.04', 'includes observed runtime value');
 audit_assert($runtime_findings[0]['host'] === 'stage.example', 'includes affected host');
 $explicit_runtime_findings = host_audit_runtime_policy_findings(
@@ -169,9 +170,14 @@ audit_assert(
     host_audit_project_from_path('/wp-admin/install.php', ['nimbly-site']) === null,
     'does not attribute scanner paths to projects'
 );
-audit_assert(host_audit_404_is_probe('/wp-login.php'), 'filters WordPress login probes');
-audit_assert(host_audit_404_is_probe('/vendor/phpunit/phpunit/src/Util/PHP/eval-stdin.php'), 'filters PHPUnit probes');
-audit_assert(!host_audit_404_is_probe('/nimbly-site/about-us'), 'keeps genuine application paths');
+audit_assert(
+    !host_audit_404_creates_finding(['route_type' => 'dynamic', 'count' => 100]),
+    'does not turn repeated unverified internet paths into application findings'
+);
+audit_assert(
+    host_audit_404_creates_finding(['route_type' => 'known', 'count' => 1]),
+    'reports a missing route when authoritative route knowledge establishes ownership'
+);
 $reset_route = host_audit_normalize_route_pattern('/password-reset/user-uuid/secret-token');
 audit_assert($reset_route['pattern'] === '/password-reset/(uuid)/(key)', 'redacts reset route values');
 audit_assert($reset_route['type'] === 'known', 'classifies reset route as known');

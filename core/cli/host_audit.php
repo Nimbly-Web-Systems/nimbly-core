@@ -425,7 +425,6 @@ function host_audit_apache(array $context, array &$findings): array
     $route_5xx = [];
     $rejected_method_probes = 0;
     $not_found_total = 0;
-    $not_found_probe_count = 0;
     $not_found_routes = [];
     foreach (array_unique($access_files) as $file) {
         $file_project = host_audit_log_project(
@@ -442,7 +441,6 @@ function host_audit_apache(array $context, array &$findings): array
             &$route_5xx,
             &$rejected_method_probes,
             &$not_found_total,
-            &$not_found_probe_count,
             &$not_found_routes
         ): void {
             $entry = host_audit_parse_access_line($line);
@@ -487,35 +485,31 @@ function host_audit_apache(array $context, array &$findings): array
             }
             if ($entry['status'] === 404) {
                 $not_found_total++;
-                if (host_audit_404_is_probe($entry['path'])) {
-                    $not_found_probe_count++;
-                } else {
-                    $route = host_audit_normalize_route_pattern(
-                        $entry['path'],
-                        (array)($context['config']['known_routes'] ?? [])
-                    );
-                    $route_key = $attribution['label'] . "\n" . $route['pattern'];
-                    $not_found_routes[$route_key] ??= [
-                        'project' => $project,
-                        'target' => $attribution['label'],
-                        'target_type' => $attribution['type'],
-                        'host' => $entry['vhost'],
-                        'path' => $route['pattern'],
-                        'route_type' => $route['type'],
-                        'count' => 0,
-                        'first_seen' => $entry['timestamp'],
-                        'last_seen' => $entry['timestamp'],
-                    ];
-                    $not_found_routes[$route_key]['count']++;
-                    $not_found_routes[$route_key]['first_seen'] = min(
-                        $not_found_routes[$route_key]['first_seen'],
-                        $entry['timestamp']
-                    );
-                    $not_found_routes[$route_key]['last_seen'] = max(
-                        $not_found_routes[$route_key]['last_seen'],
-                        $entry['timestamp']
-                    );
-                }
+                $route = host_audit_normalize_route_pattern(
+                    $entry['path'],
+                    (array)($context['config']['known_routes'] ?? [])
+                );
+                $route_key = $attribution['label'] . "\n" . $route['pattern'];
+                $not_found_routes[$route_key] ??= [
+                    'project' => $project,
+                    'target' => $attribution['label'],
+                    'target_type' => $attribution['type'],
+                    'host' => $entry['vhost'],
+                    'path' => $route['pattern'],
+                    'route_type' => $route['type'],
+                    'count' => 0,
+                    'first_seen' => $entry['timestamp'],
+                    'last_seen' => $entry['timestamp'],
+                ];
+                $not_found_routes[$route_key]['count']++;
+                $not_found_routes[$route_key]['first_seen'] = min(
+                    $not_found_routes[$route_key]['first_seen'],
+                    $entry['timestamp']
+                );
+                $not_found_routes[$route_key]['last_seen'] = max(
+                    $not_found_routes[$route_key]['last_seen'],
+                    $entry['timestamp']
+                );
             }
             if ($entry['status'] < 500) {
                 return;
@@ -621,17 +615,21 @@ function host_audit_apache(array $context, array &$findings): array
         return ($right['count'] <=> $left['count'])
             ?: strcmp((string)$left['path'], (string)$right['path']);
     });
+    $known_route_404_count = array_sum(array_map(
+        fn(array $route): int => $route['route_type'] === 'known' ? (int)$route['count'] : 0,
+        $not_found_routes
+    ));
     foreach ($not_found_routes as $route) {
-        $threshold = $route['route_type'] === 'known' ? 1 : 2;
-        if ($route['count'] < $threshold) {
+        // A request proves that a URL was tried, not that the application owns it.
+        // Only authoritative route knowledge may turn a 404 into a health finding.
+        if (!host_audit_404_creates_finding($route)) {
             continue;
         }
-        $critical_threshold = $route['route_type'] === 'known' ? 2 : 10;
         $finding = host_audit_finding(
             'apache:404:' . host_audit_id((string)$route['target']) . ':' . host_audit_id((string)$route['path']),
-            $route['count'] >= $critical_threshold ? 'critical' : 'warning',
+            'warning',
             $route['project'] === null ? 'host' : 'project',
-            $route['route_type'] === 'known' ? 'Known route returned 404' : 'Repeated dynamic route returned 404',
+            'Known route returned 404',
             (string)$route['path'],
             (int)$route['first_seen'],
             $route['project']
@@ -663,8 +661,8 @@ function host_audit_apache(array $context, array &$findings): array
         'rejected_method_probes' => $rejected_method_probes,
         'not_found' => [
             'total' => $not_found_total,
-            'filtered_probes' => $not_found_probe_count,
-            'genuine_total' => $not_found_total - $not_found_probe_count,
+            'known_route_total' => $known_route_404_count,
+            'unclassified_total' => $not_found_total - $known_route_404_count,
             'unique' => count($not_found_routes),
             'routes' => array_slice($not_found_routes, 0, 50),
         ],
@@ -684,19 +682,9 @@ function host_audit_apache(array $context, array &$findings): array
     ];
 }
 
-function host_audit_404_is_probe(string $path): bool
+function host_audit_404_creates_finding(array $route): bool
 {
-    $normalized = strtolower(rawurldecode(parse_url($path, PHP_URL_PATH) ?: $path));
-    return preg_match(
-        '~(?:^|/)(?:'
-        . 'wp-login\.php|xmlrpc\.php|wp-admin(?:/|$)|wp-content(?:/|$)|'
-        . 'phpmyadmin(?:/|$)|pma(?:/|$)|adminer(?:\.php)?|'
-        . '\.env(?:\.|$)|\.git(?:/|$)|\.svn(?:/|$)|'
-        . 'vendor/phpunit|cgi-bin(?:/|$)|boaform|HNAP1|'
-        . 'server-status|actuator(?:/|$)|console(?:/|$)'
-        . ')~ix',
-        $normalized
-    ) === 1;
+    return ($route['route_type'] ?? '') === 'known' && (int)($route['count'] ?? 0) > 0;
 }
 
 function host_audit_normalize_route_pattern(string $path, array $known_routes = []): array
@@ -1494,14 +1482,14 @@ function host_audit_group_findings(array $findings): array
 
 function host_audit_compare_findings(array $a, array $b): int
 {
-    $weights = ['critical' => 0, 'warning' => 1, 'ok' => 2, 'unknown' => 3];
+    $weights = ['critical' => 0, 'warning' => 1, 'notice' => 2, 'ok' => 3, 'unknown' => 4];
     $severity = ($weights[$a['severity']] ?? 9) <=> ($weights[$b['severity']] ?? 9);
     return $severity !== 0 ? $severity : strcmp($a['id'], $b['id']);
 }
 
 function host_audit_summary(array $findings): array
 {
-    $summary = ['critical' => 0, 'warning' => 0, 'ok' => 0, 'unknown' => 0];
+    $summary = ['critical' => 0, 'warning' => 0, 'notice' => 0, 'ok' => 0, 'unknown' => 0];
     foreach ($findings as $finding) {
         $severity = $finding['severity'] ?? 'unknown';
         $summary[$severity] = ($summary[$severity] ?? 0) + 1;
@@ -1818,7 +1806,7 @@ function host_audit_runtime_policy_findings(
         }
         $finding = host_audit_finding(
             $check['id'],
-            'warning',
+            'notice',
             'host',
             $check['title'],
             'expected ' . $check['expected'] . ', observed ' . ($check['observed'] ?: 'unknown'),

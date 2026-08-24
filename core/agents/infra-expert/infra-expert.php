@@ -255,7 +255,7 @@ function infra_expert_validate_result(array $result, string $run_uuid = '', arra
             throw new RuntimeException('Infrastructure source report UUID is missing');
         }
         $item['status'] = (string)($item['status'] ?? 'warning');
-        if (!in_array($item['status'], ['healthy', 'warning', 'degraded', 'critical'], true)) {
+        if (!in_array($item['status'], ['healthy', 'notice', 'warning', 'degraded', 'critical'], true)) {
             throw new RuntimeException('Infrastructure status is invalid');
         }
         $item['email_subject'] = substr(trim((string)($item['email_subject'] ?? '')), 0, 160);
