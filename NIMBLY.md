@@ -2128,9 +2128,13 @@ agent PHP file.
 
 ```bash
 php core/cli/nimbly.php agent:enqueue infra-expert
+php core/cli/nimbly.php agent:enqueue infra-expert --operator=incident-review
 php core/cli/nimbly.php agent:run <run-uuid>
 php core/cli/nimbly.php agent:recover
 ```
+
+Use `--operator=<key>` for a deliberately requested, uniquely keyed rerun that
+uses normal delivery. `--manual=<key>` remains the shadow-mode inspection path.
 
 Code may enqueue a scoped event-driven run with `target`, `read_only`, an
 idempotency suffix, and `event_context`. Event context must be a JSON-encodable

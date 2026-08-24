@@ -31,23 +31,32 @@ $command = $argv[1] ?? '';
 if ($command === 'agent:enqueue') {
     $agent_id = trim((string)($argv[2] ?? ''));
     $manual = '';
+    $operator = '';
     $target = '';
     $read_only = false;
     foreach (array_slice($argv, 3) as $argument) {
         if (str_starts_with($argument, '--manual=')) {
             $manual = substr($argument, 9);
+        } elseif (str_starts_with($argument, '--operator=')) {
+            $operator = substr($argument, 11);
         } elseif (str_starts_with($argument, '--target=')) {
             $target = substr($argument, 9);
         } elseif ($argument === '--read-only') {
             $read_only = true;
         }
     }
-    $dependencies = $manual === '' ? [] : [
-        'trigger' => 'manual',
-        'idempotency_suffix' => 'manual-' . $manual,
-        'target' => $target,
-        'read_only' => $read_only,
-    ];
+    if ($manual !== '' && $operator !== '') {
+        throw new InvalidArgumentException('Choose either --manual or --operator');
+    }
+    $dependencies = [];
+    if ($manual !== '' || $operator !== '') {
+        $dependencies = [
+            'trigger' => $manual !== '' ? 'manual' : 'operator',
+            'idempotency_suffix' => ($manual !== '' ? 'manual-' : 'operator-') . ($manual ?: $operator),
+            'target' => $target,
+            'read_only' => $read_only,
+        ];
+    }
     $run_uuid = agent_enqueue($agent_id, null, $dependencies);
     echo "Agent run enqueued: {$run_uuid}\n";
     exit(0);
@@ -70,5 +79,5 @@ if ($command === 'agent:recover') {
     exit(0);
 }
 
-fwrite(STDERR, "Usage: agent:enqueue <agent-id> [--manual=<key>] [--target=<identity>] [--read-only] | agent:run <run-uuid> | agent:retry <failed-run-uuid> | agent:recover\n");
+fwrite(STDERR, "Usage: agent:enqueue <agent-id> [--manual=<key>|--operator=<key>] [--target=<identity>] [--read-only] | agent:run <run-uuid> | agent:retry <failed-run-uuid> | agent:recover\n");
 exit(64);
