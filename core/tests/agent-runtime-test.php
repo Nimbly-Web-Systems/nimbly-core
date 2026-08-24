@@ -369,10 +369,15 @@ agent_test_assert($gateway['active'] === true && $gateway['service'] === 'apache
 $host_health = agent_gateway_execute('inspect_host_health', function (array $command) {
     agent_test_assert($command === ['/usr/bin/sudo', '-n', '/usr/local/bin/nimbly-host-audit', '--format=json'], 'host audit maps to one fixed privileged command');
     return ['exit_code' => 2, 'stdout' => json_encode([
+        'audit_version' => '1.2.3', 'generated_at' => '2026-08-23T12:00:00Z',
         'overall' => 'critical', 'summary' => ['critical' => 1], 'findings' => [[
             'id' => 'jobs:failed', 'severity' => 'critical', 'scope' => 'jobs', 'title' => 'Job failed',
             'evidence' => 'One job failed', 'count' => 2, 'project' => 'Example',
             'first_seen' => '2026-08-13T10:00:00+00:00', 'last_seen' => '2026-08-13T10:05:00+00:00',
+        ]], 'checks' => ['system' => [
+            'platform' => ['name' => 'Ubuntu 26.04 LTS', 'version_id' => '26.04', 'release_upgrade' => ['target' => '']],
+            'php' => ['version' => '8.5.2', 'cli_version' => '8.5.2', 'handler' => 'php-fpm'],
+            'runtime_policy' => ['ubuntu_release' => 'current-lts', 'php_line' => 'ubuntu-default', 'php_handler' => 'php-fpm'],
         ]],
     ]), 'stderr' => ''];
 });
@@ -382,6 +387,29 @@ agent_test_assert(
         && $host_health['findings'][0]['project'] === 'Example'
         && $host_health['findings'][0]['last_seen'] === '2026-08-13T10:05:00+00:00',
     'gateway preserves bounded finding chronology and occurrence evidence'
+);
+agent_test_assert(
+    $host_health['runtime']['ubuntu_version'] === '26.04'
+        && $host_health['runtime']['web_php_version'] === '8.5.2'
+        && $host_health['runtime']['php_handler'] === 'php-fpm',
+    'gateway preserves bounded runtime evidence from the fresh audit'
+);
+
+$runtime_detail = agent_gateway_execute('inspect_host_detail runtime', function (array $command) {
+    agent_test_assert($command === ['/usr/bin/sudo', '-n', '/usr/local/bin/nimbly-host-audit', '--format=json'], 'runtime detail uses the fixed host audit command');
+    return ['exit_code' => 1, 'stdout' => json_encode([
+        'overall' => 'warning', 'findings' => [], 'checks' => ['system' => [
+            'platform' => ['name' => 'Ubuntu 24.04 LTS', 'version_id' => '24.04', 'release_upgrade' => ['target' => '26.04 LTS']],
+            'php' => ['version' => '8.2.0', 'cli_version' => '8.2.0', 'handler' => 'apache-module'],
+            'runtime_policy' => ['ubuntu_release' => 'current-lts', 'php_line' => 'ubuntu-default', 'php_handler' => 'php-fpm'],
+        ]],
+    ]), 'stderr' => ''];
+});
+agent_test_assert(
+    $runtime_detail['check'] === 'runtime'
+        && $runtime_detail['details']['ubuntu_upgrade_target'] === '26.04 LTS'
+        && $runtime_detail['details']['web_php_version'] === '8.2.0',
+    'allowlisted runtime detail exposes the exact baseline evidence'
 );
 
 $diagnostic_command = 'systemctl status apache2 --no-pager';
@@ -400,13 +428,13 @@ $action_result = agent_gateway_execute('execute_action ' . $action_envelope, fun
 agent_test_assert($action_result['exit_code'] === 0, 'governed gateway result is normalized');
 
 $denied = 0;
-foreach (['inspect_service ssh', 'inspect_service apache2 extra', 'sh -c id', ''] as $command) {
+foreach (['inspect_service ssh', 'inspect_service apache2 extra', 'inspect_host_detail secrets', 'sh -c id', ''] as $command) {
     try {
         agent_gateway_execute($command, fn() => []);
     } catch (RuntimeException) {
         $denied++;
     }
 }
-agent_test_assert($denied === 4, 'gateway rejects unknown and shell-shaped commands');
+agent_test_assert($denied === 5, 'gateway rejects unknown and shell-shaped commands');
 
 echo "Agent runtime tests passed.\n";

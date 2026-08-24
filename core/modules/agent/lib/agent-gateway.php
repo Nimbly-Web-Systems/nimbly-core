@@ -18,6 +18,7 @@ function agent_gateway_adapters(): array
         'diagnose' => ['arguments' => 1, 'callback' => fn($args, $runner) => agent_gateway_diagnose($args[0], $runner)],
         'execute_action' => ['arguments' => 1, 'callback' => fn($args, $runner) => agent_gateway_execute_action($args[0], $runner)],
         'inspect_host_health' => ['arguments' => 0, 'callback' => fn($_args, $runner) => agent_gateway_inspect_host_health($runner)],
+        'inspect_host_detail' => ['arguments' => 1, 'callback' => fn($args, $runner) => agent_gateway_inspect_host_detail($args[0], $runner)],
         'inspect_service' => ['arguments' => 1, 'callback' => fn($args, $runner) => agent_gateway_inspect_service($args[0], $runner)],
     ];
 }
@@ -113,15 +114,7 @@ function agent_gateway_decode(string $encoded, int $max_length): string
 
 function agent_gateway_inspect_host_health(?callable $runner = null): array
 {
-    $runner = $runner ?? 'agent_gateway_run_process';
-    $result = $runner(['/usr/bin/sudo', '-n', '/usr/local/bin/nimbly-host-audit', '--format=json']);
-    if (!is_array($result) || !in_array((int)($result['exit_code'] ?? 3), [0, 1, 2], true)) {
-        throw new RuntimeException('Gateway host audit failed');
-    }
-    $audit = json_decode((string)($result['stdout'] ?? ''), true);
-    if (!is_array($audit) || !isset($audit['overall'], $audit['findings'])) {
-        throw new RuntimeException('Gateway host audit returned invalid evidence');
-    }
+    $audit = agent_gateway_run_host_audit($runner);
     $findings = [];
     foreach (array_slice((array)$audit['findings'], 0, 50) as $finding) {
         if (!is_array($finding)) {
@@ -135,6 +128,9 @@ function agent_gateway_inspect_host_health(?callable $runner = null): array
             'evidence' => substr((string)($finding['evidence'] ?? $finding['message'] ?? ''), 0, 500),
             'count' => max(1, (int)($finding['count'] ?? 1)),
             'project' => substr((string)($finding['project'] ?? ''), 0, 160),
+            'host' => substr((string)($finding['host'] ?? ''), 0, 160),
+            'expected' => agent_gateway_bounded_value($finding['expected'] ?? null),
+            'observed' => agent_gateway_bounded_value($finding['observed'] ?? null),
             'first_seen' => substr((string)($finding['first_seen'] ?? ''), 0, 40),
             'last_seen' => substr((string)($finding['last_seen'] ?? ''), 0, 40),
         ];
@@ -143,8 +139,83 @@ function agent_gateway_inspect_host_health(?callable $runner = null): array
         'overall' => substr((string)$audit['overall'], 0, 20),
         'summary' => array_intersect_key((array)($audit['summary'] ?? []), array_flip(['critical', 'warning', 'ok', 'unknown'])),
         'findings' => $findings,
+        'audit_version' => substr((string)($audit['audit_version'] ?? ''), 0, 80),
+        'generated_at' => substr((string)($audit['generated_at'] ?? ''), 0, 40),
+        'runtime' => agent_gateway_runtime_evidence($audit),
         'observed_at' => time(),
     ];
+}
+
+function agent_gateway_inspect_host_detail(string $check, ?callable $runner = null): array
+{
+    if (!in_array($check, ['runtime', 'apache', 'scheduler', 'storage', 'certificates'], true)) {
+        throw new RuntimeException('Gateway host detail is not permitted');
+    }
+    $audit = agent_gateway_run_host_audit($runner);
+    $system = (array)($audit['checks']['system'] ?? []);
+    $details = match ($check) {
+        'runtime' => agent_gateway_runtime_evidence($audit),
+        'apache' => (array)($audit['checks']['apache'] ?? []),
+        'scheduler' => (array)($audit['checks']['scheduler'] ?? []),
+        'certificates' => (array)($audit['checks']['certificates'] ?? []),
+        'storage' => array_intersect_key($system, array_flip([
+            'uptime_seconds', 'cpu_count', 'load_average', 'disk_root_used_percent',
+            'memory', 'failed_units', 'services', 'config_tests',
+        ])),
+    };
+    return [
+        'check' => $check,
+        'details' => agent_gateway_bounded_value($details, 12000),
+        'audit_version' => substr((string)($audit['audit_version'] ?? ''), 0, 80),
+        'generated_at' => substr((string)($audit['generated_at'] ?? ''), 0, 40),
+        'observed_at' => time(),
+    ];
+}
+
+function agent_gateway_run_host_audit(?callable $runner = null): array
+{
+    $runner = $runner ?? 'agent_gateway_run_process';
+    $result = $runner(['/usr/bin/sudo', '-n', '/usr/local/bin/nimbly-host-audit', '--format=json']);
+    if (!is_array($result) || !in_array((int)($result['exit_code'] ?? 3), [0, 1, 2], true)) {
+        throw new RuntimeException('Gateway host audit failed');
+    }
+    $audit = json_decode((string)($result['stdout'] ?? ''), true);
+    if (!is_array($audit) || !isset($audit['overall'], $audit['findings'])) {
+        throw new RuntimeException('Gateway host audit returned invalid evidence');
+    }
+    return $audit;
+}
+
+function agent_gateway_runtime_evidence(array $audit): array
+{
+    $system = (array)($audit['checks']['system'] ?? []);
+    $platform = (array)($system['platform'] ?? []);
+    $php = (array)($system['php'] ?? []);
+    $policy = (array)($system['runtime_policy'] ?? []);
+    return [
+        'ubuntu_version' => substr((string)($platform['version_id'] ?? ''), 0, 40),
+        'ubuntu_name' => substr((string)($platform['name'] ?? ''), 0, 120),
+        'ubuntu_upgrade_target' => substr((string)($platform['release_upgrade']['target'] ?? ''), 0, 40),
+        'web_php_version' => substr((string)($php['version'] ?? ''), 0, 40),
+        'cli_php_version' => substr((string)($php['cli_version'] ?? ''), 0, 40),
+        'php_handler' => substr((string)($php['handler'] ?? ''), 0, 80),
+        'policy' => agent_gateway_bounded_value($policy, 1000),
+    ];
+}
+
+function agent_gateway_bounded_value(mixed $value, int $max_length = 2000): mixed
+{
+    if (is_array($value)) {
+        $encoded = json_encode($value, JSON_UNESCAPED_SLASHES);
+        if (!is_string($encoded) || strlen($encoded) > $max_length) {
+            return ['truncated' => true];
+        }
+        return $value;
+    }
+    if (is_bool($value) || is_int($value) || is_float($value) || $value === null) {
+        return $value;
+    }
+    return substr((string)$value, 0, $max_length);
 }
 
 function agent_gateway_run_process(array $command): array
