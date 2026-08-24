@@ -134,7 +134,7 @@ function host_audit_default_config(): array
             'php_line' => 'ubuntu-default',
             'php_handler' => 'php-fpm',
         ],
-        'known_routes' => ['/', '/login', '/forgot-password'],
+        'known_routes' => [],
     ];
 }
 
@@ -487,7 +487,10 @@ function host_audit_apache(array $context, array &$findings): array
                 $not_found_total++;
                 $route = host_audit_normalize_route_pattern(
                     $entry['path'],
-                    (array)($context['config']['known_routes'] ?? [])
+                    host_audit_known_routes_for_target(
+                        (array)($context['config']['known_routes'] ?? []),
+                        $attribution
+                    )
                 );
                 $route_key = $attribution['label'] . "\n" . $route['pattern'];
                 $not_found_routes[$route_key] ??= [
@@ -694,7 +697,7 @@ function host_audit_normalize_route_pattern(string $path, array $known_routes = 
         $normalized = '/';
     }
     if (preg_match('~^/password-reset/[^/]+/[^/]+/?$~', $normalized)) {
-        return ['pattern' => '/password-reset/(uuid)/(key)', 'type' => 'known'];
+        return ['pattern' => '/password-reset/(uuid)/(key)', 'type' => 'dynamic'];
     }
     $known = array_map(
         fn(string $route): string => '/' . trim($route, '/'),
@@ -706,6 +709,20 @@ function host_audit_normalize_route_pattern(string $path, array $known_routes = 
     $pattern = preg_replace('~/[0-9a-f]{16,}(?=/|$)~i', '/(id)', $normalized) ?? $normalized;
     $pattern = preg_replace('~/\d+(?=/|$)~', '/(id)', $pattern) ?? $pattern;
     return ['pattern' => $pattern, 'type' => 'dynamic'];
+}
+
+function host_audit_known_routes_for_target(array $configured_routes, array $attribution): array
+{
+    if (array_is_list($configured_routes)) {
+        return [];
+    }
+    foreach (['project', 'label'] as $field) {
+        $target = (string)($attribution[$field] ?? '');
+        if ($target !== '' && is_array($configured_routes[$target] ?? null)) {
+            return array_values(array_map('strval', $configured_routes[$target]));
+        }
+    }
+    return [];
 }
 
 function host_audit_501_is_rejected_method_probe(array $entry): bool

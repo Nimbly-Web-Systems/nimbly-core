@@ -180,7 +180,16 @@ audit_assert(
 );
 $reset_route = host_audit_normalize_route_pattern('/password-reset/user-uuid/secret-token');
 audit_assert($reset_route['pattern'] === '/password-reset/(uuid)/(key)', 'redacts reset route values');
-audit_assert($reset_route['type'] === 'known', 'classifies reset route as known');
+audit_assert($reset_route['type'] === 'dynamic', 'does not infer route ownership from a URL shape');
+$f14_routes = host_audit_known_routes_for_target(
+    ['F-14 Association' => ['/', '/members']],
+    ['project' => 'F-14 Association', 'label' => 'F-14 Association']
+);
+audit_assert($f14_routes === ['/', '/members'], 'selects authoritative routes for the attributed application');
+audit_assert(
+    host_audit_known_routes_for_target(['/'], ['project' => 'F-14 Association']) === [],
+    'rejects ambiguous global route assumptions'
+);
 $dynamic_route = host_audit_normalize_route_pattern('/article/12345');
 audit_assert($dynamic_route['pattern'] === '/article/(id)', 'normalizes numeric dynamic route');
 audit_assert(
