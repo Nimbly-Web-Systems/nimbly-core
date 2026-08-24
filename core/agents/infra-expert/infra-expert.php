@@ -205,6 +205,17 @@ function infra_expert_validate_result(array $result, string $run_uuid = '', arra
     $fresh_audits = $run_uuid === '' ? [] : agent_report_tool_results(
         $run_uuid, 'inspect_host_health', $identities, [], true
     );
+    $runtime_details = $run_uuid === '' ? [] : agent_report_tool_results(
+        $run_uuid, 'inspect_host_detail', $identities, ['check' => 'runtime'], true
+    );
+    $fresh_runtimes = [];
+    foreach ($identities as $identity) {
+        $fresh_runtimes[$identity] = (array)(
+            $fresh_audits[$identity]['runtime']
+            ?? $runtime_details[$identity]['details']
+            ?? []
+        );
+    }
     $remediations = $run_uuid === '' ? [] : agent_report_tool_results(
         $run_uuid, 'execute_remediation', $identities
     );
@@ -268,6 +279,7 @@ function infra_expert_validate_result(array $result, string $run_uuid = '', arra
                     $server,
                     $canonical_review,
                     $fresh_audits,
+                    $fresh_runtimes,
                     $identities,
                     $canonical_drift !== []
                 );
@@ -299,6 +311,7 @@ function infra_expert_validate_runtime_health(
     string $server,
     array $canonical_review,
     array $fresh_audits,
+    array $fresh_runtimes,
     array $identities,
     bool $canonical_drift
 ): void {
@@ -308,7 +321,7 @@ function infra_expert_validate_runtime_health(
         throw new RuntimeException('A healthy conclusion cannot contain fresh runtime findings');
     }
     $canonical_runtime_findings = (array)($canonical_review['runtime_finding_ids'] ?? []);
-    if ($canonical_runtime_findings !== [] && !infra_expert_runtime_evidence_complete((array)($fresh['runtime'] ?? []))) {
+    if ($canonical_runtime_findings !== [] && !infra_expert_runtime_evidence_complete((array)($fresh_runtimes[$server] ?? []))) {
         throw new RuntimeException('A healthy conclusion cannot clear runtime findings without comparable fresh evidence');
     }
     if (!$canonical_drift) {
@@ -316,7 +329,7 @@ function infra_expert_validate_runtime_health(
     }
     $runtimes = [];
     foreach ($identities as $identity) {
-        $runtime = (array)($fresh_audits[$identity]['runtime'] ?? []);
+        $runtime = (array)($fresh_runtimes[$identity] ?? []);
         if (!infra_expert_runtime_evidence_complete($runtime)) {
             throw new RuntimeException('Environment drift cannot be cleared without fresh runtime evidence from every host');
         }
