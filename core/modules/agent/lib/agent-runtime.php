@@ -90,29 +90,24 @@ function agent_run(string $run_uuid, array $dependencies = []): array
             'run_uuid' => $run_uuid,
             'run' => $run,
         ]);
-        $prepared = ($definition['prepare_input'])($run, $agent_dependencies);
-        if (!is_array($prepared) || !isset($prepared['input'])) {
-            throw new RuntimeException('Agent input preparation failed');
+        if (!empty($definition['pipeline'])) {
+            $execution = agent_execute_pipeline($run_uuid, $definition, $run, $agent_dependencies);
+            $validated = $execution['result'];
+            $delivery = $execution['delivery'];
+        } else {
+            $prepared = ($definition['prepare_input'])($run, $agent_dependencies);
+            if (!is_array($prepared) || !isset($prepared['input'])) {
+                throw new RuntimeException('Agent input preparation failed');
+            }
+            $prepared = agent_append_event_context_input($prepared, $run);
+            agent_update_run($run_uuid, ['source_report_uuids' => $prepared['source_report_uuids'] ?? []]);
+            $result = agent_reason($run_uuid, $definition, $prepared['input'], $agent_dependencies);
+            $validated = ($definition['validate_result'])($result, $run_uuid, $agent_dependencies);
+            if (!is_array($validated)) {
+                throw new RuntimeException('Agent result validation failed');
+            }
+            $delivery = ($definition['deliver'])($validated, $run_uuid, $agent_dependencies);
         }
-        if (!empty($run['event_context'])) {
-            $prepared['input'][] = [
-                'role' => 'user',
-                'content' => [[
-                    'type' => 'input_text',
-                    'text' => json_encode(
-                        ['event_context' => $run['event_context']],
-                        JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR
-                    ),
-                ]],
-            ];
-        }
-        agent_update_run($run_uuid, ['source_report_uuids' => $prepared['source_report_uuids'] ?? []]);
-        $result = agent_reason($run_uuid, $definition, $prepared['input'], $agent_dependencies);
-        $validated = ($definition['validate_result'])($result, $run_uuid, $agent_dependencies);
-        if (!is_array($validated)) {
-            throw new RuntimeException('Agent result validation failed');
-        }
-        $delivery = ($definition['deliver'])($validated, $run_uuid, $agent_dependencies);
         if (!is_array($delivery) || empty($delivery['success'])) {
             throw new RuntimeException($delivery['error'] ?? 'Agent report delivery failed');
         }
@@ -143,6 +138,151 @@ function agent_run(string $run_uuid, array $dependencies = []): array
         agent_unlock($lock);
     }
     return data_read('.agent_runs', $run_uuid) ?: [];
+}
+
+function agent_append_event_context_input(array $prepared, array $run): array
+{
+    if (empty($run['event_context'])) {
+        return $prepared;
+    }
+    $prepared['input'][] = [
+        'role' => 'user',
+        'content' => [[
+            'type' => 'input_text',
+            'text' => json_encode(
+                ['event_context' => $run['event_context']],
+                JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR
+            ),
+        ]],
+    ];
+    return $prepared;
+}
+
+function agent_execute_pipeline(
+    string $run_uuid,
+    array $definition,
+    array $run,
+    array $dependencies
+): array {
+    $pipeline = (array)$definition['pipeline'];
+    $artifacts = [];
+    $previous = $run;
+    foreach ($pipeline['input'] as $phase) {
+        $source = agent_pipeline_source($phase, $artifacts, $previous);
+        $phase_dependencies = array_merge($dependencies, [
+            'pipeline_artifacts' => $artifacts,
+            'pipeline_phase' => $phase,
+        ]);
+        $artifact = ($phase['handler'])($source, $phase_dependencies);
+        if (!is_array($artifact)) {
+            throw new RuntimeException('Agent input phase failed: ' . $phase['id']);
+        }
+        $artifacts[$phase['id']] = $artifact;
+        $previous = $artifact;
+    }
+    $previous = agent_append_event_context_input($previous, $run);
+    $input_phases = $pipeline['input'];
+    $last_input_phase = end($input_phases);
+    $last_input_id = (string)$last_input_phase['id'];
+    $artifacts[$last_input_id] = $previous;
+    agent_update_run($run_uuid, ['source_report_uuids' => $previous['source_report_uuids'] ?? []]);
+
+    foreach ($pipeline['agent'] as $phase) {
+        $source = agent_pipeline_source($phase, $artifacts, $previous);
+        $phase_dependencies = array_merge($dependencies, [
+            'pipeline_artifacts' => $artifacts,
+            'pipeline_phase' => $phase,
+        ]);
+        if (($phase['type'] ?? 'callback') === 'callback') {
+            $artifact = ($phase['handler'])($source, $phase_dependencies);
+            if (!is_array($artifact)) {
+                throw new RuntimeException('Agent callback phase failed: ' . $phase['id']);
+            }
+            $artifacts[$phase['id']] = $artifact;
+            $previous = $artifact;
+            continue;
+        }
+        if (!empty($phase['projector'])) {
+            $source = ($phase['projector'])($source, $phase_dependencies);
+        }
+        if (!is_array($source)) {
+            throw new RuntimeException('Agent model phase input is invalid: ' . $phase['id']);
+        }
+        $input = isset($source['input']) && is_array($source['input'])
+            ? $source['input']
+            : [[
+                'role' => 'user',
+                'content' => [[
+                    'type' => 'input_text',
+                    'text' => json_encode($source, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR),
+                ]],
+            ]];
+        $phase_definition = agent_pipeline_model_definition($definition, $phase);
+        $artifact = agent_reason($run_uuid, $phase_definition, $input, $phase_dependencies);
+        if (!empty($phase['validator'])) {
+            $phase_dependencies['pipeline_artifacts'] = $artifacts;
+            $artifact = ($phase['validator'])($artifact, $phase_dependencies);
+        }
+        if (!is_array($artifact)) {
+            throw new RuntimeException('Agent model phase failed: ' . $phase['id']);
+        }
+        $artifacts[$phase['id']] = $artifact;
+        $previous = $artifact;
+    }
+
+    foreach ($pipeline['output'] as $phase) {
+        $source = agent_pipeline_source($phase, $artifacts, $previous);
+        $phase_dependencies = array_merge($dependencies, [
+            'pipeline_artifacts' => $artifacts,
+            'pipeline_phase' => $phase,
+        ]);
+        $artifact = ($phase['handler'])($source, $run_uuid, $phase_dependencies);
+        if (!is_array($artifact)) {
+            throw new RuntimeException('Agent output phase failed: ' . $phase['id']);
+        }
+        $artifacts[$phase['id']] = $artifact;
+        $previous = $artifact;
+    }
+    return [
+        'result' => $artifacts[$pipeline['result_from']],
+        'delivery' => $artifacts[$pipeline['delivery_from']],
+        'artifacts' => $artifacts,
+    ];
+}
+
+function agent_pipeline_source(array $phase, array $artifacts, array $previous): array
+{
+    $input_from = (string)($phase['input_from'] ?? '');
+    if ($input_from === '') {
+        return $previous;
+    }
+    if (!isset($artifacts[$input_from]) || !is_array($artifacts[$input_from])) {
+        throw new RuntimeException('Agent pipeline artifact is unavailable: ' . $input_from);
+    }
+    return $artifacts[$input_from];
+}
+
+function agent_pipeline_model_definition(array $definition, array $phase): array
+{
+    $definition['instruction_files'] = [(string)$phase['instructions']];
+    $definition['instructions'] = (string)$phase['instructions'];
+    $definition['_phase_id'] = (string)$phase['id'];
+    $configured_tools = $phase['tools'] ?? false;
+    if (is_array($configured_tools)) {
+        $definition['tools'] = array_intersect_key($definition['tools'], array_flip($configured_tools));
+    } elseif ($configured_tools !== true) {
+        $definition['tools'] = [];
+    }
+    if (isset($phase['model'])) {
+        $definition['model'] = (string)$phase['model'];
+    }
+    if (isset($phase['reasoning_effort'])) {
+        $definition['reasoning_effort'] = (string)$phase['reasoning_effort'];
+    }
+    if (isset($phase['max_output_tokens'])) {
+        $definition['max_output_tokens'] = (int)$phase['max_output_tokens'];
+    }
+    return $definition;
 }
 
 function agent_event_context($context): array
@@ -239,7 +379,10 @@ function agent_reason(string $run_uuid, array $definition, array $initial_input,
 {
     $instructions = agent_instructions($definition);
     $input = $initial_input;
-    $usage = agent_empty_usage();
+    $current_run = data_read('.agent_runs', $run_uuid);
+    $usage = is_array($current_run) && is_array($current_run['usage'] ?? null)
+        ? $current_run['usage']
+        : agent_empty_usage();
     $max_turns = (int)($definition['max_turns'] ?? 8);
     $max_tools = (int)($definition['max_tool_calls'] ?? 12);
     $tool_count = 0;
@@ -261,6 +404,7 @@ function agent_reason(string $run_uuid, array $definition, array $initial_input,
         $response = agent_openai_request($request, $dependencies);
         agent_append_event($run_uuid, 'model_response', [
             'turn' => $turn,
+            'phase' => (string)($definition['_phase_id'] ?? 'agent'),
             'response_id' => $response['id'] ?? '',
             'request_id' => $response['_request_id'] ?? '',
             'status' => $response['status'] ?? '',

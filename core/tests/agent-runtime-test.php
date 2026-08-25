@@ -109,6 +109,31 @@ function agent_test_deliver(array $result, string $run_uuid, array $dependencies
     return ['success' => count($deliveries) === 2, 'environments' => $deliveries];
 }
 
+function agent_test_pipeline_validate(array $result, array $_dependencies = []): array
+{
+    return $result;
+}
+
+function agent_test_pipeline_select(array $technical, array $_dependencies = []): array
+{
+    return ['technical' => $technical['technical']];
+}
+
+function agent_test_pipeline_voice_input(array $semantic, array $_dependencies = []): array
+{
+    return ['intent' => $semantic['intent']];
+}
+
+function agent_test_pipeline_output(array $voice, string $_run_uuid, array $_dependencies = []): array
+{
+    return $voice;
+}
+
+function agent_test_pipeline_deliver(array $_result, string $_run_uuid, array $_dependencies = []): array
+{
+    return ['success' => true, 'environments' => []];
+}
+
 $GLOBALS['AGENT_TEST_DEFINITIONS']['test-agent'] = [
     'id' => 'test-agent',
     'version' => '1.0.0',
@@ -138,6 +163,43 @@ $GLOBALS['AGENT_TEST_DEFINITIONS']['test-agent'] = [
     'validate_result' => 'agent_test_validate_result',
     'deliver' => 'agent_test_deliver',
     'report_delivery' => ['shadow_triggers' => ['manual']],
+];
+
+$GLOBALS['AGENT_TEST_DEFINITIONS']['pipeline-agent'] = [
+    'id' => 'pipeline-agent',
+    'version' => '1.0.0',
+    'instructions' => __FILE__,
+    'timezone' => 'America/Sao_Paulo',
+    'deadline_at' => '09:30',
+    'model' => 'gpt-5.6-terra',
+    'pricing' => ['input_per_million' => 2.5, 'cached_input_per_million' => 0.25, 'output_per_million' => 15],
+    'tools' => [],
+    'pipeline' => [
+        'input' => [[
+            'id' => 'measurements', 'type' => 'callback', 'handler' => 'agent_test_prepare_input',
+        ]],
+        'agent' => [[
+            'id' => 'technical', 'type' => 'model', 'instructions' => __FILE__,
+            'validator' => 'agent_test_pipeline_validate',
+        ], [
+            'id' => 'selector', 'type' => 'model', 'instructions' => __FILE__,
+            'input_from' => 'technical', 'projector' => 'agent_test_pipeline_select',
+            'validator' => 'agent_test_pipeline_validate',
+        ], [
+            'id' => 'voice', 'type' => 'model', 'instructions' => __FILE__,
+            'input_from' => 'selector', 'projector' => 'agent_test_pipeline_voice_input',
+            'validator' => 'agent_test_pipeline_validate',
+        ]],
+        'output' => [[
+            'id' => 'result', 'type' => 'callback', 'input_from' => 'voice',
+            'handler' => 'agent_test_pipeline_output',
+        ], [
+            'id' => 'delivery', 'type' => 'callback', 'input_from' => 'result',
+            'handler' => 'agent_test_pipeline_deliver',
+        ]],
+        'result_from' => 'result',
+        'delivery_from' => 'delivery',
+    ],
 ];
 
 $now = (new DateTimeImmutable('2026-08-10 08:00:00', new DateTimeZone('America/Sao_Paulo')))->getTimestamp();
@@ -326,6 +388,38 @@ agent_test_assert($email_calls === 2, 'both environment reports are accepted');
 agent_test_assert(($result['usage']['total_tokens'] ?? 0) === 1800, 'usage is accumulated');
 agent_test_assert(($result['estimated_cost_usd'] ?? 0) > 0, 'cost is estimated');
 agent_test_assert(count($result['source_report_uuids']) === 2, 'source report UUIDs are recorded');
+
+$pipeline_inputs = [];
+$pipeline_responses = [
+    ['technical' => 'normal', 'private_execution' => 'rollback mechanics'],
+    ['intent' => ['present_state' => 'normal', 'judgment' => 'upgrade']],
+    ['message' => 'Staging is all fine. I recommend upgrading it.'],
+];
+$pipeline_uuid = agent_enqueue('pipeline-agent', $now, ['trigger' => 'test']);
+$pipeline_result = agent_run($pipeline_uuid, [
+    'openai_request' => function (array $request) use (&$pipeline_inputs, &$pipeline_responses): array {
+        $pipeline_inputs[] = json_decode($request['input'][0]['content'][0]['text'], true);
+        $payload = array_shift($pipeline_responses);
+        return [
+            'id' => 'pipeline-' . count($pipeline_inputs),
+            'status' => 'completed',
+            'usage' => ['input_tokens' => 10, 'output_tokens' => 5, 'total_tokens' => 15],
+            'output_text' => json_encode($payload),
+            'output' => [],
+        ];
+    },
+]);
+agent_test_assert($pipeline_result['status'] === 'completed', 'configured multi-phase agent completes');
+agent_test_assert(
+    $pipeline_inputs[1] === ['technical' => 'normal']
+        && $pipeline_inputs[2] === ['intent' => ['present_state' => 'normal', 'judgment' => 'upgrade']],
+    'each model phase sees only its configured projection'
+);
+agent_test_assert(
+    ($pipeline_result['structured_result']['message'] ?? '') === 'Staging is all fine. I recommend upgrading it.',
+    'configured output phase publishes the selected artifact'
+);
+agent_test_assert(($pipeline_result['usage']['total_tokens'] ?? 0) === 45, 'usage accumulates across model phases');
 
 $rerun = agent_run($run_uuid, ['openai_request' => $openai_request]);
 agent_test_assert($rerun['status'] === 'completed' && $openai_calls === 2, 'terminal rerun has no side effects');
