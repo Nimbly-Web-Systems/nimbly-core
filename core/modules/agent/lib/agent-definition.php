@@ -51,11 +51,22 @@ function agent_definition(string $agent_id): array
                 }
                 $instruction_files[] = $instruction_path;
             }
+            $layer_definition = agent_definition_resolve_pipeline_paths(
+                $layer_definition,
+                $directory,
+                $agent_id
+            );
             unset($layer_definition['bootstrap'], $layer_definition['instructions_mode']);
             $definition = agent_definition_merge($definition, $layer_definition);
         }
+        $primary_instruction = end($instruction_files) ?: '';
+        foreach ((array)($definition['pipeline']['agent'] ?? []) as $phase) {
+            if (!empty($phase['instructions'])) {
+                $instruction_files[] = (string)$phase['instructions'];
+            }
+        }
         $definition['instruction_files'] = array_values(array_unique($instruction_files));
-        $definition['instructions'] = end($instruction_files) ?: '';
+        $definition['instructions'] = $primary_instruction;
     } else {
         $php_path = $ext_directory . 'agent.php';
         if (!is_file($php_path)) {
@@ -72,10 +83,17 @@ function agent_definition(string $agent_id): array
     if (!empty($definition['abstract'])) {
         throw new RuntimeException('Agent definition requires an ext configuration: ' . $agent_id);
     }
-    foreach (['version', 'instructions', 'tools', 'prepare_input', 'validate_result', 'deliver'] as $key) {
+    $required = ['version'];
+    if (empty($definition['pipeline'])) {
+        $required = array_merge($required, ['instructions', 'prepare_input', 'validate_result', 'deliver']);
+    }
+    foreach ($required as $key) {
         if (empty($definition[$key])) {
             throw new RuntimeException('Agent definition is missing ' . $key);
         }
+    }
+    if (!isset($definition['tools']) || !is_array($definition['tools'])) {
+        throw new RuntimeException('Agent definition is missing tools');
     }
     foreach ((array)($definition['instruction_files'] ?? [$definition['instructions']]) as $instruction_file) {
         if (!is_file($instruction_file)) {
@@ -83,6 +101,33 @@ function agent_definition(string $agent_id): array
         }
     }
     agent_validate_definition($definition);
+    return $definition;
+}
+
+function agent_definition_resolve_pipeline_paths(array $definition, string $directory, string $agent_id): array
+{
+    if (!isset($definition['pipeline'])) {
+        return $definition;
+    }
+    if (!is_array($definition['pipeline'])) {
+        throw new RuntimeException('Agent pipeline is invalid: ' . $agent_id);
+    }
+    foreach ((array)($definition['pipeline']['agent'] ?? []) as $index => $phase) {
+        if (!is_array($phase) || empty($phase['instructions'])) {
+            continue;
+        }
+        $path = (string)$phase['instructions'];
+        if (!str_starts_with($path, '/')) {
+            if (preg_match('#^[a-z0-9][a-z0-9._/-]*\.md$#i', $path) !== 1 || str_contains($path, '..')) {
+                throw new RuntimeException('Agent pipeline instruction path is invalid: ' . $agent_id);
+            }
+            $path = $directory . $path;
+        }
+        if (!is_file($path)) {
+            throw new RuntimeException('Agent pipeline instructions are unavailable: ' . $agent_id);
+        }
+        $definition['pipeline']['agent'][$index]['instructions'] = $path;
+    }
     return $definition;
 }
 
@@ -158,10 +203,14 @@ function agent_scope_definition(array $definition, array $run): array
 
 function agent_validate_definition(array $definition): void
 {
-    foreach (['prepare_input', 'validate_result', 'deliver'] as $callback) {
-        if (!is_callable($definition[$callback] ?? null)) {
-            throw new RuntimeException('Agent definition callback is invalid: ' . $callback);
+    if (empty($definition['pipeline'])) {
+        foreach (['prepare_input', 'validate_result', 'deliver'] as $callback) {
+            if (!is_callable($definition[$callback] ?? null)) {
+                throw new RuntimeException('Agent definition callback is invalid: ' . $callback);
+            }
         }
+    } else {
+        agent_validate_pipeline_definition((array)$definition['pipeline']);
     }
     $identities = [];
     foreach ((array)($definition['targets'] ?? []) as $target) {
@@ -193,6 +242,45 @@ function agent_validate_definition(array $definition): void
             if (!is_array($targets)) {
                 throw new RuntimeException('Agent tool target reference is invalid: ' . $name);
             }
+        }
+    }
+}
+
+function agent_validate_pipeline_definition(array $pipeline): void
+{
+    foreach (['input', 'agent', 'output'] as $group) {
+        if (!isset($pipeline[$group]) || !is_array($pipeline[$group]) || $pipeline[$group] === []) {
+            throw new RuntimeException('Agent pipeline group is invalid: ' . $group);
+        }
+    }
+    $known = [];
+    foreach (['input', 'agent', 'output'] as $group) {
+        foreach ($pipeline[$group] as $phase) {
+            if (!is_array($phase)
+                || preg_match('/^[a-z][a-z0-9_-]*$/', (string)($phase['id'] ?? '')) !== 1
+                || isset($known[$phase['id']])) {
+                throw new RuntimeException('Agent pipeline phase identity is invalid');
+            }
+            $type = (string)($phase['type'] ?? 'callback');
+            if ($group === 'agent' && $type === 'model') {
+                if (!is_file((string)($phase['instructions'] ?? ''))
+                    || (!empty($phase['projector']) && !is_callable($phase['projector']))
+                    || (!empty($phase['validator']) && !is_callable($phase['validator']))) {
+                    throw new RuntimeException('Agent model phase is invalid: ' . $phase['id']);
+                }
+            } elseif ($type !== 'callback' || !is_callable($phase['handler'] ?? null)) {
+                throw new RuntimeException('Agent callback phase is invalid: ' . $phase['id']);
+            }
+            $input_from = (string)($phase['input_from'] ?? '');
+            if ($input_from !== '' && !isset($known[$input_from])) {
+                throw new RuntimeException('Agent pipeline input reference is invalid: ' . $phase['id']);
+            }
+            $known[$phase['id']] = true;
+        }
+    }
+    foreach (['result_from', 'delivery_from'] as $reference) {
+        if (empty($pipeline[$reference]) || !isset($known[$pipeline[$reference]])) {
+            throw new RuntimeException('Agent pipeline result reference is invalid: ' . $reference);
         }
     }
 }

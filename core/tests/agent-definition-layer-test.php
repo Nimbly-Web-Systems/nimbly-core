@@ -79,6 +79,37 @@ agent_layer_assert(
     'layered agent configuration is not available to generic callbacks'
 );
 
+$pipeline_definition = [
+    'tools' => [],
+    'pipeline' => [
+        'input' => [[
+            'id' => 'source', 'type' => 'callback', 'handler' => 'example_prepare',
+        ]],
+        'agent' => [[
+            'id' => 'reason', 'type' => 'model', 'instructions' => __FILE__,
+            'validator' => 'example_validate',
+        ]],
+        'output' => [[
+            'id' => 'delivery', 'type' => 'callback', 'input_from' => 'reason',
+            'handler' => 'example_deliver',
+        ]],
+        'result_from' => 'reason',
+        'delivery_from' => 'delivery',
+    ],
+];
+agent_validate_definition($pipeline_definition);
+agent_layer_assert(true, 'pipeline definitions accept agents without tools');
+
+$invalid_pipeline = $pipeline_definition;
+$invalid_pipeline['pipeline']['agent'][0]['input_from'] = 'future_phase';
+$invalid_pipeline_denied = false;
+try {
+    agent_validate_definition($invalid_pipeline);
+} catch (RuntimeException) {
+    $invalid_pipeline_denied = true;
+}
+agent_layer_assert($invalid_pipeline_denied, 'pipeline phases cannot reference unavailable artifacts');
+
 $scoped_definition = $definition;
 $scoped_definition['targets'] = [
     ['scope' => 'stage', 'identity' => 'stage.example', 'authority' => 'autonomous_remediation'],
