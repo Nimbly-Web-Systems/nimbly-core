@@ -90,8 +90,37 @@ audit_assert($release_upgrade['available'] === true, 'detects available OS relea
 audit_assert($release_upgrade['target'] === '26.04 LTS', 'extracts OS release target');
 audit_assert(
     host_audit_release_upgrade('No new release found.')['available'] === false,
-    'keeps current OS release healthy'
+    'records that no OS release upgrade was offered'
 );
+$no_offer_findings = host_audit_runtime_policy_findings(
+    ['version_id' => '24.04', 'name' => 'Ubuntu 24.04 LTS', 'release_upgrade' => ['available' => false, 'target' => null]],
+    ['version' => '8.5.1', 'cli_version' => '8.5.1', 'handler' => 'php-fpm'],
+    ['ubuntu_release' => 'current-lts', 'php_line' => '8.5', 'php_handler' => 'php-fpm'],
+    'stage.example'
+);
+audit_assert($no_offer_findings === [], 'absence of an offered upgrade does not establish or report Ubuntu currency');
+$gated_path_findings = host_audit_runtime_policy_findings(
+    [
+        'version_id' => '24.04',
+        'name' => 'Ubuntu 24.04 LTS',
+        'release_upgrade' => ['available' => false, 'target' => null],
+        'upgrade_path' => ['meta_release_lts' => ['entries' => [[
+            'version' => '26.04 LTS', 'codename' => 'Resolute Raccoon',
+            'dist' => 'resolute', 'supported_raw' => '0',
+        ]]]],
+    ],
+    ['version' => '8.5.1', 'cli_version' => '8.5.1', 'handler' => 'php-fpm'],
+    ['ubuntu_release' => 'current-lts', 'php_line' => '8.5', 'php_handler' => 'php-fpm'],
+    'stage.example'
+);
+audit_assert(
+    count($gated_path_findings) === 1 && $gated_path_findings[0]['expected'] === '26.04 LTS',
+    'published LTS drift remains visible when Canonical has not offered the upgrade path'
+);
+$meta_entries = host_audit_parse_meta_release(
+    "Dist: resolute\nName: Resolute Raccoon\nVersion: 26.04 LTS\nSupported: 0\n"
+);
+audit_assert($meta_entries[0]['supported_raw'] === '0', 'preserves raw Canonical Supported metadata');
 audit_assert(
     host_audit_php_handler(' php_module (shared)', '') === 'apache-module',
     'detects Apache PHP module'

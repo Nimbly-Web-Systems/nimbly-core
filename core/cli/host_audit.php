@@ -1673,10 +1673,24 @@ function host_audit_platform(): array
             }
         }
     }
-    if ($notice === '' && is_file('/usr/bin/do-release-upgrade')) {
+    $upgrade_check = ['exit_code' => 127, 'stdout' => '', 'stderr' => 'do-release-upgrade is unavailable'];
+    if (is_file('/usr/bin/do-release-upgrade')) {
         $upgrade_check = host_audit_run_command(['do-release-upgrade', '-c'], 30);
+    }
+    if ($notice === '') {
         $notice = trim($upgrade_check['stdout'] . "\n" . $upgrade_check['stderr']);
     }
+
+    $release_config = host_audit_parse_key_values(
+        is_readable('/etc/update-manager/release-upgrades')
+            ? (string)file_get_contents('/etc/update-manager/release-upgrades')
+            : ''
+    );
+    $upgrader_package = host_audit_run_command(['apt-cache', 'policy', 'ubuntu-release-upgrader-core'], 10);
+    $meta_release = host_audit_run_command([
+        'wget', '--quiet', '--output-document=-', '--timeout=15',
+        'https://changelogs.ubuntu.com/meta-release-lts',
+    ], 20);
 
     $updates_notice = is_readable('/var/lib/update-notifier/updates-available')
         ? (string)file_get_contents('/var/lib/update-notifier/updates-available')
@@ -1697,12 +1711,64 @@ function host_audit_platform(): array
         'name' => trim((string)($release['PRETTY_NAME'] ?? $release['NAME'] ?? ''), '"'),
         'version_id' => trim((string)($release['VERSION_ID'] ?? ''), '"'),
         'release_upgrade' => host_audit_release_upgrade($notice),
+        'upgrade_path' => [
+            'prompt' => (string)($release_config['Prompt'] ?? ''),
+            'upgrader_package' => host_audit_upgrader_package_evidence($upgrader_package),
+            'meta_release_lts' => [
+                'entries' => host_audit_parse_meta_release($meta_release['stdout']),
+                'exit_code' => (int)$meta_release['exit_code'],
+                'error' => substr(trim((string)$meta_release['stderr']), 0, 1000),
+            ],
+            'upgrade_check' => [
+                'exit_code' => (int)$upgrade_check['exit_code'],
+                'stdout' => substr(trim((string)$upgrade_check['stdout']), 0, 4000),
+                'stderr' => substr(trim((string)$upgrade_check['stderr']), 0, 2000),
+            ],
+        ],
         'reboot_required' => is_file('/var/run/reboot-required'),
         'reboot_packages' => is_readable('/var/run/reboot-required.pkgs')
             ? array_values(array_filter(array_map('trim', file('/var/run/reboot-required.pkgs', FILE_IGNORE_NEW_LINES) ?: [])))
             : [],
         'security_updates' => $security_updates,
     ];
+}
+
+function host_audit_upgrader_package_evidence(array $result): array
+{
+    $output = (string)($result['stdout'] ?? '');
+    preg_match('/^\s*Installed:\s*(\S+)/mi', $output, $installed);
+    preg_match('/^\s*Candidate:\s*(\S+)/mi', $output, $candidate);
+    preg_match_all('/^\s*\*{0,3}\s*(\S+)\s+\d+\s*$/m', $output, $versions);
+    return [
+        'installed' => (string)($installed[1] ?? ''),
+        'candidate' => (string)($candidate[1] ?? ''),
+        'repository_versions' => array_values(array_unique($versions[1] ?? [])),
+        'exit_code' => (int)($result['exit_code'] ?? 1),
+        'error' => substr(trim((string)($result['stderr'] ?? '')), 0, 1000),
+    ];
+}
+
+function host_audit_parse_meta_release(string $document): array
+{
+    $entries = [];
+    foreach (preg_split('/\r?\n\s*\r?\n/', trim($document)) ?: [] as $block) {
+        $values = [];
+        foreach (preg_split('/\r?\n/', $block) ?: [] as $line) {
+            if (preg_match('/^([A-Za-z0-9_]+)\s*:\s*(.*)$/', trim($line), $match) === 1) {
+                $values[$match[1]] = trim($match[2]);
+            }
+        }
+        if (!isset($values['Version'], $values['Dist'], $values['Supported'])) {
+            continue;
+        }
+        $entries[] = [
+            'version' => (string)$values['Version'],
+            'codename' => (string)($values['Name'] ?? ''),
+            'dist' => (string)$values['Dist'],
+            'supported_raw' => (string)$values['Supported'],
+        ];
+    }
+    return $entries;
 }
 
 function host_audit_security_updates_from_pro(string $output): ?int
@@ -1768,8 +1834,14 @@ function host_audit_runtime_policy_findings(
 ): array {
     $host = $host ?: (gethostname() ?: php_uname('n'));
     $ubuntu_target = host_audit_release_version((string)($platform['release_upgrade']['target'] ?? ''));
-    $ubuntu_is_current_lts = str_contains(strtoupper((string)($platform['name'] ?? '')), 'LTS')
-        && empty($platform['release_upgrade']['available']);
+    if ($ubuntu_target === '') {
+        $meta_entries = (array)($platform['upgrade_path']['meta_release_lts']['entries'] ?? []);
+        $latest_meta = $meta_entries === [] ? [] : end($meta_entries);
+        $ubuntu_target = host_audit_release_version((string)($latest_meta['version'] ?? ''));
+    }
+    $installed_ubuntu = host_audit_release_version((string)($platform['version_id'] ?? ''));
+    $ubuntu_alignment_known = $ubuntu_target !== '';
+    $ubuntu_is_current_lts = $ubuntu_alignment_known && $installed_ubuntu === $ubuntu_target;
     $required_php = (string)($policy['php_line'] ?? '');
     if ($required_php === 'ubuntu-default') {
         $required_php = $ubuntu_default_php ?? host_audit_ubuntu_default_php_minor();
@@ -1781,6 +1853,7 @@ function host_audit_runtime_policy_findings(
             'title' => 'Ubuntu release differs from infrastructure policy',
             'enabled' => ($policy['ubuntu_release'] ?? '') === 'current-lts',
             'aligned' => $ubuntu_is_current_lts,
+            'conclusive' => $ubuntu_alignment_known,
             'expected' => $ubuntu_target !== '' ? $ubuntu_target . ' LTS' : 'current Ubuntu LTS',
             'observed' => (string)($platform['version_id'] ?? ''),
         ],
@@ -1819,7 +1892,7 @@ function host_audit_runtime_policy_findings(
     }
     $findings = [];
     foreach ($checks as $check) {
-        if (!$check['enabled'] || $check['aligned']) {
+        if (!$check['enabled'] || $check['aligned'] || (($check['conclusive'] ?? true) === false)) {
             continue;
         }
         $finding = host_audit_finding(

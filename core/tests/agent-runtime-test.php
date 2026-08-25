@@ -558,6 +558,9 @@ $release_responses = [
     '<table><tr><td>8.2</td><td>8 Dec 2022</td><td>31 Dec 2024</td><td>31 Dec 2026</td></tr>'
         . '<tr><td>8.5</td><td>20 Nov 2025</td><td>31 Dec 2027</td><td>31 Dec 2029</td></tr></table>',
     '<h2>Ubuntu 26.04 LTS</h2>',
+    '<main>Ubuntu 26.04.1 LTS point release planned for 13 August 2026.</main>',
+    "Dist: resolute\nName: Resolute Raccoon\nVersion: 26.04 LTS\nSupported: 0\n",
+    '<h1>Package: php-fpm (2:8.5+99)</h1>',
 ];
 $release_calls = 0;
 $release_detail = agent_gateway_execute('inspect_host_detail releases', function (array $command) use (&$release_responses, &$release_calls) {
@@ -565,11 +568,74 @@ $release_detail = agent_gateway_execute('inspect_host_detail releases', function
     return ['exit_code' => 0, 'stdout' => $release_responses[$release_calls++], 'stderr' => ''];
 });
 agent_test_assert(
-    $release_calls === 3
+    $release_calls === 6
         && $release_detail['details']['php_latest_stable'] === '8.5.9'
         && $release_detail['details']['php_supported_branches'][0]['security_support_until'] === '31 Dec 2026'
-        && $release_detail['details']['ubuntu_latest_lts'] === '26.04 LTS',
+        && $release_detail['details']['ubuntu_latest_lts'] === '26.04 LTS'
+        && $release_detail['details']['ubuntu_lts_upgrade_metadata']['supported_raw'] === '0'
+        && $release_detail['details']['ubuntu_default_php_fpm'] === '8.5',
     'release detail returns structured current vendor evidence'
+);
+
+$upgrade_commands = [];
+$upgrade_responses = [
+    ['exit_code' => 0, 'stdout' => "PRETTY_NAME=\"Ubuntu 24.04.3 LTS\"\nVERSION_ID=\"24.04\"\nVERSION_CODENAME=noble\n", 'stderr' => ''],
+    ['exit_code' => 0, 'stdout' => "[DEFAULT]\nPrompt=lts\n", 'stderr' => ''],
+    ['exit_code' => 0, 'stdout' => "Installed: 1:24.04.27\nCandidate: 1:24.04.27\n *** 1:24.04.27 500\n", 'stderr' => ''],
+    ['exit_code' => 0, 'stdout' => "Dist: resolute\nName: Resolute Raccoon\nVersion: 26.04 LTS\nSupported: 0\n", 'stderr' => ''],
+    ['exit_code' => 0, 'stdout' => 'Checking for a new Ubuntu release', 'stderr' => 'No new release found.'],
+];
+$upgrade_detail = agent_gateway_execute('inspect_host_detail upgrade_path', function (array $command) use (&$upgrade_commands, &$upgrade_responses) {
+    $upgrade_commands[] = $command;
+    return array_shift($upgrade_responses);
+});
+agent_test_assert(
+    count($upgrade_commands) === 5
+        && $upgrade_detail['details']['installed_release']['version_id'] === '24.04'
+        && $upgrade_detail['details']['release_upgrade_configuration']['prompt'] === 'lts'
+        && $upgrade_detail['details']['upgrader_package']['installed'] === '1:24.04.27'
+        && $upgrade_detail['details']['meta_release_lts']['entries'][0]['supported_raw'] === '0'
+        && str_contains($upgrade_detail['details']['upgrade_check']['stderr'], 'No new release'),
+    'upgrade path detail preserves each host and Canonical signal without interpreting no offer as current'
+);
+
+$failure_responses = [
+    ['exit_code' => 0, 'stdout' => "PRETTY_NAME=\"Ubuntu 24.04 LTS\"\nVERSION_ID=\"24.04\"\nVERSION_CODENAME=noble\n", 'stderr' => ''],
+    ['exit_code' => 0, 'stdout' => "[DEFAULT]\nPrompt=never\n", 'stderr' => ''],
+    ['exit_code' => 0, 'stdout' => "Installed: 1:24.04.20\nCandidate: 1:24.04.27\n *** 1:24.04.20 100\n     1:24.04.27 500\n", 'stderr' => ''],
+    ['exit_code' => 4, 'stdout' => '', 'stderr' => 'unable to resolve host address'],
+    ['exit_code' => 1, 'stdout' => '', 'stderr' => 'No new release found.'],
+];
+$failure_detail = agent_gateway_upgrade_path_evidence(function () use (&$failure_responses) {
+    return array_shift($failure_responses);
+});
+agent_test_assert(
+    $failure_detail['release_upgrade_configuration']['prompt'] === 'never'
+        && $failure_detail['upgrader_package']['installed'] !== $failure_detail['upgrader_package']['candidate']
+        && $failure_detail['meta_release_lts']['exit_code'] === 4
+        && str_contains($failure_detail['meta_release_lts']['error'], 'resolve host'),
+    'upgrade path distinguishes disabled prompting, stale packages, and unreachable Canonical metadata'
+);
+
+$provider_meta = "Dist: resolute\nName: Resolute Raccoon\nVersion: 26.04 LTS\nSupported: 1\n";
+$provider_fixture = function () use ($provider_meta) {
+    static $call = 0;
+    $responses = [
+        ['exit_code' => 0, 'stdout' => "VERSION_ID=\"24.04\"\n", 'stderr' => ''],
+        ['exit_code' => 0, 'stdout' => "Prompt=lts\n", 'stderr' => ''],
+        ['exit_code' => 0, 'stdout' => "Installed: 1:24.04.27\nCandidate: 1:24.04.27\n", 'stderr' => ''],
+        ['exit_code' => 0, 'stdout' => $provider_meta, 'stderr' => ''],
+        ['exit_code' => 1, 'stdout' => '', 'stderr' => 'No new release found.'],
+    ];
+    $response = $responses[$call % count($responses)];
+    $call++;
+    return $response;
+};
+$transip_detail = agent_gateway_upgrade_path_evidence($provider_fixture);
+$linode_detail = agent_gateway_upgrade_path_evidence($provider_fixture);
+agent_test_assert(
+    $transip_detail['meta_release_lts'] === $linode_detail['meta_release_lts'],
+    'provider comparison preserves identical Canonical metadata without provider attribution'
 );
 
 $diagnostic_command = 'systemctl status apache2 --no-pager';

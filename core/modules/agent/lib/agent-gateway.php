@@ -148,13 +148,22 @@ function agent_gateway_inspect_host_health(?callable $runner = null): array
 
 function agent_gateway_inspect_host_detail(string $check, ?callable $runner = null): array
 {
-    if (!in_array($check, ['runtime', 'releases', 'applications', 'apache', 'scheduler', 'storage', 'certificates'], true)) {
+    if (!in_array($check, ['runtime', 'releases', 'upgrade_path', 'applications', 'apache', 'scheduler', 'storage', 'certificates'], true)) {
         throw new RuntimeException('Gateway host detail is not permitted');
     }
     if ($check === 'releases') {
         return [
             'check' => $check,
             'details' => agent_gateway_release_evidence($runner),
+            'audit_version' => '',
+            'generated_at' => gmdate(DATE_ATOM),
+            'observed_at' => time(),
+        ];
+    }
+    if ($check === 'upgrade_path') {
+        return [
+            'check' => $check,
+            'details' => agent_gateway_upgrade_path_evidence($runner),
             'audit_version' => '',
             'generated_at' => gmdate(DATE_ATOM),
             'observed_at' => time(),
@@ -189,6 +198,8 @@ function agent_gateway_release_evidence(?callable $runner = null): array
         'php_latest' => 'https://www.php.net/releases/index.php?json&version=8&max=1',
         'php_support' => 'https://www.php.net/supported-versions.php',
         'ubuntu_lts' => 'https://ubuntu.com/download/server',
+        'ubuntu_lifecycle' => 'https://ubuntu.com/about/release-cycle',
+        'ubuntu_meta_release_lts' => 'https://changelogs.ubuntu.com/meta-release-lts',
     ];
     $documents = [];
     foreach ($sources as $key => $url) {
@@ -228,12 +239,114 @@ function agent_gateway_release_evidence(?callable $runner = null): array
     if (preg_match('/Ubuntu\s+(\d{2}\.\d{2}(?:\.\d+)?)\s+LTS/i', $documents['ubuntu_lts'], $ubuntu) !== 1) {
         throw new RuntimeException('Official Ubuntu release evidence is invalid');
     }
+    $meta_releases = agent_gateway_parse_meta_release($documents['ubuntu_meta_release_lts']);
+    $latest_meta = $meta_releases === [] ? [] : end($meta_releases);
+    $codename = strtolower((string)($latest_meta['dist'] ?? ''));
+    if ($codename === '' || preg_match('/^[a-z]+$/', $codename) !== 1) {
+        throw new RuntimeException('Official Ubuntu upgrade metadata is invalid');
+    }
+    $package_url = 'https://packages.ubuntu.com/' . rawurlencode($codename) . '/php-fpm';
+    $package_result = $runner(['/usr/bin/wget', '--quiet', '--output-document=-', '--timeout=15', $package_url]);
+    if (!is_array($package_result) || (int)($package_result['exit_code'] ?? 1) !== 0
+        || trim((string)($package_result['stdout'] ?? '')) === '') {
+        throw new RuntimeException('Official Ubuntu package evidence is unavailable');
+    }
+    $package_document = substr((string)$package_result['stdout'], 0, 500000);
+    preg_match('/Package:\s*php-fpm.*?\((?:\d+:)?(\d+\.\d+)[^)]*\)/is', $package_document, $package_match);
     return [
         'php_latest_stable' => $php_latest,
         'php_supported_branches' => $supported,
         'ubuntu_latest_lts' => $ubuntu[1] . ' LTS',
-        'sources' => array_values($sources),
+        'ubuntu_release_lifecycle' => substr(trim(preg_replace('/\s+/', ' ', strip_tags($documents['ubuntu_lifecycle']))), 0, 12000),
+        'ubuntu_lts_upgrade_metadata' => $latest_meta,
+        'ubuntu_lts_releases' => $meta_releases,
+        'ubuntu_default_php_fpm' => (string)($package_match[1] ?? ''),
+        'ubuntu_package_evidence' => substr(trim(preg_replace('/\s+/', ' ', strip_tags($package_document))), 0, 4000),
+        'sources' => array_values($sources) + ['target_php_fpm' => $package_url],
     ];
+}
+
+function agent_gateway_upgrade_path_evidence(?callable $runner = null): array
+{
+    $runner = $runner ?? 'agent_gateway_run_process';
+    $commands = [
+        'os_release' => ['/usr/bin/cat', '/etc/os-release'],
+        'release_upgrades' => ['/usr/bin/cat', '/etc/update-manager/release-upgrades'],
+        'upgrader_package' => ['/usr/bin/apt-cache', 'policy', 'ubuntu-release-upgrader-core'],
+        'meta_release_lts' => ['/usr/bin/wget', '--quiet', '--output-document=-', '--timeout=15', 'https://changelogs.ubuntu.com/meta-release-lts'],
+        'upgrade_check' => ['/usr/bin/do-release-upgrade', '-c'],
+    ];
+    $results = [];
+    foreach ($commands as $key => $command) {
+        $result = $runner($command);
+        $results[$key] = is_array($result) ? $result : ['exit_code' => 1, 'stdout' => '', 'stderr' => 'invalid runner result'];
+    }
+    $os_release = agent_gateway_parse_key_values((string)($results['os_release']['stdout'] ?? ''));
+    $release_config = agent_gateway_parse_key_values((string)($results['release_upgrades']['stdout'] ?? ''));
+    $package = (string)($results['upgrader_package']['stdout'] ?? '');
+    preg_match('/^\s*Installed:\s*(\S+)/mi', $package, $installed);
+    preg_match('/^\s*Candidate:\s*(\S+)/mi', $package, $candidate);
+    preg_match_all('/^\s*\*{0,3}\s*(\S+)\s+\d+\s*$/m', $package, $versions);
+    $meta_document = (string)($results['meta_release_lts']['stdout'] ?? '');
+    return [
+        'installed_release' => [
+            'version_id' => trim((string)($os_release['VERSION_ID'] ?? ''), '"'),
+            'codename' => trim((string)($os_release['VERSION_CODENAME'] ?? ''), '"'),
+            'pretty_name' => trim((string)($os_release['PRETTY_NAME'] ?? ''), '"'),
+        ],
+        'release_upgrade_configuration' => [
+            'prompt' => (string)($release_config['Prompt'] ?? ''),
+            'exit_code' => (int)($results['release_upgrades']['exit_code'] ?? 1),
+            'error' => substr(trim((string)($results['release_upgrades']['stderr'] ?? '')), 0, 1000),
+        ],
+        'upgrader_package' => [
+            'installed' => (string)($installed[1] ?? ''),
+            'candidate' => (string)($candidate[1] ?? ''),
+            'repository_versions' => array_values(array_unique($versions[1] ?? [])),
+            'exit_code' => (int)($results['upgrader_package']['exit_code'] ?? 1),
+            'raw' => substr($package, 0, 6000),
+            'error' => substr(trim((string)($results['upgrader_package']['stderr'] ?? '')), 0, 1000),
+        ],
+        'meta_release_lts' => [
+            'entries' => agent_gateway_parse_meta_release($meta_document),
+            'exit_code' => (int)($results['meta_release_lts']['exit_code'] ?? 1),
+            'error' => substr(trim((string)($results['meta_release_lts']['stderr'] ?? '')), 0, 1000),
+        ],
+        'upgrade_check' => [
+            'exit_code' => (int)($results['upgrade_check']['exit_code'] ?? 1),
+            'stdout' => substr(trim((string)($results['upgrade_check']['stdout'] ?? '')), 0, 4000),
+            'stderr' => substr(trim((string)($results['upgrade_check']['stderr'] ?? '')), 0, 2000),
+        ],
+    ];
+}
+
+function agent_gateway_parse_meta_release(string $document): array
+{
+    $entries = [];
+    foreach (preg_split('/\r?\n\s*\r?\n/', trim($document)) ?: [] as $block) {
+        $values = agent_gateway_parse_key_values($block);
+        if (!isset($values['Version'], $values['Dist'], $values['Supported'])) {
+            continue;
+        }
+        $entries[] = [
+            'version' => (string)$values['Version'],
+            'codename' => (string)($values['Name'] ?? ''),
+            'dist' => (string)$values['Dist'],
+            'supported_raw' => (string)$values['Supported'],
+        ];
+    }
+    return $entries;
+}
+
+function agent_gateway_parse_key_values(string $document): array
+{
+    $values = [];
+    foreach (preg_split('/\r?\n/', $document) ?: [] as $line) {
+        if (preg_match('/^([A-Za-z0-9_]+)\s*[=:]\s*(.*)$/', trim($line), $match) === 1) {
+            $values[$match[1]] = trim($match[2]);
+        }
+    }
+    return $values;
 }
 
 function agent_gateway_application_evidence(array $audit): array

@@ -2030,6 +2030,17 @@ ingest compares staging and production and raises a critical environment-drift
 finding when their PHP versions or handlers differ; equal but outdated hosts
 still fail their individual baseline checks.
 
+Ubuntu currency and Ubuntu upgrade availability are separate facts. The host
+audit records the installed release, `Prompt` policy, installed and candidate
+`ubuntu-release-upgrader-core` versions, Canonical `meta-release-lts` entries
+including the raw `Supported` value, and the exact `do-release-upgrade -c`
+result. A missing upgrade offer never proves that the installed LTS is current.
+The restricted agent gateway exposes the same bounded evidence through
+`inspect_host_detail upgrade_path` on staging and production. Release
+investigations can separately retrieve Ubuntu lifecycle evidence and the
+published target release's official PHP-FPM package metadata through
+`inspect_host_detail releases`.
+
 Apache 404 analysis filters common probes and normalizes dynamic identifiers.
 Known routes warn on the first failure and become critical on the second in the
 24-hour audit period. Other dynamic patterns warn at two failures and become
