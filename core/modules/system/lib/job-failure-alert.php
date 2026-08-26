@@ -10,14 +10,25 @@ function job_failure_alert_job($job)
     }
 
     require_once __DIR__ . '/system-alert.php';
-    load_libraries(['email', 'env', 'set', 'text']);
+    load_libraries(['data', 'email', 'env', 'get', 'lookup', 'set', 'text']);
 
     $recipient = system_alert_require_recipient();
-    $payload_json = json_encode($payload['failed_payload'] ?? [], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+    $failed_payload = $payload['failed_payload'] ?? [];
+    $payload_json = json_encode($failed_payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
     if ($payload_json === false) {
         $payload_json = '';
     }
 
+    $site_name = data_lookup('.config', 'site', 'name', env('MAIL_FROM_NAME', 'Nimbly'));
+    if (is_array($site_name)) {
+        $site_name = get_i18n_resolve($site_name, 'auto');
+    }
+    $environment = trim((string)env('APP_ENV', 'unknown'));
+    $origin = job_failure_alert_origin($failed_type, is_array($failed_payload) ? $failed_payload : []);
+
+    set_variable('site_name', system_alert_html($site_name));
+    set_variable('environment', system_alert_html($environment));
+    set_variable('failed_origin', system_alert_html($origin));
     set_variable('failed_type', system_alert_html($failed_type));
     set_variable('failed_uuid', system_alert_html($failed_uuid));
     set_variable('failed_attempts', system_alert_html($payload['failed_attempts'] ?? ''));
@@ -29,7 +40,7 @@ function job_failure_alert_job($job)
         'from' => env('MAIL_FROM'),
         'from_name' => env('MAIL_FROM_NAME', 'Nimbly'),
         'recipient' => $recipient,
-        'subject' => t('Nimbly job failed') . ': ' . $failed_type,
+        'subject' => '[' . $site_name . ' · ' . $environment . '] ' . t('Nimbly job failed') . ': ' . $failed_type,
         'tpl' => 'email-job-failure-alert',
     ]);
     if (!$sent) {
@@ -37,4 +48,29 @@ function job_failure_alert_job($job)
     }
 
     return true;
+}
+
+function job_failure_alert_origin(string $failed_type, array $failed_payload): string
+{
+    if ($failed_type !== 'agent-run') {
+        return $failed_type;
+    }
+
+    $run_uuid = trim((string)($failed_payload['run_uuid'] ?? ''));
+    $run = $run_uuid === '' ? null : data_read('.agent_runs', $run_uuid);
+    if (!is_array($run)) {
+        return $run_uuid === '' ? 'agent-run' : 'agent-run ' . $run_uuid;
+    }
+
+    $parts = [trim((string)($run['agent_id'] ?? 'agent-run'))];
+    $trigger = trim((string)($run['trigger'] ?? ''));
+    if ($trigger !== '') {
+        $parts[] = $trigger;
+    }
+    $target = trim((string)($run['target'] ?? ''));
+    $parts[] = $target !== '' ? $target : 'all configured targets';
+    if ($run_uuid !== '') {
+        $parts[] = 'run ' . $run_uuid;
+    }
+    return implode(' · ', $parts);
 }
