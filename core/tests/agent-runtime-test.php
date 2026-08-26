@@ -334,6 +334,10 @@ $openai_calls = 0;
 $openai_request = function (array $request) use (&$openai_calls) {
     $openai_calls++;
     agent_test_assert($request['store'] === false, 'Responses state storage is disabled');
+    agent_test_assert(
+        ($request['text']['format']['type'] ?? '') === 'json_object',
+        'agent responses require machine-readable JSON output'
+    );
     agent_test_assert($request['tools'][0]['strict'] === true, 'tool schema is strict');
     if ($openai_calls === 1) {
         return [

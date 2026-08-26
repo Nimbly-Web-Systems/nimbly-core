@@ -217,7 +217,9 @@ function render_field(array $def, string $field = '', $value = null, string $sto
             }
         }
         $init_value = json_encode(
-            !empty($def['multi']) ? array_values($field_value) : (string)$field_value,
+            !empty($def['multi'])
+                ? array_values($field_value)
+                : (is_array($field_value) ? $field_value : (string)$field_value),
             JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
         );
         $x_init = 'x-init="' . htmlspecialchars("{$model}={$init_value}", ENT_QUOTES, 'UTF-8') . '"';
