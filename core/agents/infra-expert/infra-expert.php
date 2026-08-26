@@ -358,6 +358,16 @@ function infra_expert_runtime_finding_ids(array $findings): array
 function infra_expert_canonical_reviews(): array
 {
     $reviews = [];
+    foreach (infra_expert_target_map() as $server => $_scope) {
+        $reviews[$server] = [
+            'source_report_uuid' => '',
+            'review_status' => 'missing',
+            'overall' => 'unknown',
+            'generated_at' => 0,
+            'age_seconds' => 0,
+            'runtime_finding_ids' => [],
+        ];
+    }
     foreach (data_read('.infra_health_environments') ?: [] as $environment) {
         $server = (string)($environment['server'] ?? '');
         if (!isset(infra_expert_target_map()[$server])) {
