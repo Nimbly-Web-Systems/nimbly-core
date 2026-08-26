@@ -35,6 +35,31 @@ audit_assert(host_audit_duration_seconds('24h') === 86400, 'parses hour duration
 audit_assert(host_audit_duration_seconds('2d') === 172800, 'parses day duration');
 audit_assert(host_audit_duration_seconds('tomorrow') === null, 'rejects invalid duration');
 
+$mail_project = sys_get_temp_dir() . '/nimbly-mail-config-' . bin2hex(random_bytes(4));
+mkdir($mail_project);
+file_put_contents($mail_project . '/.env', implode("\n", [
+    'MAIL_SERVICE=resend',
+    'RESEND_API_KEY=secret-value-that-must-not-escape',
+    'SMTP_PASSWORD=another-secret',
+]) . "\n");
+$mail_configuration = host_audit_project_mail_configuration($mail_project);
+audit_remove_fixture($mail_project);
+audit_assert(
+    $mail_configuration === [
+        'env_file' => 'readable',
+        'service' => 'resend',
+        'delivery_path' => 'resend_api',
+        'resend_api_key' => 'configured',
+        'smtp_configuration' => 'partial',
+    ],
+    'mail audit exposes provider and credential status without secret values'
+);
+audit_assert(
+    !str_contains(json_encode($mail_configuration), 'secret-value')
+        && !str_contains(json_encode($mail_configuration), 'another-secret'),
+    'mail audit never returns credential values'
+);
+
 $scheduler_log = tempnam(sys_get_temp_dir(), 'nimbly-scheduler-test-');
 $scheduler_now = time();
 file_put_contents($scheduler_log, implode("\n", [

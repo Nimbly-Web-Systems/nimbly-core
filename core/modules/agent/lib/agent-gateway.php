@@ -368,6 +368,9 @@ function agent_gateway_application_evidence(array $audit): array
             'environment' => substr((string)($project['environment'] ?? ''), 0, 40),
             'status' => substr((string)($project['status'] ?? ''), 0, 40),
             'scheduler' => substr((string)($project['scheduler'] ?? ''), 0, 80),
+            'mail' => array_intersect_key((array)($project['mail'] ?? []), array_flip([
+                'env_file', 'service', 'delivery_path', 'resend_api_key', 'smtp_configuration',
+            ])),
             'core_branch' => substr((string)($git['core']['branch'] ?? ''), 0, 120),
             'ext_branch' => substr((string)($git['ext']['branch'] ?? ''), 0, 120),
             'application_log' => $path === '' ? '' : $path . '/ext/data/.tmp/logs/system.log',
