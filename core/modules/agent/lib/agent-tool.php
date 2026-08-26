@@ -224,6 +224,10 @@ function agent_openai_request(array $request, array $dependencies): array
             if ($error_code !== '') {
                 $detail .= ', ' . $error_code;
             }
+            $error_message = substr(trim((string)($decoded_error['error']['message'] ?? '')), 0, 300);
+            if ($error_message !== '') {
+                $detail .= ': ' . preg_replace('/\s+/', ' ', $error_message);
+            }
             throw new RuntimeException('OpenAI request failed (' . $detail . ')');
         }
         usleep(250000 * $attempt);
