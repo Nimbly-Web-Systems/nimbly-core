@@ -398,6 +398,7 @@ function agent_reason(string $run_uuid, array $definition, array $initial_input,
             'instructions' => $instructions,
             'input' => $input,
             'tools' => agent_openai_tools($definition['tools']),
+            'text' => ['format' => ['type' => 'json_object']],
             'store' => false,
             'max_output_tokens' => (int)($definition['max_output_tokens'] ?? 6000),
         ];

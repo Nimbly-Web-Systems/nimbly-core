@@ -54,4 +54,19 @@ render_field_context_assert(
     'slug field did not inherit i18n from its source field'
 );
 
+render_field(
+    ['type' => 'group', 'name' => 'Invoice lines', 'fields' => ['description' => ['type' => 'text']]],
+    'invoice_lines',
+    [['description' => 'Infrastructure review']]
+);
+$group_context = $GLOBALS['rendered_field_contexts']['field-group'];
+render_field_context_assert(
+    $group_context['_f.value'] === [['description' => 'Infrastructure review']],
+    'structured group value was not preserved for its field template'
+);
+render_field_context_assert(
+    str_contains($group_context['_f.x_init'], '[{&quot;description&quot;:&quot;Infrastructure review&quot;}]'),
+    'structured group value was not JSON encoded for Alpine initialization'
+);
+
 echo "Render field context tests passed.\n";
