@@ -330,6 +330,30 @@ agent_test_assert(agent_redact(['input_tokens' => 12, 'api_token' => 'secret']) 
     'api_token' => '[REDACTED]',
 ], 'usage counters remain auditable while credentials are redacted');
 
+$scoped_tools = agent_tools_for_run([
+    'inspect' => [
+        'risk' => 'read_only',
+        'connector' => ['targets' => 'targets'],
+    ],
+    'diagnose_stage' => [
+        'risk' => 'read_only',
+        'connector' => ['targets' => 'targets', 'authority' => 'autonomous_remediation'],
+    ],
+    'repair' => [
+        'risk' => 'governed',
+        'connector' => ['targets' => 'targets', 'authority' => 'autonomous_remediation'],
+    ],
+], [
+    'targets' => [
+        ['identity' => 'nimbly1.stage', 'authority' => 'autonomous_remediation'],
+        ['identity' => 'nimbly1.prod', 'authority' => 'inspection_only'],
+    ],
+], ['target' => 'nimbly1.prod', 'read_only' => true]);
+agent_test_assert(
+    array_keys($scoped_tools) === ['inspect'],
+    'scoped read-only runs expose only tools permitted for their exact target and authority'
+);
+
 $openai_calls = 0;
 $openai_request = function (array $request) use (&$openai_calls) {
     $openai_calls++;

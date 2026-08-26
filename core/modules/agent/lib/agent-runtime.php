@@ -380,6 +380,11 @@ function agent_reason(string $run_uuid, array $definition, array $initial_input,
     $instructions = agent_instructions($definition);
     $input = $initial_input;
     $current_run = data_read('.agent_runs', $run_uuid);
+    $available_tools = agent_tools_for_run(
+        $definition['tools'],
+        $definition,
+        is_array($current_run) ? $current_run : []
+    );
     $usage = is_array($current_run) && is_array($current_run['usage'] ?? null)
         ? $current_run['usage']
         : agent_empty_usage();
@@ -397,7 +402,7 @@ function agent_reason(string $run_uuid, array $definition, array $initial_input,
             'reasoning' => ['effort' => $definition['reasoning_effort'] ?? 'medium'],
             'instructions' => $instructions,
             'input' => $input,
-            'tools' => agent_openai_tools($definition['tools']),
+            'tools' => agent_openai_tools($available_tools),
             'text' => ['format' => ['type' => 'json_object']],
             'store' => false,
             'max_output_tokens' => (int)($definition['max_output_tokens'] ?? 6000),
@@ -428,7 +433,7 @@ function agent_reason(string $run_uuid, array $definition, array $initial_input,
             if ($tool_count > $max_tools) {
                 throw new RuntimeException('Agent tool-call limit exceeded');
             }
-            $result = agent_execute_tool($run_uuid, $definition['tools'], $call, $dependencies);
+            $result = agent_execute_tool($run_uuid, $available_tools, $call, $dependencies);
             $input[] = [
                 'type' => 'function_call_output',
                 'call_id' => $call['call_id'] ?? '',
