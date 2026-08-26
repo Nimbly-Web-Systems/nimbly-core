@@ -61,7 +61,7 @@ function resource_record_actions_sc()
         $content = trim((string)ob_get_clean());
         clear_variable_dot('record_action');
         if ($content !== '') {
-            $rendered[] = $content;
+            $rendered[] = '<div>' . $content . '</div>';
         }
     }
     if (empty($rendered)) {
