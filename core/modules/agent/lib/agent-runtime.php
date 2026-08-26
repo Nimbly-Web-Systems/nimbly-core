@@ -397,11 +397,26 @@ function agent_reason(string $run_uuid, array $definition, array $initial_input,
         if ((microtime(true) - $started) > (int)($definition['max_wall_seconds'] ?? 900)) {
             throw new RuntimeException('Agent wall-clock limit exceeded');
         }
+        $request_input = $input;
+        if (isset($request_input[0]['content']) && is_array($request_input[0]['content'])) {
+            $request_input[0]['content'][] = [
+                'type' => 'input_text',
+                'text' => 'Return the final response as a JSON object matching the supplied output contract.',
+            ];
+        } else {
+            array_unshift($request_input, [
+                'role' => 'user',
+                'content' => [[
+                    'type' => 'input_text',
+                    'text' => 'Return the final response as a JSON object matching the supplied output contract.',
+                ]],
+            ]);
+        }
         $request = [
             'model' => $definition['model'] ?? 'gpt-5.6-terra',
             'reasoning' => ['effort' => $definition['reasoning_effort'] ?? 'medium'],
             'instructions' => $instructions,
-            'input' => $input,
+            'input' => $request_input,
             'tools' => agent_openai_tools($available_tools),
             'text' => ['format' => ['type' => 'json_object']],
             'store' => false,

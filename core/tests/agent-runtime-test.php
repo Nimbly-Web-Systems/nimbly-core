@@ -362,6 +362,10 @@ $openai_request = function (array $request) use (&$openai_calls) {
         ($request['text']['format']['type'] ?? '') === 'json_object',
         'agent responses require machine-readable JSON output'
     );
+    agent_test_assert(
+        str_contains(strtolower(json_encode($request['input'])), 'json'),
+        'agent input explicitly requests JSON for Responses API JSON mode'
+    );
     agent_test_assert($request['tools'][0]['strict'] === true, 'tool schema is strict');
     if ($openai_calls === 1) {
         return [
