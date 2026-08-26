@@ -1213,9 +1213,51 @@ function host_audit_project(string $name, string $path, array $context, array &$
         'path' => $path,
         'available' => true,
         'environment' => $environment,
+        'mail' => host_audit_project_mail_configuration($path),
         'system_log_events' => $system_log_events,
         'jobs' => $jobs,
         'git' => $git,
+    ];
+}
+
+function host_audit_project_mail_configuration(string $path): array
+{
+    $env_path = rtrim($path, '/') . '/.env';
+    $wanted = [
+        'MAIL_SERVICE', 'RESEND_API_KEY', 'SMTP_HOST', 'SMTP_PORT',
+        'SMTP_USER', 'SMTP_PASSWORD', 'SMTP_SECURE',
+    ];
+    $values = [];
+    if (is_readable($env_path)) {
+        foreach (file($env_path, FILE_IGNORE_NEW_LINES) ?: [] as $line) {
+            if (preg_match('/^\s*([A-Z][A-Z0-9_]*)\s*=\s*(.*)\s*$/', $line, $match) !== 1
+                || !in_array($match[1], $wanted, true)) {
+                continue;
+            }
+            $value = trim($match[2]);
+            if (strlen($value) >= 2
+                && (($value[0] === '"' && str_ends_with($value, '"'))
+                    || ($value[0] === "'" && str_ends_with($value, "'")))) {
+                $value = substr($value, 1, -1);
+            }
+            $values[$match[1]] = trim($value);
+        }
+    }
+    $service = strtolower($values['MAIL_SERVICE'] ?? 'resend');
+    if (!in_array($service, ['resend', 'smtp', 'phpmailer'], true)) {
+        $service = $service === '' ? 'resend' : 'other';
+    }
+    $smtp_fields = ['SMTP_HOST', 'SMTP_PORT', 'SMTP_USER', 'SMTP_PASSWORD'];
+    $smtp_configured = count(array_filter(
+        $smtp_fields,
+        fn(string $key): bool => ($values[$key] ?? '') !== ''
+    ));
+    return [
+        'env_file' => is_readable($env_path) ? 'readable' : 'unavailable',
+        'service' => $service,
+        'delivery_path' => $service === 'resend' ? 'resend_api' : ($service === 'smtp' || $service === 'phpmailer' ? 'smtp' : 'other'),
+        'resend_api_key' => ($values['RESEND_API_KEY'] ?? '') === '' ? 'missing' : 'configured',
+        'smtp_configuration' => $smtp_configured === 0 ? 'absent' : ($smtp_configured === count($smtp_fields) ? 'configured' : 'partial'),
     ];
 }
 

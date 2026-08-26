@@ -570,6 +570,10 @@ $application_detail = agent_gateway_execute('inspect_host_detail applications', 
                 'path' => '/var/www/nimbly-site', 'available' => true, 'environment' => 'prod',
                 'status' => 'healthy', 'scheduler' => 'Active', 'requests' => 120,
                 'http_5xx' => 0, 'php_errors' => 0,
+                'mail' => [
+                    'env_file' => 'readable', 'service' => 'resend', 'delivery_path' => 'resend_api',
+                    'resend_api_key' => 'configured', 'smtp_configuration' => 'absent',
+                ],
                 'git' => ['core' => ['branch' => 'master'], 'ext' => ['branch' => 'live']],
             ]],
             'apache' => ['access_logs' => ['/var/log/apache2/access.log'], 'error_logs' => ['/var/log/apache2/error.log']],
@@ -579,6 +583,8 @@ $application_detail = agent_gateway_execute('inspect_host_detail applications', 
 });
 agent_test_assert(
     $application_detail['details']['applications'][0]['ext_branch'] === 'live'
+        && $application_detail['details']['applications'][0]['mail']['delivery_path'] === 'resend_api'
+        && $application_detail['details']['applications'][0]['mail']['resend_api_key'] === 'configured'
         && $application_detail['details']['applications'][0]['application_log'] === '/var/www/nimbly-site/ext/data/.tmp/logs/system.log'
         && $application_detail['details']['apache_error_logs'] === ['/var/log/apache2/error.log']
         && $application_detail['details']['scheduler_log'] === '/var/log/nimbly-scheduler.log',
