@@ -139,6 +139,43 @@ function agent_openai_tools(array $tools): array
     return $result;
 }
 
+function agent_tools_for_run(array $tools, array $definition, array $run): array
+{
+    $target_identity = (string)($run['target'] ?? '');
+    $read_only = !empty($run['read_only']);
+    if ($target_identity === '' && !$read_only) {
+        return $tools;
+    }
+    $available = [];
+    foreach ($tools as $name => $tool) {
+        if ($read_only && ($tool['risk'] ?? '') === 'governed') {
+            continue;
+        }
+        $connector = $tool['connector'] ?? null;
+        if ($target_identity !== '' && is_array($connector) && !empty($connector['targets'])) {
+            $targets = agent_config(
+                ['agent_definition' => $definition],
+                (string)$connector['targets'],
+                []
+            );
+            $required_authority = (string)($connector['authority'] ?? '');
+            $permitted = false;
+            foreach ((array)$targets as $target) {
+                if (($target['identity'] ?? $target['server'] ?? '') === $target_identity
+                    && ($required_authority === '' || ($target['authority'] ?? '') === $required_authority)) {
+                    $permitted = true;
+                    break;
+                }
+            }
+            if (!$permitted) {
+                continue;
+            }
+        }
+        $available[$name] = $tool;
+    }
+    return $available;
+}
+
 function agent_openai_request(array $request, array $dependencies): array
 {
     if (!empty($dependencies['openai_request']) && is_callable($dependencies['openai_request'])) {
