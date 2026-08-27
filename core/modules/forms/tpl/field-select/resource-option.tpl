@@ -1,3 +1,3 @@
 <option value="[#opt.key#]" [#if _f.value=(includes opt.key) echo=selected#]>
-    [#get opt.name#][#get opt.title#]
+    [#resource-title resource=[#_f.resource#] uuid=[#opt.key#]#]
 </option>
