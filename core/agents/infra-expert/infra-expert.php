@@ -190,6 +190,52 @@ function infra_expert_execute_remediation(array $arguments, array $dependencies)
     ];
 }
 
+function infra_expert_execute_registered_action(array $arguments, array $dependencies): array
+{
+    infra_expert_configure($dependencies);
+    $server = (string)($arguments['server'] ?? '');
+    $remediation_servers = array_column(infra_expert_targets('autonomous_remediation'), 'identity');
+    if (!in_array($server, $remediation_servers, true)) {
+        throw new RuntimeException('Registered action target is not configured for autonomous authority');
+    }
+    $authorization = $dependencies['authorization'] ?? null;
+    if (!is_array($authorization) || ($authorization['status'] ?? '') !== 'authorized') {
+        throw new RuntimeException('Registered action authorization is missing');
+    }
+    $connector = $dependencies['tool_definition']['connector'] ?? [];
+    $action = (string)($connector['registered_action'] ?? '');
+    if ($action === '') {
+        throw new RuntimeException('Registered action is not configured');
+    }
+    $target = agent_connector_ssh_target($server, $dependencies, $connector);
+    $signing_key = (string)($target['gateway_signing_key'] ?? '');
+    if ($signing_key === '') {
+        throw new RuntimeException('Registered action gateway signing key is unavailable');
+    }
+    $envelope = [
+        'target' => $server,
+        'action' => $action,
+        'arguments' => [],
+        'action_digest' => (string)$authorization['action_digest'],
+        'expires_at' => (int)$authorization['expires_at'],
+    ];
+    $envelope['signature'] = hash_hmac('sha256', agent_canonical_json($envelope), $signing_key);
+    $encoded = rtrim(strtr(base64_encode(json_encode($envelope, JSON_UNESCAPED_SLASHES)), '+/', '-_'), '=');
+    $result = agent_connector_ssh_gateway(
+        $target,
+        ['execute_registered_action', $encoded],
+        (int)($connector['timeout'] ?? 1500),
+        $dependencies
+    );
+    $decoded = json_decode((string)($result['stdout'] ?? ''), true);
+    if (!is_array($decoded) || !isset($decoded['status'], $decoded['transaction_id'], $decoded['started_at'])) {
+        throw new RuntimeException('Registered action gateway returned invalid evidence');
+    }
+    $decoded['server'] = $server;
+    $decoded['action_digest'] = (string)$authorization['action_digest'];
+    return $decoded;
+}
+
 function infra_expert_validate_result(array $result, string $run_uuid = '', array $_dependencies = []): array
 {
     infra_expert_configure($_dependencies);
@@ -218,6 +264,12 @@ function infra_expert_validate_result(array $result, string $run_uuid = '', arra
     }
     $remediations = $run_uuid === '' ? [] : agent_report_tool_results(
         $run_uuid, 'execute_remediation', $identities
+    );
+    $patch_updates = $run_uuid === '' ? [] : agent_report_tool_results(
+        $run_uuid, 'apply_patch_updates', $identities
+    );
+    $maintenance = $run_uuid === '' ? [] : agent_report_tool_results(
+        $run_uuid, 'inspect_maintenance', $identities
     );
     $diagnostics = $run_uuid === '' ? [] : agent_report_tool_results(
         $run_uuid, 'run_diagnostic', $identities
@@ -293,6 +345,29 @@ function infra_expert_validate_result(array $result, string $run_uuid = '', arra
                 );
                 if (empty($post_diagnostics)) {
                     throw new RuntimeException('Executed remediation has no post-action endpoint, service, or log verification');
+                }
+            }
+            foreach ($patch_updates[$server] ?? [] as $patch_update) {
+                $started_at = (int)($patch_update['started_at'] ?? 0);
+                $completed = array_values(array_filter(
+                    $maintenance[$server] ?? [],
+                    fn($item) => ($item['status'] ?? '') === 'completed'
+                        && ($item['transaction_id'] ?? '') === ($patch_update['transaction_id'] ?? '')
+                        && (int)($item['completed_at'] ?? 0) >= $started_at
+                ));
+                if ($completed === []) {
+                    throw new RuntimeException('Patch maintenance has no completed durable transaction');
+                }
+                $completed_at = max(array_map(fn($item) => (int)$item['completed_at'], $completed));
+                if ((int)($fresh_audits[$server]['observed_at'] ?? 0) <= $completed_at) {
+                    throw new RuntimeException('Patch maintenance has no fresh post-action host audit');
+                }
+                $post_diagnostics = array_filter(
+                    $diagnostics[$server] ?? [],
+                    fn($diagnostic) => (int)($diagnostic['observed_at'] ?? 0) > $completed_at
+                );
+                if ($post_diagnostics === []) {
+                    throw new RuntimeException('Patch maintenance has no post-action endpoint, service, or log verification');
                 }
             }
         }

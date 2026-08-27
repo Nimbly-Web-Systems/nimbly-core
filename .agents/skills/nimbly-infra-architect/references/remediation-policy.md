@@ -71,13 +71,34 @@ is required.
 - Do not request a different certificate or alter Apache.
 - Verify the served certificate from outside the local process afterward.
 
+### Apply delegated staging package patches
+
+Permitted only through the installed registered `install_patch_updates` action
+when the target is explicitly configured for autonomous staging maintenance,
+the root-owned maintenance window is open, and a fresh host audit confirms at
+least one pending security update.
+
+- The action may apply all available package patch updates, including new
+  dependencies, but must not remove packages or perform an operating-system
+  release upgrade.
+- It must block while another package, deployment, backup, migration, or
+  maintenance transaction is active, when the package database needs repair,
+  or when an unrelated critical host finding is present.
+- It may schedule one staging reboot when Ubuntu records that a reboot is
+  required. Verification must resume from durable state after boot.
+- Recovery requires healthy required services, configured HTTPS endpoints, no
+  remaining security updates, and a fresh canonical host audit.
+- Package managers and reboot commands remain forbidden through generic command
+  remediation.
+
 ## Never autonomous
 
 - Editing or creating scripts, application files, framework files, environment
   files, systemd units, cron entries, virtual hosts, firewall rules, SSH
   configuration, DNS, users, groups, permissions, secrets, databases, or
   monitoring/report definitions.
-- Git pulls, deployments, migrations, package installation or upgrades.
+- Git pulls, deployments, migrations, package installation or upgrades except
+  the exact delegated staging patch action above.
 - Reboots, destructive commands, log or data deletion, filesystem repair,
   database repair, backup restoration, or certificate replacement requiring
   configuration changes.
