@@ -16,17 +16,33 @@ function resource_title_field(string $resource): ?string
     return null;
 }
 
+function resource_title_value(array $record, string $field): string
+{
+    $value = $record[$field] ?? '';
+    if (is_array($value)) {
+        load_library('get');
+        $value = get_i18n_resolve($value);
+    }
+    return is_array($value) ? '' : trim((string)$value);
+}
+
 function resource_title(string $resource, array $record): string
 {
-    $field = resource_title_field($resource);
-    if ($field !== null && !empty($record[$field])) {
-        $value = $record[$field];
-        if (is_array($value)) {
-            load_library('get');
-            $value = get_i18n_resolve($value);
+    $meta = data_meta($resource);
+    if (!empty($meta['title_fields']) && is_array($meta['title_fields'])) {
+        $parts = array_filter(array_map(
+            fn($field) => resource_title_value($record, (string)$field),
+            $meta['title_fields']
+        ), fn($value) => $value !== '');
+        if (!empty($parts)) {
+            return implode(' — ', $parts);
         }
-        if (!is_array($value)) {
-            return (string)$value;
+    }
+    $field = resource_title_field($resource);
+    if ($field !== null) {
+        $value = resource_title_value($record, $field);
+        if ($value !== '') {
+            return $value;
         }
     }
     return (string)($record['uuid'] ?? '');
