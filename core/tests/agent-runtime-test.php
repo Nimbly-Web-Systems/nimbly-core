@@ -691,6 +691,26 @@ $action_result = agent_gateway_execute('execute_action ' . $action_envelope, fun
 });
 agent_test_assert($action_result['exit_code'] === 0, 'governed gateway result is normalized');
 
+$registered_result = agent_gateway_execute('execute_registered_action ' . $action_envelope, function (array $command) use ($action_envelope) {
+    agent_test_assert($command === [
+        '/usr/bin/sudo', '-n', '/usr/local/bin/nimbly-agent-action-gateway', 'execute', $action_envelope,
+    ], 'registered actions map to one fixed privileged gateway invocation');
+    return ['exit_code' => 0, 'stdout' => json_encode([
+        'status' => 'completed', 'transaction_id' => 'transaction-1',
+    ]), 'stderr' => ''];
+});
+agent_test_assert($registered_result['status'] === 'completed', 'registered action evidence is normalized');
+
+$maintenance_result = agent_gateway_execute('inspect_maintenance', function (array $command) {
+    agent_test_assert($command === [
+        '/usr/bin/sudo', '-n', '/usr/local/bin/nimbly-agent-action-gateway', 'status',
+    ], 'maintenance inspection maps to a fixed read-only status request');
+    return ['exit_code' => 0, 'stdout' => json_encode([
+        'status' => 'completed', 'observed_at' => time(),
+    ]), 'stderr' => ''];
+});
+agent_test_assert($maintenance_result['status'] === 'completed', 'maintenance status is normalized');
+
 $denied = 0;
 foreach (['inspect_service ssh', 'inspect_service apache2 extra', 'inspect_host_detail secrets', 'sh -c id', ''] as $command) {
     try {

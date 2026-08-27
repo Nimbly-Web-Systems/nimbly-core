@@ -17,6 +17,8 @@ function agent_gateway_adapters(): array
     return [
         'diagnose' => ['arguments' => 1, 'callback' => fn($args, $runner) => agent_gateway_diagnose($args[0], $runner)],
         'execute_action' => ['arguments' => 1, 'callback' => fn($args, $runner) => agent_gateway_execute_action($args[0], $runner)],
+        'execute_registered_action' => ['arguments' => 1, 'callback' => fn($args, $runner) => agent_gateway_execute_registered_action($args[0], $runner)],
+        'inspect_maintenance' => ['arguments' => 0, 'callback' => fn($_args, $runner) => agent_gateway_inspect_maintenance($runner)],
         'inspect_host_health' => ['arguments' => 0, 'callback' => fn($_args, $runner) => agent_gateway_inspect_host_health($runner)],
         'inspect_host_detail' => ['arguments' => 1, 'callback' => fn($args, $runner) => agent_gateway_inspect_host_detail($args[0], $runner)],
         'inspect_service' => ['arguments' => 1, 'callback' => fn($args, $runner) => agent_gateway_inspect_service($args[0], $runner)],
@@ -97,6 +99,40 @@ function agent_gateway_execute_action(string $encoded_envelope, ?callable $runne
         throw new RuntimeException('Privileged action gateway returned invalid evidence');
     }
     return $decoded;
+}
+
+function agent_gateway_execute_registered_action(string $encoded_envelope, ?callable $runner = null): array
+{
+    agent_gateway_decode($encoded_envelope, 12000);
+    $runner = $runner ?? 'agent_gateway_run_process';
+    $result = $runner([
+        '/usr/bin/sudo', '-n', '/usr/local/bin/nimbly-agent-action-gateway',
+        'execute', $encoded_envelope,
+    ]);
+    if (!is_array($result) || (int)($result['exit_code'] ?? 1) !== 0) {
+        throw new RuntimeException('Registered action gateway denied execution');
+    }
+    $decoded = json_decode((string)($result['stdout'] ?? ''), true);
+    if (!is_array($decoded) || !isset($decoded['status'])) {
+        throw new RuntimeException('Registered action gateway returned invalid evidence');
+    }
+    return $decoded;
+}
+
+function agent_gateway_inspect_maintenance(?callable $runner = null): array
+{
+    $runner = $runner ?? 'agent_gateway_run_process';
+    $result = $runner([
+        '/usr/bin/sudo', '-n', '/usr/local/bin/nimbly-agent-action-gateway', 'status',
+    ]);
+    if (!is_array($result) || (int)($result['exit_code'] ?? 1) !== 0) {
+        throw new RuntimeException('Maintenance status inspection failed');
+    }
+    $decoded = json_decode((string)($result['stdout'] ?? ''), true);
+    if (!is_array($decoded) || !isset($decoded['status'], $decoded['observed_at'])) {
+        throw new RuntimeException('Maintenance status inspection returned invalid evidence');
+    }
+    return agent_gateway_bounded_value($decoded, 12000);
 }
 
 function agent_gateway_decode(string $encoded, int $max_length): string

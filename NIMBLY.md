@@ -2191,6 +2191,33 @@ and enum-constrained parameters, and maps them to fixed argument-array
 processes. Configure its SSH key with `restrict` and a forced command; do not
 grant the key an interactive shell or forwarding.
 
+Privileged infrastructure changes use the registered action gateway. Install
+or refresh its root-owned wrapper, sudo rule, and maintenance-resume service
+from a current core checkout:
+
+```bash
+sudo php core/cli/nimbly.php agent:action-gateway:install
+```
+
+The gateway accepts signed, expiring, one-use envelopes containing a registered
+action name and its schema-validated logical arguments. It maps the action to
+fixed argument arrays; package and reboot operations are never accepted through
+the legacy command remediation path. Host configuration in
+`/etc/nimbly/agent-action-gateway.json` independently owns target identity,
+signing key, authorization and maintenance-state directories, maintenance
+timezone/window, required services, and HTTPS verification endpoints.
+
+The built-in `install_patch_updates` action is intended for explicitly delegated
+staging maintenance. It requires a fresh security-update finding, blocks on an
+active package operation, a damaged package database, or an unrelated critical
+host finding, and applies all package patch updates without allowing removals or
+an operating-system release upgrade. It persists a transaction under
+`/var/lib/nimbly-agent/maintenance`. When Ubuntu requires a reboot, the action
+schedules one and the enabled boot service resumes service, endpoint, and fresh
+host-audit verification. Agent runs interrupted by the reboot are recovered by
+the normal `agent:recover` schedule and must inspect the completed transaction
+before reporting recovery.
+
 Agent schedules may set an explicit IANA timezone:
 
 ```php
