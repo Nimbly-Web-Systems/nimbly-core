@@ -17,7 +17,7 @@ if (!defined('BASE_DIR')) {
 }
 
 const HOST_AUDIT_SCHEMA_VERSION = 1;
-const HOST_AUDIT_VERSION = '1.3.0';
+const HOST_AUDIT_VERSION = '1.3.1';
 
 if (!defined('NIMBLY_HOST_AUDIT_LIBRARY')) {
     $host_audit_command = $argv[1] ?? 'host:audit';
@@ -131,7 +131,6 @@ function host_audit_default_config(): array
         'project_alias_overrides' => [],
         'runtime_policy' => [
             'ubuntu_release' => 'current-lts',
-            'php_line' => 'ubuntu-default',
             'php_handler' => 'php-fpm',
         ],
         'known_routes' => [],
