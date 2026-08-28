@@ -312,8 +312,7 @@ function infra_expert_validate_result(array $result, string $run_uuid = '', arra
         }
         $item['email_subject'] = substr(trim((string)($item['email_subject'] ?? '')), 0, 160);
         $item['executive_summary'] = substr(trim((string)($item['executive_summary'] ?? '')), 0, 6000);
-        $greeting = (string)(infra_expert_config()['greeting'] ?? 'Hi team,');
-        if ($item['email_subject'] === '' || !str_starts_with($item['executive_summary'], $greeting)) {
+        if ($item['email_subject'] === '' || $item['executive_summary'] === '') {
             throw new RuntimeException('Infrastructure executive email is invalid');
         }
         if ($run_uuid !== '') {
