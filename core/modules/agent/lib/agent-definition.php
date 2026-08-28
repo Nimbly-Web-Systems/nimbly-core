@@ -203,6 +203,9 @@ function agent_scope_definition(array $definition, array $run): array
 
 function agent_validate_definition(array $definition): void
 {
+    if (isset($definition['output_schema'])) {
+        agent_validate_output_schema($definition['output_schema'], (string)($definition['id'] ?? 'agent'));
+    }
     if (empty($definition['pipeline'])) {
         foreach (['prepare_input', 'validate_result', 'deliver'] as $callback) {
             if (!is_callable($definition[$callback] ?? null)) {
@@ -268,6 +271,9 @@ function agent_validate_pipeline_definition(array $pipeline): void
                     || (!empty($phase['validator']) && !is_callable($phase['validator']))) {
                     throw new RuntimeException('Agent model phase is invalid: ' . $phase['id']);
                 }
+                if (isset($phase['output_schema'])) {
+                    agent_validate_output_schema($phase['output_schema'], (string)$phase['id']);
+                }
             } elseif ($type !== 'callback' || !is_callable($phase['handler'] ?? null)) {
                 throw new RuntimeException('Agent callback phase is invalid: ' . $phase['id']);
             }
@@ -282,5 +288,21 @@ function agent_validate_pipeline_definition(array $pipeline): void
         if (empty($pipeline[$reference]) || !isset($known[$pipeline[$reference]])) {
             throw new RuntimeException('Agent pipeline result reference is invalid: ' . $reference);
         }
+    }
+}
+
+function agent_validate_output_schema($schema, string $identity): void
+{
+    if (!is_array($schema)
+        || ($schema['type'] ?? '') !== 'object'
+        || !is_array($schema['properties'] ?? null)
+        || !is_array($schema['required'] ?? null)
+        || ($schema['additionalProperties'] ?? null) !== false) {
+        throw new RuntimeException('Agent output schema is invalid: ' . $identity);
+    }
+    try {
+        json_encode($schema, JSON_THROW_ON_ERROR);
+    } catch (JsonException) {
+        throw new RuntimeException('Agent output schema is invalid: ' . $identity);
     }
 }

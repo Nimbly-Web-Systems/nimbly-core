@@ -221,7 +221,16 @@ function agent_execute_pipeline(
         $artifact = agent_reason($run_uuid, $phase_definition, $input, $phase_dependencies);
         if (!empty($phase['validator'])) {
             $phase_dependencies['pipeline_artifacts'] = $artifacts;
-            $artifact = ($phase['validator'])($artifact, $phase_dependencies);
+            try {
+                $artifact = ($phase['validator'])($artifact, $phase_dependencies);
+            } catch (Throwable $error) {
+                agent_append_event($run_uuid, 'model_validation_failed', [
+                    'phase' => (string)$phase['id'],
+                    'error' => agent_safe_error($error->getMessage()),
+                    'structured_output' => agent_redacted_json($artifact),
+                ]);
+                throw $error;
+            }
         }
         if (!is_array($artifact)) {
             throw new RuntimeException('Agent model phase failed: ' . $phase['id']);
@@ -281,6 +290,11 @@ function agent_pipeline_model_definition(array $definition, array $phase): array
     }
     if (isset($phase['max_output_tokens'])) {
         $definition['max_output_tokens'] = (int)$phase['max_output_tokens'];
+    }
+    if (isset($phase['output_schema'])) {
+        $definition['output_schema'] = $phase['output_schema'];
+    } else {
+        unset($definition['output_schema']);
     }
     return $definition;
 }
@@ -412,13 +426,22 @@ function agent_reason(string $run_uuid, array $definition, array $initial_input,
                 ]],
             ]);
         }
+        $output_schema = $definition['output_schema'] ?? null;
+        $text_format = is_array($output_schema)
+            ? [
+                'type' => 'json_schema',
+                'name' => (string)($definition['_phase_id'] ?? $definition['id'] ?? 'agent_response'),
+                'strict' => true,
+                'schema' => $output_schema,
+            ]
+            : ['type' => 'json_object'];
         $request = [
             'model' => $definition['model'] ?? 'gpt-5.6-terra',
             'reasoning' => ['effort' => $definition['reasoning_effort'] ?? 'medium'],
             'instructions' => $instructions,
             'input' => $request_input,
             'tools' => agent_openai_tools($available_tools),
-            'text' => ['format' => ['type' => 'json_object']],
+            'text' => ['format' => $text_format],
             'store' => false,
             'max_output_tokens' => (int)($definition['max_output_tokens'] ?? 6000),
         ];
