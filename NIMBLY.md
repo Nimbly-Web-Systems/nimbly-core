@@ -2234,6 +2234,16 @@ Nimbly owns the tool loop, audit trail, retries, permissions, and durable state.
 Record the model, instruction hash, provider request IDs, token usage, and a
 versioned pricing snapshot on every run.
 
+Model phases that return a stable machine-readable contract should declare an
+`output_schema` in their pipeline definition. Nimbly sends that schema through
+the Responses API Structured Outputs format with strict enforcement. Keep the
+application validator as an independent semantic check: a schema guarantees
+shape and enum adherence, while the validator enforces relationships between
+fields, configured targets, authority, and current evidence. When semantic
+validation rejects a model result, the runtime records a bounded, redacted
+`model_validation_failed` event containing the phase, error, and rejected
+structured output. Provider storage remains disabled.
+
 ---
 
 ## 8. Build

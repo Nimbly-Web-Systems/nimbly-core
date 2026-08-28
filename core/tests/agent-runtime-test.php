@@ -114,6 +114,14 @@ function agent_test_pipeline_validate(array $result, array $_dependencies = []):
     return $result;
 }
 
+function agent_test_pipeline_reject(array $result, array $_dependencies = []): array
+{
+    if (($result['technical'] ?? '') !== 'normal') {
+        throw new RuntimeException('Technical state is invalid');
+    }
+    return $result;
+}
+
 function agent_test_pipeline_select(array $technical, array $_dependencies = []): array
 {
     return ['technical' => $technical['technical']];
@@ -180,6 +188,12 @@ $GLOBALS['AGENT_TEST_DEFINITIONS']['pipeline-agent'] = [
         ]],
         'agent' => [[
             'id' => 'technical', 'type' => 'model', 'instructions' => __FILE__,
+            'output_schema' => [
+                'type' => 'object',
+                'properties' => ['technical' => ['type' => 'string', 'enum' => ['normal']]],
+                'required' => ['technical'],
+                'additionalProperties' => false,
+            ],
             'validator' => 'agent_test_pipeline_validate',
         ], [
             'id' => 'selector', 'type' => 'model', 'instructions' => __FILE__,
@@ -201,6 +215,9 @@ $GLOBALS['AGENT_TEST_DEFINITIONS']['pipeline-agent'] = [
         'delivery_from' => 'delivery',
     ],
 ];
+$GLOBALS['AGENT_TEST_DEFINITIONS']['rejecting-pipeline-agent'] = $GLOBALS['AGENT_TEST_DEFINITIONS']['pipeline-agent'];
+$GLOBALS['AGENT_TEST_DEFINITIONS']['rejecting-pipeline-agent']['id'] = 'rejecting-pipeline-agent';
+$GLOBALS['AGENT_TEST_DEFINITIONS']['rejecting-pipeline-agent']['pipeline']['agent'][0]['validator'] = 'agent_test_pipeline_reject';
 
 $now = (new DateTimeImmutable('2026-08-10 08:00:00', new DateTimeZone('America/Sao_Paulo')))->getTimestamp();
 $test_data['.infra_health_environments'] = [
@@ -422,6 +439,7 @@ agent_test_assert(($result['estimated_cost_usd'] ?? 0) > 0, 'cost is estimated')
 agent_test_assert(count($result['source_report_uuids']) === 2, 'source report UUIDs are recorded');
 
 $pipeline_inputs = [];
+$pipeline_formats = [];
 $pipeline_responses = [
     ['technical' => 'normal', 'private_execution' => 'rollback mechanics'],
     ['intent' => ['present_state' => 'normal', 'judgment' => 'upgrade']],
@@ -429,8 +447,9 @@ $pipeline_responses = [
 ];
 $pipeline_uuid = agent_enqueue('pipeline-agent', $now, ['trigger' => 'test']);
 $pipeline_result = agent_run($pipeline_uuid, [
-    'openai_request' => function (array $request) use (&$pipeline_inputs, &$pipeline_responses): array {
+    'openai_request' => function (array $request) use (&$pipeline_inputs, &$pipeline_formats, &$pipeline_responses): array {
         $pipeline_inputs[] = json_decode($request['input'][0]['content'][0]['text'], true);
+        $pipeline_formats[] = $request['text']['format'];
         $payload = array_shift($pipeline_responses);
         return [
             'id' => 'pipeline-' . count($pipeline_inputs),
@@ -443,6 +462,13 @@ $pipeline_result = agent_run($pipeline_uuid, [
 ]);
 agent_test_assert($pipeline_result['status'] === 'completed', 'configured multi-phase agent completes');
 agent_test_assert(
+    ($pipeline_formats[0]['type'] ?? '') === 'json_schema'
+        && ($pipeline_formats[0]['strict'] ?? false) === true
+        && ($pipeline_formats[0]['schema']['properties']['technical']['enum'] ?? []) === ['normal']
+        && ($pipeline_formats[1]['type'] ?? '') === 'json_object',
+    'model phases use strict Structured Outputs when an output schema is configured'
+);
+agent_test_assert(
     $pipeline_inputs[1] === ['technical' => 'normal']
         && $pipeline_inputs[2] === ['intent' => ['present_state' => 'normal', 'judgment' => 'upgrade']],
     'each model phase sees only its configured projection'
@@ -452,6 +478,31 @@ agent_test_assert(
     'configured output phase publishes the selected artifact'
 );
 agent_test_assert(($pipeline_result['usage']['total_tokens'] ?? 0) === 45, 'usage accumulates across model phases');
+
+$rejected_uuid = agent_enqueue('rejecting-pipeline-agent', $now, ['trigger' => 'test']);
+$rejected_result = agent_run($rejected_uuid, [
+    'openai_request' => fn(array $_request): array => [
+        'id' => 'pipeline-rejected',
+        'status' => 'completed',
+        'usage' => ['input_tokens' => 10, 'output_tokens' => 5, 'total_tokens' => 15],
+        'output_text' => json_encode(['technical' => 'repairing', 'api_key' => 'sk-example123456789']),
+        'output' => [],
+    ],
+]);
+$validation_event = null;
+foreach ($test_data['.agent_events'] as $event) {
+    if (($event['run_uuid'] ?? '') === $rejected_uuid && ($event['type'] ?? '') === 'model_validation_failed') {
+        $validation_event = $event;
+        break;
+    }
+}
+agent_test_assert($rejected_result['status'] === 'failed', 'rejected model output fails the run');
+agent_test_assert(
+    ($validation_event['payload']['phase'] ?? '') === 'technical'
+        && str_contains((string)($validation_event['payload']['structured_output'] ?? ''), 'repairing')
+        && !str_contains((string)($validation_event['payload']['structured_output'] ?? ''), 'sk-example'),
+    'rejected structured output is recorded with sensitive values redacted'
+);
 
 $rerun = agent_run($run_uuid, ['openai_request' => $openai_request]);
 agent_test_assert($rerun['status'] === 'completed' && $openai_calls === 2, 'terminal rerun has no side effects');

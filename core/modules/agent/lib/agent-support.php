@@ -51,6 +51,14 @@ function agent_safe_error(string $error): string
     return substr((string)agent_redact($error), 0, 1000);
 }
 
+function agent_redacted_json(array $value): string
+{
+    return (string)agent_redact(json_encode(
+        agent_redact($value),
+        JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_PARTIAL_OUTPUT_ON_ERROR
+    ));
+}
+
 function agent_canonical_json(array $value): string
 {
     ksort($value);

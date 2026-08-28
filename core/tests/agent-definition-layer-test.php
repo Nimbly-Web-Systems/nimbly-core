@@ -110,6 +110,21 @@ try {
 }
 agent_layer_assert($invalid_pipeline_denied, 'pipeline phases cannot reference unavailable artifacts');
 
+$invalid_output_schema = $pipeline_definition;
+$invalid_output_schema['pipeline']['agent'][0]['output_schema'] = [
+    'type' => 'object',
+    'properties' => [],
+    'required' => [],
+    'additionalProperties' => true,
+];
+$invalid_output_schema_denied = false;
+try {
+    agent_validate_definition($invalid_output_schema);
+} catch (RuntimeException) {
+    $invalid_output_schema_denied = true;
+}
+agent_layer_assert($invalid_output_schema_denied, 'pipeline output schemas require a strict object contract');
+
 $scoped_definition = $definition;
 $scoped_definition['targets'] = [
     ['scope' => 'stage', 'identity' => 'stage.example', 'authority' => 'autonomous_remediation'],
