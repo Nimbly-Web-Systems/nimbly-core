@@ -97,15 +97,17 @@ function _build_resource_maps($fields)
 /**
  * Prepare record for frontend display:
  * - format the value (web safe, shortened, proper reference values)
- * - resolve select+resource UUIDs to their display name
+ * - resolve select values to their configured display labels
  */
 function _prep_record($record, $fields, $resource_maps = [])
 {
     $result = [];
     foreach ($fields as $k => $v) {
         $val = $record[$k] ?? '';
-        if (($v['type'] ?? '') === 'select' && !empty($v['resource'])) {
-            $map = $resource_maps[$v['resource']] ?? [];
+        if (($v['type'] ?? '') === 'select') {
+            $map = !empty($v['resource'])
+                ? ($resource_maps[$v['resource']] ?? [])
+                : ($v['options'] ?? []);
             if (is_array($val) && empty($v['i18n'])) {
                 $val = array_map(function($item) use ($map) {
                     if (is_string($item) && $item !== '') {
