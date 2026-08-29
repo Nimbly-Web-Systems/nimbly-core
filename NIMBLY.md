@@ -768,6 +768,30 @@ The project default OG image is set once in `ext/tpl/meta/index.tpl` without `ov
 - `[#img-url UUID-or-path-or-URL#]` — normalises any image reference to an absolute URL (useful outside meta, e.g. for JSON-LD)
 - `[#first-img-uuid var=record.main_text#]` — extracts the UUID of the first embedded image from an HTML field; returns `(empty)` when none is found
 
+### Importing resource records from DOCX
+
+Resource add forms can expose the Core **Import document** action. It accepts a
+`.docx`, extracts its paragraphs and hyperlinks, and sends the bounded document
+text to the configured OpenAI import endpoint to propose values for the
+resource's fields. Editors review the populated form before saving; importing
+does not create a record by itself.
+
+DOCX extraction requires PHP's ZIP extension because an Office Open XML
+document is a ZIP archive. Every CLI and web/FPM runtime that can execute the
+import or its tests must provide `ZipArchive`. Debian and Ubuntu installations
+normally install it with the version-matched `php-zip` package; the Nimbly dev
+and production Docker images include `php-zip` explicitly. Verify a manual
+server with:
+
+```bash
+php -r 'echo class_exists("ZipArchive") ? "available\n" : "missing\n";'
+php core/tests/docx-test.php
+```
+
+Do not infer web availability from CLI alone when CLI and PHP-FPM load separate
+configuration trees. Confirm the extension in both runtimes after installation
+and verify the document-import action through the web application.
+
 ### PDF documents
 
 Install the core PDF module dependency with `php core/cli/nimbly.php module:install pdf`.
