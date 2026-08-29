@@ -228,6 +228,16 @@ function infra_expert_execute_registered_action(array $arguments, array $depende
         $dependencies
     );
     $decoded = json_decode((string)($result['stdout'] ?? ''), true);
+    if (is_array($decoded) && ($decoded['status'] ?? '') === 'blocked') {
+        return [
+            'server' => $server,
+            'status' => 'blocked',
+            'reason' => substr((string)($decoded['reason'] ?? 'Registered action preflight blocked execution'), 0, 1000),
+            'retryable' => false,
+            'action_digest' => (string)$authorization['action_digest'],
+            'observed_at' => (int)($decoded['observed_at'] ?? time()),
+        ];
+    }
     if (!is_array($decoded) || !isset($decoded['status'], $decoded['transaction_id'], $decoded['started_at'])) {
         throw new RuntimeException('Registered action gateway returned invalid evidence');
     }

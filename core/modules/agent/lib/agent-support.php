@@ -91,6 +91,8 @@ function agent_ensure_resources(): void
         '.agent_events' => 'agent-events.json',
         '.agent_approvals' => 'agent-approvals.json',
         '.agent_state' => 'agent-state.json',
+        '.agent_steps' => 'agent-steps.json',
+        '.agent_actions' => 'agent-actions.json',
     ];
     foreach ($resources as $resource => $definition) {
         if (!data_exists($resource, '.meta')) {

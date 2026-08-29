@@ -19,9 +19,18 @@ file_put_contents($fixture . '/core/agents/example/agent.json', json_encode([
             'execute' => 'example_inspect',
         ],
     ],
-    'prepare_input' => 'example_prepare',
-    'validate_result' => 'example_validate',
-    'deliver' => 'example_deliver',
+    'pipeline' => [
+        'version' => 2,
+        'input' => [['id' => 'source', 'type' => 'resource_snapshot']],
+        'agent' => [['id' => 'reason', 'type' => 'model', 'instructions' => 'instructions.md']],
+        'output' => [
+            ['id' => 'result', 'type' => 'evidence_guard', 'from' => 'reason'],
+            ['id' => 'report', 'type' => 'render_report', 'from' => 'result'],
+            ['id' => 'delivery', 'type' => 'deliver', 'from' => 'report'],
+        ],
+        'result_from' => 'result',
+        'delivery_from' => 'delivery',
+    ],
 ], JSON_PRETTY_PRINT));
 file_put_contents($fixture . '/ext/agents/example/agent.json', json_encode([
     'name' => 'Ext Example',
@@ -82,18 +91,21 @@ agent_layer_assert(
 $pipeline_definition = [
     'tools' => [],
     'pipeline' => [
+        'version' => 2,
         'input' => [[
-            'id' => 'source', 'type' => 'callback', 'handler' => 'example_prepare',
+            'id' => 'source', 'type' => 'resource_snapshot',
         ]],
         'agent' => [[
             'id' => 'reason', 'type' => 'model', 'instructions' => __FILE__,
-            'validator' => 'example_validate',
         ]],
         'output' => [[
-            'id' => 'delivery', 'type' => 'callback', 'input_from' => 'reason',
-            'handler' => 'example_deliver',
+            'id' => 'result', 'type' => 'evidence_guard', 'from' => 'reason',
+        ], [
+            'id' => 'report', 'type' => 'render_report', 'from' => 'result',
+        ], [
+            'id' => 'delivery', 'type' => 'deliver', 'from' => 'report',
         ]],
-        'result_from' => 'reason',
+        'result_from' => 'result',
         'delivery_from' => 'delivery',
     ],
 ];
@@ -101,7 +113,7 @@ agent_validate_definition($pipeline_definition);
 agent_layer_assert(true, 'pipeline definitions accept agents without tools');
 
 $invalid_pipeline = $pipeline_definition;
-$invalid_pipeline['pipeline']['agent'][0]['input_from'] = 'future_phase';
+$invalid_pipeline['pipeline']['agent'][0]['from'] = 'future_phase';
 $invalid_pipeline_denied = false;
 try {
     agent_validate_definition($invalid_pipeline);

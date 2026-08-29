@@ -75,8 +75,33 @@ function action_gateway_run(array $envelope, array $environment, ?callable $runn
     if (preg_match('/^[a-f0-9]{64}$/', $digest) !== 1) {
         throw new RuntimeException('Action digest is invalid');
     }
-    action_gateway_consume_authorization($digest, $environment, $now);
     $runner = $runner ?? 'action_gateway_run_process';
+    $existing = action_gateway_transaction_by_digest($digest, $environment);
+    if (is_array($existing)) {
+        return action_gateway_public_transaction($existing);
+    }
+    try {
+        if ($action === 'install_patch_updates') {
+            if (!action_gateway_in_maintenance_window($environment, $now)) {
+                throw new RuntimeException('Patch maintenance is outside the approved window');
+            }
+            action_gateway_assert_maintenance_ready($environment, $runner);
+            $audit = action_gateway_host_audit($runner);
+            if ((int)($audit['checks']['system']['platform']['security_updates'] ?? 0) < 1) {
+                throw new RuntimeException('No current security update finding permits patch maintenance');
+            }
+            $environment['_preflight_audit'] = $audit;
+        }
+    } catch (Throwable $error) {
+        return [
+            'status' => 'blocked',
+            'action_digest' => $digest,
+            'reason' => substr($error->getMessage(), 0, 1000),
+            'retryable' => false,
+            'observed_at' => $now,
+        ];
+    }
+    action_gateway_consume_authorization($digest, $environment, $now);
     return ($definition['callback'])($arguments, $environment, $runner, $now, $digest);
 }
 
@@ -170,11 +195,7 @@ function action_gateway_install_patch_updates(
     int $now,
     string $digest
 ): array {
-    if (!action_gateway_in_maintenance_window($environment, $now)) {
-        throw new RuntimeException('Patch maintenance is outside the approved window');
-    }
-    action_gateway_assert_maintenance_ready($environment, $runner);
-    $audit = action_gateway_host_audit($runner);
+    $audit = $environment['_preflight_audit'] ?? action_gateway_host_audit($runner);
     $security_updates = (int)($audit['checks']['system']['platform']['security_updates'] ?? 0);
     if ($security_updates < 1) {
         throw new RuntimeException('No current security update finding permits patch maintenance');
@@ -248,6 +269,17 @@ function action_gateway_install_patch_updates(
         action_gateway_write_transaction($transaction, $environment);
         throw $error;
     }
+}
+
+function action_gateway_transaction_by_digest(string $digest, array $environment): ?array
+{
+    $state_dir = (string)($environment['NIMBLY_AGENT_MAINTENANCE_DIR'] ?? ACTION_GATEWAY_DEFAULT_STATE_DIR);
+    $path = $state_dir . '/' . substr($digest, 0, 16) . '.json';
+    if (!is_file($path)) {
+        return null;
+    }
+    $transaction = json_decode((string)file_get_contents($path), true);
+    return is_array($transaction) ? $transaction : null;
 }
 
 function action_gateway_resume(array $environment, ?callable $runner = null, ?int $now = null): array

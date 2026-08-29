@@ -100,23 +100,21 @@ action_test_assert(in_array([
     '--with-new-pkgs', 'upgrade',
 ], $commands, true), 'all patch updates use fixed no-removal argv');
 
-$replay_denied = false;
-try {
-    action_gateway_run($envelope, $environment, fn() => [], $now);
-} catch (RuntimeException) {
-    $replay_denied = true;
-}
-action_test_assert($replay_denied, 'consumed envelope cannot be replayed');
+$replayed = action_gateway_run($envelope, $environment, fn() => [], $now);
+action_test_assert(
+    ($replayed['status'] ?? '') === 'completed'
+        && ($replayed['transaction_id'] ?? '') === ($result['transaction_id'] ?? ''),
+    'registered action replay returns the durable transaction'
+);
 
 $outside_now = (new DateTimeImmutable('2026-08-27 12:00:00', new DateTimeZone('America/Sao_Paulo')))->getTimestamp();
 $outside = action_test_envelope($environment, hash('sha256', 'action-2'), $outside_now);
-$outside_denied = false;
-try {
-    action_gateway_run($outside, $environment, fn() => [], $outside_now);
-} catch (RuntimeException) {
-    $outside_denied = true;
-}
-action_test_assert($outside_denied, 'root gateway independently enforces the maintenance window');
+$outside_result = action_gateway_run($outside, $environment, fn() => [], $outside_now);
+action_test_assert(
+    ($outside_result['status'] ?? '') === 'blocked'
+        && ($outside_result['retryable'] ?? true) === false,
+    'root gateway returns a structured maintenance-window block'
+);
 action_test_assert(
     action_gateway_in_maintenance_window($environment, $now)
         && action_gateway_in_maintenance_window($environment, $now + 2 * 3600)
