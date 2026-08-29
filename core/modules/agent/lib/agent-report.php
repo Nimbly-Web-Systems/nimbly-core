@@ -71,6 +71,16 @@ function agent_report_prepare_input(array $_run, array $dependencies): array
         if (is_array($report)) {
             $source_uuids[] = $report_uuid;
         }
+        $current_findings = agent_report_project_findings(
+            (array)agent_report_value($report, (string)($source['findings_path'] ?? 'audit.findings'), []),
+            (array)($source['finding_fields'] ?? ['id', 'severity', 'scope', 'evidence'])
+        );
+        $history = agent_report_history(
+            $reports,
+            (string)$target['identity'],
+            $source,
+            (int)($source['history_limit'] ?? 7)
+        );
         $prepared[] = [
             (string)($config['scope_output_field'] ?? 'scope') => (string)$target['scope'],
             (string)($config['identity_output_field'] ?? 'identity') => (string)$target['identity'],
@@ -78,16 +88,8 @@ function agent_report_prepare_input(array $_run, array $dependencies): array
             'review_status' => $review_status,
             'generated_at' => (int)($report[$source['generated_at_field'] ?? 'generated_at'] ?? 0),
             'overall' => (string)($report[$source['overall_field'] ?? 'overall'] ?? 'unknown'),
-            'findings' => agent_report_project_findings(
-                (array)agent_report_value($report, (string)($source['findings_path'] ?? 'audit.findings'), []),
-                (array)($source['finding_fields'] ?? ['id', 'severity', 'scope', 'evidence'])
-            ),
-            'recent_reports' => agent_report_history(
-                $reports,
-                (string)$target['identity'],
-                $source,
-                (int)($source['history_limit'] ?? 7)
-            ),
+            'findings' => agent_report_classify_findings($current_findings, $history),
+            'recent_reports' => $history,
         ];
     }
     $payload = [
@@ -108,6 +110,41 @@ function agent_report_prepare_input(array $_run, array $dependencies): array
             ]],
         ]],
     ];
+}
+
+function agent_report_classify_findings(array $current, array $history): array
+{
+    $prior = [];
+    foreach (array_slice($history, 1) as $report) {
+        foreach ((array)($report['findings'] ?? []) as $finding) {
+            if (!empty($finding['id'])) {
+                $prior[(string)$finding['id']] = $finding;
+            }
+        }
+    }
+    $current_ids = [];
+    foreach ($current as &$finding) {
+        $id = (string)($finding['id'] ?? '');
+        $current_ids[$id] = true;
+        $finding['classification'] = isset($prior[$id]) ? 'recurring' : 'new';
+        if (isset($prior[$id]) && agent_report_severity_rank((string)($finding['severity'] ?? ''))
+            > agent_report_severity_rank((string)($prior[$id]['severity'] ?? ''))) {
+            $finding['classification'] = 'worsening';
+        }
+    }
+    unset($finding);
+    foreach ($prior as $id => $finding) {
+        if (!isset($current_ids[$id])) {
+            $finding['classification'] = 'recovered';
+            $current[] = $finding;
+        }
+    }
+    return $current;
+}
+
+function agent_report_severity_rank(string $severity): int
+{
+    return ['notice' => 0, 'warning' => 1, 'critical' => 2][$severity] ?? 0;
 }
 
 function agent_report_find_scope(array $scopes, array $target, array $source): array

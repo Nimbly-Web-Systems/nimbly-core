@@ -83,10 +83,7 @@ function agent_definition(string $agent_id): array
     if (!empty($definition['abstract'])) {
         throw new RuntimeException('Agent definition requires an ext configuration: ' . $agent_id);
     }
-    $required = ['version'];
-    if (empty($definition['pipeline'])) {
-        $required = array_merge($required, ['instructions', 'prepare_input', 'validate_result', 'deliver']);
-    }
+    $required = ['version', 'pipeline'];
     foreach ($required as $key) {
         if (empty($definition[$key])) {
             throw new RuntimeException('Agent definition is missing ' . $key);
@@ -206,15 +203,10 @@ function agent_validate_definition(array $definition): void
     if (isset($definition['output_schema'])) {
         agent_validate_output_schema($definition['output_schema'], (string)($definition['id'] ?? 'agent'));
     }
-    if (empty($definition['pipeline'])) {
-        foreach (['prepare_input', 'validate_result', 'deliver'] as $callback) {
-            if (!is_callable($definition[$callback] ?? null)) {
-                throw new RuntimeException('Agent definition callback is invalid: ' . $callback);
-            }
-        }
-    } else {
-        agent_validate_pipeline_definition((array)$definition['pipeline']);
+    if (empty($definition['pipeline']) || (int)($definition['pipeline']['version'] ?? 0) !== 2) {
+        throw new RuntimeException('Legacy agent pipelines are unsupported; migrate to pipeline.version 2');
     }
+    agent_validate_pipeline_definition((array)$definition['pipeline']);
     $identities = [];
     foreach ((array)($definition['targets'] ?? []) as $target) {
         if (!is_array($target)
@@ -251,6 +243,14 @@ function agent_validate_definition(array $definition): void
 
 function agent_validate_pipeline_definition(array $pipeline): void
 {
+    if ((int)($pipeline['version'] ?? 0) !== 2) {
+        throw new RuntimeException('Agent pipeline version must be 2');
+    }
+    $types = [
+        'input' => ['resource_snapshot', 'connector_collect'],
+        'agent' => ['model'],
+        'output' => ['evidence_guard', 'render_report', 'deliver'],
+    ];
     foreach (['input', 'agent', 'output'] as $group) {
         if (!isset($pipeline[$group]) || !is_array($pipeline[$group]) || $pipeline[$group] === []) {
             throw new RuntimeException('Agent pipeline group is invalid: ' . $group);
@@ -264,20 +264,20 @@ function agent_validate_pipeline_definition(array $pipeline): void
                 || isset($known[$phase['id']])) {
                 throw new RuntimeException('Agent pipeline phase identity is invalid');
             }
-            $type = (string)($phase['type'] ?? 'callback');
-            if ($group === 'agent' && $type === 'model') {
+            $type = (string)($phase['type'] ?? '');
+            if (!in_array($type, $types[$group], true)) {
+                throw new RuntimeException('Agent pipeline step type is invalid: ' . $phase['id']);
+            }
+            if ($type === 'model') {
                 if (!is_file((string)($phase['instructions'] ?? ''))
-                    || (!empty($phase['projector']) && !is_callable($phase['projector']))
-                    || (!empty($phase['validator']) && !is_callable($phase['validator']))) {
+                ) {
                     throw new RuntimeException('Agent model phase is invalid: ' . $phase['id']);
                 }
                 if (isset($phase['output_schema'])) {
                     agent_validate_output_schema($phase['output_schema'], (string)$phase['id']);
                 }
-            } elseif ($type !== 'callback' || !is_callable($phase['handler'] ?? null)) {
-                throw new RuntimeException('Agent callback phase is invalid: ' . $phase['id']);
             }
-            $input_from = (string)($phase['input_from'] ?? '');
+            $input_from = (string)($phase['from'] ?? '');
             if ($input_from !== '' && !isset($known[$input_from])) {
                 throw new RuntimeException('Agent pipeline input reference is invalid: ' . $phase['id']);
             }

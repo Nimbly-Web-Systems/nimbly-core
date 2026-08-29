@@ -1,0 +1,15 @@
+{
+  "fields": {
+    "lineage_key": {"name": "Lineage", "type": "text", "required": true},
+    "tool": {"name": "Tool", "type": "text", "required": true},
+    "target": {"name": "Target", "type": "text", "required": true},
+    "arguments_digest": {"name": "Arguments digest", "type": "text", "required": true},
+    "status": {"name": "Status", "type": "text", "required": true},
+    "attempts": {"name": "Attempts", "type": "number"},
+    "result": {"name": "Result", "type": "text", "admin_col": false},
+    "reason": {"name": "Reason", "type": "text", "admin_col": false},
+    "updated_at": {"name": "Updated at", "type": "number"}
+  },
+  "index": ["lineage_key", "status"],
+  "sort": {"field": "updated_at", "flags": "numeric", "order": "desc"}
+}

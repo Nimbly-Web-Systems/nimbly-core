@@ -90,23 +90,18 @@ function agent_run(string $run_uuid, array $dependencies = []): array
             'run_uuid' => $run_uuid,
             'run' => $run,
         ]);
-        if (!empty($definition['pipeline'])) {
+        if (empty($definition['pipeline'])) {
+            $prepared = ($definition['prepare_input'])($run, $agent_dependencies);
+            $prepared = agent_append_event_context_input($prepared, $run);
+            agent_update_run($run_uuid, ['source_report_uuids' => $prepared['source_report_uuids'] ?? []]);
+            $validated = ($definition['validate_result'])(
+                agent_reason($run_uuid, $definition, $prepared['input'], $agent_dependencies)
+            );
+            $delivery = ($definition['deliver'])($validated, $run_uuid, $agent_dependencies);
+        } else {
             $execution = agent_execute_pipeline($run_uuid, $definition, $run, $agent_dependencies);
             $validated = $execution['result'];
             $delivery = $execution['delivery'];
-        } else {
-            $prepared = ($definition['prepare_input'])($run, $agent_dependencies);
-            if (!is_array($prepared) || !isset($prepared['input'])) {
-                throw new RuntimeException('Agent input preparation failed');
-            }
-            $prepared = agent_append_event_context_input($prepared, $run);
-            agent_update_run($run_uuid, ['source_report_uuids' => $prepared['source_report_uuids'] ?? []]);
-            $result = agent_reason($run_uuid, $definition, $prepared['input'], $agent_dependencies);
-            $validated = ($definition['validate_result'])($result, $run_uuid, $agent_dependencies);
-            if (!is_array($validated)) {
-                throw new RuntimeException('Agent result validation failed');
-            }
-            $delivery = ($definition['deliver'])($validated, $run_uuid, $agent_dependencies);
         }
         if (!is_array($delivery) || empty($delivery['success'])) {
             throw new RuntimeException($delivery['error'] ?? 'Agent report delivery failed');
@@ -118,6 +113,7 @@ function agent_run(string $run_uuid, array $dependencies = []): array
             'lease_expires_at' => 0,
             'structured_result' => $validated,
             'email_delivery' => $delivery['environments'] ?? [],
+            'failure_reason' => '',
         ]);
     } catch (Throwable $error) {
         $current = data_read('.agent_runs', $run_uuid);
@@ -167,89 +163,10 @@ function agent_execute_pipeline(
     $pipeline = (array)$definition['pipeline'];
     $artifacts = [];
     $previous = $run;
-    foreach ($pipeline['input'] as $phase) {
+    foreach (array_merge($pipeline['input'], $pipeline['agent'], $pipeline['output']) as $phase) {
         $source = agent_pipeline_source($phase, $artifacts, $previous);
-        $phase_dependencies = array_merge($dependencies, [
-            'pipeline_artifacts' => $artifacts,
-            'pipeline_phase' => $phase,
-        ]);
-        $artifact = ($phase['handler'])($source, $phase_dependencies);
-        if (!is_array($artifact)) {
-            throw new RuntimeException('Agent input phase failed: ' . $phase['id']);
-        }
-        $artifacts[$phase['id']] = $artifact;
-        $previous = $artifact;
-    }
-    $previous = agent_append_event_context_input($previous, $run);
-    $input_phases = $pipeline['input'];
-    $last_input_phase = end($input_phases);
-    $last_input_id = (string)$last_input_phase['id'];
-    $artifacts[$last_input_id] = $previous;
-    agent_update_run($run_uuid, ['source_report_uuids' => $previous['source_report_uuids'] ?? []]);
-
-    foreach ($pipeline['agent'] as $phase) {
-        $source = agent_pipeline_source($phase, $artifacts, $previous);
-        $phase_dependencies = array_merge($dependencies, [
-            'pipeline_artifacts' => $artifacts,
-            'pipeline_phase' => $phase,
-        ]);
-        if (($phase['type'] ?? 'callback') === 'callback') {
-            $artifact = ($phase['handler'])($source, $phase_dependencies);
-            if (!is_array($artifact)) {
-                throw new RuntimeException('Agent callback phase failed: ' . $phase['id']);
-            }
-            $artifacts[$phase['id']] = $artifact;
-            $previous = $artifact;
-            continue;
-        }
-        if (!empty($phase['projector'])) {
-            $source = ($phase['projector'])($source, $phase_dependencies);
-        }
-        if (!is_array($source)) {
-            throw new RuntimeException('Agent model phase input is invalid: ' . $phase['id']);
-        }
-        $input = isset($source['input']) && is_array($source['input'])
-            ? $source['input']
-            : [[
-                'role' => 'user',
-                'content' => [[
-                    'type' => 'input_text',
-                    'text' => json_encode($source, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR),
-                ]],
-            ]];
-        $phase_definition = agent_pipeline_model_definition($definition, $phase);
-        $artifact = agent_reason($run_uuid, $phase_definition, $input, $phase_dependencies);
-        if (!empty($phase['validator'])) {
-            $phase_dependencies['pipeline_artifacts'] = $artifacts;
-            try {
-                $artifact = ($phase['validator'])($artifact, $phase_dependencies);
-            } catch (Throwable $error) {
-                agent_append_event($run_uuid, 'model_validation_failed', [
-                    'phase' => (string)$phase['id'],
-                    'error' => agent_safe_error($error->getMessage()),
-                    'structured_output' => agent_redacted_json($artifact),
-                ]);
-                throw $error;
-            }
-        }
-        if (!is_array($artifact)) {
-            throw new RuntimeException('Agent model phase failed: ' . $phase['id']);
-        }
-        $artifacts[$phase['id']] = $artifact;
-        $previous = $artifact;
-    }
-
-    foreach ($pipeline['output'] as $phase) {
-        $source = agent_pipeline_source($phase, $artifacts, $previous);
-        $phase_dependencies = array_merge($dependencies, [
-            'pipeline_artifacts' => $artifacts,
-            'pipeline_phase' => $phase,
-        ]);
-        $artifact = ($phase['handler'])($source, $run_uuid, $phase_dependencies);
-        if (!is_array($artifact)) {
-            throw new RuntimeException('Agent output phase failed: ' . $phase['id']);
-        }
-        $artifacts[$phase['id']] = $artifact;
+        $artifact = agent_execute_durable_step($run_uuid, $definition, $run, $phase, $source, $artifacts, $dependencies);
+        $artifacts[(string)$phase['id']] = $artifact;
         $previous = $artifact;
     }
     return [
@@ -261,7 +178,7 @@ function agent_execute_pipeline(
 
 function agent_pipeline_source(array $phase, array $artifacts, array $previous): array
 {
-    $input_from = (string)($phase['input_from'] ?? '');
+    $input_from = (string)($phase['from'] ?? $phase['input_from'] ?? '');
     if ($input_from === '') {
         return $previous;
     }
@@ -269,6 +186,226 @@ function agent_pipeline_source(array $phase, array $artifacts, array $previous):
         throw new RuntimeException('Agent pipeline artifact is unavailable: ' . $input_from);
     }
     return $artifacts[$input_from];
+}
+
+function agent_execute_durable_step(
+    string $run_uuid,
+    array $definition,
+    array $run,
+    array $phase,
+    array $source,
+    array $artifacts,
+    array $dependencies
+): array {
+    $step_id = (string)$phase['id'];
+    $uuid = substr(hash('sha256', $run_uuid . ':' . $step_id), 0, 16);
+    $stored = data_read('.agent_steps', $uuid);
+    if (is_array($stored) && ($stored['status'] ?? '') === 'completed' && is_array($stored['artifact'] ?? null)) {
+        return $stored['artifact'];
+    }
+    $attempts = (int)($stored['attempts'] ?? 0) + 1;
+    $record = [
+        'run_uuid' => $run_uuid,
+        'step_id' => $step_id,
+        'step_type' => (string)$phase['type'],
+        'status' => 'running',
+        'attempts' => $attempts,
+        'input_digest' => hash('sha256', agent_canonical_json($source)),
+        'output_digest' => '',
+        'artifact' => [],
+        'started_at' => time(),
+        'completed_at' => 0,
+        'retryable' => false,
+        'error' => [],
+    ];
+    if (is_array($stored)) {
+        data_update('.agent_steps', $uuid, $record);
+    } else {
+        data_create('.agent_steps', $uuid, $record);
+    }
+    $step_dependencies = array_merge($dependencies, [
+        'pipeline_artifacts' => $artifacts,
+        'pipeline_phase' => $phase,
+    ]);
+    try {
+        $artifact = agent_execute_step_type($run_uuid, $definition, $run, $phase, $source, $step_dependencies);
+        if (!is_array($artifact)) {
+            throw new RuntimeException('Agent step returned an invalid artifact');
+        }
+        $bounded = agent_bounded_artifact($artifact);
+        data_update('.agent_steps', $uuid, [
+            'status' => 'completed',
+            'artifact' => $bounded,
+            'output_digest' => hash('sha256', agent_canonical_json($bounded)),
+            'completed_at' => time(),
+            'retryable' => false,
+            'error' => [],
+        ]);
+        agent_append_event($run_uuid, 'step_completed', ['step' => $step_id, 'attempt' => $attempts]);
+        return $bounded;
+    } catch (Throwable $error) {
+        $retryable = agent_error_retryable($error);
+        data_update('.agent_steps', $uuid, [
+            'status' => 'failed',
+            'retryable' => $retryable,
+            'error' => ['code' => get_class($error), 'message' => agent_safe_error($error->getMessage())],
+            'completed_at' => time(),
+        ]);
+        agent_append_event($run_uuid, 'step_failed', [
+            'step' => $step_id,
+            'phase' => (string)$phase['type'],
+            'retryable' => $retryable,
+            'cause' => agent_safe_error($error->getMessage()),
+        ]);
+        throw $error;
+    }
+}
+
+function agent_execute_step_type(
+    string $run_uuid,
+    array $definition,
+    array $run,
+    array $phase,
+    array $source,
+    array $dependencies
+): array {
+    $type = (string)$phase['type'];
+    if ($type === 'callback') {
+        $handler = $phase['handler'] ?? null;
+        if (!is_callable($handler)) {
+            throw new RuntimeException('Agent callback step is unavailable');
+        }
+        return in_array($phase['id'], ['result', 'delivery'], true)
+            ? $handler($source, $run_uuid, $dependencies)
+            : $handler($source, $dependencies);
+    }
+    if ($type === 'resource_snapshot') {
+        $artifact = agent_report_prepare_input($run, $dependencies);
+        $artifact = agent_append_event_context_input($artifact, $run);
+        agent_update_run($run_uuid, ['source_report_uuids' => $artifact['source_report_uuids'] ?? []]);
+        return $artifact;
+    }
+    if ($type === 'connector_collect') {
+        $tool_name = (string)($phase['config']['tool'] ?? '');
+        if ($tool_name === '' || !isset($definition['tools'][$tool_name])) {
+            throw new RuntimeException('Agent collection connector is not configured');
+        }
+        $observations = [];
+        foreach ((array)($definition['targets'] ?? []) as $target) {
+            $identity = (string)($target['identity'] ?? '');
+            try {
+                $observations[] = agent_execute_tool($run_uuid, $definition['tools'], [
+                    'call_id' => 'collect-' . (string)$phase['id'] . '-' . $identity,
+                    'name' => $tool_name,
+                    'arguments' => json_encode(['server' => $identity], JSON_THROW_ON_ERROR),
+                ], $dependencies);
+            } catch (Throwable $error) {
+                $observations[] = [
+                    'server' => $identity,
+                    'status' => 'unreachable',
+                    'complete' => false,
+                    'reason' => agent_safe_error($error->getMessage()),
+                    'observed_at' => time(),
+                ];
+            }
+        }
+        $payload = ['canonical' => $source, 'current_observations' => $observations];
+        return [
+            'source_report_uuids' => $source['source_report_uuids'] ?? [],
+            'input' => [[
+                'role' => 'user',
+                'content' => [[
+                    'type' => 'input_text',
+                    'text' => json_encode($payload, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR),
+                ]],
+            ]],
+        ];
+    }
+    if ($type === 'model') {
+        if (!empty($phase['projector'])) {
+            $source = ($phase['projector'])($source, $dependencies);
+        }
+        $input = isset($source['input']) ? $source['input'] : [[
+            'role' => 'user',
+            'content' => [['type' => 'input_text', 'text' => json_encode($source, JSON_THROW_ON_ERROR)]],
+        ]];
+        $artifact = agent_reason($run_uuid, agent_pipeline_model_definition($definition, $phase), $input, $dependencies);
+        if (!empty($phase['validator'])) {
+            try {
+                $artifact = ($phase['validator'])($artifact, $dependencies);
+            } catch (Throwable $error) {
+                agent_append_event($run_uuid, 'model_validation_failed', [
+                    'phase' => (string)$phase['id'],
+                    'error' => agent_safe_error($error->getMessage()),
+                    'structured_output' => agent_redacted_json($artifact),
+                ]);
+                throw $error;
+            }
+        }
+        return $artifact;
+    }
+    if ($type === 'evidence_guard') {
+        return agent_evidence_guard($source, $dependencies);
+    }
+    if ($type === 'render_report') {
+        return agent_render_single_report($source, $definition);
+    }
+    if ($type === 'deliver') {
+        return agent_connector_deliver_email($source, $run_uuid, $dependencies);
+    }
+    throw new RuntimeException('Unsupported agent step type: ' . $type);
+}
+
+function agent_bounded_artifact(array $artifact): array
+{
+    $json = json_encode(agent_redact($artifact), JSON_UNESCAPED_SLASHES | JSON_PARTIAL_OUTPUT_ON_ERROR);
+    if (!is_string($json) || strlen($json) > 262144) {
+        throw new RuntimeException('Agent step artifact exceeds the 256 KiB limit');
+    }
+    return $artifact;
+}
+
+function agent_error_retryable(Throwable $error): bool
+{
+    return $error instanceof AgentTransientException;
+}
+
+class AgentTransientException extends RuntimeException
+{
+}
+
+function agent_evidence_guard(array $result, array $dependencies): array
+{
+    $targets = array_column((array)agent_config($dependencies, 'targets', []), 'identity');
+    foreach ((array)($result['targets'] ?? []) as $target) {
+        if (!is_array($target) || !in_array((string)($target['identity'] ?? ''), $targets, true)) {
+            throw new RuntimeException('Agent result references an unconfigured target');
+        }
+        foreach ((array)($target['actions_completed'] ?? []) as $action) {
+            if (empty($action['evidence_refs'])) {
+                throw new RuntimeException('Completed action claim has no evidence reference');
+            }
+        }
+    }
+    return $result;
+}
+
+function agent_render_single_report(array $result, array $definition): array
+{
+    $subject = substr((string)($result['subject'] ?? ($definition['name'] . ' infrastructure briefing')), 0, 160);
+    $sections = [];
+    foreach (['overall_state', 'completed_work', 'blocked_work', 'production_recommendations', 'colleague_requests'] as $key) {
+        $value = $result[$key] ?? [];
+        $text = is_array($value) ? implode("\n", array_map('strval', $value)) : (string)$value;
+        $sections[] = '<h2>' . htmlspecialchars(ucwords(str_replace('_', ' ', $key))) . '</h2><p>'
+            . nl2br(htmlspecialchars($text)) . '</p>';
+    }
+    return ['briefings' => [[
+        'id' => 'employee-briefing',
+        'subject' => $subject,
+        'html' => implode('', $sections),
+        'result' => $result,
+    ]]];
 }
 
 function agent_pipeline_model_definition(array $definition, array $phase): array
@@ -343,50 +480,21 @@ function agent_retry(string $failed_run_uuid): string
     if (!is_array($failed) || ($failed['status'] ?? '') !== 'failed') {
         throw new RuntimeException('Only a failed agent run can be retried');
     }
-    $agent_id = (string)$failed['agent_id'];
-    $definition = agent_definition($agent_id);
-    $retry_number = 1;
-    foreach (data_read('.agent_runs') ?: [] as $run) {
-        if (($run['retry_of'] ?? '') === $failed_run_uuid) {
-            $retry_number = max($retry_number, (int)($run['retry_number'] ?? 0) + 1);
-        }
-    }
-    $retry_uuid = substr(hash('sha256', $failed_run_uuid . ':retry:' . $retry_number), 0, 16);
-    if (!data_exists('.agent_runs', $retry_uuid)) {
-        $instructions = agent_instructions($definition);
-        $run = [
-            'agent_id' => $agent_id,
-            'agent_version' => (string)$definition['version'],
-            'instructions_sha256' => hash('sha256', $instructions),
-            'trigger' => 'scheduled_retry',
-            'scheduled_at' => time(),
-            'scheduled_occurrence' => (string)$failed['scheduled_occurrence'],
-            'timezone' => (string)$failed['timezone'],
-            'status' => 'scheduled',
-            'idempotency_key' => (string)$failed['idempotency_key'] . ':retry:' . $retry_number,
-            'retry_of' => $failed_run_uuid,
-            'retry_number' => $retry_number,
-            'source_report_uuids' => [],
-            'usage' => agent_empty_usage(),
-            'estimated_cost_usd' => 0.0,
-            'email_delivery' => [],
-            'failure_reason' => '',
-            'lease_expires_at' => 0,
-            'target' => (string)($failed['target'] ?? ''),
-            'read_only' => !empty($failed['read_only']),
-            'event_context' => agent_event_context($failed['event_context'] ?? []),
-        ];
-        if (!data_create('.agent_runs', $retry_uuid, $run)) {
-            throw new RuntimeException('Could not create agent retry');
-        }
-        agent_append_event($retry_uuid, 'run_scheduled', ['occurrence' => $run['scheduled_occurrence'], 'retry_of' => $failed_run_uuid]);
-    }
+    $retry_number = (int)($failed['retry_number'] ?? 0) + 1;
+    data_update('.agent_runs', $failed_run_uuid, [
+        'status' => 'scheduled',
+        'retry_number' => $retry_number,
+        'completed_at' => 0,
+        'lease_expires_at' => 0,
+        'failure_reason' => '',
+    ]);
+    agent_append_event($failed_run_uuid, 'run_retry_scheduled', ['retry_number' => $retry_number]);
     load_library('job');
-    job_enqueue('agent-run', ['run_uuid' => $retry_uuid], [
-        'uuid' => substr(hash('sha256', 'agent-job:' . $retry_uuid), 0, 16),
+    job_enqueue('agent-run', ['run_uuid' => $failed_run_uuid], [
+        'uuid' => substr(hash('sha256', 'agent-job:' . $failed_run_uuid . ':retry:' . $retry_number), 0, 16),
         'max_attempts' => 3,
     ]);
-    return $retry_uuid;
+    return $failed_run_uuid;
 }
 
 function agent_reason(string $run_uuid, array $definition, array $initial_input, array $dependencies): array

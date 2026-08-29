@@ -274,9 +274,9 @@ $test_data['.agent_runs'][$failed_uuid] = [
     'idempotency_key' => 'test-agent:2026-08-10',
 ];
 $retry_uuid = agent_retry($failed_uuid);
-agent_test_assert(($test_data['.agent_runs'][$retry_uuid]['retry_of'] ?? '') === $failed_uuid, 'failed scheduled run creates an auditable retry');
-agent_test_assert(($test_data['.agent_runs'][$retry_uuid]['trigger'] ?? '') === 'scheduled_retry', 'retry retains scheduled watchdog authority');
-agent_test_assert(agent_run_triggers($retry_uuid) === ['scheduled_retry', 'scheduled'], 'retry preserves its originating trigger authority');
+agent_test_assert($retry_uuid === $failed_uuid, 'failed scheduled run resumes the same durable lineage');
+agent_test_assert(($test_data['.agent_runs'][$retry_uuid]['retry_number'] ?? 0) === 1, 'retry attempt remains auditable');
+agent_test_assert(agent_run_triggers($retry_uuid) === ['scheduled'], 'retry preserves its originating trigger authority');
 $test_data['.agent_runs'][$retry_uuid]['status'] = 'completed';
 agent_test_assert(agent_watchdog_status('test-agent', $now)['state'] === 'completed', 'successful retry restores the same occurrence watchdog');
 

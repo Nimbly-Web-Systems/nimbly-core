@@ -1,0 +1,18 @@
+{
+  "fields": {
+    "run_uuid": {"name": "Run", "type": "text", "required": true},
+    "step_id": {"name": "Step", "type": "text", "required": true},
+    "step_type": {"name": "Type", "type": "text", "required": true},
+    "status": {"name": "Status", "type": "text", "required": true},
+    "attempts": {"name": "Attempts", "type": "number"},
+    "input_digest": {"name": "Input digest", "type": "text", "admin_col": false},
+    "output_digest": {"name": "Output digest", "type": "text", "admin_col": false},
+    "artifact": {"name": "Artifact", "type": "text", "admin_col": false},
+    "started_at": {"name": "Started at", "type": "number"},
+    "completed_at": {"name": "Completed at", "type": "number"},
+    "retryable": {"name": "Retryable", "type": "boolean"},
+    "error": {"name": "Error", "type": "text", "admin_col": false}
+  },
+  "index": ["run_uuid", "status"],
+  "sort": {"field": "started_at", "flags": "numeric", "order": "asc"}
+}

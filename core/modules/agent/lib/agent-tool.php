@@ -16,7 +16,7 @@ function agent_execute_tool(string $run_uuid, array $tools, array $call, array $
         throw new RuntimeException('Agent tool risk class is invalid');
     }
     agent_validate_arguments($arguments, $tool['parameters'] ?? []);
-    $tool_key = hash('sha256', $run_uuid . "\n" . $name . "\n" . agent_canonical_json($arguments));
+    $tool_key = agent_action_identity($run_uuid, $name, $arguments);
     $stored = agent_tool_result($run_uuid, $tool_key);
     if ($stored !== null) {
         return $stored;
@@ -48,9 +48,10 @@ function agent_execute_tool(string $run_uuid, array $tools, array $call, array $
                 'duration_ms' => 0,
                 'result' => $result,
             ]);
+            agent_store_action($tool_key, $run_uuid, $name, $arguments, 'blocked', $result, (string)$result['reason']);
             return $result;
         }
-        agent_consume_tool_authorization($run_uuid, $authorization);
+        agent_store_action($tool_key, $run_uuid, $name, $arguments, 'authorized', [], '');
     }
     $started = microtime(true);
     $dependencies['tool_name'] = $name;
@@ -58,11 +59,32 @@ function agent_execute_tool(string $run_uuid, array $tools, array $call, array $
     if ($authorization !== null) {
         $dependencies['authorization'] = $authorization;
     }
-    $result = ($tool['execute'])($arguments, $dependencies);
+    if ($risk === 'governed') {
+        $existing_action = data_read('.agent_actions', substr($tool_key, 0, 16));
+        if (is_array($existing_action) && in_array(($existing_action['status'] ?? ''), ['succeeded', 'blocked'], true)) {
+            return (array)($existing_action['result'] ?? []);
+        }
+        if (is_array($existing_action) && ($existing_action['status'] ?? '') === 'uncertain') {
+            return ['status' => 'uncertain', 'reason' => (string)($existing_action['reason'] ?? '')];
+        }
+        agent_store_action($tool_key, $run_uuid, $name, $arguments, 'executing', [], '');
+    }
+    try {
+        $result = ($tool['execute'])($arguments, $dependencies);
+    } catch (Throwable $error) {
+        if ($risk === 'governed') {
+            agent_store_action($tool_key, $run_uuid, $name, $arguments, 'uncertain', [], agent_safe_error($error->getMessage()));
+        }
+        throw $error;
+    }
     if (!is_array($result)) {
         throw new RuntimeException('Agent tool returned an invalid result');
     }
     $result = agent_redact($result);
+    if ($risk === 'governed') {
+        $status = ($result['status'] ?? '') === 'blocked' ? 'blocked' : 'succeeded';
+        agent_store_action($tool_key, $run_uuid, $name, $arguments, $status, $result, (string)($result['reason'] ?? ''));
+    }
     agent_append_event($run_uuid, 'tool_completed', [
         'tool_key' => $tool_key,
         'tool' => $name,
@@ -72,9 +94,47 @@ function agent_execute_tool(string $run_uuid, array $tools, array $call, array $
     return $result;
 }
 
+function agent_action_identity(string $run_uuid, string $tool_name, array $arguments): string
+{
+    $run = data_read('.agent_runs', $run_uuid);
+    $lineage = is_array($run) ? (string)($run['idempotency_key'] ?? $run_uuid) : $run_uuid;
+    $target = (string)($arguments['server'] ?? $arguments['target'] ?? '');
+    return hash('sha256', $lineage . "\n" . $tool_name . "\n" . $target . "\n" . agent_canonical_json($arguments));
+}
+
+function agent_store_action(
+    string $identity,
+    string $run_uuid,
+    string $tool_name,
+    array $arguments,
+    string $status,
+    array $result,
+    string $reason
+): void {
+    $uuid = substr($identity, 0, 16);
+    $existing = data_read('.agent_actions', $uuid);
+    $record = [
+        'lineage_key' => $identity,
+        'tool' => $tool_name,
+        'target' => (string)($arguments['server'] ?? $arguments['target'] ?? ''),
+        'arguments_digest' => hash('sha256', agent_canonical_json($arguments)),
+        'status' => $status,
+        'attempts' => (int)($existing['attempts'] ?? 0) + ($status === 'executing' ? 1 : 0),
+        'result' => $result,
+        'reason' => substr($reason, 0, 1000),
+        'updated_at' => time(),
+        'run_uuid' => $run_uuid,
+    ];
+    if (is_array($existing)) {
+        data_update('.agent_actions', $uuid, $record);
+    } else {
+        data_create('.agent_actions', $uuid, $record);
+    }
+}
+
 function agent_tool_action_digest(string $run_uuid, string $tool_name, array $arguments): string
 {
-    return hash('sha256', $run_uuid . "\n" . $tool_name . "\n" . agent_canonical_json($arguments));
+    return agent_action_identity($run_uuid, $tool_name, $arguments);
 }
 
 function agent_validate_tool_authorization(string $run_uuid, string $tool_name, array $arguments, $authorization): array

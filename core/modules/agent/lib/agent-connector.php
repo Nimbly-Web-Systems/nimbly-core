@@ -210,7 +210,8 @@ function agent_connector_deliver_email(array $result, string $run_uuid, array $d
         (string)($config['recipient_default'] ?? '')
     );
     $renderer = (string)($config['renderer'] ?? '');
-    if ($recipient === '' || !is_callable($renderer)) {
+    $html_field = (string)($config['html_field'] ?? '');
+    if ($recipient === '' || ($html_field === '' && !is_callable($renderer))) {
         throw new RuntimeException('Agent email delivery is incomplete');
     }
     $deliveries = [];
@@ -220,7 +221,7 @@ function agent_connector_deliver_email(array $result, string $run_uuid, array $d
             'service' => (string)($config['service'] ?? 'resend'),
             'recipient' => $recipient,
             'subject' => (string)($item[$config['subject_field'] ?? 'email_subject'] ?? ''),
-            'html' => $renderer($item),
+            'html' => $html_field !== '' ? (string)($item[$html_field] ?? '') : $renderer($item),
             'idempotency_key' => $run_uuid . ':' . $key,
         ];
         if (!empty($dependencies['email_request'])) {
