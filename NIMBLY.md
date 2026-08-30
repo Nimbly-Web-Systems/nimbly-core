@@ -1930,6 +1930,10 @@ Runs the E2E suite. The command creates temporary test data with `test:setup`, i
 ```
 
 Use `--docker` in CI or whenever PHP data files must be written through the same Docker user model as the web runtime.
+Core tests must not call metered external providers. Mock the provider boundary
+and test Nimbly's request, response handling, validation, and UI behavior
+deterministically. Provider availability is an operational integration check,
+not part of the Core test suite.
 
 #### `test:setup` / `test:teardown`
 Low-level commands used by `./nimbly test:run`. `test:setup` creates the `test` role, `test@nimbly.dev` user, `test-records` resource, and seed records. `test:teardown` removes those records and the temporary `.test` route config entries.

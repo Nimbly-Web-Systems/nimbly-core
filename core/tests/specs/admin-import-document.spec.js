@@ -36,13 +36,25 @@ test.describe('admin add form — import from document (test-records)', () => {
     const console_errors = [];
     page.on('pageerror', (err) => console_errors.push(err.message));
 
-    await page.goto('/nb-admin/test-records/add');
+    // This E2E test owns the browser/application contract. DOCX parsing and
+    // response sanitizing have focused PHP coverage; a metered provider call
+    // would test OpenAI, add cost, and make this interaction nondeterministic.
+    await page.route('**/api/v1/test-records/import-document', async (route) => {
+      expect(route.request().method()).toBe('POST');
+      expect(route.request().headers()['content-type']).toContain('multipart/form-data');
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          success: true,
+          values: { title: 'Imported title', notes: 'Imported document notes' },
+          labels: ['Title', 'Notes'],
+          detected_language: null,
+        }),
+      });
+    });
 
-    // The import action calls OPENAI_API_KEY-backed extraction server-side
-    // (openai-import-document.php returns 503 without it). CI environments
-    // don't have that key configured, so there's nothing to extract.
-    const ai_available = await page.evaluate(() => window.nb.ai_translate_available);
-    test.skip(!ai_available, 'OPENAI_API_KEY not configured in this environment');
+    await page.goto('/nb-admin/test-records/add');
 
     // A field the editor already typed into must survive the import untouched.
     await page.fill('[name=title]', 'Already typed title');
