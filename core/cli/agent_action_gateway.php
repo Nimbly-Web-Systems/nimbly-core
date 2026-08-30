@@ -43,7 +43,7 @@ function action_gateway_actions(): array
 function action_gateway_run(array $envelope, array $environment, ?callable $runner = null, ?int $now = null): array
 {
     if (array_key_exists('command', $envelope)) {
-        return action_gateway_run_legacy($envelope, $environment, $runner, $now);
+        throw new RuntimeException('Legacy command actions are unsupported');
     }
     foreach (['target', 'action', 'arguments', 'action_digest', 'expires_at', 'signature'] as $key) {
         if (!array_key_exists($key, $envelope)) {
@@ -105,73 +105,6 @@ function action_gateway_run(array $envelope, array $environment, ?callable $runn
     return ($definition['callback'])($arguments, $environment, $runner, $now, $digest);
 }
 
-function action_gateway_run_legacy(
-    array $envelope,
-    array $environment,
-    ?callable $runner = null,
-    ?int $now = null
-): array {
-    foreach (['target', 'command', 'action_digest', 'expires_at', 'rollback', 'signature'] as $key) {
-        if (!array_key_exists($key, $envelope)) {
-            throw new RuntimeException('Incomplete authorization envelope');
-        }
-    }
-    $key = (string)($environment['NIMBLY_AGENT_GATEWAY_KEY'] ?? '');
-    $server_id = (string)($environment['NIMBLY_AGENT_SERVER_ID'] ?? '');
-    if ($key === '' || $server_id === '' || !hash_equals($server_id, (string)$envelope['target'])) {
-        throw new RuntimeException('Authorization target is invalid');
-    }
-    $signature = (string)$envelope['signature'];
-    unset($envelope['signature']);
-    if (!hash_equals(hash_hmac('sha256', action_gateway_canonical_json($envelope), $key), $signature)) {
-        throw new RuntimeException('Authorization signature is invalid');
-    }
-    $now = $now ?? time();
-    if ((int)$envelope['expires_at'] < $now || (int)$envelope['expires_at'] > $now + 600) {
-        throw new RuntimeException('Authorization envelope has expired');
-    }
-    $command = trim((string)$envelope['command']);
-    if ($command === '' || strlen($command) > 2000
-        || trim((string)$envelope['rollback']) === ''
-        || action_gateway_legacy_hard_floor($command)) {
-        throw new RuntimeException('Action violates the deterministic safety floor');
-    }
-    $digest = (string)$envelope['action_digest'];
-    if (preg_match('/^[a-f0-9]{64}$/', $digest) !== 1) {
-        throw new RuntimeException('Action digest is invalid');
-    }
-    action_gateway_consume_authorization($digest, $environment, $now);
-    $runner = $runner ?? 'action_gateway_run_process';
-    $result = $runner(['/bin/sh', '-lc', $command]);
-    return [
-        'exit_code' => (int)($result['exit_code'] ?? 1),
-        'stdout' => substr((string)($result['stdout'] ?? ''), 0, 12000),
-        'stderr' => substr((string)($result['stderr'] ?? ''), 0, 3000),
-        'executed_at' => time(),
-        'action_digest' => $digest,
-    ];
-}
-
-function action_gateway_legacy_hard_floor(string $command): bool
-{
-    foreach ([
-        '/\b(?:apt|apt-get|aptitude|dpkg|unattended-upgrade)\b/i',
-        '/\b(?:reboot|shutdown|poweroff|halt)\b/i',
-        '/\b(?:drop|truncate|delete)\b.*\b(?:database|table|from)\b/i',
-        '/\b(?:passwd|useradd|userdel|usermod|groupadd|visudo|authorized_keys|sshd_config)\b/i',
-        '/\b(?:ufw disable|iptables -F|setenforce 0|systemctl (?:stop|disable) fail2ban)\b/i',
-        '/\b(?:rm|shred)\b.*(?:log|audit)/i',
-        '/\b(?:rm\s+-[^ ]*r|mkfs|wipefs|dd\s+if=|git\s+reset\s+--hard)\b/i',
-        '/(?:^|\s)(?:curl|wget)\b.*\|\s*(?:sh|bash)\b/i',
-        '/\b(?:eval|exec)\b|`|\$\(/',
-    ] as $pattern) {
-        if (preg_match($pattern, $command) === 1) {
-            return true;
-        }
-    }
-    return false;
-}
-
 function action_gateway_consume_authorization(string $digest, array $environment, int $now): void
 {
     $state_dir = (string)($environment['NIMBLY_AGENT_AUTHORIZATION_DIR'] ?? '/var/lib/nimbly-agent/authorizations');
@@ -181,7 +114,10 @@ function action_gateway_consume_authorization(string $digest, array $environment
     $replay_file = $state_dir . '/' . $digest;
     $handle = @fopen($replay_file, 'x');
     if ($handle === false) {
-        throw new RuntimeException('Authorization envelope was already consumed');
+        if (is_file($replay_file)) {
+            return;
+        }
+        throw new RuntimeException('Authorization state could not be reserved');
     }
     fwrite($handle, (string)$now);
     fclose($handle);
