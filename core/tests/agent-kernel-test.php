@@ -42,21 +42,14 @@ function data_update($resource, $uuid, $changes): bool
 }
 function data_read($resource, $selector = null)
 {
+    if (is_array($selector)) {
+        throw new RuntimeException('data_read UUID must not be a filter array');
+    }
     $records = $GLOBALS['agent_test_data'][$resource] ?? [];
     if (is_string($selector)) {
         return $records[$selector] ?? null;
     }
     $records = array_filter($records, fn($_record, $uuid) => $uuid !== '.meta', ARRAY_FILTER_USE_BOTH);
-    if (is_array($selector)) {
-        $records = array_filter($records, function ($record) use ($selector) {
-            foreach ($selector as $key => $value) {
-                if (($record[$key] ?? null) !== $value) {
-                    return false;
-                }
-            }
-            return true;
-        });
-    }
     return array_values($records);
 }
 
