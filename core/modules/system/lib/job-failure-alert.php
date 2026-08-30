@@ -52,17 +52,17 @@ function job_failure_alert_job($job)
 
 function job_failure_alert_origin(string $failed_type, array $failed_payload): string
 {
-    if ($failed_type !== 'agent-run') {
+    if ($failed_type !== 'agent') {
         return $failed_type;
     }
 
     $run_uuid = trim((string)($failed_payload['run_uuid'] ?? ''));
     $run = $run_uuid === '' ? null : data_read('.agent_runs', $run_uuid);
     if (!is_array($run)) {
-        return $run_uuid === '' ? 'agent-run' : 'agent-run ' . $run_uuid;
+        return $run_uuid === '' ? 'agent' : 'agent ' . $run_uuid;
     }
 
-    $parts = [trim((string)($run['agent_id'] ?? 'agent-run'))];
+    $parts = [trim((string)($run['agent_id'] ?? 'agent'))];
     $trigger = trim((string)($run['trigger'] ?? ''));
     if ($trigger !== '') {
         $parts[] = $trigger;

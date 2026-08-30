@@ -36,7 +36,7 @@ function job_failure_alert_test_assert($condition, $message): void
 }
 
 job_failure_alert_job(['payload' => [
-    'failed_type' => 'agent-run',
+    'failed_type' => 'agent',
     'failed_uuid' => 'job-123',
     'failed_attempts' => 3,
     'failed_error' => 'Connector unavailable',
@@ -50,7 +50,7 @@ job_failure_alert_test_assert(
     'agent alert identifies its agent, trigger, target scope, and run'
 );
 job_failure_alert_test_assert(
-    $job_failure_alert_email['subject'] === '[Nimbly · stage] Nimbly job failed: agent-run',
+    $job_failure_alert_email['subject'] === '[Nimbly · stage] Nimbly job failed: agent',
     'subject identifies application and environment'
 );
 

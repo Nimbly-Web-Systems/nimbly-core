@@ -29,8 +29,6 @@ $commands = [
     'agent:run'         => ['file' => 'core/cli/agent.php',          'desc' => 'Run or resume an agent run', 'public' => false],
     'agent:retry'       => ['file' => 'core/cli/agent.php',          'desc' => 'Retry a failed scheduled agent run', 'public' => false],
     'agent:recover'     => ['file' => 'core/cli/agent.php',          'desc' => 'Recover expired agent run leases', 'public' => false],
-    'agent:gateway'     => ['file' => 'core/cli/agent_gateway.php',  'desc' => 'Restricted remote agent command gateway', 'public' => false],
-    'agent:action-gateway:install' => ['file' => 'core/cli/agent_action_gateway.php', 'desc' => 'Install the registered privileged action gateway', 'public' => true],
     'schedule:run'     => ['file' => 'core/cli/schedule.php',       'desc' => 'Run due scheduled commands', 'public' => false],
     'schedule:init'    => ['file' => 'core/cli/schedule_publish.php', 'desc' => 'Create project schedule files in ext/cli', 'public' => true],
     'scheduler:install' => ['file' => 'core/cli/scheduler_orchestrator.php', 'desc' => 'Install the server scheduler wrapper', 'public' => true],

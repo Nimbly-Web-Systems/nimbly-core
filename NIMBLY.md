@@ -2116,36 +2116,32 @@ host cannot reliably report that the host itself is unreachable.
 
 #### `agent:*`
 
-The Core agent runtime runs versioned agents without exposing the server to the
-model. Reusable definitions and neutral behaviour live in
-`core/agents/<agent-id>/`; project identity, targets, authority, and delivery
-configuration live in the matching `ext/agents/<agent-id>/` directory. An ext
-definition deep-merges over its core definition: maps merge recursively and
-lists replace. Instruction files compose core first and ext second unless ext
-sets `instructions_mode` to `replace`. A core definition may set
-`"abstract": true` when it requires ext configuration before it can run.
+The Core agent module is a small, generic kernel. Actual agents live only in
+`ext/agents/<agent-id>/`, where `agent.json` defines their version 3 pipeline,
+tools, targets, authority, and configuration and a Markdown file defines their
+instructions. Core contains no agent persona, project target, recipient, or
+project policy.
 
-The framework is split by responsibility under `core/modules/agent/lib/`:
-`agent-runtime.php` orchestrates enqueue/run/retry and the reasoning loop;
-`agent-definition.php` loads and scopes definitions; `agent-tool.php` owns tool
-execution, authorization, and provider calls; `agent-state.php` owns durable run
-and event state; `agent-support.php` owns bounded utility and resource setup;
-`agent-connector.php` implements reusable external transports; and
-`agent-report.php` implements the standard report-agent pipeline. Keep named
-agent policy out of these framework modules.
+`core/modules/agent/lib/agent.php` is the single kernel entry point. It owns
+definition validation, immutable artifacts, durable runs and steps, retries,
+governed-action records, tool dispatch, the queue entry point, and the health
+shortcode. It does not require fragments of itself. Separately loadable
+libraries named `agent-connector-<id>.php` provide capabilities such as OpenAI,
+email, or restricted SSH. Projects may provide connectors with the same naming
+convention under `ext/lib/`.
 
-Definitions are validated after core/ext layering and bootstrap loading. Invalid
-callbacks, target identities or authorities, tool risk classes, executors,
-governed authorizers, schemas, and connector target references must fail before
-a run starts. Declare targets once in the root `targets` list with `scope`,
-`identity`, and `authority`; tool connectors reference that list and enforce
-membership at execution time. Do not duplicate target identities in tool enums.
+Every pipeline step declares a stable `connector` capability, receives one
+artifact, and returns one artifact envelope with `type`, `version`, `data`,
+`evidence`, and `meta`. The three ordered groups are `input`, `agent`, and
+`output`; `from` references an earlier step. `result_from` and `delivery_from`
+select the durable result and delivery receipt. JSON never names PHP callbacks.
+Legacy pipeline versions are rejected rather than adapted.
 
-Definitions use `agent.json` plus optional bootstrap and instruction files.
-Generic callbacks can read the fully resolved definition from their dependency
-argument with `agent_config($dependencies, 'path.to.value', $default)`. Keep
-callback behaviour and evidence rules neutral in core; do not put a named
-persona, project host, recipient, or project-specific authority there.
+Definitions are validated before execution. Invalid connector names, ordering,
+schemas, tool risk classes, and governed authorizers fail immediately. Declare
+targets once in Ext and have connectors enforce membership and authority. Use
+`agent_config($context, 'path.to.value', $default)` inside a connector to read
+the resolved definition.
 
 `id` is the stable machine identifier used by CLI commands, schedules, runs,
 and resource indexes. `name` is the human-facing identity of the configured
@@ -2154,12 +2150,6 @@ software agent and inspect its `ext/agents/<agent-id>/` definition, schedule,
 and run state; do not assume the name identifies an external email contact.
 Record important project-specific agent identities in shared `ext/.context/`
 when future operators and AI agents need that association.
-
-Report-style agents use the shared report framework for configured targets,
-canonical resource ingestion, freshness calculation, bounded report and event
-history, authority grouping, and tool-ledger evidence lookup. Declare this in
-the definition's `report` block instead of assembling model input in a named
-agent PHP file.
 
 ```bash
 php core/cli/nimbly.php agent:enqueue infra-expert
@@ -2181,66 +2171,29 @@ it does not expand the run's configured targets or authority.
 
 Scheduled agents should enqueue quickly and execute through the existing job
 runner. Runs use deterministic occurrence IDs, append-only `.agent_events`,
-terminally immutable `.agent_runs`, and runtime-only `.agent_approvals` and
-`.agent_state` resources. Ignore these resources in Git and include them in the
+terminally immutable `.agent_runs`, resumable `.agent_steps`, append-only
+`.agent_events`, and a durable `.agent_actions` ledger. A retry resumes at the
+failed step; completed model, tool, and rendering work is not repeated merely
+because delivery failed. Ignore runtime records in Git and include them in the
 host's persistent backup policy.
 
 The schemas for these internal resources are declarative JSON files under
 `core/modules/agent/resources/`. The runtime installs them through one generic
 loader; do not embed resource `.meta` arrays in runtime PHP.
 
-Agent tools are named PHP callbacks with strict JSON schemas and an explicit
-risk class. Never expose generic shell, SSH, sudo, filesystem, database, or API
-tools. A tool must validate logical targets and map them to fixed local
-operations. The model's arguments are requests, not authorization.
+Tools declare a strict JSON argument schema, `read_only` or `governed` risk, a
+connector name, and connector configuration. Never expose generic shell, SSH,
+sudo, filesystem, database, or API tools. Governed tools additionally name an
+authorizer connector. Authorization denial is a normal blocked result; once
+execution is reserved, interruption becomes `uncertain` and must be inspected
+before any repeat. Action identity is stable across retry lineage.
 
-Reusable tools may use `agent_connector_ssh_gateway_tool` and declare their
-restricted transport contract in the tool's `connector` block. The declaration
-selects a configured target set, optional authority class, fixed gateway verb,
-argument mapping, timeout, required response fields, output types, and length
-limits. The connector still invokes only the forced-command SSH gateway; the
-definition cannot supply an SSH command or bypass the tool's JSON schema.
-Agent-specific PHP should be reserved for domain policy that cannot be expressed
-by these connector constraints.
-
-Scheduled report agents may use `agent_connector_deliver_email` with a
-`report_delivery` definition. Configuration selects the result collection and
-item identity fields, subject field, renderer, recipient environment variable,
-provider, and triggers that remain in shadow mode. Idempotency remains derived
-from the immutable run UUID and configured item identity.
-
-`agent:gateway` is the read-only remote forced-command endpoint for restricted
-SSH identities. It reads `SSH_ORIGINAL_COMMAND`, accepts only registered verbs
-and enum-constrained parameters, and maps them to fixed argument-array
-processes. Configure its SSH key with `restrict` and a forced command; do not
-grant the key an interactive shell or forwarding.
-
-Privileged infrastructure changes use the registered action gateway. Install
-or refresh its root-owned wrapper, sudo rule, and maintenance-resume service
-from a current core checkout:
-
-```bash
-sudo php core/cli/nimbly.php agent:action-gateway:install
-```
-
-The gateway accepts signed, expiring, one-use envelopes containing a registered
-action name and its schema-validated logical arguments. It maps the action to
-fixed argument arrays; package and reboot operations are never accepted through
-the legacy command remediation path. Host configuration in
-`/etc/nimbly/agent-action-gateway.json` independently owns target identity,
-signing key, authorization and maintenance-state directories, maintenance
-timezone/window, required services, and HTTPS verification endpoints.
-
-The built-in `install_patch_updates` action is intended for explicitly delegated
-staging maintenance. It requires a fresh security-update finding, blocks on an
-active package operation, a damaged package database, or an unrelated critical
-host finding, and applies all package patch updates without allowing removals or
-an operating-system release upgrade. It persists a transaction under
-`/var/lib/nimbly-agent/maintenance`. When Ubuntu requires a reboot, the action
-schedules one and the enabled boot service resumes service, endpoint, and fresh
-host-audit verification. Agent runs interrupted by the reboot are recovered by
-the normal `agent:recover` schedule and must inspect the completed transaction
-before reporting recovery.
+The standard `ssh-gateway` connector is only a generic client for fixed remote
+verbs. The forced-command endpoint, verb catalog, privileged registered actions,
+and their installation commands belong to the project that defines those
+operations. Likewise, the standard `email` connector safely delivers a bounded
+item collection with a stable per-run idempotency key. Domain-specific input,
+evidence validation, and presentation belong in Ext connectors.
 
 Agent schedules may set an explicit IANA timezone:
 
