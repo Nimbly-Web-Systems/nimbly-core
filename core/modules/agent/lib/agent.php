@@ -300,9 +300,15 @@ function agent_ensure_resources(): void
 function agent_append_event(string $run_uuid, string $type, array $payload): string
 {
     $uuid = substr(hash('sha256', $run_uuid . ':' . microtime(true) . ':' . random_bytes(8)), 0, 16);
+    $sequence = 1;
+    foreach (data_read('.agent_events') ?: [] as $event) {
+        if (is_array($event) && ($event['run_uuid'] ?? '') === $run_uuid) {
+            $sequence = max($sequence, (int)($event['sequence'] ?? 0) + 1);
+        }
+    }
     data_create('.agent_events', $uuid, [
         'run_uuid' => $run_uuid,
-        'sequence' => count(data_read('.agent_events', ['run_uuid' => $run_uuid]) ?: []) + 1,
+        'sequence' => $sequence,
         'occurred_at' => time(), 'type' => $type, 'payload' => agent_redact($payload),
     ]);
     return $uuid;
