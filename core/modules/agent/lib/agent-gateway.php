@@ -9,19 +9,17 @@ function agent_gateway_execute(string $original_command, ?callable $runner = nul
     if (!is_array($adapter) || count($parts) - 1 !== (int)$adapter['arguments']) {
         throw new RuntimeException('Gateway command is not permitted');
     }
-    return ($adapter['callback'])(array_slice($parts, 1), $runner);
+    return ($adapter['handler'])(array_slice($parts, 1), $runner);
 }
 
 function agent_gateway_adapters(): array
 {
     return [
-        'diagnose' => ['arguments' => 1, 'callback' => fn($args, $runner) => agent_gateway_diagnose($args[0], $runner)],
-        'execute_action' => ['arguments' => 1, 'callback' => fn($args, $runner) => agent_gateway_execute_action($args[0], $runner)],
-        'execute_registered_action' => ['arguments' => 1, 'callback' => fn($args, $runner) => agent_gateway_execute_registered_action($args[0], $runner)],
-        'inspect_maintenance' => ['arguments' => 0, 'callback' => fn($_args, $runner) => agent_gateway_inspect_maintenance($runner)],
-        'inspect_host_health' => ['arguments' => 0, 'callback' => fn($_args, $runner) => agent_gateway_inspect_host_health($runner)],
-        'inspect_host_detail' => ['arguments' => 1, 'callback' => fn($args, $runner) => agent_gateway_inspect_host_detail($args[0], $runner)],
-        'inspect_service' => ['arguments' => 1, 'callback' => fn($args, $runner) => agent_gateway_inspect_service($args[0], $runner)],
+        'execute_registered_action' => ['arguments' => 1, 'handler' => fn($args, $runner) => agent_gateway_execute_registered_action($args[0], $runner)],
+        'inspect_maintenance' => ['arguments' => 0, 'handler' => fn($_args, $runner) => agent_gateway_inspect_maintenance($runner)],
+        'inspect_host_health' => ['arguments' => 0, 'handler' => fn($_args, $runner) => agent_gateway_inspect_host_health($runner)],
+        'inspect_host_detail' => ['arguments' => 1, 'handler' => fn($args, $runner) => agent_gateway_inspect_host_detail($args[0], $runner)],
+        'inspect_service' => ['arguments' => 1, 'handler' => fn($args, $runner) => agent_gateway_inspect_service($args[0], $runner)],
     ];
 }
 
@@ -63,42 +61,6 @@ function agent_gateway_inspect_service(string $service, ?callable $runner = null
             $properties['UnitFileState'] ?? 'unknown'
         ),
     ];
-}
-
-function agent_gateway_diagnose(string $encoded_command, ?callable $runner = null): array
-{
-    $command = agent_gateway_decode($encoded_command, 2000);
-    if ($command === '' || str_contains($command, "\0")) {
-        throw new RuntimeException('Diagnostic command is invalid');
-    }
-    $runner = $runner ?? 'agent_gateway_run_process';
-    $result = $runner(['/bin/bash', '-lc', $command]);
-    if (!is_array($result)) {
-        throw new RuntimeException('Diagnostic command returned invalid evidence');
-    }
-    return [
-        'exit_code' => (int)($result['exit_code'] ?? 1),
-        'stdout' => substr((string)($result['stdout'] ?? ''), 0, 20000),
-        'stderr' => substr((string)($result['stderr'] ?? ''), 0, 4000),
-        'observed_at' => time(),
-    ];
-}
-
-function agent_gateway_execute_action(string $encoded_envelope, ?callable $runner = null): array
-{
-    if (strlen($encoded_envelope) > 12000) {
-        throw new RuntimeException('Action envelope is too large');
-    }
-    $runner = $runner ?? 'agent_gateway_run_process';
-    $result = $runner(['/usr/bin/sudo', '-n', '/usr/local/bin/nimbly-agent-action-gateway', $encoded_envelope]);
-    if (!is_array($result) || (int)($result['exit_code'] ?? 1) !== 0) {
-        throw new RuntimeException('Privileged action gateway denied execution');
-    }
-    $decoded = json_decode((string)($result['stdout'] ?? ''), true);
-    if (!is_array($decoded) || !isset($decoded['exit_code'], $decoded['executed_at'])) {
-        throw new RuntimeException('Privileged action gateway returned invalid evidence');
-    }
-    return $decoded;
 }
 
 function agent_gateway_execute_registered_action(string $encoded_envelope, ?callable $runner = null): array

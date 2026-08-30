@@ -90,19 +90,9 @@ function agent_run(string $run_uuid, array $dependencies = []): array
             'run_uuid' => $run_uuid,
             'run' => $run,
         ]);
-        if (empty($definition['pipeline'])) {
-            $prepared = ($definition['prepare_input'])($run, $agent_dependencies);
-            $prepared = agent_append_event_context_input($prepared, $run);
-            agent_update_run($run_uuid, ['source_report_uuids' => $prepared['source_report_uuids'] ?? []]);
-            $validated = ($definition['validate_result'])(
-                agent_reason($run_uuid, $definition, $prepared['input'], $agent_dependencies)
-            );
-            $delivery = ($definition['deliver'])($validated, $run_uuid, $agent_dependencies);
-        } else {
-            $execution = agent_execute_pipeline($run_uuid, $definition, $run, $agent_dependencies);
-            $validated = $execution['result'];
-            $delivery = $execution['delivery'];
-        }
+        $execution = agent_execute_pipeline($run_uuid, $definition, $run, $agent_dependencies);
+        $validated = $execution['result'];
+        $delivery = $execution['delivery'];
         if (!is_array($delivery) || empty($delivery['success'])) {
             throw new RuntimeException($delivery['error'] ?? 'Agent report delivery failed');
         }
@@ -178,7 +168,7 @@ function agent_execute_pipeline(
 
 function agent_pipeline_source(array $phase, array $artifacts, array $previous): array
 {
-    $input_from = (string)($phase['from'] ?? $phase['input_from'] ?? '');
+    $input_from = (string)($phase['from'] ?? '');
     if ($input_from === '') {
         return $previous;
     }
@@ -270,15 +260,6 @@ function agent_execute_step_type(
     array $dependencies
 ): array {
     $type = (string)$phase['type'];
-    if ($type === 'callback') {
-        $handler = $phase['handler'] ?? null;
-        if (!is_callable($handler)) {
-            throw new RuntimeException('Agent callback step is unavailable');
-        }
-        return in_array($phase['id'], ['result', 'delivery'], true)
-            ? $handler($source, $run_uuid, $dependencies)
-            : $handler($source, $dependencies);
-    }
     if ($type === 'resource_snapshot') {
         $artifact = agent_report_prepare_input($run, $dependencies);
         $artifact = agent_append_event_context_input($artifact, $run);
@@ -322,27 +303,11 @@ function agent_execute_step_type(
         ];
     }
     if ($type === 'model') {
-        if (!empty($phase['projector'])) {
-            $source = ($phase['projector'])($source, $dependencies);
-        }
         $input = isset($source['input']) ? $source['input'] : [[
             'role' => 'user',
             'content' => [['type' => 'input_text', 'text' => json_encode($source, JSON_THROW_ON_ERROR)]],
         ]];
-        $artifact = agent_reason($run_uuid, agent_pipeline_model_definition($definition, $phase), $input, $dependencies);
-        if (!empty($phase['validator'])) {
-            try {
-                $artifact = ($phase['validator'])($artifact, $dependencies);
-            } catch (Throwable $error) {
-                agent_append_event($run_uuid, 'model_validation_failed', [
-                    'phase' => (string)$phase['id'],
-                    'error' => agent_safe_error($error->getMessage()),
-                    'structured_output' => agent_redacted_json($artifact),
-                ]);
-                throw $error;
-            }
-        }
-        return $artifact;
+        return agent_reason($run_uuid, agent_pipeline_model_definition($definition, $phase), $input, $dependencies);
     }
     if ($type === 'evidence_guard') {
         return agent_evidence_guard($source, $dependencies);
@@ -351,7 +316,11 @@ function agent_execute_step_type(
         return agent_render_single_report($source, $definition);
     }
     if ($type === 'deliver') {
-        return agent_connector_deliver_email($source, $run_uuid, $dependencies);
+        $delivery = agent_connector_deliver_email($source, $run_uuid, $dependencies);
+        if (empty($delivery['success'])) {
+            throw new AgentTransientException((string)($delivery['error'] ?? 'Agent delivery failed'));
+        }
+        return $delivery;
     }
     throw new RuntimeException('Unsupported agent step type: ' . $type);
 }

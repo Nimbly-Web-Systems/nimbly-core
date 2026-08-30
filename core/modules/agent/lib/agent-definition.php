@@ -1,5 +1,7 @@
 <?php
 
+require_once __DIR__ . '/agent-policy.php';
+
 function agent_definition(string $agent_id): array
 {
     if (preg_match('/^[a-z0-9][a-z0-9-]*$/', $agent_id) !== 1) {
@@ -97,7 +99,22 @@ function agent_definition(string $agent_id): array
             throw new RuntimeException('Agent instructions are unavailable');
         }
     }
+    $definition = agent_resolve_tool_catalog($definition);
     agent_validate_definition($definition);
+    return $definition;
+}
+
+function agent_resolve_tool_catalog(array $definition): array
+{
+    foreach ((array)($definition['tools'] ?? []) as $name => $tool) {
+        if (is_array($tool) && isset($tool['executor'])) {
+            $tool['execute'] = agent_tool_executor((string)$tool['executor']);
+        }
+        if (is_array($tool) && isset($tool['authorizer'])) {
+            $tool['authorize'] = agent_tool_authorizer((string)$tool['authorizer']);
+        }
+        $definition['tools'][$name] = $tool;
+    }
     return $definition;
 }
 

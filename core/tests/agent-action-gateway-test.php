@@ -122,6 +122,46 @@ action_test_assert(
     'cross-midnight maintenance window is deterministic'
 );
 
+$consumed_digest = hash('sha256', 'previously-consumed-authorization');
+file_put_contents($authorization_dir . '/' . $consumed_digest, (string)$now);
+$consumed_envelope = action_test_envelope($environment, $consumed_digest, $now);
+$consumed_audits = 0;
+$consumed_result = action_gateway_run($consumed_envelope, $environment, function (array $command) use (&$consumed_audits) {
+    if (in_array($command, [
+        ['/usr/bin/pgrep', '-x', 'apt'],
+        ['/usr/bin/pgrep', '-x', 'apt-get'],
+        ['/usr/bin/pgrep', '-x', 'dpkg'],
+        ['/usr/bin/pgrep', '-x', 'unattended-upgr'],
+        ['/usr/bin/systemctl', 'is-active', 'apt-daily.service'],
+        ['/usr/bin/systemctl', 'is-active', 'apt-daily-upgrade.service'],
+        ['/usr/bin/systemctl', 'is-active', 'unattended-upgrades.service'],
+    ], true)) {
+        return ['exit_code' => 1, 'stdout' => '', 'stderr' => ''];
+    }
+    if ($command === ['/usr/bin/dpkg', '--audit']) {
+        return ['exit_code' => 0, 'stdout' => '', 'stderr' => ''];
+    }
+    if ($command === ['/usr/local/bin/nimbly-host-audit', '--format=json']) {
+        $consumed_audits++;
+        return ['exit_code' => 0, 'stdout' => json_encode([
+            'overall' => $consumed_audits === 1 ? 'warning' : 'ok',
+            'findings' => $consumed_audits === 1 ? [['id' => 'system:security-updates', 'severity' => 'warning']] : [],
+            'checks' => ['system' => ['platform' => ['security_updates' => $consumed_audits === 1 ? 1 : 0]]],
+        ]), 'stderr' => ''];
+    }
+    if ($command[0] === '/usr/bin/systemctl') {
+        return ['exit_code' => 0, 'stdout' => "active\n", 'stderr' => ''];
+    }
+    if ($command[0] === '/usr/bin/curl') {
+        return ['exit_code' => 0, 'stdout' => '200', 'stderr' => ''];
+    }
+    return ['exit_code' => 0, 'stdout' => 'updated', 'stderr' => ''];
+}, $now);
+action_test_assert(
+    ($consumed_result['status'] ?? '') === 'completed',
+    'a retry resumes safely when authorization was reserved before durable execution began'
+);
+
 $unknown = action_test_envelope($environment, hash('sha256', 'action-3'), $now);
 $unknown['action'] = 'run_shell';
 unset($unknown['signature']);
@@ -134,32 +174,13 @@ try {
 }
 action_test_assert($unknown_denied, 'unregistered actions are denied');
 
-$legacy = [
-    'target' => 'nimbly1.stage',
-    'command' => 'systemctl start apache2',
-    'action_digest' => hash('sha256', 'legacy-action'),
-    'expires_at' => $now + 300,
-    'rollback' => 'systemctl stop apache2',
-];
-$legacy['signature'] = hash_hmac('sha256', action_gateway_canonical_json($legacy), $environment['NIMBLY_AGENT_GATEWAY_KEY']);
-$legacy_result = action_gateway_run($legacy, $environment, function (array $command) {
-    action_test_assert($command === ['/bin/sh', '-lc', 'systemctl start apache2'], 'legacy recovery remains bounded by its signed command');
-    return ['exit_code' => 0, 'stdout' => 'started', 'stderr' => ''];
-}, $now);
-action_test_assert($legacy_result['exit_code'] === 0, 'existing bounded service recovery remains available');
-
-$legacy_package = $legacy;
-$legacy_package['command'] = 'apt-get -y upgrade';
-$legacy_package['action_digest'] = hash('sha256', 'legacy-package');
-unset($legacy_package['signature']);
-$legacy_package['signature'] = hash_hmac('sha256', action_gateway_canonical_json($legacy_package), $environment['NIMBLY_AGENT_GATEWAY_KEY']);
-$legacy_package_denied = false;
+$legacy_denied = false;
 try {
-    action_gateway_run($legacy_package, $environment, fn() => [], $now);
+    action_gateway_run(['command' => 'systemctl start apache2'], $environment, fn() => [], $now);
 } catch (RuntimeException) {
-    $legacy_package_denied = true;
+    $legacy_denied = true;
 }
-action_test_assert($legacy_package_denied, 'package maintenance cannot bypass the registered action');
+action_test_assert($legacy_denied, 'legacy command actions are unavailable');
 
 $status = action_gateway_status($environment, $now + 10);
 action_test_assert(($status['status'] ?? '') === 'completed' && isset($status['observed_at']), 'maintenance status is bounded evidence');
