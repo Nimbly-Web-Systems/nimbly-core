@@ -25,7 +25,7 @@ if (file_exists($env_file)) {
     }
 }
 
-require_once BASE_DIR . 'core/modules/agent/lib/agent-runtime.php';
+load_library('agent');
 
 $command = $argv[1] ?? '';
 if ($command === 'agent:enqueue') {
