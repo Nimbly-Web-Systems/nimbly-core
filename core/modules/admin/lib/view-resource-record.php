@@ -76,8 +76,8 @@ function view_resource_record_row(string $field_id, array $field, $value, array 
     $label = htmlspecialchars((string)($field['name'] ?? ucfirst(str_replace(['-', '_'], ' ', $field_id))), ENT_QUOTES, 'UTF-8');
     $type = (string)($field['type'] ?? 'text');
     $body = !empty($field['i18n']) && !empty($languages)
-        ? view_resource_record_localized_value($type, $value, $languages)
-        : view_resource_record_value($type, $value);
+        ? view_resource_record_localized_value($type, $value, $languages, $field)
+        : view_resource_record_value($type, $value, $field);
 
     return '<div class="grid gap-2 px-4 py-4 sm:grid-cols-[14rem_minmax(0,1fr)] sm:gap-6">'
         . '<dt class="text-sm font-semibold text-neutral-700">' . $label . '</dt>'
@@ -104,20 +104,20 @@ function view_resource_record_translation_tabs(array $languages, string $default
     return $html . '</ul></div>';
 }
 
-function view_resource_record_localized_value(string $type, $value, array $languages): string
+function view_resource_record_localized_value(string $type, $value, array $languages, array $field = []): string
 {
     $translations = is_array($value) ? $value : [];
     $html = '';
     foreach ($languages as $language) {
         $escaped = htmlspecialchars($language, ENT_QUOTES, 'UTF-8');
         $html .= '<div x-cloak x-show="lang==\'' . $escaped . '\'">'
-            . view_resource_record_value($type, $translations[$language] ?? null)
+            . view_resource_record_value($type, $translations[$language] ?? null, $field)
             . '</div>';
     }
     return $html;
 }
 
-function view_resource_record_value(string $type, $value): string
+function view_resource_record_value(string $type, $value, array $field = []): string
 {
     if (view_resource_record_empty($value)) {
         return '<span class="text-neutral-400">' . view_resource_record_text('Empty') . '</span>';
@@ -127,6 +127,9 @@ function view_resource_record_value(string $type, $value): string
         if (view_resource_record_is_list($value)) {
             if ($type === 'gallery') {
                 return view_resource_record_gallery($value);
+            }
+            if ($type === 'group') {
+                return view_resource_record_group($value, $field['fields'] ?? []);
             }
             return view_resource_record_json($value);
         }
@@ -166,6 +169,45 @@ function view_resource_record_value(string $type, $value): string
         default:
             return htmlspecialchars($string, ENT_QUOTES, 'UTF-8');
     }
+}
+
+function view_resource_record_group(array $items, array $fields): string
+{
+    if (empty($fields)) {
+        return view_resource_record_json($items);
+    }
+
+    $html = '<div class="space-y-3">';
+    foreach ($items as $index => $item) {
+        if (!is_array($item)) {
+            $html .= view_resource_record_json([$item]);
+            continue;
+        }
+
+        $html .= '<section class="overflow-hidden rounded-lg border border-neutral-200 bg-white">'
+            . '<div class="border-b border-neutral-200 bg-neutral-100 px-4 py-2 text-xs font-bold text-neutral-500">'
+            . htmlspecialchars((string)($index + 1), ENT_QUOTES, 'UTF-8')
+            . '</div><dl class="grid gap-x-6 gap-y-4 p-4 sm:grid-cols-2">';
+        foreach ($fields as $field_id => $field) {
+            if (!is_array($field)) {
+                continue;
+            }
+            $label = (string)($field['name'] ?? ucfirst(str_replace(['-', '_'], ' ', (string)$field_id)));
+            $child_type = (string)($field['type'] ?? 'text');
+            $wide = in_array($child_type, ['textarea', 'html', 'group', 'gallery'], true)
+                ? ' sm:col-span-2'
+                : '';
+            $html .= '<div class="min-w-0' . $wide . '">'
+                . '<dt class="mb-1 text-xs font-semibold text-neutral-500">'
+                . htmlspecialchars($label, ENT_QUOTES, 'UTF-8')
+                . '</dt><dd class="text-sm text-neutral-900">'
+                . view_resource_record_value($child_type, $item[$field_id] ?? null, $field)
+                . '</dd></div>';
+        }
+        $html .= '</dl></section>';
+    }
+
+    return $html . '</div>';
 }
 
 function view_resource_record_empty($value): bool

@@ -58,6 +58,24 @@ assert_contains('<div class="mb-1 font-mono', $map, 'non-i18n maps keep their ke
 assert_contains('Waarde', $map, 'non-i18n map values remain visible');
 assert_not_contains('x-show=', $map, 'non-i18n maps do not become translation panels');
 
+$group = view_resource_record_row('invoice_lines', [
+    'name' => 'Invoice lines',
+    'type' => 'group',
+    'fields' => [
+        'description' => ['name' => 'Description', 'type' => 'textarea'],
+        'rate' => ['name' => 'Rate', 'type' => 'number'],
+        'quantity' => ['name' => 'Quantity', 'type' => 'number'],
+    ],
+], [[
+    'description' => 'Functioneel onderhoud',
+    'rate' => 350,
+    'quantity' => 1,
+]]);
+assert_contains('Functioneel onderhoud', $group, 'group fields render their structured values');
+assert_contains('Description', $group, 'group fields use child labels from resource metadata');
+assert_contains('Rate', $group, 'group fields render every configured child field');
+assert_not_contains('<pre', $group, 'group fields do not fall back to raw JSON');
+
 $tabs = view_resource_record_translation_tabs(['nl', 'en'], 'nl');
 assert_contains('role="tablist"', $tabs, 'multilingual record views expose translation tabs');
 assert_contains('mb-10 flex flex-wrap items-center justify-between gap-3', $tabs, 'record-view tabs match edit-form spacing');
