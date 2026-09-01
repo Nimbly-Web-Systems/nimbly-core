@@ -8,16 +8,23 @@
         <span aria-hidden="true">/</span>
         <span class="text-neutral-700">[#resource-name [#resource-id#] plural#]</span>
     </nav>
-    <div class="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-        <h1 class="min-w-0 break-words text-2xl font-semibold text-neutral-800 md:text-3xl"
-            data-nb-edit-options='{"buttons":""}'>
-            [#text [#resource-name [#resource-id#] plural#]#]
-        </h1>
-        <span class="text-sm text-neutral-500" data-nb-record-count>
-            <span x-text="filtered_count()"></span>
-            [#text of#]
-            <span x-text="record_count()"></span>
-            [#text records#]
+    <div class="flex flex-wrap items-center gap-2">
+        <div class="flex min-w-0 flex-wrap items-baseline gap-x-3 gap-y-1">
+            <h1 class="min-w-0 break-words text-2xl font-semibold text-neutral-800 md:text-3xl"
+                data-nb-edit-options='{"buttons":""}'>
+                [#text [#resource-name [#resource-id#] plural#]#]
+            </h1>
+            <span class="text-sm text-neutral-500" data-nb-record-count>
+                <span x-text="filtered_count()"></span>
+                [#text of#]
+                <span x-text="record_count()"></span>
+                [#text records#]
+            </span>
+        </div>
+        <span class="flex shrink-0 items-center gap-1 md:ml-auto">
+            [#feature-cond create-[#resource-id#] tpl=btn_add#]
+            [#feature-cond import-[#resource-id#] tpl=btn_import#]
+            [#feature-cond features="export-[#resource-id#]" tpl=btn_export#]
         </span>
     </div>
 
@@ -49,11 +56,6 @@
                     </select>
                 </label>
             </template>
-            <span class="flex shrink-0 items-center gap-1 sm:ms-auto">
-                [#feature-cond create-[#resource-id#] tpl=btn_add#]
-                [#feature-cond import-[#resource-id#] tpl=btn_import#]
-                [#feature-cond features="export-[#resource-id#]" tpl=btn_export#]
-            </span>
         </div>
     </div>
 
