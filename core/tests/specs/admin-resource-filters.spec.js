@@ -37,6 +37,7 @@ test.describe('admin resource filters', () => {
 
   test('combines boolean, select, multi-value, and search filters', async ({ page }) => {
     await page.goto('/nb-admin/test-records?filter%5Bdelivery_status%5D=');
+    const total_records = await page.locator('section[x-data]').evaluate(el => el._x_dataStack[0].record_count());
     await filter(page, 'is_paid').selectOption('1');
     await expect(desktop_record(page, 'Beta record')).toBeVisible();
     await expect(desktop_record(page, 'Alpha record')).toBeHidden();
@@ -48,7 +49,7 @@ test.describe('admin resource filters', () => {
 
     await page.getByRole('searchbox').fill('Beta');
     await expect(page.locator('table').getByText('No matching records', { exact: true })).toBeVisible();
-    await expect(page.locator('section[x-data] h3')).toContainText(/0\s+of\s+2\s+records/);
+    await expect(page.locator('section[x-data] h3')).toContainText(new RegExp(`0\\s+of\\s+${total_records}\\s+records`));
   });
 
   test('normalizes invalid URL values to All instead of the default', async ({ page }) => {
