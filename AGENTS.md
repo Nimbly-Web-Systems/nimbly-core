@@ -3,6 +3,10 @@ Nimbly is a full-stack design system. It is required to read
 session before making any significant change. After that, consult only the
 sections relevant to the current task.
 
+For project-specific workflow rules, also read `ext/.context/AGENTS.md` once per
+session when that file exists. Treat its instructions as applying to work in
+the separate `ext/` repository, alongside this file.
+
 ## Workflow
 
 For every task, follow this workflow unless explicitly instructed otherwise.
