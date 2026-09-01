@@ -8,49 +8,54 @@
         <span aria-hidden="true">/</span>
         <span class="text-neutral-700">[#resource-name [#resource-id#] plural#]</span>
     </nav>
-    <div class="flex min-w-0 flex-wrap items-center gap-2 md:flex-nowrap">
-        <h1 class="min-w-0 basis-full break-words text-2xl font-semibold text-neutral-800 md:basis-auto md:text-3xl"
-            data-nb-edit-options='{"buttons":""}'>
-            [#text [#resource-name [#resource-id#] plural#]#]
-        </h1>
-        <input type="search"
-            class="order-last min-h-11 w-full min-w-0 basis-full rounded border border-neutral-300 bg-neutral-50 px-4 py-2 text-neutral-800 placeholder:text-neutral-500 focus:outline-2 focus:outline-cnormal md:order-none md:ml-auto md:mr-4 md:min-h-0 md:w-64 md:basis-auto md:py-1.5 lg:w-80"
-            placeholder="[#text Search#]"
-            x-data="{search_term: ''}"
-            x-init="search_term=''"
-            @input.debounce.150ms="$dispatch('search', $event.target.value)"
-        />
-        [#feature-cond create-[#resource-id#] tpl=btn_add#]
-        [#feature-cond import-[#resource-id#] tpl=btn_import#]
-        [#feature-cond features="export-[#resource-id#]" tpl=btn_export#]
-    </div>
-    <div x-show="Object.keys(_filters).length" x-cloak
-        class="mt-3 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-4 sm:gap-y-2">
-        <template x-for="(filter, field_id) in _filters" :key="field_id">
-            <label class="flex flex-col gap-1 text-xs font-medium text-neutral-500 sm:flex-row sm:items-center sm:gap-1.5">
-                <span x-text="filter.name"></span>
-                <select class="min-h-11 w-full rounded border bg-neutral-50 px-3 py-2 pr-8 text-sm text-neutral-800 focus:outline-2 focus:outline-cnormal sm:w-auto md:min-h-0 md:py-1.5"
-                    :class="filter_values[field_id] !== ''
-                        ? 'border-cnormal font-medium text-cdark'
-                        : 'border-neutral-300'"
-                    :name="`filter[${field_id}]`"
-                    x-model="filter_values[field_id]"
-                    x-effect="$nextTick(() => { $el.value = filter_values[field_id] })"
-                    @change="change_filter(field_id, $event.target.value)">
-                    <option value="">[#text All#]</option>
-                    <template x-for="(label, value) in filter.options" :key="value">
-                        <option :value="String(value)" x-text="label"></option>
-                    </template>
-                </select>
+    <h1 class="min-w-0 break-words text-2xl font-semibold text-neutral-800 md:text-3xl"
+        data-nb-edit-options='{"buttons":""}'>
+        [#text [#resource-name [#resource-id#] plural#]#]
+    </h1>
+
+    <div class="mt-4 rounded-box border border-base-300 bg-base-100 p-2 sm:p-3">
+        <div class="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+            <label class="input w-full sm:w-56 lg:w-64">
+                <svg class="size-4 opacity-50" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+                </svg>
+                <input type="search"
+                    placeholder="[#text Search#]"
+                    x-data="{search_term: ''}"
+                    x-init="search_term=''"
+                    @input.debounce.150ms="$dispatch('search', $event.target.value)"
+                />
             </label>
-        </template>
+            <template x-for="(filter, field_id) in _filters" :key="field_id">
+                <label class="select w-full sm:w-auto sm:min-w-40" x-cloak>
+                    <span class="label" x-text="filter.name"></span>
+                    <select
+                        :name="`filter[${field_id}]`"
+                        x-model="filter_values[field_id]"
+                        x-effect="$nextTick(() => { $el.value = filter_values[field_id] })"
+                        @change="change_filter(field_id, $event.target.value)">
+                        <option value="">[#text All#]</option>
+                        <template x-for="(label, value) in filter.options" :key="value">
+                            <option :value="String(value)" x-text="label"></option>
+                        </template>
+                    </select>
+                </label>
+            </template>
+        </div>
+        <div class="mt-2 flex items-center justify-between gap-2 border-t border-base-200 pt-2">
+            <span class="text-sm text-neutral-500" data-nb-record-count>
+                <span x-text="filtered_count()"></span>
+                [#text of#]
+                <span x-text="record_count()"></span>
+                [#text records#]
+            </span>
+            <span class="flex shrink-0 items-center gap-1">
+                [#feature-cond create-[#resource-id#] tpl=btn_add#]
+                [#feature-cond import-[#resource-id#] tpl=btn_import#]
+                [#feature-cond features="export-[#resource-id#]" tpl=btn_export#]
+            </span>
+        </div>
     </div>
-    <h3 class="px-3 pb-2 pt-2 text-sm font-medium text-neutral-700 sm:px-4 md:text-base">
-        <span x-text="filtered_count()"></span>
-        <span>[#text of#]</span>
-        <span x-text="record_count()"></span>
-        <span>[#text records#]</span>
-    </h3>
 
     [#resource-table#]
 
