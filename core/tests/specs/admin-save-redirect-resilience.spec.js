@@ -29,6 +29,8 @@ test.describe('save redirect survives a failing flash message (test-records)', (
     await page.goto('/nb-admin/test-records/add');
     await page.fill('[name=title]', title);
     await page.fill('[name=notes]', 'test notes');
+    await page.selectOption('[name=status]', 'active');
+    await page.selectOption('[name=delivery_status]', 'sendable');
 
     const submit = page.locator('form button[type=submit]').first();
     await submit.click();

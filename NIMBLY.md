@@ -1119,6 +1119,7 @@ Common options per field:
 | `name` | string | Display label in admin |
 | `required` | boolean | Validation — must be set on all title/name fields |
 | `admin_col` | boolean | Show in admin overview table (default: true) |
+| `admin_filter` | boolean or object | Add an admin overview filter for a `select` or `boolean` field. Use `{ "default": <stored-value> }` to enable it with a default selection. Independent from `admin_col`. |
 | `multi` | boolean | Allow multiple values |
 | `i18n` | boolean | Translate per language |
 | `accept` | string | File type restriction for image/file fields |
@@ -1196,6 +1197,28 @@ Options from another resource:
 "type": "select",
 "resource": "categories"
 ```
+
+Admin overview filters are opt-in for `select` and `boolean` fields:
+
+```json
+"status": {
+  "type": "select",
+  "options": { "active": "Active", "closed": "Closed" },
+  "admin_filter": { "default": "active" }
+},
+"published": {
+  "type": "boolean",
+  "admin_col": false,
+  "admin_filter": true
+}
+```
+
+Filters compare raw stored values while displaying configured option or related
+resource labels. Multi-value selects match when the record contains the selected
+value. Multiple filters combine with AND logic and continue to work with search,
+sorting, and pagination. Selections persist in the URL as
+`filter[field]=value`. An absent parameter uses the configured default; an empty
+parameter explicitly selects **All**. Invalid URL values normalize to **All**.
 
 **Location picker fields:**
 

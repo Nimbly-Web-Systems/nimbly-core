@@ -35,12 +35,15 @@ function get_resource_records_sc($params)
     }
 
     $fields = _prep_fields($meta);
-    $resource_maps = _build_resource_maps($fields);
+    $filter_fields = _prep_filter_fields($meta);
+    $resource_maps = _build_resource_maps(array_merge($fields, $filter_fields));
+    $filters = _prep_filters($filter_fields, $resource_maps);
 
     $data_records = [];
 
     foreach ($raw_records as $ix => $record) {
         $data_records[$ix] = _prep_record($record, $fields, $resource_maps);
+        $data_records[$ix]['_filter_values'] = _prep_filter_values($record, $filter_fields);
         if (!empty($meta['actions']['url'])) {
             $data_records[$ix]['_action_url'] = _prep_action_url($meta['actions']['url'], $record, $ix);
         }
@@ -49,8 +52,79 @@ function get_resource_records_sc($params)
         }
     }
     set_variable('data.fields', $fields);
+    set_variable('data.filters', $filters);
     set_variable('data.records', $data_records);
     set_variable('data.sort', $meta['sort'] ?? []);
+}
+
+function _prep_filter_fields($meta)
+{
+    $result = [];
+    foreach (($meta['fields'] ?? []) as $field_id => $field) {
+        if (empty($field['type']) || !in_array($field['type'], ['select', 'boolean'], true)) {
+            continue;
+        }
+        if (!array_key_exists('admin_filter', $field) || $field['admin_filter'] === false) {
+            continue;
+        }
+        if (empty($field['name'])) {
+            $field['name'] = $field_id;
+        }
+        $result[$field_id] = $field;
+    }
+    return $result;
+}
+
+function _prep_filters($fields, $resource_maps = [])
+{
+    $result = [];
+    foreach ($fields as $field_id => $field) {
+        if (($field['type'] ?? '') === 'boolean') {
+            $options = ['1' => t('Yes'), '0' => t('No')];
+        } elseif (!empty($field['resource'])) {
+            $options = $resource_maps[$field['resource']] ?? [];
+        } else {
+            $options = $field['options'] ?? [];
+        }
+
+        $filter = [
+            'name' => $field['name'],
+            'options' => $options,
+        ];
+        if (is_array($field['admin_filter']) && array_key_exists('default', $field['admin_filter'])) {
+            $filter['default'] = _admin_filter_value($field['admin_filter']['default'], $field['type']);
+        }
+        $result[$field_id] = $filter;
+    }
+    return $result;
+}
+
+function _prep_filter_values($record, $fields)
+{
+    $result = [];
+    foreach ($fields as $field_id => $field) {
+        $value = $record[$field_id] ?? '';
+        if (is_array($value)) {
+            $result[$field_id] = array_map(
+                fn($item) => _admin_filter_value($item, $field['type']),
+                $value
+            );
+            continue;
+        }
+        $result[$field_id] = _admin_filter_value($value, $field['type']);
+    }
+    return $result;
+}
+
+function _admin_filter_value($value, $type)
+{
+    if ($type === 'boolean') {
+        return filter_var($value, FILTER_VALIDATE_BOOLEAN) ? '1' : '0';
+    }
+    if (is_scalar($value)) {
+        return (string)$value;
+    }
+    return '';
 }
 
 function _prep_action_url($url, $record, $uuid)
