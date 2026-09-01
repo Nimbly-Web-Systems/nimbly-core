@@ -104,6 +104,27 @@ if (data_exists('test-records', '.meta')) {
             'title' => ['type' => 'text',     'name' => 'Title',       'required' => true],
             'score' => ['type' => 'number',   'name' => 'Score'],
             'notes' => ['type' => 'textarea', 'name' => 'Notes'],
+            'status' => [
+                'type' => 'select', 'name' => 'Status',
+                'options' => ['active' => 'Active', 'archived' => 'Archived'],
+                'admin_filter' => ['default' => 'active'],
+            ],
+            'delivery_status' => [
+                'type' => 'select', 'name' => 'Delivery status',
+                'options' => ['sendable' => 'Sendable', 'blocked' => 'Blocked'],
+                'admin_filter' => ['default' => 'sendable'],
+            ],
+            'is_paid' => ['type' => 'boolean', 'name' => 'Paid', 'admin_filter' => true],
+            'category' => [
+                'type' => 'select', 'name' => 'Category', 'admin_col' => false,
+                'options' => ['news' => 'News', 'events' => 'Events'],
+                'admin_filter' => true,
+            ],
+            'tags' => [
+                'type' => 'select', 'name' => 'Tags', 'multi' => true, 'admin_col' => false,
+                'options' => ['featured' => 'Featured', 'seasonal' => 'Seasonal'],
+                'admin_filter' => true,
+            ],
         ],
         'record_actions' => [
             ['template' => 'action-import-document', 'feature' => 'manage-test-records', 'scope' => 'add'],
@@ -114,8 +135,16 @@ if (data_exists('test-records', '.meta')) {
 
 // ── Seed records ─────────────────────────────────────────────────────────────
 $records = [
-    'test-001' => ['title' => 'Alpha record', 'score' => '42', 'notes' => 'First test record'],
-    'test-002' => ['title' => 'Beta record',  'score' => '7',  'notes' => 'Second test record'],
+    'test-001' => [
+        'title' => 'Alpha record', 'score' => '42', 'notes' => 'First test record',
+        'status' => 'active', 'delivery_status' => 'sendable', 'is_paid' => false,
+        'category' => 'news', 'tags' => ['featured', 'seasonal'],
+    ],
+    'test-002' => [
+        'title' => 'Beta record', 'score' => '7', 'notes' => 'Second test record',
+        'status' => 'active', 'delivery_status' => 'blocked', 'is_paid' => true,
+        'category' => 'events', 'tags' => ['seasonal'],
+    ],
 ];
 
 foreach ($records as $uuid => $data) {

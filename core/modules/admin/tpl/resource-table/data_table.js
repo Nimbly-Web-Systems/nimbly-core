@@ -10,6 +10,13 @@ document.addEventListener("alpine:init", () => {
     filtered_records: {},
     page_records: {},
     search_regex: null,
+    filter_values: {},
+    record_count() {
+      return Object.keys(_records).length;
+    },
+    filtered_count() {
+      return Object.keys(this.filtered_records).length;
+    },
     page_count() {
       return Math.ceil(
         Object.keys(this.filtered_records).length / this.page_size
@@ -59,6 +66,9 @@ document.addEventListener("alpine:init", () => {
     },
     total_count() {
       return Object.keys(this.filtered_records).length;
+    },
+    has_active_query() {
+      return this.search_regex !== null || Object.values(this.filter_values).some(value => value !== "");
     },
     toggle_sort(field_id) {
       if (this.sort_field === field_id) {
@@ -115,8 +125,7 @@ document.addEventListener("alpine:init", () => {
           if (data.success) {
             nb.notify(nb.text.record_deleted);
             delete _records[record_id];
-            delete this.filtered_records[record_id];
-            this.set_page_records();
+            this.apply_pipeline();
           } else {
             nb.notify(data.message);
           }
@@ -124,30 +133,76 @@ document.addEventListener("alpine:init", () => {
     },
     search(term) {
       this.search_term = term.toLowerCase();
+      this.page = 1;
       if (term.length < 3) {
         this.search_regex = null;
-        this.filtered_records = { ..._records };
-        this.set_page_records();
+        this.apply_pipeline();
         return;
-      }
-
-      const result = {};
-      for (const [id, rec] of Object.entries(_records)) {
-        for (const field of Object.keys(_fields)) {
-          const val = rec[field];
-          if (
-            typeof val === "string" &&
-            val.toLowerCase().includes(this.search_term)
-          ) {
-            result[id] = rec;
-            break;
-          }
-        }
       }
       const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
       this.search_regex = new RegExp(`(${escaped})`, "gi");
-      this.filtered_records = result;
+      this.apply_pipeline();
+    },
+    record_matches_filters(record) {
+      return Object.entries(this.filter_values).every(([field_id, selected]) => {
+        if (selected === "") {
+          return true;
+        }
+        const raw = record._filter_values?.[field_id] ?? "";
+        if (Array.isArray(raw)) {
+          return raw.map(String).includes(selected);
+        }
+        return String(raw) === selected;
+      });
+    },
+    record_matches_search(record) {
+      if (!this.search_regex) {
+        return true;
+      }
+      return Object.keys(_fields).some(field_id => {
+        const value = record[field_id];
+        return typeof value === "string" && value.toLowerCase().includes(this.search_term);
+      });
+    },
+    apply_pipeline() {
+      this.filtered_records = Object.fromEntries(
+        Object.entries(_records).filter(([_, record]) =>
+          this.record_matches_filters(record) && this.record_matches_search(record)
+        )
+      );
+      if (this.sort_field) {
+        this.sort_records();
+        return;
+      }
       this.set_page_records();
+    },
+    change_filter(field_id, value) {
+      this.filter_values[field_id] = String(value);
+      this.page = 1;
+      const url = new URL(window.location.href);
+      url.searchParams.set(`filter[${field_id}]`, String(value));
+      window.history.replaceState({}, "", url);
+      this.apply_pipeline();
+    },
+    init_filters() {
+      const params = new URLSearchParams(window.location.search);
+      let normalize_url = false;
+      for (const [field_id, filter] of Object.entries(_filters)) {
+        const key = `filter[${field_id}]`;
+        const has_url_value = params.has(key);
+        const candidate = has_url_value ? params.get(key) : (filter.default ?? "");
+        const value = String(candidate ?? "");
+        const valid = value === "" || Object.prototype.hasOwnProperty.call(filter.options, value);
+        this.filter_values[field_id] = valid ? value : "";
+        if (has_url_value && !valid) {
+          params.set(key, "");
+          normalize_url = true;
+        }
+      }
+      if (normalize_url) {
+        const query = params.toString();
+        window.history.replaceState({}, "", `${window.location.pathname}${query ? `?${query}` : ""}${window.location.hash}`);
+      }
     },
     highlight(txt) {
       if (Array.isArray(txt)) {
@@ -170,12 +225,12 @@ document.addEventListener("alpine:init", () => {
       return s.replace(this.search_regex, '<span class="bg-yellow-200">$1</span>');
     },
     init() {
-      this.filtered_records = { ..._records };
+      this.init_filters();
       if (_default_sort_field && _fields[_default_sort_field]) {
         this.sort_field = _default_sort_field;
         this.sort_asc = _default_sort_order.toLowerCase() !== "desc";
       }
-      this.set_page_records();
+      this.apply_pipeline();
     },
   }));
 });

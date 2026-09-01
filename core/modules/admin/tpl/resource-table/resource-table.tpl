@@ -1,6 +1,4 @@
-<div class="mt-4 w-full rounded-md bg-neutral-50 px-3 py-2 shadow-md sm:px-4"
-    x-data="data_table()"
-    @search.window="search($event.detail || '')">
+<div class="mt-4 w-full rounded-md bg-neutral-50 px-3 py-2 shadow-md sm:px-4">
         <div class="hidden md:block">
           <table class="min-w-full">
         <thead>
@@ -38,7 +36,7 @@
                 <tr>
                     <td class="border-b border-neutral-200 py-3 pr-4 text-neutral-600"
                         :colspan="Object.keys(_fields).length">
-                        <p x-text="search_regex? '[#text No search results#]': '[#text No records yet#]'" ></p>
+                        <p x-text="has_active_query()? '[#text No matching records#]': '[#text No records yet#]'" ></p>
                     </td>
                     <td class="border-b border-neutral-200 py-3 pr-4 text-neutral-600">
                         <template x-if="Object.keys(_records).length < 1">
@@ -70,7 +68,7 @@
     <div class="md:hidden divide-y divide-neutral-200">
         <template x-if="total_count() < 1">
             <div class="py-4 text-neutral-600">
-                <p x-text="search_regex? '[#text No search results#]': '[#text No records yet#]'"></p>
+                <p x-text="has_active_query()? '[#text No matching records#]': '[#text No records yet#]'"></p>
                 <template x-if="Object.keys(_records).length < 1">
                     <div class="pt-3">
                         [#feature-cond create-[#resource-id#] tpl=action_add#]
@@ -134,7 +132,7 @@
         <div>
             <button
                 class="flex h-11 w-11 items-center justify-center rounded text-neutral-700 hover:bg-neutral-100 disabled:pointer-events-none disabled:text-neutral-300 md:h-8 md:w-8"
-                :disabled="(offset + page_size) >= Object.keys(_records).length" x-ref="btn_next_page"
+                :disabled="(offset + page_size) >= total_count()" x-ref="btn_next_page"
                 @click="next()">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="size-4">
                     <path fill-rule="evenodd"

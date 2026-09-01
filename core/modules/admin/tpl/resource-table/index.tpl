@@ -1,5 +1,7 @@
 [#init-resource-table#]
-<section class="bg-neutral-100 p-3 sm:p-4 md:p-6 lg:p-8 font-primary">
+<section class="bg-neutral-100 p-3 sm:p-4 md:p-6 lg:p-8 font-primary"
+    x-data="data_table()"
+    @search.window="search($event.detail || '')">
 
     <nav class="mb-2 flex items-center gap-1.5 text-xs font-medium text-neutral-500" aria-label="Breadcrumb">
         [#breadcrumb-home#]
@@ -22,7 +24,30 @@
         [#feature-cond import-[#resource-id#] tpl=btn_import#]
         [#feature-cond features="export-[#resource-id#]" tpl=btn_export#]
     </div>
-    <h3 class="px-3 pb-2 pt-1 text-sm font-medium text-neutral-700 sm:px-4 md:text-base">[#count data.records#] [#text records#]</h3>
+    <div x-show="Object.keys(_filters).length" x-cloak
+        class="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <template x-for="(filter, field_id) in _filters" :key="field_id">
+            <label class="block min-w-0 text-sm font-medium text-neutral-700">
+                <span x-text="filter.name"></span>
+                <select class="mt-1 min-h-11 w-full rounded border border-neutral-300 bg-neutral-50 px-3 py-2 text-neutral-800 focus:outline-2 focus:outline-cnormal md:min-h-0 md:py-1.5"
+                    :name="`filter[${field_id}]`"
+                    x-model="filter_values[field_id]"
+                    x-effect="$nextTick(() => { $el.value = filter_values[field_id] })"
+                    @change="change_filter(field_id, $event.target.value)">
+                    <option value="">[#text All#]</option>
+                    <template x-for="(label, value) in filter.options" :key="value">
+                        <option :value="String(value)" x-text="label"></option>
+                    </template>
+                </select>
+            </label>
+        </template>
+    </div>
+    <h3 class="px-3 pb-2 pt-3 text-sm font-medium text-neutral-700 sm:px-4 md:text-base">
+        <span x-text="filtered_count()"></span>
+        <span>[#text of#]</span>
+        <span x-text="record_count()"></span>
+        <span>[#text records#]</span>
+    </h3>
 
     [#resource-table#]
 

@@ -21,6 +21,8 @@ test.describe('admin CRUD — test-records', () => {
     await page.fill('[name=title]', 'Playwright record');
     await page.fill('[name=score]', '99');
     await page.fill('[name=notes]', 'Created by Playwright');
+    await page.selectOption('[name=status]', 'active');
+    await page.selectOption('[name=delivery_status]', 'sendable');
     await submit.click();
 
     await page.waitForURL(/\/nb-admin\/test-records$/);
