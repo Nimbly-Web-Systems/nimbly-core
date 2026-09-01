@@ -12,6 +12,10 @@ function filter(page, field_id) {
   return page.locator(`select[name="filter[${field_id}]"]`);
 }
 
+function filter_control(page, field_id) {
+  return page.locator(`label.select:has(select[name="filter[${field_id}]"])`);
+}
+
 function desktop_record(page, title) {
   return page.getByRole('cell', { name: title, exact: true });
 }
@@ -49,7 +53,7 @@ test.describe('admin resource filters', () => {
 
     await page.getByRole('searchbox').fill('Beta');
     await expect(page.locator('table').getByText('No matching records', { exact: true })).toBeVisible();
-    await expect(page.locator('section[x-data] h3')).toContainText(new RegExp(`0\\s+of\\s+${total_records}\\s+records`));
+    await expect(page.locator('[data-nb-record-count]')).toContainText(new RegExp(`0\\s+of\\s+${total_records}\\s+records`));
   });
 
   test('normalizes invalid URL values to All instead of the default', async ({ page }) => {
@@ -103,8 +107,8 @@ test.describe('admin resource filters', () => {
   test('renders responsive full-width controls on mobile', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto('/nb-admin/test-records');
-    const status_box = await filter(page, 'status').boundingBox();
-    const delivery_box = await filter(page, 'delivery_status').boundingBox();
+    const status_box = await filter_control(page, 'status').boundingBox();
+    const delivery_box = await filter_control(page, 'delivery_status').boundingBox();
     expect(status_box.width).toBeGreaterThan(300);
     expect(delivery_box.y).toBeGreaterThan(status_box.y);
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
