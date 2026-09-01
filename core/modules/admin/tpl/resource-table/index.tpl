@@ -8,10 +8,18 @@
         <span aria-hidden="true">/</span>
         <span class="text-neutral-700">[#resource-name [#resource-id#] plural#]</span>
     </nav>
-    <h1 class="min-w-0 break-words text-2xl font-semibold text-neutral-800 md:text-3xl"
-        data-nb-edit-options='{"buttons":""}'>
-        [#text [#resource-name [#resource-id#] plural#]#]
-    </h1>
+    <div class="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+        <h1 class="min-w-0 break-words text-2xl font-semibold text-neutral-800 md:text-3xl"
+            data-nb-edit-options='{"buttons":""}'>
+            [#text [#resource-name [#resource-id#] plural#]#]
+        </h1>
+        <span class="text-sm text-neutral-500" data-nb-record-count>
+            <span x-text="filtered_count()"></span>
+            [#text of#]
+            <span x-text="record_count()"></span>
+            [#text records#]
+        </span>
+    </div>
 
     <div class="mt-4 rounded-box border border-base-300 bg-base-100 p-2 sm:p-3">
         <div class="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
@@ -41,15 +49,7 @@
                     </select>
                 </label>
             </template>
-        </div>
-        <div class="mt-2 flex items-center justify-between gap-2 border-t border-base-200 pt-2">
-            <span class="text-sm text-neutral-500" data-nb-record-count>
-                <span x-text="filtered_count()"></span>
-                [#text of#]
-                <span x-text="record_count()"></span>
-                [#text records#]
-            </span>
-            <span class="flex shrink-0 items-center gap-1">
+            <span class="flex shrink-0 items-center gap-1 sm:ms-auto">
                 [#feature-cond create-[#resource-id#] tpl=btn_add#]
                 [#feature-cond import-[#resource-id#] tpl=btn_import#]
                 [#feature-cond features="export-[#resource-id#]" tpl=btn_export#]
