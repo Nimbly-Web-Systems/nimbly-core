@@ -32,6 +32,7 @@ if ($command === 'agent:enqueue') {
     $agent_id = trim((string)($argv[2] ?? ''));
     $manual = '';
     $operator = '';
+    $scheduled = false;
     $target = '';
     $read_only = false;
     foreach (array_slice($argv, 3) as $argument) {
@@ -43,10 +44,13 @@ if ($command === 'agent:enqueue') {
             $target = substr($argument, 9);
         } elseif ($argument === '--read-only') {
             $read_only = true;
+        } elseif ($argument === '--scheduled') {
+            $scheduled = true;
         }
     }
-    if ($manual !== '' && $operator !== '') {
-        throw new InvalidArgumentException('Choose either --manual or --operator');
+    $trigger_count = (int)($manual !== '') + (int)($operator !== '') + (int)$scheduled;
+    if ($trigger_count !== 1) {
+        throw new InvalidArgumentException('Choose exactly one of --scheduled, --manual=<key>, or --operator=<key>');
     }
     $dependencies = [];
     if ($manual !== '' || $operator !== '') {
@@ -56,9 +60,16 @@ if ($command === 'agent:enqueue') {
             'target' => $target,
             'read_only' => $read_only,
         ];
+    } elseif ($scheduled) {
+        $dependencies = ['trigger' => 'scheduled'];
     }
-    $run_uuid = agent_enqueue($agent_id, null, $dependencies);
-    echo "Agent run enqueued: {$run_uuid}\n";
+    $result = agent_enqueue_result($agent_id, null, $dependencies);
+    $run_uuid = $result['run_uuid'];
+    if ($result['created']) {
+        echo "Agent run enqueued: {$run_uuid}\n";
+    } else {
+        echo "Agent run already exists ({$result['status']}): {$run_uuid}\n";
+    }
     exit(0);
 }
 if ($command === 'agent:run') {
@@ -79,5 +90,5 @@ if ($command === 'agent:recover') {
     exit(0);
 }
 
-fwrite(STDERR, "Usage: agent:enqueue <agent-id> [--manual=<key>|--operator=<key>] [--target=<identity>] [--read-only] | agent:run <run-uuid> | agent:retry <failed-run-uuid> | agent:recover\n");
+fwrite(STDERR, "Usage: agent:enqueue <agent-id> (--scheduled|--manual=<key>|--operator=<key>) [--target=<identity>] [--read-only] | agent:run <run-uuid> | agent:retry <failed-run-uuid> | agent:recover\n");
 exit(64);

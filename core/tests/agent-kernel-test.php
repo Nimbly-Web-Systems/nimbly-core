@@ -96,7 +96,12 @@ $GLOBALS['AGENT_TEST_DEFINITIONS']['scientific-writer'] = [
     'tools' => [],
 ];
 
-$run_uuid = agent_enqueue('scientific-writer', 1788052800, ['idempotency_suffix' => 'kernel-test']);
+$enqueue = agent_enqueue_result('scientific-writer', 1788052800, ['idempotency_suffix' => 'kernel-test']);
+$run_uuid = $enqueue['run_uuid'];
+agent_test_assert($enqueue['created'], 'the first enqueue reports a newly created run');
+$duplicate = agent_enqueue_result('scientific-writer', 1788052800, ['idempotency_suffix' => 'kernel-test']);
+agent_test_assert(!$duplicate['created'] && $duplicate['run_uuid'] === $run_uuid,
+    'a duplicate enqueue reports the existing run');
 agent_test_assert($agent_test_jobs[0]['type'] === 'agent', 'the kernel is its own queue entry point');
 $failed = agent_run($run_uuid);
 agent_test_assert($failed['status'] === 'failed', 'transient delivery failure is durably recorded');
