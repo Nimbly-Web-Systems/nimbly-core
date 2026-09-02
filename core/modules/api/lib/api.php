@@ -201,6 +201,36 @@ function api_log_url($value): string {
     return api_log_excerpt(($host !== '' ? $host : '') . $path);
 }
 
+function api_log_field_names(array $data, int $max_fields = 24): array {
+    $fields = [];
+    foreach (array_keys($data) as $field) {
+        if (!is_string($field)) {
+            continue;
+        }
+        $field = preg_replace('/[^a-zA-Z0-9_.:-]+/', '', $field);
+        if ($field !== '') {
+            $fields[] = substr($field, 0, 64);
+        }
+        if (count($fields) >= $max_fields) {
+            break;
+        }
+    }
+    return array_values(array_unique($fields));
+}
+
+function api_validation_failure_log(string $resource, string $detail, array $data): string {
+    $context = [
+        'resource' => $resource,
+        'path' => api_log_url($_SERVER['REQUEST_URI'] ?? ''),
+        'referrer' => api_log_url($_SERVER['HTTP_REFERER'] ?? ''),
+        'submitted_fields' => api_log_field_names($data),
+    ];
+    $context = array_filter($context, fn($value) => $value !== '' && $value !== []);
+    return 'Resource create failed for ' . $resource . ': validation failed'
+        . ($detail !== '' ? " ({$detail})" : '')
+        . ' | details=' . json_encode($context, JSON_UNESCAPED_SLASHES);
+}
+
 function api_honeypot_form_label(string $resource): string {
     if ($resource === '') {
         return 'submitted form';
@@ -325,8 +355,7 @@ function resource_post($resource) { // create new
     $error = data_error_get();
     if ($error === 'VALIDATION_FAILED') {
         $detail = preg_replace('/[^a-zA-Z0-9_.:-]+/', '', (string)data_error_detail_get());
-        log_system("resource create failed for " . $resource . ": validation failed"
-            . ($detail !== '' ? " ({$detail})" : ''));
+        log_system(api_validation_failure_log($resource, $detail, $data));
         return json_result(array('message' => 'INVALID_DATA'), 422);
     }
     log_system("resource create failed for " . $resource . ": write failed");
