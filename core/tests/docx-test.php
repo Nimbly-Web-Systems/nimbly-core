@@ -49,6 +49,15 @@ $checks = [
         => str_contains($text, 'Plain paragraph, no links here.'),
     'internal-only (bookmark) hyperlink keeps its visible text, no fabricated URL'
         => str_contains($text, 'Internal-only link: see above') && !str_contains($text, '[see above]'),
+    'Markdown source link becomes an HTML anchor deterministically'
+        => docx_markdown_links_to_html('[Amsterdam](https://example.com/amsterdam)')
+            === '<a href="https://example.com/amsterdam">Amsterdam</a>',
+    'Markdown URL with balanced parentheses becomes a complete HTML anchor'
+        => docx_markdown_links_to_html('[Fronton](https://nl.wikipedia.org/wiki/Fronton_(bouwkunde))')
+            === '<a href="https://nl.wikipedia.org/wiki/Fronton_(bouwkunde)">Fronton</a>',
+    'HTML-special characters in link labels and URLs are escaped'
+        => docx_markdown_links_to_html('[A & B](https://example.com/?a=1&b=2)')
+            === '<a href="https://example.com/?a=1&amp;b=2">A &amp; B</a>',
 ];
 
 $failed = array_filter($checks, fn($passed) => !$passed);

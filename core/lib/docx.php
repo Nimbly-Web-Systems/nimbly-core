@@ -107,3 +107,23 @@ function docx_extract_relationships($rels_xml): array
     }
     return $result;
 }
+
+/**
+ * Converts the Markdown link representation emitted by docx_extract_text()
+ * into real anchors for an HTML field. The model is still told to return
+ * semantic HTML, but preserving document links must not depend on it obeying
+ * that formatting instruction. One balanced pair of parentheses inside a URL
+ * is supported because Wikipedia and similar URLs commonly use that shape.
+ */
+function docx_markdown_links_to_html(string $html): string
+{
+    return preg_replace_callback(
+        '~\[([^\]\r\n]+)\]\(((?:[^()\s]+|\([^()\r\n]*\))+?)\)~u',
+        function ($match) {
+            $label = htmlspecialchars($match[1], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+            $url = htmlspecialchars($match[2], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+            return '<a href="' . $url . '">' . $label . '</a>';
+        },
+        $html
+    ) ?? $html;
+}

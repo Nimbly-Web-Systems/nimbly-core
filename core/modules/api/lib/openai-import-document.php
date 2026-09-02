@@ -81,7 +81,9 @@ function openai_import_document($resource)
         $instructions = [$type === 'html'
             ? "Extract the value for the field \"{$label}\". Return semantic HTML using only "
                 . '<p>, <h2>, <h3>, <strong>, <em>, <a>, <ul>, <ol>, <li> tags — no script, style, '
-                . 'or inline event handler attributes. The document may contain bracketed notes '
+                . 'or inline event handler attributes. Convert every Markdown link in the document '
+                . 'to an <a href="URL">label</a> element, preserving its label and URL exactly. '
+                . 'Never return Markdown links in an HTML field. The document may contain bracketed notes '
                 . 'marking where an image belongs, such as "[stadsplattegrond Görlitz]" or '
                 . '"[photo: the market square]" — keep every one of these verbatim as its own '
                 . 'paragraph, exactly where it appears; never drop, summarize, or rewrite them, '
@@ -236,9 +238,16 @@ function openai_import_document($resource)
         // "<p>" is valid JSON-string content as-is); decode first so both
         // response styles land in the same place.
         $value = html_entity_decode($value, ENT_QUOTES, 'UTF-8');
-        $result[$field] = $type === 'html'
-            ? strip_tags($value, '<p><h2><h3><strong><em><a><ul><ol><li>')
-            : strip_tags($value);
+        if ($type === 'html') {
+            // docx_extract_text() represents source hyperlinks as Markdown.
+            // Models occasionally echo that representation despite the HTML
+            // instruction, so normalize it deterministically before the form
+            // receives the proposed value.
+            $value = docx_markdown_links_to_html($value);
+            $result[$field] = strip_tags($value, '<p><h2><h3><strong><em><a><ul><ol><li>');
+        } else {
+            $result[$field] = strip_tags($value);
+        }
     }
     // If only one of the pair came back valid, geocoding is meaningless —
     // drop the lone half rather than plot a point on the equator/prime
