@@ -2179,7 +2179,7 @@ Record important project-specific agent identities in shared `ext/.context/`
 when future operators and AI agents need that association.
 
 ```bash
-php core/cli/nimbly.php agent:enqueue infra-expert
+php core/cli/nimbly.php agent:enqueue infra-expert --scheduled
 php core/cli/nimbly.php agent:enqueue infra-expert --operator=incident-review
 php core/cli/nimbly.php agent:run <run-uuid>
 php core/cli/nimbly.php agent:recover
@@ -2203,6 +2203,11 @@ terminally immutable `.agent_runs`, resumable `.agent_steps`, append-only
 failed step; completed model, tool, and rendering work is not repeated merely
 because delivery failed. Ignore runtime records in Git and include them in the
 host's persistent backup policy.
+
+The scheduler adds `--scheduled` to `agent:enqueue` commands automatically.
+Direct CLI invocations must explicitly choose `--scheduled`, `--operator=<key>`,
+or `--manual=<key>` so an interactive run cannot accidentally consume the
+daily scheduled occurrence.
 
 The schemas for these internal resources are declarative JSON files under
 `core/modules/agent/resources/`. The runtime installs them through one generic

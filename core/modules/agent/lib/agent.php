@@ -324,6 +324,11 @@ function agent_update_run(string $run_uuid, array $changes): void
 // Runs are idempotent by agent, scheduled occurrence, and optional caller suffix.
 function agent_enqueue(string $agent_id, ?int $now = null, array $options = []): string
 {
+    return agent_enqueue_result($agent_id, $now, $options)['run_uuid'];
+}
+
+function agent_enqueue_result(string $agent_id, ?int $now = null, array $options = []): array
+{
     $definition = agent_definition($agent_id);
     agent_ensure_resources();
     $now ??= time();
@@ -336,6 +341,7 @@ function agent_enqueue(string $agent_id, ?int $now = null, array $options = []):
     $idempotency_key = $agent_id . ':' . $occurrence . ($suffix === '' ? '' : ':' . $suffix);
     $run_uuid = substr(hash('sha256', $idempotency_key), 0, 16);
     $lock = agent_lock('enqueue-' . $run_uuid);
+    $created = false;
     try {
         $run = data_read('.agent_runs', $run_uuid);
         if (!is_array($run)) {
@@ -353,6 +359,7 @@ function agent_enqueue(string $agent_id, ?int $now = null, array $options = []):
             if (!data_create('.agent_runs', $run_uuid, $run)) {
                 throw new RuntimeException('Could not create agent run');
             }
+            $created = true;
             agent_append_event($run_uuid, 'run_scheduled', ['occurrence' => $occurrence]);
         }
         if (!in_array(($run['status'] ?? ''), AGENT_TERMINAL_STATUSES, true)) {
@@ -361,7 +368,11 @@ function agent_enqueue(string $agent_id, ?int $now = null, array $options = []):
     } finally {
         agent_unlock($lock);
     }
-    return $run_uuid;
+    return [
+        'run_uuid' => $run_uuid,
+        'created' => $created,
+        'status' => (string)($run['status'] ?? ''),
+    ];
 }
 
 function agent_queue(string $run_uuid, string $suffix = ''): void

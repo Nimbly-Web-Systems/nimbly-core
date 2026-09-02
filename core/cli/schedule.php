@@ -361,5 +361,12 @@ function schedule_command_parts($command)
     if (in_array('schedule:run', $parts, true)) {
         return [];
     }
+    if (($parts[0] ?? '') === 'agent:enqueue') {
+        $has_trigger = count(array_filter($parts, fn($part) => $part === '--scheduled'
+            || str_starts_with($part, '--manual=') || str_starts_with($part, '--operator='))) > 0;
+        if (!$has_trigger) {
+            $parts[] = '--scheduled';
+        }
+    }
     return $parts;
 }
