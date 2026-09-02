@@ -1119,7 +1119,7 @@ Common options per field:
 | `name` | string | Display label in admin |
 | `required` | boolean | Validation — must be set on all title/name fields |
 | `admin_col` | boolean | Show in admin overview table (default: true) |
-| `admin_filter` | boolean or object | Add an admin overview filter for a `select` or `boolean` field. Use `{ "default": <stored-value> }` to enable it with a default selection. Independent from `admin_col`. |
+| `admin_filter` | boolean or object | Add an admin overview filter for a `select` or `boolean` field. Use `{ "default": <stored-value> }` to enable it with a default selection, and optional `"feature": "permission-name"` to show it only to users with that feature. Independent from `admin_col`. |
 | `multi` | boolean | Allow multiple values |
 | `i18n` | boolean | Translate per language |
 | `accept` | string | File type restriction for image/file fields |

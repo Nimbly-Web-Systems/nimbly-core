@@ -12,6 +12,11 @@ function t($value)
     return $value;
 }
 
+function permission_session_has(string $feature): bool
+{
+    return !empty($GLOBALS['test_features'][$feature]);
+}
+
 require_once __DIR__ . '/../modules/admin/lib/get-resource-records.php';
 
 function admin_resource_records_assert(bool $condition, string $message): void
@@ -58,6 +63,16 @@ $meta = [
             'type' => 'boolean',
             'admin_filter' => true,
         ],
+        'permitted' => [
+            'name' => 'Permitted',
+            'type' => 'boolean',
+            'admin_filter' => ['feature' => 'view-private-filter'],
+        ],
+        'denied' => [
+            'name' => 'Denied',
+            'type' => 'boolean',
+            'admin_filter' => ['feature' => 'view-denied-filter'],
+        ],
         'ignored' => [
             'name' => 'Ignored',
             'type' => 'text',
@@ -66,8 +81,11 @@ $meta = [
     ],
 ];
 
+$GLOBALS['test_features'] = ['view-private-filter' => true];
 $filter_fields = _prep_filter_fields($meta);
 admin_resource_records_assert(isset($filter_fields['hidden_category']), 'hidden admin columns remain filterable');
+admin_resource_records_assert(isset($filter_fields['permitted']), 'permitted filters remain visible');
+admin_resource_records_assert(!isset($filter_fields['denied']), 'filters without their required feature remain hidden');
 admin_resource_records_assert(!isset($filter_fields['ignored']), 'unsupported field types do not become filters');
 
 $filters = _prep_filters($filter_fields, [
@@ -82,9 +100,11 @@ $raw_values = _prep_filter_values([
     'status' => 'active',
     'hidden_category' => ['cat-a', 'cat-b'],
     'published' => false,
+    'denied' => true,
 ], $filter_fields);
 admin_resource_records_assert($raw_values['status'] === 'active', 'filter records retain raw select values');
 admin_resource_records_assert($raw_values['hidden_category'] === ['cat-a', 'cat-b'], 'multi-value selects retain every raw value');
 admin_resource_records_assert($raw_values['published'] === '0', 'boolean false normalizes to its stored filter value');
+admin_resource_records_assert(!isset($raw_values['denied']), 'denied filter values are not exposed in records');
 
 echo "Admin resource records tests passed.\n";
