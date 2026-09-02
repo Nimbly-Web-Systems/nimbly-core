@@ -181,7 +181,38 @@ function api_sanitize_html_fields($resource, $data) {
  * the honeypot anti-spam field, if it is there, should be empty.
  * only bots are tricked to fill it in.
  */
-function api_honeypot_check(array &$data): bool {
+function api_log_excerpt($value, int $max_length = 160): string {
+    if (!is_scalar($value)) {
+        return '[' . gettype($value) . ']';
+    }
+    $value = trim(preg_replace('/\s+/', ' ', (string)$value));
+    return strlen($value) > $max_length
+        ? substr($value, 0, $max_length - 3) . '...'
+        : $value;
+}
+
+function api_log_url($value): string {
+    $parts = parse_url(trim((string)$value));
+    if ($parts === false) {
+        return '';
+    }
+    $host = isset($parts['host']) ? $parts['host'] : '';
+    $path = isset($parts['path']) ? $parts['path'] : '';
+    return api_log_excerpt(($host !== '' ? $host : '') . $path);
+}
+
+function api_honeypot_form_label(string $resource): string {
+    if ($resource === '') {
+        return 'submitted form';
+    }
+    $label = str_replace('-', ' ', $resource);
+    if (str_ends_with($label, ' messages')) {
+        $label = substr($label, 0, -9);
+    }
+    return trim($label) . ' form';
+}
+
+function api_honeypot_check(array &$data, string $resource = ''): bool {
     load_library('honeypot-field');
     $field = honeypot_field_name();
     if (!isset($data[$field])) {
@@ -189,7 +220,15 @@ function api_honeypot_check(array &$data): bool {
     }
     if (!empty($data[$field])) {
         load_library("log");
-        log_system("honeypot field was filled");
+        $context = [
+            'resource' => $resource,
+            'path' => api_log_url($_SERVER['REQUEST_URI'] ?? ''),
+            'referrer' => api_log_url($_SERVER['HTTP_REFERER'] ?? ''),
+            'value' => api_log_excerpt($data[$field]),
+        ];
+        $context = array_filter($context, fn($value) => $value !== '');
+        log_system('Spam caught: honeypot field filled on ' . api_honeypot_form_label($resource)
+            . ' | details=' . json_encode($context, JSON_UNESCAPED_SLASHES));
         return true;
     }
     unset($data[$field]);
@@ -199,8 +238,8 @@ function api_honeypot_check(array &$data): bool {
 /***
  * csrf check: if form_key is set, it should match the one in cookie or session.
  */
-function api_check_csrf(&$data) {
-    if (api_honeypot_check($data)) { 
+function api_check_csrf(&$data, string $resource = '') {
+    if (api_honeypot_check($data, $resource)) {
         return false;
     }
     if (!isset($data['form_key'])) {
@@ -263,7 +302,7 @@ function resource_post($resource) { // create new
         return api_import_resource($resource);
     }
     $data = api_json_input($resource);
-    $csrf_check = api_check_csrf($data);
+    $csrf_check = api_check_csrf($data, $resource);
     if ($csrf_check === false) { //can also be null, if no key is set
         return json_result(array('message' => 'INVALID_DATA'), 400);
     }
@@ -296,7 +335,7 @@ function resource_post($resource) { // create new
 
 function resource_put($resource) { // update multiple
     $data = api_json_input($resource);
-    $csrf_check = api_check_csrf($data);
+    $csrf_check = api_check_csrf($data, $resource);
     if ($csrf_check === false) { //can also be null, if no key is set
         return json_result(array('message' => 'INVALID_DATA'), 400);
     }
@@ -345,7 +384,7 @@ function resource_id_post($resource, $uuid) { // create new with uuid
         return json_result(array('message' => 'RESOURCE_EXISTS'), 409);
     }
     $data = api_json_input($resource);
-    $csrf_check = api_check_csrf($data);
+    $csrf_check = api_check_csrf($data, $resource);
     if ($csrf_check === false) { //can also be null, if no key is set
         return json_result(array('message' => 'INVALID_DATA'), 400);
     }
@@ -367,7 +406,7 @@ function resource_id_post($resource, $uuid) { // create new with uuid
 
 function resource_id_put($resource, $uuid) { // update one
     $data = api_json_input($resource);
-    $csrf_check = api_check_csrf($data);
+    $csrf_check = api_check_csrf($data, $resource);
     if ($csrf_check === false) { //can also be null, if no key is set
         return json_result(array('message' => 'INVALID_DATA'), 400);
     }
