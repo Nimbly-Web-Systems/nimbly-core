@@ -5,6 +5,7 @@ load_library('detect-language');
 function get_resource_records_sc($params)
 {
     load_library('fmt');
+    load_library('permissions');
     load_library('text');
     $resource = get_param_value($params, 'resource', current($params));
     $role = get_param_value($params, 'role', end($params));
@@ -65,6 +66,12 @@ function _prep_filter_fields($meta)
             continue;
         }
         if (!array_key_exists('admin_filter', $field) || $field['admin_filter'] === false) {
+            continue;
+        }
+        $filter_feature = is_array($field['admin_filter'])
+            ? trim((string)($field['admin_filter']['feature'] ?? ''))
+            : '';
+        if ($filter_feature !== '' && !permission_session_has($filter_feature)) {
             continue;
         }
         if (empty($field['name'])) {
