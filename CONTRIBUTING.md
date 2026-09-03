@@ -8,6 +8,15 @@ Nimbly uses a two-repository project model:
 Framework changes belong in the core repository. Project customizations belong
 in an `ext/` repository. See `NIMBLY.md` for a full description of the stack.
 
+## Licensing
+
+The Nimbly core in this repository is open source under the ISC license
+(`LICENSE.txt`).
+
+Every `ext/` application repository is proprietary: copyright Nimbly Web
+Systems, all rights reserved, and confidential. Each one ships its own
+`ext/LICENSE.txt`. Application code is not covered by the core ISC license.
+
 ## Reporting Bugs
 
 Before opening a bug report, please check the current documentation in

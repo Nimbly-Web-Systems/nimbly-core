@@ -27,6 +27,8 @@ my-project/          ← core repo root
 
 This means `git status` at the project root reflects core changes; `git status` inside `ext/` reflects application changes. They are independent repos with independent histories, branches, and remotes.
 
+They are also licensed separately: core is open source under the ISC license, while every ext repo is proprietary — copyright Nimbly Web Systems, all rights reserved — and carries its own `ext/LICENSE.txt`.
+
 ### Deciding core vs. ext
 
 The "never modify core" rule is about not bending core's *existing* framework code to fit one app. It is not a rule about where *new* framework-level features belong. Ask: would every Nimbly app need this, not just this project?

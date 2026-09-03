@@ -14,5 +14,9 @@ LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE
 OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
 PERFORMANCE OF THIS SOFTWARE.
 
+This license covers the Nimbly core design system in this repository.
+Application code maintained in a separate `ext/` repository is proprietary,
+licensed separately by its owner, and is not covered by this license.
+
 Third-party components included with this project remain licensed under their
 respective upstream licenses.
