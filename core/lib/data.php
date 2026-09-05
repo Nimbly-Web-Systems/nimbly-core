@@ -723,9 +723,6 @@ function data_create($resource, $uuid, $data_ls)
                     continue;
                 }
                 foreach (data_index_uuids($data_ls[$index_name]) as $index_uuid) {
-                    if ($index_uuid === $uuid) {
-                        continue; // no need to index self
-                    }
                     _data_create_index($resource, $file, $index_name, $index_uuid);
                 }
             }
