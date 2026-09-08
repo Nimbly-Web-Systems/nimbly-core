@@ -13,11 +13,16 @@ function nb_build_form_edit_state(resource_id, record_id, config = {}) {
     _ai_record_action: config.ai_record_action === true,
     _translation_mode: config.translation_mode || "",
     busy: false,
+    submitting: false,
+    _edit_form: null,
     ai_busy_field: null,
     ai_busy_all: false,
     translation_empty: {},
 
     init_edit_state() {
+      // Alpine's $el is the element invoking a method (often an action
+      // button). Retain the owning form for editor reads and refreshes.
+      this._edit_form = this.$el;
       this.form_data = config.record || {};
       this.$store.form_language.current = this.lang;
       this.initialize_translation_empty();
@@ -31,6 +36,7 @@ function nb_build_form_edit_state(resource_id, record_id, config = {}) {
 
     edit_submit(redirect_on_success = this.redirect_on_submit) {
       this.busy = true;
+      this.submitting = true;
       this.sync_editors(this.lang);
       const payload = {
         ...this.form_data,
@@ -50,6 +56,7 @@ function nb_build_form_edit_state(resource_id, record_id, config = {}) {
         .put(nb.base_url + "/api/v1/" + this.resource_id + "/" + this.record_id, payload)
         .then((data) => {
           this.busy = false;
+          this.submitting = false;
           if (!data.success) {
             nb.notify(data.message);
             return;
@@ -73,6 +80,7 @@ function nb_build_form_edit_state(resource_id, record_id, config = {}) {
         })
         .catch((error) => {
           this.busy = false;
+          this.submitting = false;
           nb.notify(error.message || "Could not update record");
         });
     },
@@ -88,10 +96,10 @@ function nb_build_form_edit_state(resource_id, record_id, config = {}) {
       this.$store.form_language.current = lang;
     },
     set_editors(lang) {
-      if (!this.$el) {
+      if (!this._edit_form) {
         return;
       }
-      const editors = this.$el.querySelectorAll("[data-nb-edit]");
+      const editors = this._edit_form.querySelectorAll("[data-nb-edit]");
       editors.forEach((el) => {
         const parts = el.dataset.nbEdit.split(".");
         const field = parts[parts.length - 1];
@@ -136,10 +144,10 @@ function nb_build_form_edit_state(resource_id, record_id, config = {}) {
         .replaceAll(`${base_url}/download/`, "/download/");
     },
     sync_editors(lang) {
-      if (!this.$el) {
+      if (!this._edit_form) {
         return;
       }
-      const editors = this.$el.querySelectorAll("[data-nb-edit]");
+      const editors = this._edit_form.querySelectorAll("[data-nb-edit]");
       editors.forEach((el) => {
         const parts = el.dataset.nbEdit.split(".");
         const field = parts[parts.length - 1];
@@ -153,7 +161,7 @@ function nb_build_form_edit_state(resource_id, record_id, config = {}) {
       });
     },
     get_editor_values() {
-      const editor_values = nb.edit.get_field_values(this.$el);
+      const editor_values = nb.edit.get_field_values(this._edit_form);
 
       Object.keys(editor_values).forEach((field) => {
         const field_data = this.form_data[field];
@@ -223,7 +231,7 @@ function nb_build_form_edit_state(resource_id, record_id, config = {}) {
     ai(field, lang) {
       this.busy = true;
       this.ai_busy_field = field;
-      nb.api
+      return nb.api
         .post(nb.base_url + "/api/v1/openai/complete", {
           resource: this.resource_id,
           uuid: this.record_id,
@@ -253,13 +261,13 @@ function nb_build_form_edit_state(resource_id, record_id, config = {}) {
         });
     },
     ai_all(lang) {
-      this.sync_editors(lang);
+      this.sync_editors(this.lang);
       const values = Object.fromEntries(
         ai_record_action_fields.map((field) => [field, this.form_data[field] || {}]),
       );
       this.busy = true;
       this.ai_busy_all = true;
-      nb.api
+      return nb.api
         .post(nb.base_url + "/api/v1/openai/complete", {
           resource: this.resource_id,
           uuid: this.record_id,
@@ -278,13 +286,14 @@ function nb_build_form_edit_state(resource_id, record_id, config = {}) {
             if (!this.form_data[field] || typeof this.form_data[field] !== "object") {
               this.form_data[field] = {};
             }
-            if (!String(this.form_data[field][lang] || "").trim()) {
+            if (this.translation_value_is_empty(this.form_data[field][lang])) {
               this.form_data[field][lang] = value;
               this.set_translation_empty(field, lang, value);
             }
           });
-          this.lang = lang;
-          this.set_editors(lang);
+          if (this.lang === lang) {
+            this.set_editors(lang);
+          }
         })
         .catch((err) => {
           this.busy = false;
