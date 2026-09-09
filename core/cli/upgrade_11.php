@@ -19,6 +19,14 @@ require_once BASE_DIR . 'core/cli/helpers/migrate_10.php';
 require_once BASE_DIR . 'core/cli/helpers/migrate_lib.php';
 require_once BASE_DIR . 'core/cli/helpers/htaccess.php';
 require_once BASE_DIR . 'core/cli/helpers/users_email_index.php';
+require_once BASE_DIR . 'core/lib/maintenance.php';
+
+$maintenance_path = BASE_DIR . 'ext/data/.state/schedule';
+$maintenance_state = is_file($maintenance_path) ? json_decode(file_get_contents($maintenance_path), true) : [];
+if (maintenance_health(is_array($maintenance_state) ? $maintenance_state : [])) {
+    cli_tip('Required maintenance is not healthy. Every deployed project must run schedule:run every minute; verify with ./nimbly schedule:status.');
+}
+
 
 function upgrade_11_tailwind_elements_files(): array
 {

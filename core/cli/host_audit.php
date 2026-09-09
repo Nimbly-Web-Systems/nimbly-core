@@ -17,7 +17,11 @@ if (!defined('BASE_DIR')) {
 }
 
 const HOST_AUDIT_SCHEMA_VERSION = 1;
-const HOST_AUDIT_VERSION = '1.3.1';
+const HOST_AUDIT_VERSION = '1.3.2';
+
+require_once is_file(__DIR__ . '/../lib/maintenance.php')
+    ? __DIR__ . '/../lib/maintenance.php'
+    : __DIR__ . '/nimbly-maintenance.php';
 
 if (!defined('NIMBLY_HOST_AUDIT_LIBRARY')) {
     $host_audit_command = $argv[1] ?? 'host:audit';
@@ -905,7 +909,7 @@ function host_audit_scheduler_project_paths(string $config_path, array &$finding
     }
     $paths = [];
     foreach ($scheduler_config['projects'] as $project) {
-        if (!is_array($project) || ($project['enabled'] ?? true) === false) {
+        if (!is_array($project)) {
             continue;
         }
         $path = rtrim((string)($project['path'] ?? ''), '/');
@@ -1189,6 +1193,7 @@ function host_audit_project(string $name, string $path, array $context, array &$
         });
     }
 
+    $maintenance = host_audit_project_maintenance($name, $path, $findings);
     $jobs = host_audit_project_jobs($name, $path, $context, $findings);
     $git = [
         'core' => host_audit_git_state($path),
@@ -1213,10 +1218,26 @@ function host_audit_project(string $name, string $path, array $context, array &$
         'available' => true,
         'environment' => $environment,
         'mail' => host_audit_project_mail_configuration($path),
+        'maintenance' => $maintenance,
         'system_log_events' => $system_log_events,
         'jobs' => $jobs,
         'git' => $git,
     ];
+}
+
+function host_audit_project_maintenance(string $name, string $path, array &$findings): array
+{
+    $state_path = $path . '/ext/data/.state/schedule';
+    $state = is_file($state_path) ? json_decode(file_get_contents($state_path), true) : [];
+    $issues = maintenance_health(is_array($state) ? $state : []);
+    foreach ($issues as $task => $reason) {
+        $findings[] = host_audit_finding(
+            'maintenance:' . host_audit_id($name) . ':' . $task,
+            'critical', 'project', 'Required maintenance ' . $reason,
+            $task, null, $name
+        );
+    }
+    return ['healthy' => !$issues, 'tasks' => $issues];
 }
 
 function host_audit_project_mail_configuration(string $path): array
@@ -1442,6 +1463,12 @@ function host_audit_install(array $argv): void
         fwrite(STDERR, "Could not read host audit source: " . __FILE__ . "\n");
         exit(1);
     }
+    $maintenance_source = file_get_contents(is_file(__DIR__ . '/../lib/maintenance.php')
+        ? __DIR__ . '/../lib/maintenance.php' : __DIR__ . '/nimbly-maintenance.php');
+    if ($maintenance_source === false) {
+        throw new RuntimeException('Could not read maintenance health library.');
+    }
+    host_audit_write_file(dirname($lib_path) . '/nimbly-maintenance.php', $maintenance_source, 0644);
     host_audit_write_file($lib_path, $source, 0644);
 
     $script = "#!/bin/sh\n"

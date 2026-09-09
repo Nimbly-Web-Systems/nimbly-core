@@ -681,8 +681,11 @@ if (empty(getenv('NIMBLY_INIT'))) {
     cli_tip("Run './nimbly build' to compile assets.");
     echo "\nScheduler cron\n";
     echo "  $cron_command\n";
-    cli_tip("This single cron entry runs due scheduled commands, including queued jobs.");
+    cli_tip("Scheduling is required for every deployed project, including session cleanup and password-reset email.");
+    cli_tip("On a VPS, register this project with the existing host orchestrator instead of adding per-project cron.");
+    cli_tip("In containers the bundled scheduler runs automatically; other cloud platforms must invoke schedule:run every minute.");
+    cli_tip("Verify successful maintenance with: ./nimbly schedule:status");
     cli_tip("To customize the schedule, run: ./nimbly schedule:init");
 } else {
-    echo "System setup complete.\n";
+    echo "System setup complete. Verify required maintenance with ./nimbly schedule:status after deployment.\n";
 }

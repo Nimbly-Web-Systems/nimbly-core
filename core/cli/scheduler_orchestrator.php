@@ -93,7 +93,7 @@ function scheduler_orchestrator_lock_path(): string
 function scheduler_orchestrator_default_config(): array
 {
     return [
-        'default_delay_after_seconds' => 10,
+        'default_delay_after_seconds' => 0,
         'projects' => [],
     ];
 }
@@ -116,7 +116,7 @@ function scheduler_orchestrator_read_config(): array
         $config['projects'] = [];
     }
     if (!isset($config['default_delay_after_seconds'])) {
-        $config['default_delay_after_seconds'] = 10;
+        $config['default_delay_after_seconds'] = 0;
     }
 
     return $config;
@@ -201,7 +201,6 @@ function scheduler_orchestrator_add(array $argv): void
     $config = scheduler_orchestrator_read_config();
     $config['projects'][$name] = [
         'path' => rtrim($real_path, '/'),
-        'enabled' => true,
     ];
     scheduler_orchestrator_write_config($config);
 
@@ -237,9 +236,8 @@ function scheduler_orchestrator_list(): void
     }
 
     foreach ($config['projects'] as $name => $project) {
-        $enabled = ($project['enabled'] ?? true) ? 'enabled' : 'disabled';
         $path = $project['path'] ?? '';
-        printf("%-24s %-8s %s\n", $name, $enabled, $path);
+        printf("%-24s %s\n", $name, $path);
     }
 }
 
@@ -257,13 +255,13 @@ function scheduler_orchestrator_run(array $argv): void
     }
 
     $config = scheduler_orchestrator_read_config();
-    $projects = scheduler_orchestrator_enabled_projects($config);
+    $projects = scheduler_orchestrator_projects($config);
     if (empty($projects)) {
-        echo scheduler_orchestrator_log_line('orchestrator', '', 0.0, 0, 'no enabled projects');
+        echo scheduler_orchestrator_log_line('orchestrator', '', 0.0, 0, 'no registered projects');
         exit(0);
     }
 
-    $delay = max(0, (int)($config['default_delay_after_seconds'] ?? 10));
+    $delay = max(0, (int)($config['default_delay_after_seconds'] ?? 0));
     $failed = 0;
     $index = 0;
     $total = count($projects);
@@ -288,11 +286,11 @@ function scheduler_orchestrator_run(array $argv): void
     exit($failed > 0 ? 1 : 0);
 }
 
-function scheduler_orchestrator_enabled_projects(array $config): array
+function scheduler_orchestrator_projects(array $config): array
 {
     $projects = [];
     foreach ($config['projects'] as $name => $project) {
-        if (!is_array($project) || ($project['enabled'] ?? true) === false) {
+        if (!is_array($project)) {
             continue;
         }
         $projects[$name] = $project;

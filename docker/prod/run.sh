@@ -49,7 +49,7 @@ apache2ctl -k start
 # Run the Nimbly scheduler every minute
 (while true; do
     sleep 60
-    php /var/www/nimbly/core/cli/nimbly.php schedule:run 2>/dev/null
+    php /var/www/nimbly/core/cli/nimbly.php schedule:run
 done) &
 
 echo "Ready."

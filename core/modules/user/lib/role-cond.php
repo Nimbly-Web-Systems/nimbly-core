@@ -16,15 +16,13 @@ function role_cond_sc($params) {
         return;
     }
 
-    session_sc();
+    session_resume();
     $roles_ls = explode(',', $roles);
 
-    if (!isset($_SESSION['roles'])) {
-        return;
-    }
+    $session_roles = $_SESSION['roles'] ?? ['anonymous' => true];
 
     foreach ($roles_ls as $r) {
-        if (!empty($_SESSION['roles'][$r]) && $_SESSION['roles'][$r] === true) {
+        if (!empty($session_roles[$r]) && $session_roles[$r] === true) {
             run_single_sc($tpl);
             return;
         }

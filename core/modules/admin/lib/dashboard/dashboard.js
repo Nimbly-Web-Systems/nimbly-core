@@ -1,7 +1,8 @@
 document.addEventListener("alpine:init", () => {
-    Alpine.data("dashboard_status", (failed_jobs, has_recent_error, low_disk, can_pull_ext, can_pull_core) => ({
+    Alpine.data("dashboard_status", (failed_jobs, has_recent_error, low_disk, can_pull_ext, can_pull_core, maintenance_unhealthy = false) => ({
         busy: false,
         failed_jobs,
+        maintenance_unhealthy,
         has_recent_error,
         low_disk,
         can_pull_ext,
@@ -11,7 +12,7 @@ document.addEventListener("alpine:init", () => {
         site_updated_label: null,
         core_updated_label: null,
         get attention_visible() {
-            return this.failed_jobs > 0 || this.has_recent_error || this.low_disk;
+            return this.maintenance_unhealthy || this.failed_jobs > 0 || this.has_recent_error || this.low_disk;
         },
         get_updates() {
             if (!this.can_pull_ext && !this.can_pull_core) {

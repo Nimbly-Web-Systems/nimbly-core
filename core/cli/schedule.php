@@ -40,11 +40,8 @@ if (file_exists($env_file)) {
 load_library('data');
 
 $dry_run = in_array('--dry-run', $argv, true);
-$schedule = schedule_load();
-if (empty($schedule)) {
-    echo "No scheduled commands configured.\n";
-    exit(0);
-}
+require_once BASE_DIR . 'core/lib/maintenance.php';
+$schedule = schedule_all_tasks();
 
 $lock_file = sys_get_temp_dir() . '/nimbly-schedule-' . md5(BASE_DIR) . '.lock';
 $lock = fopen($lock_file, 'c');
@@ -89,6 +86,7 @@ foreach ($schedule as $index => $task) {
         'last_run_at' => $started_at,
         'last_finished_at' => $finished_at,
         'last_exit_code' => $exit_code,
+        'last_success_at' => $exit_code === 0 ? $finished_at : ($task_state['last_success_at'] ?? 0),
     ];
     schedule_state_write($state);
 
@@ -100,6 +98,23 @@ foreach ($schedule as $index => $task) {
 
 printf("Scheduled commands: ran %d, skipped %d, failed %d\n", $ran, $skipped, $failed);
 exit($failed > 0 ? 1 : 0);
+
+function schedule_all_tasks(): Generator
+{
+    $mandatory = maintenance_tasks();
+    foreach ($mandatory as $task) {
+        yield $task;
+    }
+    $ids = array_column($mandatory, 'id');
+    $commands = array_map(fn($task) => explode(' ', $task['command'])[0], $mandatory);
+    foreach (schedule_load() as $task) {
+        if (is_array($task) && (in_array($task['id'] ?? '', $ids, true)
+            || in_array(schedule_command_parts($task['command'] ?? '')[0] ?? '', $commands, true))) {
+            continue;
+        }
+        yield $task;
+    }
+}
 
 function schedule_load()
 {

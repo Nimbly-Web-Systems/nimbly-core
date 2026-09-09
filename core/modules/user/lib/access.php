@@ -145,6 +145,7 @@ function persist_login($email, $password) {
         _persist_user_features($user_data['email']);
         $_SESSION['username'] = $user_data['email'];
         $_SESSION['user_uuid'] = $user_data['uuid'];
+        session_login_completed();
         return true;
     }
     return persist_login_error();
@@ -161,6 +162,7 @@ function persist_oauth_login($email) {
         _persist_user_features($user_data['email']);
         $_SESSION['username'] = $user_data['email'];
         $_SESSION['user_uuid'] = $user_data['uuid'];
+        session_login_completed();
         return true;
     }
     return persist_login_error();

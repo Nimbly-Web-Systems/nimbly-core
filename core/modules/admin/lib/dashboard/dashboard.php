@@ -40,6 +40,12 @@ function dashboard_sc($params)
     $can_pull_ext = access_by_feature('pull-ext-updates');
     $can_pull_core = access_by_feature('pull-core-updates');
 
+    require_once $GLOBALS['SYSTEM']['file_base'] . 'core/lib/maintenance.php';
+    $maintenance_issues = [];
+    if (access_by_feature('view-debug,view-.jobs')) {
+        $maintenance_issues = maintenance_health(data_read('.state', 'schedule') ?: []);
+    }
+    set_variable('_dash.maintenance_unhealthy', $maintenance_issues ? 'true' : 'false');
     set_variable('_dash.failed_jobs', $failed_jobs);
     set_variable('_dash.has_recent_error', $has_recent_error ? 'true' : 'false');
     set_variable('_dash.low_disk', $low_disk ? 'true' : 'false');
@@ -168,7 +174,7 @@ function dashboard_manage_users_group(): string
         load_library('get-sessions');
         get_sessions_sc();
         $active = count(get_variable('logged_in', []));
-        $caption = $active . ' active ' . ($active === 1 ? 'session' : 'sessions');
+        $caption = $active . ' ' . ($active === 1 ? '[#text Signed-in user#]' : '[#text Signed-in users#]');
     }
     if (access_by_feature('view-roles')) {
         $link_entries[] = ['label' => 'Roles (' . count(data_list('roles')) . ')', 'url' => '/nb-admin/roles'];
@@ -186,7 +192,8 @@ function dashboard_manage_users_group(): string
             get_sessions_sc();
             $active = count(get_variable('logged_in', []));
         }
-        $actions[] = ['type' => 'post', 'label' => "Clear sessions ($active)", 'form_id' => 'ccache_sessions', 'action' => '/nb-admin'];
+        load_library('text');
+        $actions[] = ['type' => 'post', 'label' => text_sc(['text' => 'Sign out everyone']) . " ($active)", 'form_id' => 'ccache_sessions', 'action' => '/nb-admin'];
     }
 
     return dashboard_manage_group('Users & roles', $pill_entries, $link_entries, $actions, $caption);

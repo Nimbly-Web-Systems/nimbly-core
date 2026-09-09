@@ -33,6 +33,14 @@ jobs:
           sudo apt-get install -y -q php-cli php-mbstring
           find core -name '*.php' -print0 | xargs -0 -n1 php -l
 
+      - name: Test sessions and mandatory maintenance
+        run: |
+          php core/tests/schedule-test.php
+          php core/tests/maintenance-test.php
+          php -d memory_limit=128M core/tests/session-test.php
+          php core/tests/session-http-test.php
+          php core/tests/host-audit-test.php
+
   e2e:
     runs-on: ubuntu-latest
     env:

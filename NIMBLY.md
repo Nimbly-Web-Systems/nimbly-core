@@ -1999,6 +1999,79 @@ runs, it becomes due when the clock enters the next interval bucket. Existing
 
 Scheduler last-run state is stored in `ext/data/.state/schedule`. Existing installs with older `ext/data/.config/schedule` state are read as a migration fallback until the scheduler writes the new state file.
 
+#### Mandatory maintenance and session expiry
+
+Every `schedule:run` invocation includes the Core task definitions before it
+loads the application's schedule. Application schedules add tasks; they cannot
+remove or reschedule these mandatory invocations:
+
+| Task ID | Command | Interval |
+|---|---|---|
+| `sessions-prune` | `sessions:prune` | 30 minutes |
+| `jobs-run` | `jobs:run 10` | 1 minute |
+| `jobs-prune` | `jobs:prune --days=30` | 24 hours |
+
+Existing application entries with these IDs or commands are deduplicated.
+Override an **implementation**, not its schedule: define the same command in
+`ext/cli/commands.php`, using the normal command registry contract. Core trusts
+the implementation's exit status. No inspection of its internal work occurs.
+The host registry lists projects, not task choices; legacy `enabled` flags no
+longer suppress registered projects. Remove retired deployments from the
+registry. Before registering an older unscheduled project, review its queued
+jobs and application schedule: enabling processing may deliver pending email
+or execute other queued work.
+
+`./nimbly schedule:status` reports successful mandatory task completion and
+exits nonzero when a task failed, never succeeded, or is overdue by more than
+two intervals. A successful run with an empty queue is healthy. The admin
+**Needs attention** band and host audit independently read this state, so they
+also detect a stopped scheduler. Check this command after every deployment;
+installing cron alone is not proof of working maintenance. The installed host
+audit ships a root-owned `nimbly-maintenance.php` helper beside its collector.
+
+For VPS installations, use the existing host orchestrator and register **all**
+active projects. Container images already invoke the project scheduler every
+minute. Other cloud platforms must invoke the same CLI every minute using a
+single scheduler with access to the application's persistent `ext/data` and
+runtime configuration. Monitor `schedule:status` independently of that runner.
+No extra session-cleanup daemon or per-project cleanup registration is needed.
+
+Session functions, including file inspection and cleanup, live in
+`core/lib/session.php`. Defaults are rolling inactivity limits: anonymous
+4 hours, authenticated users 3 days, admins 7 days. There is **no absolute
+login-age limit**: regular activity keeps an authenticated session alive.
+Session ID rotation does not reset its identity or sign the user out.
+Anonymous reads and permission checks do not create sessions; forms and other
+stateful features may do so. Authenticated cookies persist across browser
+restarts; anonymous cookies remain browser-session cookies.
+
+Projects can configure durations in seconds under `session` in `.config/site`:
+
+```json
+{
+  "session": {
+    "anonymous": 14400,
+    "authenticated": 259200,
+    "roles": { "admin": 604800, "editor": 259200 }
+  }
+}
+```
+
+The longest matching assigned-role override wins; otherwise the authenticated
+default applies. Temporary role switching does not change the assigned-role
+snapshot. Legacy sessions retain their original 24-hour validity until their
+first valid live request upgrades them; an already-expired session is never
+revived. Login, cookies, and cleanup use the same policy. Core disables PHP's
+request-triggered garbage collection for its private session directory.
+
+`./nimbly sessions:prune --dry-run` reports aggregate counts without changing
+sessions. Normal execution streams files, skips locked files and symlinks, and
+removes expired sessions only. Malformed, unsupported serialized objects or
+references, and files larger than 1 MiB are reported as failures rather than
+deleted. The reader accepts scalar/array `php` and `php_serialize` encodings.
+The separate **Sign out everyone** action intentionally removes every session.
+Remember-me UI and its longer timeout are deferred.
+
 #### `scheduler:*`
 Runs multiple project schedulers from one server-level cron. The project schedule
 files remain project-local in `ext/cli/`; the server registry is the only source
@@ -2034,7 +2107,7 @@ php core/cli/nimbly.php scheduler:cron:status
 `/etc/nimbly/scheduler-projects.json`, runs
 `php <project>/core/cli/nimbly.php schedule:run` for each project, logs project
 name, path, duration, and exit code, and continues after project failures.
-`default_delay_after_seconds` defaults to `10`.
+`default_delay_after_seconds` defaults to `0`. Avoid artificial delays that prevent the host cycle from keeping up with minute tasks.
 
 #### `host:audit`
 
@@ -2416,7 +2489,7 @@ Keep `.env` on the target host and ensure it contains the production `APP_ENV`, 
 ### Scheduler and jobs
 
 For manual VPS deployments, install the scheduler orchestrator once per server.
-Register each project that should run scheduled work:
+Register every deployed project; scheduling is required even without application-specific tasks:
 
 ```bash
 sudo php /var/www/site/core/cli/nimbly.php scheduler:install
@@ -2789,7 +2862,7 @@ The legacy `_dep_` admin UI has been removed. Active admin routes and templates 
 - **Site status** — is the site current and healthy, in one glance. Every item follows the same shape: a dark, small uppercase label (Data/Core/Ext/System), then the one fact that actually answers "is this OK" rendered large but in a lighter tone (so labels anchor the eye and values don't shout), with supporting detail as a small caption underneath. For **Data**, the large fact is *when* ("18 hours ago", with the specific resource named in the caption below it — e.g. "Projects updated" — so it's directly checkable against the matching row in Your data, not an anonymous number). For **Core**/**Ext**, the large fact is *status* ("Up to date" or "N updates", amber when something's pending), with the raw "Updated X ago" timestamp demoted to the caption, plus an inline **Update now** for roles with `pull-core-updates`/`pull-ext-updates`. For **System** (`view-debug`), the large fact is a plain-language status — "OK" or "Low resources" (below 1GB RAM or 500MB disk free) — with the actual RAM/disk numbers as the caption and a **View debug** link into `/nb-admin/debug`. Everything here is a fact (with an action attached where one applies), never bare navigation — that's what Manage below is for.
 - **Your data** — the resources the current role can see, with record counts, disk usage, and last-updated time per resource.
 - **Manage** — a section card like the others (`rounded-2xl bg-neutral-50 p-6 shadow`, same heading style as Your data), containing grouped clusters, one per resource, laid out with equal height (`items-stretch` on the row) so the row reads as one set rather than cards of mismatched size. Each cluster follows a strict internal order: a dark small uppercase heading, a caption fact (same `text-neutral-500` as Site status), then — only if the cluster genuinely has one — its single most important pill (e.g. `Media Library (N)`, `Jobs (N)`, or `Add user` when a cluster's main draw is a create action rather than a list), and finally a **secondary row** where everything else (remaining entry pills like `Users (N)`/`Roles (N)`, plus every other action) renders as plain underlined text links, all sharing one canonical link style (`dashboard_secondary_link_class()` in `dashboard.php`, reused as-is by the Site status "Update now"/"View debug" links and every `quick-action-*.tpl` partial — one style everywhere, not a per-context variant). A cluster has exactly one pill-weight element, never two competing for attention:
-  - **Users & roles**: "N active sessions" caption, `Add user` pill (the create action is the main reason to visit this cluster), then `Users (N)` / `Roles (N)` / `Clear sessions (N)` as secondary text links.
+  - **Users & roles**: "N active sessions" caption, `Add user` pill (the create action is the main reason to visit this cluster), then `Users (N)` / `Roles (N)` / `Sign out everyone (N)` as secondary text links.
   - **Media library**: "Updated X ago" caption (the library's own last-modified time), `Media Library (N)` pill, then `Clear thumbnail cache` / `Delete unused media` as secondary text links.
   - **System**: "Scheduler last ran" caption, `Jobs (N)` pill (N = currently queued jobs — Jobs lives here, not its own cluster, since queue/scheduler and general site maintenance are the same "background infrastructure" concern), then `Run jobs now` / `Clear data cache` as secondary text links and `View system log` for roles with `view-system-log`. Data cache (`ext/data/.tmp/cache/_data`, the per-resource `data_read_all()` result cache from `core/lib/data.php` — normally self-invalidating on resource modification, but clearable here for troubleshooting) lives here rather than in Media library — it's a site-wide cache, not a media one, even though thumbnail cache (media-specific, `ext/static/_thumb_`) does belong in Media library.
 
