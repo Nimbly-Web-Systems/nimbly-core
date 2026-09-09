@@ -2107,7 +2107,9 @@ php core/cli/nimbly.php scheduler:cron:status
 `/etc/nimbly/scheduler-projects.json`, runs
 `php <project>/core/cli/nimbly.php schedule:run` for each project, logs project
 name, path, duration, and exit code, and continues after project failures.
-`default_delay_after_seconds` defaults to `0`. Avoid artificial delays that prevent the host cycle from keeping up with minute tasks.
+Legacy `default_delay_after_seconds` values in the registry are ignored. The
+orchestrator does not insert artificial delays between projects because a full
+host cycle must keep up with minute tasks.
 
 #### `host:audit`
 

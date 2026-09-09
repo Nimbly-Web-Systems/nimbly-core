@@ -11,7 +11,7 @@ eval(substr($source, strpos($source, 'function scheduler_orchestrator_config_pat
 maintenance_test_assert(count(scheduler_orchestrator_projects(['projects' => [
     'site' => ['path' => '/fixture', 'enabled' => false],
 ]])) === 1, 'legacy host enabled flag cannot suppress registered project maintenance');
-maintenance_test_assert(scheduler_orchestrator_default_config()['default_delay_after_seconds'] === 0, 'no built-in inter-project delay');
+maintenance_test_assert(!isset(scheduler_orchestrator_default_config()['default_delay_after_seconds']), 'no inter-project delay setting');
 $now = time();
 $state = ['tasks' => []];
 maintenance_test_assert(count(maintenance_health($state, $now)) === 3, 'never-run tasks unhealthy');

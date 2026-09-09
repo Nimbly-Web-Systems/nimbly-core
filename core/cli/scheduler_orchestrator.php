@@ -93,7 +93,6 @@ function scheduler_orchestrator_lock_path(): string
 function scheduler_orchestrator_default_config(): array
 {
     return [
-        'default_delay_after_seconds' => 0,
         'projects' => [],
     ];
 }
@@ -115,10 +114,6 @@ function scheduler_orchestrator_read_config(): array
     if (!isset($config['projects']) || !is_array($config['projects'])) {
         $config['projects'] = [];
     }
-    if (!isset($config['default_delay_after_seconds'])) {
-        $config['default_delay_after_seconds'] = 0;
-    }
-
     return $config;
 }
 
@@ -261,13 +256,9 @@ function scheduler_orchestrator_run(array $argv): void
         exit(0);
     }
 
-    $delay = max(0, (int)($config['default_delay_after_seconds'] ?? 0));
     $failed = 0;
-    $index = 0;
-    $total = count($projects);
 
     foreach ($projects as $name => $project) {
-        $index++;
         $path = rtrim((string)($project['path'] ?? ''), '/');
         $started_at = microtime(true);
         $exit_code = $dry_run ? scheduler_orchestrator_check_project($path) : scheduler_orchestrator_run_project($path);
@@ -277,10 +268,6 @@ function scheduler_orchestrator_run(array $argv): void
         }
 
         echo scheduler_orchestrator_log_line($name, $path, $duration, $exit_code, $dry_run ? 'dry-run' : '');
-
-        if ($delay > 0 && $index < $total) {
-            sleep($delay);
-        }
     }
 
     exit($failed > 0 ? 1 : 0);
