@@ -16,7 +16,8 @@ function maintenance_health(array $state, ?int $now = null): array
     $issues = [];
     foreach (maintenance_tasks() as $task) {
         $last = $state['tasks'][$task['id']] ?? [];
-        $success = (int)($last['last_success_at'] ?? 0);
+        $success = (int)($last['last_success_at']
+            ?? (($last['last_exit_code'] ?? null) === 0 ? ($last['last_finished_at'] ?? 0) : 0));
         if (isset($last['last_exit_code']) && $last['last_exit_code'] !== 0) {
             $issues[$task['id']] = 'failed';
         } elseif (!$success || $now > $success + $task['every_minutes'] * 120) {

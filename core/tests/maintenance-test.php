@@ -19,6 +19,10 @@ foreach (maintenance_tasks() as $task) {
     $state['tasks'][$task['id']] = ['last_success_at' => $now, 'last_exit_code' => 0];
 }
 maintenance_test_assert(!maintenance_health($state, $now), 'successful empty work healthy');
+$legacy_state = $state;
+unset($legacy_state['tasks']['jobs-prune']['last_success_at']);
+$legacy_state['tasks']['jobs-prune']['last_finished_at'] = $now;
+maintenance_test_assert(!maintenance_health($legacy_state, $now), 'legacy successful state remains healthy');
 maintenance_test_assert(maintenance_health($state, $now + 121) === ['jobs-run' => 'overdue'], 'per-task freshness');
 $state['tasks']['sessions-prune']['last_exit_code'] = 1;
 maintenance_test_assert(maintenance_health($state, $now) === ['sessions-prune' => 'failed'], 'failed run not hidden by earlier success');
