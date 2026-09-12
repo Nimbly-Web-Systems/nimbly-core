@@ -17,7 +17,7 @@ if (!defined('BASE_DIR')) {
 }
 
 const HOST_AUDIT_SCHEMA_VERSION = 1;
-const HOST_AUDIT_VERSION = '1.3.2';
+const HOST_AUDIT_VERSION = '1.4.0';
 
 require_once is_file(__DIR__ . '/../lib/maintenance.php')
     ? __DIR__ . '/../lib/maintenance.php'
@@ -832,6 +832,13 @@ function host_audit_projects(array $context, array &$findings): array
         $check['scheduler'] = isset($scheduler_paths[$path])
             ? 'Active'
             : 'Not scheduled';
+        if ($check['scheduler'] !== 'Active') {
+            $findings[] = host_audit_finding(
+                'alert:scheduler:' . host_audit_id($name), 'critical', 'project',
+                'Fatal alert scheduler is unavailable', 'Project is not scheduled',
+                null, $name
+            );
+        }
         $checks[$name] = $check;
         if ($path !== '') {
             $project_paths[rtrim($path, '/')] = $name;
@@ -1195,6 +1202,23 @@ function host_audit_project(string $name, string $path, array $context, array &$
 
     $maintenance = host_audit_project_maintenance($name, $path, $findings);
     $jobs = host_audit_project_jobs($name, $path, $context, $findings);
+    $mail = host_audit_project_mail_configuration($path);
+    foreach (['recipient' => 'Alert recipient', 'sender' => 'Mail sender',
+        'delivery' => 'Mail delivery configuration'] as $field => $title) {
+        if (($mail[$field] ?? '') !== 'configured') {
+            $findings[] = host_audit_finding(
+                'alert:' . $field . ':' . host_audit_id($name), 'critical', 'project',
+                $title . ' is unavailable', $mail[$field] ?? 'missing', null, $name
+            );
+        }
+    }
+    if ($jobs['fatal_alert_failed'] > 0) {
+        $findings[] = host_audit_finding(
+            'alert:delivery-failed:' . host_audit_id($name), 'critical', 'project',
+            'Fatal alert delivery failed', $jobs['fatal_alert_failed'] . ' failed alert jobs',
+            null, $name
+        );
+    }
     $git = [
         'core' => host_audit_git_state($path),
         'ext' => host_audit_git_state($path . '/ext'),
@@ -1217,7 +1241,7 @@ function host_audit_project(string $name, string $path, array $context, array &$
         'path' => $path,
         'available' => true,
         'environment' => $environment,
-        'mail' => host_audit_project_mail_configuration($path),
+        'mail' => $mail,
         'maintenance' => $maintenance,
         'system_log_events' => $system_log_events,
         'jobs' => $jobs,
@@ -1244,7 +1268,8 @@ function host_audit_project_mail_configuration(string $path): array
 {
     $env_path = rtrim($path, '/') . '/.env';
     $wanted = [
-        'MAIL_SERVICE', 'RESEND_API_KEY', 'SMTP_HOST', 'SMTP_PORT',
+        'SYSTEM_ALERT_EMAIL', 'MAIL_FROM', 'MAIL_FROM_NAME', 'MAIL_SERVICE',
+        'RESEND_API_KEY', 'SMTP_HOST', 'SMTP_PORT',
         'SMTP_USER', 'SMTP_PASSWORD', 'SMTP_SECURE',
     ];
     $values = [];
@@ -1274,6 +1299,12 @@ function host_audit_project_mail_configuration(string $path): array
     ));
     return [
         'env_file' => is_readable($env_path) ? 'readable' : 'unavailable',
+        'recipient' => filter_var($values['SYSTEM_ALERT_EMAIL'] ?? '', FILTER_VALIDATE_EMAIL)
+            ? 'configured' : 'missing',
+        'sender' => filter_var($values['MAIL_FROM'] ?? '', FILTER_VALIDATE_EMAIL)
+            && ($values['MAIL_FROM_NAME'] ?? '') !== '' ? 'configured' : 'missing',
+        'delivery' => $service === 'resend' && ($values['RESEND_API_KEY'] ?? '') !== ''
+            ? 'configured' : 'missing',
         'service' => $service,
         'delivery_path' => $service === 'resend' ? 'resend_api' : ($service === 'smtp' || $service === 'phpmailer' ? 'smtp' : 'other'),
         'resend_api_key' => ($values['RESEND_API_KEY'] ?? '') === '' ? 'missing' : 'configured',
@@ -1296,7 +1327,8 @@ function host_audit_project_jobs(
     array &$findings
 ): array {
     $job_dir = $path . '/ext/data/.jobs';
-    $counts = ['queued' => 0, 'running' => 0, 'done' => 0, 'failed' => 0, 'failed_recent' => 0, 'invalid' => 0];
+    $counts = ['queued' => 0, 'running' => 0, 'done' => 0, 'failed' => 0,
+        'failed_recent' => 0, 'fatal_alert_failed' => 0, 'invalid' => 0];
     if (!is_dir($job_dir)) {
         return $counts;
     }
@@ -1325,6 +1357,9 @@ function host_audit_project_jobs(
             $status = 'queued';
         }
         $counts[$status]++;
+        if ($status === 'failed' && ($job['type'] ?? '') === 'fatal-error-alert') {
+            $counts['fatal_alert_failed']++;
+        }
         if ($status === 'failed') {
             $failed_at = (int)($job['_modified'] ?? 0);
             if ($failed_at <= 0) {

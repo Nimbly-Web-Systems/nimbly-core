@@ -5,7 +5,9 @@ function job_enqueue($type, $payload = [], $options = [])
     load_library('data');
     job_ensure_resource();
 
-    $payload = job_payload_with_request_context($payload);
+    if (empty($options['omit_request_context'])) {
+        $payload = job_payload_with_request_context($payload);
+    }
 
     $uuid = $options['uuid'] ?? md5(uniqid((string)$type, true));
     $job = [

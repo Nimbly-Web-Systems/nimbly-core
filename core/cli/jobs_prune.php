@@ -20,6 +20,7 @@ $GLOBALS['SYSTEM'] = [
 require_once BASE_DIR . 'core/lib/find.php';
 
 load_library('data');
+require_once BASE_DIR . 'core/lib/fatal-alert.php';
 
 $dry_run = in_array('--dry-run', $argv, true);
 
@@ -32,6 +33,9 @@ foreach ($argv as $arg) {
 }
 
 $cutoff = time() - ($days * 86400);
+if (!$dry_run) {
+    fatal_alert_prune();
+}
 
 $jobs = data_read('.jobs');
 if (empty($jobs) || !is_array($jobs)) {

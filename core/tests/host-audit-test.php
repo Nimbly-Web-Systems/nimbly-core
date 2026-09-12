@@ -47,6 +47,9 @@ audit_remove_fixture($mail_project);
 audit_assert(
     $mail_configuration === [
         'env_file' => 'readable',
+        'recipient' => 'missing',
+        'sender' => 'missing',
+        'delivery' => 'configured',
         'service' => 'resend',
         'delivery_path' => 'resend_api',
         'resend_api_key' => 'configured',

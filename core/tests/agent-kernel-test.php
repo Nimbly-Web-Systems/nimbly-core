@@ -112,4 +112,14 @@ agent_test_assert($completed['structured_result']['title'] === 'QUANTUM MOSS', '
 agent_test_assert($agent_test_calls === ['input' => 1, 'transform' => 1, 'delivery' => 2],
     'only the failed delivery connector is repeated');
 
+$saved_runs = $agent_test_data['.agent_runs'];
+$agent_test_data['.agent_runs'] = [];
+$overdue = agent_watchdog_status('scientific-writer',
+    (new DateTimeImmutable('today 23:59:00', new DateTimeZone('UTC')))->getTimestamp());
+agent_test_assert(!$overdue['healthy'] && $overdue['state'] === 'overdue',
+    'manual status returns the unavailable state after a missed deadline');
+$agent_test_data['.agent_runs'] = $saved_runs;
+agent_test_assert(agent_sc(['agent' => 'scientific-writer']) === 'ok'
+    && http_response_code() === 200, 'manual status route returns 200 after completed run');
+
 echo "Agent kernel tests passed.\n";

@@ -32,10 +32,18 @@ function fatal_error_alert_job($job)
         'recipient' => $recipient,
         'subject' => '[' . $site_name . '] ' . t('Fatal PHP error'),
         'tpl' => 'email-fatal-error-alert',
+        'idempotency_key' => (string)($job['uuid'] ?? ''),
     ]);
     if (!$sent) {
         throw new Exception('Fatal error alert email could not be sent');
     }
+
+    require_once __DIR__ . '/../../../lib/fatal-alert.php';
+    fatal_alert_mark_sent(
+        (string)($payload['signature'] ?? ''),
+        (string)($payload['stage'] ?? ''),
+        (string)($job['uuid'] ?? '')
+    );
 
     return true;
 }

@@ -11,6 +11,11 @@
 const AGENT_PIPELINE_VERSION = 3;
 const AGENT_TERMINAL_STATUSES = ['completed', 'failed'];
 
+function agent_base_dir(): string
+{
+    return defined('BASE_DIR') ? BASE_DIR : (string)($GLOBALS['SYSTEM']['file_base'] ?? '');
+}
+
 class AgentTransientException extends RuntimeException
 {
 }
@@ -25,7 +30,7 @@ function agent_definition(string $agent_id): array
         && is_array($GLOBALS['AGENT_TEST_DEFINITIONS'][$agent_id])) {
         $definition = $GLOBALS['AGENT_TEST_DEFINITIONS'][$agent_id];
     } else {
-        $directory = BASE_DIR . 'ext/agents/' . $agent_id . '/';
+        $directory = agent_base_dir() . 'ext/agents/' . $agent_id . '/';
         $path = $directory . 'agent.json';
         if (!is_file($path)) {
             throw new RuntimeException('Agent definition not found: ' . $agent_id);
@@ -265,7 +270,7 @@ function agent_canonical_value(array $value): array
 
 function agent_lock(string $key)
 {
-    $lock = fopen(sys_get_temp_dir() . '/nimbly-agent-' . hash('sha256', BASE_DIR . ':' . $key) . '.lock', 'c');
+    $lock = fopen(sys_get_temp_dir() . '/nimbly-agent-' . hash('sha256', agent_base_dir() . ':' . $key) . '.lock', 'c');
     if (!$lock || !flock($lock, LOCK_EX)) {
         throw new RuntimeException('Could not acquire agent lock');
     }
@@ -288,7 +293,7 @@ function agent_ensure_resources(): void
         '.agent_steps' => 'agent-steps.json', '.agent_actions' => 'agent-actions.json',
     ] as $resource => $definition) {
         if (!data_exists($resource, '.meta')) {
-            $meta = json_decode((string)file_get_contents(BASE_DIR . 'core/modules/agent/resources/' . $definition), true);
+            $meta = json_decode((string)file_get_contents(agent_base_dir() . 'core/modules/agent/resources/' . $definition), true);
             if (!is_array($meta)) {
                 throw new RuntimeException('Agent resource definition is invalid: ' . $resource);
             }
@@ -656,7 +661,7 @@ function agent_job(array $job)
 function agent_sc($params)
 {
     load_library('data');
-    $agent_id = get_param_value($params, 'agent', current($params));
+    $agent_id = is_array($params) ? (string)($params['agent'] ?? reset($params)) : (string)$params;
     $status = agent_watchdog_status((string)$agent_id);
     http_response_code($status['healthy'] ? 200 : 503);
     header('Content-Type: text/plain; charset=utf-8');
