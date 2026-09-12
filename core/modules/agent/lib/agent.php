@@ -636,7 +636,13 @@ function agent_watchdog_status(string $agent_id, ?int $now = null): array
             . ' ' . (string)($definition['deadline_at'] ?? '23:59'),
         $timezone
     );
-    $healthy = is_array($latest) && ($latest['status'] ?? '') === 'completed';
+    $day_start = (new DateTimeImmutable('@' . $now))->setTimezone($timezone)
+        ->setTime(0, 0)->getTimestamp();
+    $today_run = is_array($latest) && (int)($latest['scheduled_at'] ?? 0) >= $day_start;
+    $healthy = $today_run && ($latest['status'] ?? '') === 'completed';
+    if ($today_run && ($latest['status'] ?? '') === 'failed') {
+        return ['healthy' => false, 'state' => 'failed'];
+    }
     if (!$healthy && $deadline instanceof DateTimeImmutable && $now < $deadline->getTimestamp()) {
         return ['healthy' => true, 'state' => 'pending'];
     }

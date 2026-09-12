@@ -118,6 +118,19 @@ $overdue = agent_watchdog_status('scientific-writer',
     (new DateTimeImmutable('today 23:59:00', new DateTimeZone('UTC')))->getTimestamp());
 agent_test_assert(!$overdue['healthy'] && $overdue['state'] === 'overdue',
     'manual status returns the unavailable state after a missed deadline');
+$stale_at = (new DateTimeImmutable('today 23:59:00', new DateTimeZone('UTC')))->getTimestamp();
+$agent_test_data['.agent_runs'] = ['stale' => [
+    'agent_id' => 'scientific-writer', 'status' => 'completed',
+    'scheduled_at' => $stale_at - 86400,
+]];
+agent_test_assert(!agent_watchdog_status('scientific-writer', $stale_at)['healthy'],
+    'yesterday\'s completed run does not hide a missed run today');
+$agent_test_data['.agent_runs'] = ['failed-today' => [
+    'agent_id' => 'scientific-writer', 'status' => 'failed',
+    'scheduled_at' => $stale_at - 60,
+]];
+agent_test_assert(agent_watchdog_status('scientific-writer', $stale_at)['state'] === 'failed',
+    'failed current run is unavailable');
 $agent_test_data['.agent_runs'] = $saved_runs;
 agent_test_assert(agent_sc(['agent' => 'scientific-writer']) === 'ok'
     && http_response_code() === 200, 'manual status route returns 200 after completed run');
