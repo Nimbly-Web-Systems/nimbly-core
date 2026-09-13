@@ -2103,13 +2103,15 @@ sudo -u www-data /usr/local/bin/nimbly-scheduler-orchestrator
 php core/cli/nimbly.php scheduler:cron:status
 ```
 
-`scheduler:run` takes a global lock, reads enabled projects from
-`/etc/nimbly/scheduler-projects.json`, runs
-`php <project>/core/cli/nimbly.php schedule:run` for each project, logs project
-name, path, duration, and exit code, and continues after project failures.
-Legacy `default_delay_after_seconds` values in the registry are ignored. The
-orchestrator does not insert artificial delays between projects because a full
-host cycle must keep up with minute tasks.
+`scheduler:run` takes a short global lock and dispatches two workers per
+registered project: one runs `jobs:run 10` for prompt queue delivery, and the
+other runs the project's `schedule:run`. Workers log their completion and exit
+code to the host scheduler log. A long application task therefore does not
+delay another project's minute tasks or its own queued alerts. Job runners use
+a per-project lock so the direct queue worker and mandatory `jobs-run` task do
+not dispatch the same job concurrently. The project scheduler retains its own
+lock, so later cron ticks do not duplicate a long schedule run. Legacy
+`default_delay_after_seconds` values in the registry are ignored.
 
 #### `host:audit`
 
@@ -2501,7 +2503,7 @@ sudo php /var/www/site/core/cli/nimbly.php scheduler:cron:install --user=www-dat
 
 This creates `/etc/cron.d/nimbly-scheduler`, which runs
 `/usr/local/bin/nimbly-scheduler-orchestrator` every minute as `www-data`. The
-orchestrator then runs registered project schedulers sequentially. In Docker
+orchestrator then dispatches registered project schedulers independently. In Docker
 containers the scheduler runs automatically, so no host cron setup is required.
 
 Run `schedule:init` once to create project schedule files in `ext/cli/`:

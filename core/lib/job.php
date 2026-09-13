@@ -171,6 +171,25 @@ function job_resource_meta()
 
 function job_run_queued($limit = 1)
 {
+    $base_dir = defined('BASE_DIR') ? BASE_DIR : (string)($GLOBALS['SYSTEM']['file_base'] ?? '');
+    $lock_path = sys_get_temp_dir() . '/nimbly-jobs-' . md5($base_dir) . '.lock';
+    $lock = @fopen($lock_path, 'c') ?: @fopen($lock_path, 'r');
+    if (!$lock || !flock($lock, LOCK_EX | LOCK_NB)) {
+        if ($lock) {
+            fclose($lock);
+        }
+        return ['processed' => 0, 'done' => 0, 'failed' => 0];
+    }
+    try {
+        return job_run_queued_locked($limit);
+    } finally {
+        flock($lock, LOCK_UN);
+        fclose($lock);
+    }
+}
+
+function job_run_queued_locked($limit = 1)
+{
     load_libraries(['data', 'env']);
 
     $jobs = data_read('.jobs');
