@@ -2299,6 +2299,15 @@ authorizer connector. Authorization denial is a normal blocked result; once
 execution is reserved, interruption becomes `uncertain` and must be inspected
 before any repeat. Action identity is stable across retry lineage.
 
+Read-only request identity uses the run, pipeline step, logical `call_id`, tool,
+and arguments. Replaying that request reuses its observation; a new call ID or
+step executes a fresh inspection even with identical arguments. Tool results
+carry kernel-owned `_agent_observation` metadata (reference, target, tool, risk,
+local observation time, and connector provenance). Consumers of current evidence
+use `agent_latest_tool_results()` to select the newest successful observation
+per target in event sequence order. Earlier observations remain in the event
+history; completed pipeline artifacts remain unchanged during delivery retries.
+
 The standard `ssh-gateway` connector is only a generic client for fixed remote
 verbs. The forced-command endpoint, verb catalog, privileged registered actions,
 and their installation commands belong to the project that defines those

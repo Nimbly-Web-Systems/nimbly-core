@@ -135,4 +135,35 @@ $agent_test_data['.agent_runs'] = $saved_runs;
 agent_test_assert(agent_sc(['agent' => 'scientific-writer']) === 'ok'
     && http_response_code() === 200, 'manual status route returns 200 after completed run');
 
+function agent_connector_fixture_inspect(array $source, array $_config, array $_context): array
+{
+    $GLOBALS['inspection_calls']++;
+    return agent_artifact('fixture.observation', 1, [
+        'server' => $source['data']['arguments']['server'], 'active' => $GLOBALS['service_active'],
+    ]);
+}
+$inspection_calls = 0;
+$service_active = false;
+$tools = ['inspect' => ['risk' => 'read_only', 'connector' => 'fixture-inspect', 'parameters' => [
+    'type' => 'object', 'properties' => ['server' => ['type' => 'string']],
+    'required' => ['server'], 'additionalProperties' => false,
+]]];
+$call = ['name' => 'inspect', 'call_id' => 'first', 'arguments' => '{"server":"fixture"}'];
+$context = ['step' => ['id' => 'collect']];
+$first = agent_execute_tool($run_uuid, $tools, $call, $context);
+$service_active = true;
+$call['call_id'] = 'second';
+$second = agent_execute_tool($run_uuid, $tools, $call, $context);
+agent_test_assert(!$first['active'] && $second['active'] && $inspection_calls === 2,
+    'a new inspection sees changed service state');
+agent_test_assert(agent_execute_tool($run_uuid, $tools, $call, $context) === $second && $inspection_calls === 2,
+    'replaying a logical inspection returns its original observation');
+agent_execute_tool($run_uuid, $tools, $call, ['step' => ['id' => 'verify']]);
+agent_test_assert($inspection_calls === 3, 'separate collection steps cannot collide');
+agent_test_assert(agent_latest_tool_results($run_uuid, 'inspect')[0]['active'],
+    'current evidence uses the latest successful observation');
+agent_test_assert(count(array_filter(data_read('.agent_events'), fn($event) =>
+    $event['type'] === 'tool_completed' && $event['payload']['tool'] === 'inspect')) === 3,
+    'earlier observations remain in history');
+
 echo "Agent kernel tests passed.\n";

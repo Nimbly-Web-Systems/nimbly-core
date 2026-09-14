@@ -684,7 +684,9 @@ function agent_execute_tool(string $run_uuid, array $tools, array $call, array $
         throw new RuntimeException('Agent tool call is invalid');
     }
     agent_validate_arguments($arguments, (array)$tool['parameters']);
-    $identity = agent_action_identity($run_uuid, $name, $arguments);
+    $identity = $tool['risk'] === 'governed'
+        ? agent_action_identity($run_uuid, $name, $arguments)
+        : agent_inspection_identity($run_uuid, $name, $arguments, $call, $context);
     $stored_result = agent_tool_result($run_uuid, $identity);
     if ($stored_result !== null) {
         return $stored_result;
@@ -728,6 +730,12 @@ function agent_execute_tool(string $run_uuid, array $tools, array $call, array $
             'tool' => $name, 'arguments' => $arguments, 'action_digest' => $identity,
         ]), (array)($tool['config'] ?? []), array_merge($context, ['tool' => $tool]));
         $result = agent_artifact_data($artifact);
+        $result['_agent_observation'] = [
+            'ref' => 'observation:' . $identity, 'run_uuid' => $run_uuid,
+            'target' => (string)($arguments['target'] ?? $arguments['server'] ?? ''),
+            'tool' => $name, 'risk' => $tool['risk'], 'observed_at' => time(),
+            'provenance' => $artifact['evidence'],
+        ];
     } catch (Throwable $error) {
         if ($tool['risk'] === 'governed') {
             agent_store_action($identity, $run_uuid, $name, $arguments, 'uncertain', [], agent_safe_error($error->getMessage()));
@@ -743,6 +751,40 @@ function agent_execute_tool(string $run_uuid, array $tools, array $call, array $
         'duration_ms' => (int)round((microtime(true) - $started) * 1000), 'result' => $result,
     ]);
     return $result;
+}
+
+// Call IDs identify logical requests, not argument sets. Step scope also covers
+// deterministic collection IDs reused by separate pipeline connectors.
+function agent_inspection_identity(string $run_uuid, string $tool, array $arguments,
+    array $call, array $context): string
+{
+    $call_id = $call['call_id'] ?? '';
+    if (!is_string($call_id) || $call_id === '') {
+        throw new RuntimeException('Inspection request requires a logical call ID');
+    }
+    return hash('sha256', agent_canonical_json([
+        $run_uuid, (string)($context['step']['id'] ?? ''), $call_id, $tool, $arguments,
+    ]));
+}
+
+// Return the latest successful observation per target; the event log retains history.
+function agent_latest_tool_results(string $run_uuid, string $tool): array
+{
+    $events = array_filter(data_read('.agent_events') ?: [], fn($event) => is_array($event)
+        && ($event['run_uuid'] ?? '') === $run_uuid && ($event['type'] ?? '') === 'tool_completed'
+        && ($event['payload']['tool'] ?? '') === $tool);
+    usort($events, fn($a, $b) => (int)($a['sequence'] ?? 0) <=> (int)($b['sequence'] ?? 0));
+    $results = [];
+    foreach ($events as $event) {
+        $result = (array)($event['payload']['result'] ?? []);
+        if (($result['complete'] ?? true) === false || ($result['success'] ?? true) === false
+            || in_array(($result['status'] ?? ''), ['unreachable', 'failed', 'error', 'uncertain'], true)) {
+            continue;
+        }
+        $target = (string)($result['_agent_observation']['target'] ?? $result['server'] ?? $result['target'] ?? '');
+        $results[$target] = $result;
+    }
+    return array_values($results);
 }
 
 function agent_action_identity(string $run_uuid, string $tool, array $arguments): string
