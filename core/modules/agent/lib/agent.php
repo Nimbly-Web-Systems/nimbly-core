@@ -136,6 +136,10 @@ function agent_validate_definition(array $definition, string $agent_id = ''): vo
             || !is_array($tool['parameters'] ?? null)) {
             throw new RuntimeException('Agent tool definition is invalid: ' . $name);
         }
+        agent_validate_argument_schema($tool['parameters'], 'tool.' . $name);
+        if (($tool['parameters']['type'] ?? '') !== 'object') {
+            throw new RuntimeException('Agent tool parameters must be an object: ' . $name);
+        }
         if (($tool['risk'] ?? '') === 'governed'
             && !agent_valid_capability((string)($tool['authorizer'] ?? ''))) {
             throw new RuntimeException('Governed agent tool authorizer is invalid: ' . $name);
@@ -228,6 +232,9 @@ function agent_scope_definition(array $definition, array $run): array
 // Persistence is deliberately centralized so every connector gets identical durability.
 function agent_redact($value)
 {
+    if ($value instanceof stdClass) {
+        return (object)agent_redact((array)$value);
+    }
     if (is_array($value)) {
         $result = [];
         foreach ($value as $key => $item) {
@@ -255,13 +262,23 @@ function agent_canonical_json(array $value): string
     return json_encode($value, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
 }
 
-function agent_canonical_value(array $value): array
+function agent_canonical_value($value)
 {
+    if ($value instanceof stdClass) {
+        $properties = (array)$value;
+        ksort($properties);
+        foreach ($properties as $key => $item) {
+            if (is_array($item) || $item instanceof stdClass) {
+                $properties[$key] = agent_canonical_value($item);
+            }
+        }
+        return (object)$properties;
+    }
     if (!array_is_list($value)) {
         ksort($value);
     }
     foreach ($value as $key => $item) {
-        if (is_array($item)) {
+        if (is_array($item) || $item instanceof stdClass) {
             $value[$key] = agent_canonical_value($item);
         }
     }
@@ -680,11 +697,12 @@ function agent_execute_tool(string $run_uuid, array $tools, array $call, array $
 {
     $name = (string)($call['name'] ?? '');
     $tool = $tools[$name] ?? null;
-    $arguments = json_decode((string)($call['arguments'] ?? ''), true);
-    if (!is_array($tool) || !is_array($arguments)) {
+    $arguments = json_decode((string)($call['arguments'] ?? ''), false, 64);
+    if (!is_array($tool) || !$arguments instanceof stdClass) {
         throw new RuntimeException('Agent tool call is invalid');
     }
     agent_validate_arguments($arguments, (array)$tool['parameters']);
+    $arguments = (array)$arguments;
     $identity = $tool['risk'] === 'governed'
         ? agent_action_identity($run_uuid, $name, $arguments)
         : agent_inspection_identity($run_uuid, $name, $arguments, $call, $context);
@@ -854,18 +872,105 @@ function agent_tool_result(string $run_uuid, string $identity): ?array
     return null;
 }
 
-function agent_validate_arguments(array $arguments, array $schema): void
+// Deliberately bounded JSON Schema subset; unsupported constraints fail at load time.
+function agent_validate_argument_schema(array $schema, string $path = 'arguments', int $depth = 0): void
 {
-    foreach ((array)($schema['required'] ?? []) as $required) {
-        if (!array_key_exists($required, $arguments)) {
-            throw new RuntimeException('Required tool argument is missing');
+    $type = $schema['type'] ?? null;
+    $keywords = ['type', 'description', 'enum'];
+    $keywords = array_merge($keywords, match ($type) {
+        'object' => ['properties', 'required', 'additionalProperties'],
+        'array' => ['items'],
+        'string' => ['format'],
+        default => [],
+    });
+    if ($depth > 32 || !in_array($type, ['string', 'integer', 'number', 'boolean', 'null', 'object', 'array'], true)
+        || array_diff(array_keys($schema), $keywords) !== []
+        || (array_key_exists('description', $schema) && !is_string($schema['description']))) {
+        throw new RuntimeException('Unsupported agent argument schema: ' . $path);
+    }
+    if (array_key_exists('format', $schema) && $schema['format'] !== 'date-time') {
+        throw new RuntimeException('Unsupported agent argument format: ' . $path);
+    }
+    if (array_key_exists('enum', $schema)) {
+        if (!is_array($schema['enum']) || !array_is_list($schema['enum']) || $schema['enum'] === []
+            || in_array($type, ['object', 'array'], true)) {
+            throw new RuntimeException('Invalid agent argument enum: ' . $path);
+        }
+        $without_enum = $schema;
+        unset($without_enum['enum']);
+        foreach ($schema['enum'] as $value) {
+            agent_validate_arguments($value, $without_enum, $path);
         }
     }
-    foreach ($arguments as $key => $value) {
-        $property = $schema['properties'][$key] ?? null;
-        if (!is_array($property) || (($property['type'] ?? '') === 'string' && !is_string($value))
-            || (!empty($property['enum']) && !in_array($value, $property['enum'], true))) {
-            throw new RuntimeException('Agent tool argument is invalid: ' . $key);
+    if ($type === 'object') {
+        $properties = array_key_exists('properties', $schema) ? $schema['properties'] : [];
+        $required = array_key_exists('required', $schema) ? $schema['required'] : [];
+        if (!is_array($properties) || ($properties !== [] && array_is_list($properties))
+            || !is_array($required) || !array_is_list($required)
+            || (array_key_exists('additionalProperties', $schema) && !is_bool($schema['additionalProperties']))) {
+            throw new RuntimeException('Invalid agent object schema: ' . $path);
+        }
+        foreach ($required as $key) {
+            if (!is_string($key) || !array_key_exists($key, $properties)) {
+                throw new RuntimeException('Invalid required agent property: ' . $path);
+            }
+        }
+        if (count(array_unique($required)) !== count($required)) {
+            throw new RuntimeException('Duplicate required agent property: ' . $path);
+        }
+        foreach ($properties as $key => $property) {
+            if (!is_array($property)) {
+                throw new RuntimeException('Invalid agent property schema: ' . $path . '.' . $key);
+            }
+            agent_validate_argument_schema($property, $path . '.' . $key, $depth + 1);
+        }
+    }
+    if ($type === 'array') {
+        if (!is_array($schema['items'] ?? null)) {
+            throw new RuntimeException('Agent array schema requires items: ' . $path);
+        }
+        agent_validate_argument_schema($schema['items'], $path . '[]', $depth + 1);
+    }
+}
+
+function agent_validate_arguments($value, array $schema, string $path = 'arguments'): void
+{
+    $valid = match ($schema['type'] ?? '') {
+        'object' => $value instanceof stdClass,
+        'array' => is_array($value) && array_is_list($value),
+        'string' => is_string($value),
+        'integer' => is_int($value),
+        'number' => (is_int($value) || is_float($value)) && is_finite((float)$value),
+        'boolean' => is_bool($value),
+        'null' => $value === null,
+        default => false,
+    };
+    if (!$valid || (isset($schema['enum']) && !in_array($value, $schema['enum'], true))) {
+        throw new RuntimeException('Agent tool argument is invalid: ' . $path);
+    }
+    if (($schema['format'] ?? '') === 'date-time') {
+        if (preg_match('/^(\d{4})-(\d{2})-(\d{2})[Tt]([01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:[Zz]|[+-](?:[01]\d|2[0-3]):[0-5]\d)$/D', $value, $parts) !== 1
+            || !checkdate((int)$parts[2], (int)$parts[3], (int)$parts[1])) {
+            throw new RuntimeException('Agent tool timestamp is invalid: ' . $path);
+        }
+    }
+    if ($value instanceof stdClass) {
+        $properties = (array)$value;
+        foreach ($schema['required'] ?? [] as $key) {
+            if (!array_key_exists($key, $properties)) {
+                throw new RuntimeException('Required tool argument is missing: ' . $path . '.' . $key);
+            }
+        }
+        foreach ($properties as $key => $item) {
+            if (array_key_exists($key, $schema['properties'] ?? [])) {
+                agent_validate_arguments($item, $schema['properties'][$key], $path . '.' . $key);
+            } elseif (($schema['additionalProperties'] ?? true) === false) {
+                throw new RuntimeException('Unknown agent tool argument: ' . $path . '.' . $key);
+            }
+        }
+    } elseif (is_array($value)) {
+        foreach ($value as $index => $item) {
+            agent_validate_arguments($item, $schema['items'], $path . '[' . $index . ']');
         }
     }
 }

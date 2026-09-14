@@ -2292,6 +2292,21 @@ The schemas for these internal resources are declarative JSON files under
 `core/modules/agent/resources/`. The runtime installs them through one generic
 loader; do not embed resource `.meta` arrays in runtime PHP.
 
+Tool argument schemas use a bounded local JSON Schema subset: one `type`
+(`string`, `integer`, `number`, `boolean`, `null`, `object`, or `array`), optional
+`description`, scalar `enum`, object `properties`/`required` and boolean
+`additionalProperties` (default true), array `items` (required), and string
+`format: date-time`. Date-times require a valid calendar date and explicit
+RFC 3339 time/offset; leap seconds are unsupported. Integer arguments must decode
+as PHP integers, numbers must be finite, and values are never coerced. Schema
+nesting is bounded to 32 levels. Other keywords, type unions, references,
+compositions, and schema-valued additional properties fail definition loading.
+The root tool schema must be an object. JSON objects decode as `stdClass` for
+recursive validation; only the root argument object becomes a connector argument
+map afterward. Nested objects remain `stdClass`, arrays remain lists, including
+empty containers. Provider strict schemas and gateway validation remain separate
+checks. This subset governs tool arguments, not application output schemas.
+
 Tools declare a strict JSON argument schema, `read_only` or `governed` risk, a
 connector name, and connector configuration. Never expose generic shell, SSH,
 sudo, filesystem, database, or API tools. Governed tools additionally name an

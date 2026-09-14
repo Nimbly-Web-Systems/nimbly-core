@@ -220,4 +220,64 @@ foreach (['authorized', 'denied'] as $fixture_authorization) {
         'receipt replay never invokes authorization or the mutation connector');
 }
 
+$nested_schema = [
+    'type' => 'object', 'properties' => [
+        'since' => ['type' => 'integer'], 'enabled' => ['type' => 'boolean'],
+        'at' => ['type' => 'string', 'format' => 'date-time'],
+        'options' => ['type' => 'object', 'properties' => [
+            'mode' => ['type' => 'string', 'enum' => ['safe', 'full']],
+        ], 'required' => ['mode'], 'additionalProperties' => false],
+        'items' => ['type' => 'array', 'items' => ['type' => 'object', 'properties' => [
+            'weight' => ['type' => 'number'], 'empty' => ['type' => 'null'],
+        ], 'required' => ['weight', 'empty'], 'additionalProperties' => false]],
+    ], 'required' => ['since', 'enabled', 'at', 'options', 'items'], 'additionalProperties' => false,
+];
+$valid_arguments = '{"since":1788052800,"enabled":false,"at":"2026-09-13T10:20:30Z",'
+    . '"options":{"mode":"safe"},"items":[{"weight":1.5,"empty":null}]}';
+agent_validate_argument_schema($nested_schema);
+agent_validate_arguments(json_decode($valid_arguments), $nested_schema);
+$tools['validate'] = $tools['mutate'];
+$tools['validate']['parameters'] = $nested_schema;
+$invalid_arguments = ['[]', '{}', 'null', '{bad json'];
+foreach ([['since', 'yesterday'], ['since', true], ['since', []], ['since', 1.5], ['enabled', 'false'],
+    ['enabled', 0], ['options', []], ['options', (object)['mode' => 'unknown']],
+    ['options', (object)['mode' => 'safe', 'extra' => true]], ['options', (object)[]],
+    ['items', (object)[]], ['items', [false]], ['items', [(object)['weight' => '1', 'empty' => null]]],
+    ['at', '2026-02-30T10:20:30Z'], ['at', 'yesterday'], ['at', '2026-09-13T25:00:00Z'],
+    ['extra', 1]] as [$key, $value]) {
+    $invalid = json_decode($valid_arguments);
+    $invalid->$key = $value;
+    $invalid_arguments[] = json_encode($invalid);
+}
+$counts = [$authorization_calls, $mutation_calls];
+foreach ($invalid_arguments as $arguments_json) {
+    try {
+        agent_execute_tool($run_uuid, $tools, [
+            'name' => 'validate', 'call_id' => 'invalid', 'arguments' => $arguments_json,
+        ], $context);
+        agent_test_assert(false, 'malformed arguments must fail locally');
+    } catch (RuntimeException $error) {
+        agent_test_assert([$authorization_calls, $mutation_calls] === $counts,
+            'invalid arguments fail before authorization or connector execution');
+    }
+}
+$definition_fixture = $GLOBALS['AGENT_TEST_DEFINITIONS']['scientific-writer'];
+foreach ([['description' => null], ['properties' => null], ['required' => null],
+    ['oneOf' => []], ['pattern' => '.*'], ['additionalProperties' => ['type' => 'string']],
+    ['properties' => ['nested' => ['type' => 'array']]], ['type' => 'unknown'],
+    ['properties' => ['nested' => ['type' => 'string', 'format' => 'email']]]] as $unsupported) {
+    $definition_fixture['tools'] = ['inspect' => $tools['inspect']];
+    $definition_fixture['tools']['inspect']['parameters'] = array_replace($tools['inspect']['parameters'], $unsupported);
+    try {
+        agent_validate_definition($definition_fixture, 'scientific-writer');
+        agent_test_assert(false, 'unsupported schemas must fail while loading the definition');
+    } catch (RuntimeException $error) {
+        // Expected: unsupported schema cannot reach a provider or connector.
+    }
+}
+agent_test_assert(agent_canonical_json(['value' => (object)[]]) !== agent_canonical_json(['value' => []]),
+    'canonical identity preserves empty objects versus arrays');
+agent_test_assert(agent_redact((object)['password' => 'private'])->password === '[REDACTED]',
+    'nested JSON objects retain redaction');
+
 echo "Agent kernel tests passed.\n";
