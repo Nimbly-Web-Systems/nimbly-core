@@ -401,6 +401,7 @@ function agent_run(string $run_uuid, array $options = []): array
         if (in_array(($run['status'] ?? ''), AGENT_TERMINAL_STATUSES, true)) {
             return $run;
         }
+        agent_recover_actions($run_uuid);
         $definition = agent_scope_definition(agent_definition((string)$run['agent_id']), $run);
         agent_update_run($run_uuid, [
             'status' => 'running', 'started_at' => (int)($run['started_at'] ?? 0) ?: time(),
@@ -687,6 +688,17 @@ function agent_execute_tool(string $run_uuid, array $tools, array $call, array $
     $identity = $tool['risk'] === 'governed'
         ? agent_action_identity($run_uuid, $name, $arguments)
         : agent_inspection_identity($run_uuid, $name, $arguments, $call, $context);
+    if ($tool['risk'] === 'governed') {
+        $existing = data_read('.agent_actions', substr($identity, 0, 16));
+        if (is_array($existing)) {
+            if (in_array(($existing['status'] ?? ''), ['executing', 'uncertain'], true)) {
+                return agent_unresolved_action($existing);
+            }
+            if (in_array(($existing['status'] ?? ''), ['succeeded', 'blocked'], true)) {
+                return (array)($existing['result'] ?? []);
+            }
+        }
+    }
     $stored_result = agent_tool_result($run_uuid, $identity);
     if ($stored_result !== null) {
         return $stored_result;
@@ -714,13 +726,6 @@ function agent_execute_tool(string $run_uuid, array $tools, array $call, array $
             return $result;
         }
         $context['authorization'] = $decision;
-        $existing = data_read('.agent_actions', substr($identity, 0, 16));
-        if (is_array($existing) && in_array(($existing['status'] ?? ''), ['succeeded', 'blocked'], true)) {
-            return (array)($existing['result'] ?? []);
-        }
-        if (is_array($existing) && ($existing['status'] ?? '') === 'uncertain') {
-            return ['status' => 'uncertain', 'reason' => (string)($existing['reason'] ?? '')];
-        }
         agent_store_action($identity, $run_uuid, $name, $arguments, 'executing', [], '');
     }
     $connector = agent_connector_callable((string)$tool['connector']);
@@ -793,6 +798,33 @@ function agent_action_identity(string $run_uuid, string $tool, array $arguments)
     $lineage = is_array($run) ? (string)($run['idempotency_key'] ?? $run_uuid) : $run_uuid;
     $target = (string)($arguments['target'] ?? $arguments['server'] ?? '');
     return hash('sha256', $lineage . "\n" . $tool . "\n" . $target . "\n" . agent_canonical_json($arguments));
+}
+
+// Called only after the run lock is held: no prior worker can still be executing.
+function agent_recover_actions(string $run_uuid): void
+{
+    foreach (data_read('.agent_actions') ?: [] as $action) {
+        if (is_array($action) && ($action['run_uuid'] ?? '') === $run_uuid
+            && ($action['status'] ?? '') === 'executing') {
+            agent_unresolved_action($action);
+        }
+    }
+}
+
+function agent_unresolved_action(array $action): array
+{
+    $identity = (string)$action['lineage_key'];
+    $reason = ($action['status'] ?? '') === 'executing'
+        ? 'Prior execution was interrupted after reservation; inspect the remote outcome before any repeat'
+        : (string)($action['reason'] ?? 'Prior execution outcome is unresolved');
+    $result = ['status' => 'uncertain', 'reason' => $reason, 'action_digest' => $identity];
+    if (($action['status'] ?? '') === 'executing') {
+        data_update('.agent_actions', substr($identity, 0, 16), [
+            'status' => 'uncertain', 'reason' => $reason, 'result' => $result, 'updated_at' => time(),
+        ]);
+        agent_append_event((string)$action['run_uuid'], 'action_uncertain', $result);
+    }
+    return $result;
 }
 
 function agent_store_action(string $identity, string $run_uuid, string $tool, array $arguments,

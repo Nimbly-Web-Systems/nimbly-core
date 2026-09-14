@@ -166,4 +166,58 @@ agent_test_assert(count(array_filter(data_read('.agent_events'), fn($event) =>
     $event['type'] === 'tool_completed' && $event['payload']['tool'] === 'inspect')) === 3,
     'earlier observations remain in history');
 
+function agent_connector_fixture_authorize(array $source, array $_config, array $_context): array
+{
+    $GLOBALS['authorization_calls']++;
+    return agent_artifact('agent.authorization', 1, [
+        'status' => $GLOBALS['fixture_authorization'], 'action_digest' => $source['data']['action_digest'],
+    ]);
+}
+function agent_connector_fixture_mutate(array $_source, array $_config, array $_context): array
+{
+    $GLOBALS['mutation_calls']++;
+    return agent_artifact('fixture.action', 1, ['status' => 'completed']);
+}
+$authorization_calls = 0;
+$mutation_calls = 0;
+$fixture_authorization = 'authorized';
+$tools['mutate'] = ['risk' => 'governed', 'connector' => 'fixture-mutate',
+    'authorizer' => 'fixture-authorize', 'parameters' => $tools['inspect']['parameters']];
+foreach (['after-reservation', 'after-remote-effect'] as $interruption) {
+    $arguments = ['server' => $interruption];
+    $identity = agent_action_identity($run_uuid, 'mutate', $arguments);
+    agent_store_action($identity, $run_uuid, 'mutate', $arguments, 'executing', [], '');
+    if ($interruption === 'after-remote-effect') {
+        $mutation_calls++; // The old worker changed the remote state, then died before storing a receipt.
+    }
+    $before = $mutation_calls;
+    $lock = agent_lock('run-' . $run_uuid);
+    try {
+        agent_recover_actions($run_uuid);
+        $call = ['name' => 'mutate', 'call_id' => $interruption, 'arguments' => json_encode($arguments)];
+        $unresolved = agent_execute_tool($run_uuid, $tools, $call, $context);
+        agent_test_assert($unresolved['status'] === 'uncertain' && $unresolved['action_digest'] === $identity,
+            'interrupted action returns an explicit unresolved outcome');
+        agent_test_assert($mutation_calls === $before && $authorization_calls === 0,
+            'recovery never reauthorizes or repeats a reserved mutation');
+        agent_test_assert(data_read('.agent_actions', substr($identity, 0, 16))['attempts'] === 1,
+            'recovery preserves the original attempt count');
+    } finally {
+        agent_unlock($lock);
+    }
+}
+foreach (['authorized', 'denied'] as $fixture_authorization) {
+    $arguments = ['server' => $fixture_authorization];
+    $call = ['name' => 'mutate', 'call_id' => 'receipt', 'arguments' => json_encode($arguments)];
+    $receipt = agent_execute_tool($run_uuid, $tools, $call, $context);
+    $counts = [$mutation_calls, $authorization_calls];
+    // A distinct run in the same retry lineage must reuse the action ledger too.
+    data_create('.agent_runs', 'lineage-retry', data_read('.agent_runs', $run_uuid));
+    $call['call_id'] = 'new-call';
+    agent_test_assert(agent_execute_tool('lineage-retry', $tools, $call, $context) === $receipt,
+        'successful and blocked receipts survive retry lineage');
+    agent_test_assert([$mutation_calls, $authorization_calls] === $counts,
+        'receipt replay never invokes authorization or the mutation connector');
+}
+
 echo "Agent kernel tests passed.\n";

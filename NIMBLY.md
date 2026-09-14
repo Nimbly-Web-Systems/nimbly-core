@@ -2297,7 +2297,12 @@ connector name, and connector configuration. Never expose generic shell, SSH,
 sudo, filesystem, database, or API tools. Governed tools additionally name an
 authorizer connector. Authorization denial is a normal blocked result; once
 execution is reserved, interruption becomes `uncertain` and must be inspected
-before any repeat. Action identity is stable across retry lineage.
+before any repeat. Action identity is stable across retry lineage. After acquiring the run lock,
+the kernel marks persisted `executing` actions `uncertain`, records the interrupted
+reservation, and returns an explicit unresolved result without reauthorization
+or connector execution. Successful and blocked receipts are reused before
+consulting authorization again. Uncertain outcomes require read-only inspection;
+there is no automatic mutation replay.
 
 Read-only request identity uses the run, pipeline step, logical `call_id`, tool,
 and arguments. Replaying that request reuses its observation; a new call ID or
