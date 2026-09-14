@@ -93,6 +93,13 @@ function scheduler_orchestrator_lock_path(): string
     return getenv('NIMBLY_SCHEDULER_LOCK') ?: sys_get_temp_dir() . '/nimbly-scheduler-orchestrator.lock';
 }
 
+function scheduler_orchestrator_max_concurrency(): int
+{
+    $value = getenv('NIMBLY_SCHEDULER_MAX_CONCURRENCY');
+    $max = $value === false ? 5 : (int)$value;
+    return $max > 0 ? $max : 5;
+}
+
 function scheduler_orchestrator_default_config(): array
 {
     return [
@@ -299,6 +306,51 @@ function scheduler_orchestrator_spawn_worker(string $name, string $path, string 
     return $code === 0;
 }
 
+/**
+ * Blocks until one of $max_concurrency shared slots is free, then holds it.
+ * Every `scheduler:worker` acquires a slot before running its project's real
+ * `jobs:run`/`schedule:run` and releases it right after, so the orchestrator
+ * itself stays fire-and-forget (a slow project must not delay the next cron
+ * tick's dispatch - see core/tests/scheduler-isolation-test.php) while the
+ * number of projects doing real work at once on the host is still bounded.
+ *
+ * @return resource
+ */
+function scheduler_orchestrator_acquire_slot(int $max_concurrency)
+{
+    $dir = scheduler_orchestrator_semaphore_dir();
+    while (true) {
+        for ($slot = 0; $slot < $max_concurrency; $slot++) {
+            $handle = fopen($dir . '/nimbly-scheduler-slot-' . $slot . '.lock', 'c');
+            if ($handle !== false && flock($handle, LOCK_EX | LOCK_NB)) {
+                return $handle;
+            }
+            if ($handle !== false) {
+                fclose($handle);
+            }
+        }
+        usleep(100000);
+    }
+}
+
+/**
+ * @param resource $handle
+ */
+function scheduler_orchestrator_release_slot($handle): void
+{
+    flock($handle, LOCK_UN);
+    fclose($handle);
+}
+
+function scheduler_orchestrator_semaphore_dir(): string
+{
+    $dir = getenv('NIMBLY_SCHEDULER_SEMAPHORE_DIR') ?: sys_get_temp_dir();
+    if (!is_dir($dir)) {
+        mkdir($dir, 0755, true);
+    }
+    return $dir;
+}
+
 function scheduler_orchestrator_worker(array $argv): void
 {
     $name = (string)($argv[2] ?? '');
@@ -317,7 +369,9 @@ function scheduler_orchestrator_worker(array $argv): void
         if ($mode === 'jobs') {
             $command[] = '10';
         }
+        $slot = scheduler_orchestrator_acquire_slot(scheduler_orchestrator_max_concurrency());
         passthru(implode(' ', $command), $exit_code);
+        scheduler_orchestrator_release_slot($slot);
     }
     echo scheduler_orchestrator_log_line($name . '-' . $mode, $path,
         microtime(true) - $started_at, (int)$exit_code);

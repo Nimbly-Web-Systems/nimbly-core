@@ -2113,6 +2113,17 @@ not dispatch the same job concurrently. The project scheduler retains its own
 lock, so later cron ticks do not duplicate a long schedule run. Legacy
 `default_delay_after_seconds` values in the registry are ignored.
 
+`scheduler:run` itself always dispatches every registered project's workers
+immediately (it never waits before spawning), so a slow project cannot delay
+the next cron tick's dispatch. Concurrency is instead capped inside each
+`scheduler:worker`: before running the project's real `jobs:run`/`schedule:run`,
+a worker blocks on a shared slot semaphore, and releases it when done. This
+keeps a large fleet from pushing every project's worker onto a single-CPU host
+at the same instant. The cap defaults to 5 simultaneous workers across the
+whole host and is configurable with `NIMBLY_SCHEDULER_MAX_CONCURRENCY`; the
+slot lock files themselves live under `NIMBLY_SCHEDULER_SEMAPHORE_DIR`
+(default: the system temp directory).
+
 #### `host:audit`
 
 Runs a read-only health audit for a manually managed Nimbly host. Project
