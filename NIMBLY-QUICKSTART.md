@@ -1,6 +1,6 @@
 # Nimbly Quickstart
 
-This is the short entry point for working on a Nimbly project. [`NIMBLY.md`](NIMBLY.md) remains the complete authoritative implementation reference.
+Use this guide to get oriented quickly. When you need the full rule for a feature, continue with the [Nimbly implementation reference](NIMBLY.md), which covers the architecture, syntax and deployment details.
 
 ## 1. Choose the repository
 
