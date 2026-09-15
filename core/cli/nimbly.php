@@ -48,6 +48,9 @@ $commands = [
     'index:rebuild'    => ['file' => 'core/cli/reindex.php',        'desc' => 'Rebuild index entries for a resource', 'public' => true],
     'docker:init'       => ['file' => 'core/cli/docker_init.php',   'desc' => 'Generate Dockerfile and CI workflow in ext/ for Docker image builds', 'public' => true],
     'test:architecture'  => ['file' => 'core/cli/architecture_check.php', 'desc' => 'Warn about project architecture anti-patterns', 'public' => true],
+    'docs:list'        => ['file' => 'core/cli/docs.php',          'desc' => 'List the Nimbly reference heading hierarchy', 'public' => true],
+    'docs:section'     => ['file' => 'core/cli/docs.php',          'desc' => 'Show one section from the Nimbly reference', 'public' => true],
+    'docs:search'      => ['file' => 'core/cli/docs.php',          'desc' => 'Search the Nimbly reference with line-numbered excerpts', 'public' => true],
     'ext:sync'          => ['file' => 'core/cli/ext_sync.php',      'desc' => 'Commit and push ext/ changes to the remote repository', 'public' => false],
     'test:setup'        => ['file' => 'core/cli/test_setup.php',     'desc' => 'Create test role, user, and resource for automated tests', 'public' => true],
     'test:teardown'     => ['file' => 'core/cli/test_teardown.php',  'desc' => 'Remove test role, user, and resource created by test:setup', 'public' => true],
@@ -106,6 +109,10 @@ if (!$command || $command === 'help' || !isset($commands[$command])) {
     }
     echo "\n";
     exit($command && $command !== 'help' ? 1 : 0);
+}
+
+if (str_starts_with($command, 'docs:')) {
+    define('NIMBLY_CLI_DISPATCH', true);
 }
 
 require BASE_DIR . $commands[$command]['file'];

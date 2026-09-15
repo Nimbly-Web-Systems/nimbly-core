@@ -1,7 +1,10 @@
-Nimbly is a full-stack design system. It is required to read
+Nimbly is a full-stack design system. Read
+[NIMBLY-QUICKSTART.md](NIMBLY-QUICKSTART.md) first for every task. It is an
+entry point, not a replacement for the complete reference. Read
 [NIMBLY.md](NIMBLY.md), the complete Nimbly implementation reference, once per
-session before making any significant change. After that, consult only the
-sections relevant to the current task.
+session before making any significant change, then consult only the relevant
+sections. Use `./nimbly docs:section` or `./nimbly docs:search` for targeted
+lookup; read the full reference directly only for genuinely cross-cutting work.
 
 For project-specific workflow rules, also read `ext/.context/AGENTS.md` once per
 session when that file exists. Treat its instructions as applying to work in

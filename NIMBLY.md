@@ -4,6 +4,35 @@ This document is the authoritative reference for implementing features in Nimbly
 
 ---
 
+## Contents
+
+- [1. Project Structure](#1-project-structure)
+  - [Frontend Stack](#frontend-stack)
+- [2. Template Syntax](#2-template-syntax)
+- [3. Core Shortcode Reference](#3-core-shortcode-reference)
+- [4. Resources](#4-resources)
+- [5. Multi-language (i18n)](#5-multi-language-i18n)
+- [6. Routing](#6-routing)
+- [7. CLI](#7-cli)
+- [8. Build](#8-build)
+- [9. Deployment](#9-deployment)
+- [10. Email](#10-email)
+- [11. Forms](#11-forms)
+- [12. Rich content fields — end-to-end](#12-rich-content-fields--end-to-end)
+- [13. Admin](#13-admin)
+- [14. API](#14-api)
+- [15. Custom Shortcode Libraries](#15-custom-shortcode-libraries)
+- [16. Modules](#16-modules)
+- [17. UX principles](#17-ux-principles)
+- [18. Anti-patterns](#18-anti-patterns)
+- [19. Upgrading from core 1.0.0 to core 1.1.0](#19-upgrading-from-core-100-to-core-110)
+- [20. Code Quality & Conventions](#20-code-quality--conventions)
+- [21. Form field rendering pipeline](#21-form-field-rendering-pipeline)
+
+Use `./nimbly docs:list` to inspect the complete hierarchy, `./nimbly docs:section "Heading > Child"` to print one section, and `./nimbly docs:search "term"` to find compact line-numbered matches.
+
+---
+
 ## 1. Project Structure
 
 ### Two repositories, one runtime
@@ -100,7 +129,7 @@ Use `.context/` for private/operator/client-specific material. Use `ext/.context
 
 ---
 
-## Frontend Stack
+### Frontend Stack
 
 The frontend (both admin and public) uses **Tailwind CSS 4**, **DaisyUI 5**, and **Alpine.js** exclusively.
 
@@ -1868,6 +1897,22 @@ php core/cli/nimbly.php user:email-index:rebuild
 php core/cli/nimbly.php system:upgrade-11
 php core/cli/nimbly.php help
 ```
+
+### Documentation lookup
+
+The documentation commands are read-only and read only the local `NIMBLY.md`.
+Use them to load the smallest useful reference section while working:
+
+```bash
+./nimbly docs:list
+./nimbly docs:section "Template Syntax"
+./nimbly docs:section "Template Syntax > Route templates"
+./nimbly docs:search "router_accept"
+```
+
+Matching is case-insensitive. A section path may identify a nested heading; a
+heading name without a path must resolve uniquely. Missing and ambiguous
+sections return an error.
 
 ### Commands
 
@@ -3866,6 +3911,18 @@ Options:
 ---
 
 ## 20. Code Quality & Conventions
+
+### Efficient development with agents
+
+Agents should minimize context and command output. Search locally before
+reading a large file, and use `docs:section` or `docs:search` for targeted
+reference lookup. For bulk inspection, validation, or mechanical
+transformations, create or reuse deterministic local scripts. Prefer scripts
+that support dry runs and concise summaries.
+
+Scripts can collect evidence and apply mechanical changes, but agents must
+review the diff and make architectural decisions themselves. Do not delegate
+judgment blindly to a script.
 
 ### Always use curly brackets
 
