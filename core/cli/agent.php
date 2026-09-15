@@ -89,6 +89,47 @@ if ($command === 'agent:recover') {
     echo "Recovered agent runs: {$count}\n";
     exit(0);
 }
+if ($command === 'agent:evidence') {
+    $agent_id = trim((string)($argv[2] ?? ''));
+    $run_uuid = '';
+    $out = '';
+    foreach (array_slice($argv, 3) as $argument) {
+        if (str_starts_with($argument, '--run=')) {
+            $run_uuid = substr($argument, 6);
+        } elseif (str_starts_with($argument, '--out=')) {
+            $out = substr($argument, 6);
+        }
+    }
+    if ($agent_id === '' || $run_uuid === '') {
+        fwrite(STDERR, "Usage: agent:evidence <agent-id> --run=<run-uuid> [--out=<path>]\n");
+        exit(64);
+    }
+    $definition = agent_definition($agent_id);
+    $input_steps = (array)$definition['pipeline']['input'];
+    if ($input_steps === []) {
+        throw new RuntimeException('Agent has no input pipeline steps: ' . $agent_id);
+    }
+    $last_step = end($input_steps);
+    $last_step_id = (string)$last_step['id'];
+    load_library('data');
+    $key = substr(hash('sha256', $run_uuid . ':' . $last_step_id), 0, 16);
+    $stored = data_read('.agent_steps', $key);
+    if (!is_array($stored) || ($stored['status'] ?? '') !== 'completed' || !is_array($stored['artifact'] ?? null)) {
+        throw new RuntimeException('Run has no completed evidence for step: ' . $last_step_id);
+    }
+    $body = "=== SYSTEM PROMPT ({$definition['instructions']}) ===\n\n"
+        . agent_instructions($definition) . "\n\n"
+        . "=== EVIDENCE (input to the reasoning step, run {$run_uuid}, step {$last_step_id}) ===\n\n"
+        . json_encode($stored['artifact']['data'] ?? [], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) . "\n"
+        . "\nPaste both sections into any chat to try different prompt wording against this real evidence. This command makes no API call and sends nothing.\n";
+    if ($out !== '') {
+        file_put_contents($out, $body);
+        echo "Wrote evidence + instructions to: {$out}\n";
+    } else {
+        echo $body;
+    }
+    exit(0);
+}
 
-fwrite(STDERR, "Usage: agent:enqueue <agent-id> (--scheduled|--manual=<key>|--operator=<key>) [--target=<identity>] [--read-only] | agent:run <run-uuid> | agent:retry <failed-run-uuid> | agent:recover\n");
+fwrite(STDERR, "Usage: agent:enqueue <agent-id> (--scheduled|--manual=<key>|--operator=<key>) [--target=<identity>] [--read-only] | agent:run <run-uuid> | agent:retry <failed-run-uuid> | agent:recover | agent:evidence <agent-id> --run=<run-uuid> [--out=<path>]\n");
 exit(64);
