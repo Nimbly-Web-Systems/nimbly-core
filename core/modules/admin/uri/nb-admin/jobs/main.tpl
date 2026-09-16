@@ -16,7 +16,7 @@
             </form>
             <form action="[#url#]" method="post" accept-charset="utf-8">
                 [#form-key prune_jobs#]
-                <button type="submit" class="[#btn-class-secondary#]">[#text Prune completed#]</button>
+                <button type="submit" class="[#btn-class-secondary#]">[#text Prune old jobs#]</button>
             </form>
         </div>
     </div>

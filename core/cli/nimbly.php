@@ -26,7 +26,7 @@ $commands = [
     'jobs:run'         => ['file' => 'core/cli/jobs.php',           'desc' => 'Run queued background jobs', 'public' => false],
     'sessions:prune' => ['file' => 'core/cli/sessions_prune.php', 'desc' => 'Remove expired session files (--dry-run)', 'public' => true],
     'schedule:status' => ['file' => 'core/cli/schedule_status.php', 'desc' => 'Check mandatory maintenance completion', 'public' => true],
-    'jobs:prune'       => ['file' => 'core/cli/jobs_prune.php',     'desc' => 'Delete completed jobs older than N days (--days=30)', 'public' => false],
+    'jobs:prune'       => ['file' => 'core/cli/jobs_prune.php',     'desc' => 'Delete completed and terminally failed jobs older than N days (--days=30)', 'public' => false],
     'agent:enqueue'     => ['file' => 'core/cli/agent.php',          'desc' => 'Enqueue an idempotent agent run', 'public' => false],
     'agent:run'         => ['file' => 'core/cli/agent.php',          'desc' => 'Run or resume an agent run', 'public' => false],
     'agent:retry'       => ['file' => 'core/cli/agent.php',          'desc' => 'Retry a failed scheduled agent run', 'public' => false],
