@@ -5,6 +5,7 @@ load_library('base-url');
 load_library('fmt');
 load_library('text');
 load_library('util');
+load_library('data');
 
 function view_resource_record_sc($params)
 {
@@ -19,6 +20,9 @@ function view_resource_record_sc($params)
         return '';
     }
 
+    $meta = data_meta($resource, $uuid) ?: [];
+    $encrypted_fields = view_resource_record_encrypted_fields($meta);
+
     $translation_languages = is_array($languages) && count($languages) > 1
         ? array_values(array_filter($languages, 'is_string'))
         : [];
@@ -30,6 +34,9 @@ function view_resource_record_sc($params)
         }
         if (view_resource_record_field_is_i18n((string)$field_id, $field, $i18n_fields)) {
             $field['i18n'] = true;
+        }
+        if (in_array((string)$field_id, $encrypted_fields, true)) {
+            $field['encrypted'] = true;
         }
         $rows .= view_resource_record_row(
             (string)$field_id,
@@ -69,6 +76,23 @@ function view_resource_record_field_is_i18n(string $field_id, array $field, $i18
 {
     return !empty($field['i18n'])
         || (is_array($i18n_fields) && in_array($field_id, $i18n_fields, true));
+}
+
+function view_resource_record_encrypted_fields(array $meta): array
+{
+    $fields = [];
+    foreach (['encrypt', 'encrypt2way'] as $key) {
+        if (empty($meta[$key])) {
+            continue;
+        }
+        foreach (explode(',', (string)$meta[$key]) as $field_id) {
+            $field_id = trim($field_id);
+            if ($field_id !== '') {
+                $fields[] = $field_id;
+            }
+        }
+    }
+    return $fields;
 }
 
 function view_resource_record_row(string $field_id, array $field, $value, array $languages = []): string
@@ -121,6 +145,10 @@ function view_resource_record_value(string $type, $value, array $field = []): st
 {
     if (view_resource_record_empty($value)) {
         return '<span class="text-neutral-400">' . view_resource_record_text('Empty') . '</span>';
+    }
+
+    if (!empty($field['encrypted'])) {
+        return '<span class="text-neutral-400 tracking-widest" aria-label="' . view_resource_record_text('Encrypted') . '">&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;</span>';
     }
 
     if (is_array($value)) {
