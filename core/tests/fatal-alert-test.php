@@ -42,13 +42,22 @@ function fatal_test_assert(bool $condition, string $message): void
 }
 
 require_once dirname(__DIR__) . '/lib/fatal-alert.php';
+$_SERVER['SERVER_NAME'] = 'staging.example.test';
+$_SERVER['REQUEST_URI'] = '/some/path?token=secret';
 $error = ['type' => E_ERROR, 'message' => 'password=private form value',
-    'file' => '/var/www/example/core/lib/problem.php', 'line' => 42];
+    'file' => $fatal_test_root . '/ext/uri/widgets/(id)/route.inc', 'line' => 9];
 $start = 1789000000;
 for ($index = 0; $index < 4; $index++) {
     fatal_alert_enqueue($error, $start + $index * 60);
 }
 fatal_test_assert(count($fatal_test_records['.jobs']) === 1, 'duplicates queue one first alert');
+$first_job = $fatal_test_records['.jobs']['test-job-0'];
+fatal_test_assert($first_job['payload']['url'] === 'http://staging.example.test/some/path',
+    'queued alert captures the request URL without its query string');
+fatal_test_assert($first_job['payload']['host'] === (gethostname() ?: ''),
+    'queued alert captures the server hostname');
+fatal_test_assert($first_job['payload']['file'] === 'ext/uri/widgets/(id)/route.inc',
+    'queued alert keeps the route file path relative to the install root');
 fatal_alert_enqueue($error, $start + 240);
 fatal_test_assert(count($fatal_test_records['.jobs']) === 2, 'fifth repeat in 15 minutes queues escalation');
 $incident = reset($fatal_test_records['.state']);
