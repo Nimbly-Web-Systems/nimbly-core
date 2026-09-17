@@ -8,6 +8,7 @@
                 <th scope="col" class="px-3 py-2 text-center font-semibold">[#text Attempts#]</th>
                 <th scope="col" class="px-3 py-2 font-semibold">[#text Last error#]</th>
                 <th scope="col" class="px-3 py-2 font-semibold">[#text Updated#]</th>
+                <th scope="col" class="px-3 py-2 font-semibold text-right [#feature-cond manage-.jobs echo_else=hidden#]"><span class="sr-only">[#text Actions#]</span></th>
             </tr>
         </thead>
         <tbody>

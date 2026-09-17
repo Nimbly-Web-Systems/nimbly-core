@@ -1,10 +1,10 @@
 <?php
 
 /**
- * Deletes completed jobs older than a given number of days.
+ * Deletes completed and terminally failed jobs older than a given number of days.
  *
  * Usage:
- *   php core/cli/nimbly.php jobs:prune              (done jobs older than 30 days)
+ *   php core/cli/nimbly.php jobs:prune              (done/failed jobs older than 30 days)
  *   php core/cli/nimbly.php jobs:prune --days=7
  *   php core/cli/nimbly.php jobs:prune --dry-run
  */
@@ -52,13 +52,17 @@ foreach ($jobs as $uuid => $job) {
         continue;
     }
 
-    if (($job['status'] ?? '') !== 'done') {
+    $status = $job['status'] ?? '';
+    if ($status === 'done') {
+        $age_at = (int)($job['completed_at'] ?? 0);
+    } elseif ($status === 'failed') {
+        $age_at = (int)($job['_modified'] ?? 0);
+    } else {
         $skipped++;
         continue;
     }
 
-    $completed_at = (int)($job['completed_at'] ?? 0);
-    if ($completed_at === 0 || $completed_at > $cutoff) {
+    if ($age_at === 0 || $age_at > $cutoff) {
         $kept++;
         continue;
     }
@@ -70,7 +74,7 @@ foreach ($jobs as $uuid => $job) {
 }
 
 if ($dry_run) {
-    printf("%-12s %s  (done jobs older than %d days)\n", 'Mode:', 'dry run', $days);
+    printf("%-12s %s  (done/failed jobs older than %d days)\n", 'Mode:', 'dry run', $days);
 }
 printf("%-12s %d\n", 'Pruned:', $pruned);
 printf("%-12s %d\n", 'Kept:', $kept);

@@ -28,13 +28,17 @@ function jobs_panel_sc($params)
 
     $rows_html = '';
     foreach ($jobs as $job) {
+        $status = (string)($job['status'] ?? '');
         set_variable_dot('_row', [
-            'status' => htmlspecialchars((string)($job['status'] ?? ''), ENT_QUOTES, 'UTF-8'),
-            'status_class' => jobs_panel_status_class((string)($job['status'] ?? '')),
+            'status' => htmlspecialchars($status, ENT_QUOTES, 'UTF-8'),
+            'status_class' => jobs_panel_status_class($status),
             'type' => htmlspecialchars((string)($job['type'] ?? ''), ENT_QUOTES, 'UTF-8'),
             'attempts' => (int)($job['attempts'] ?? 0),
             'last_error' => htmlspecialchars((string)($job['last_error'] ?? ''), ENT_QUOTES, 'UTF-8'),
             'updated' => htmlspecialchars(ago((int)($job['_modified'] ?? 0)), ENT_QUOTES, 'UTF-8'),
+            'uuid' => htmlspecialchars((string)($job['uuid'] ?? ''), ENT_QUOTES, 'UTF-8'),
+            'delete_disabled' => in_array($status, ['done', 'failed'], true)
+                ? '' : 'disabled title="Only completed or failed jobs can be deleted"',
         ]);
         $rows_html .= run_buffered(dirname(__FILE__) . '/row.tpl');
         clear_variable_dot('_row');
