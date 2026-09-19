@@ -560,6 +560,7 @@ function array_merge_recursive_distinct(array &$array1, array &$array2)
     foreach ($array2 as $key => &$value) {
         if (
             is_array($value) &&
+            $value !== [] &&
             isset($merged[$key]) &&
             is_array($merged[$key]) &&
             array_keys($value) !== range(0, count($value) - 1) // associative check
