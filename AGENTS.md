@@ -4,7 +4,11 @@ Nimbly is a full-stack atomic design system and digital product platform coverin
 
 This file is the default starting point for development work.
 
-**Do not read `NIMBLY.md` in full by default.** It is the complete implementation reference and is intentionally large.
+## Nimbly documentation lookup
+
+`NIMBLY.md` is the complete implementation reference and is intentionally large.
+
+**Do not read `NIMBLY.md` in full by default.**
 
 Inspect the relevant implementation first. When additional framework documentation is needed, retrieve only the necessary material using:
 
@@ -14,11 +18,62 @@ Inspect the relevant implementation first. When additional framework documentati
 ./nimbly docs:section "<section>"
 ```
 
-Use `docs:list` only when you do not know which capability or documentation section is relevant. When the target is known, go directly to `docs:search` or `docs:section`.
+Use the documentation commands deliberately:
 
-Read the complete `NIMBLY.md` only when targeted lookup has proved insufficient for a genuinely framework-wide task.
+* Use `docs:search` when you know the concept, command, API, capability, or likely Nimbly term but do not know the section.
+* Use `docs:section` when you already know the relevant documentation section.
+* Use `docs:list` when you do not know the correct Nimbly terminology or where the capability is documented.
 
-For project-specific workflow rules, also read .context/AGENTS.md and, when present, ext/.context/AGENTS.md once per session. Treat .context/AGENTS.md as applying to the project as a whole and ext/.context/AGENTS.md as applying specifically to work in the separate ext/ repository.
+### How to search
+
+Treat `docs:search` as a documentation-text lookup, not as a general web search.
+
+Search for **one concept, command, API, capability, or established Nimbly term at a time**.
+
+Prefer:
+
+```bash
+./nimbly docs:search "registered action"
+./nimbly docs:search "gateway"
+./nimbly docs:search "orchestration"
+./nimbly docs:search "PHP-FPM"
+```
+
+Do not combine the whole problem into one long query such as:
+
+```bash
+./nimbly docs:search "operating system upgrade runtime baseline PHP-FPM registered action gateway"
+```
+
+If a search returns no useful result:
+
+1. Shorten the query to the main concept.
+2. Try the actual command, function, configuration, or capability name found in the code.
+3. Try one close synonym or established Nimbly term.
+4. If the terminology is still unclear, run `./nimbly docs:list` once and identify the likely section.
+5. Retrieve that section with `./nimbly docs:section "<section>"`.
+6. If documentation still does not cover the capability, rely on the existing implementation rather than repeatedly broadening the search.
+
+A failed `docs:search` does **not** prove that a capability does not exist. It only means that the particular search term did not match the documentation.
+
+Prefer terminology already discovered in:
+
+* existing code,
+* function names,
+* command names,
+* agent definitions,
+* configuration,
+* resource names,
+* or previous documentation results.
+
+Do not repeatedly try increasingly long keyword strings.
+
+Read the complete `NIMBLY.md` only when the task is genuinely framework-wide and targeted code inspection plus `docs:search`, `docs:section`, and `docs:list` have proved insufficient.
+
+Do not read the full reference merely to begin a task, understand Nimbly generally, search for a capability, or make sure nothing was missed.
+
+For project-specific workflow rules, also read `.context/AGENTS.md` and, when present, `ext/.context/AGENTS.md` once per session. Treat `.context/AGENTS.md` as applying to the project as a whole and `ext/.context/AGENTS.md` as applying specifically to work in the separate `ext/` repository.
+
 
 ## 1. Start from current application state
 
