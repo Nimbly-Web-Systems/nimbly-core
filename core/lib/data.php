@@ -833,6 +833,19 @@ function data_delete($resource, $uuid = null)
         }
         $data_ls = $data_ls ?? data_read($resource, $uuid);
         $result += (int)unlink($file);
+        if ($result > 0) {
+            // Unlike data_create()/data_update(), a delete never rewrites a
+            // surviving file, so it produces no newer max-mtime for
+            // _data_read_all()'s cache-vs-data_modified() comparison to
+            // detect. touch() alone is not reliable here: filemtime() has
+            // 1-second resolution, and a create-then-delete within the same
+            // second (e.g. a script, or two quick requests) leaves the
+            // touched dir's mtime equal to — not greater than — the cache
+            // file's, so the stale-check ("cache_time < modified") misses
+            // it. Clear the cache file directly instead.
+            touch($dir);
+            _data_clear_cache('_data_read_all', $resource);
+        }
         if ($result > 0 && $uuid !== '.meta') {
             load_library('event');
             event_resource_lifecycle('delete', $resource, $uuid, $data_ls);
@@ -859,6 +872,7 @@ function data_delete($resource, $uuid = null)
         }
     }
     @rmdir($dir);
+    _data_clear_cache('_data_read_all', $resource);
     return $result;
 }
 
