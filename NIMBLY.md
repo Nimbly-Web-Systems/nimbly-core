@@ -2364,9 +2364,16 @@ empty containers. Provider strict schemas and gateway validation remain separate
 checks. This subset governs tool arguments, not application output schemas.
 
 Tools declare a strict JSON argument schema, `read_only` or `governed` risk, a
-connector name, and connector configuration. Never expose generic shell, SSH,
-sudo, filesystem, database, or API tools. Governed tools additionally name an
-authorizer connector. Authorization denial is a normal blocked result; once
+connector name, and connector configuration. A tool may expose general
+command, file, or API execution only when its connector independently
+enforces, outside model discretion: an explicit target/scope allow-list;
+verbatim capture of every request and result as durable evidence; a
+deterministic protected/destructive-class policy that blocks or escalates
+regardless of the model's stated intent; and, for any mutating call, the
+standard governed-action authorization and idempotency machinery. A tool that
+cannot guarantee all four must not expose shell, SSH, sudo, filesystem,
+database, or API access. Governed tools additionally name an authorizer
+connector. Authorization denial is a normal blocked result; once
 execution is reserved, interruption becomes `uncertain` and must be inspected
 before any repeat. Action identity is stable across retry lineage. After acquiring the run lock,
 the kernel marks persisted `executing` actions `uncertain`, records the interrupted
