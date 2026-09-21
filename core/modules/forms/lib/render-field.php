@@ -110,6 +110,17 @@ function render_field(array $def, string $field = '', $value = null, string $sto
     }
 
     $type = $def['type'] ?? 'text';
+    if (!empty($def['options_function']) && is_string($def['options_function'])) {
+        if (!empty($def['options_library']) && is_string($def['options_library'])) {
+            load_library($def['options_library']);
+        }
+        if (function_exists($def['options_function'])) {
+            $options = $def['options_function']();
+            if (is_array($options)) {
+                $def['options'] = $options;
+            }
+        }
+    }
     if ($type === 'slug' && !empty($def['source']) && empty($def['i18n'])) {
         foreach (explode(',', $def['source']) as $source_field) {
             $source_field = trim($source_field);

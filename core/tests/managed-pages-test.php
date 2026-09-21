@@ -4,7 +4,7 @@ $fixture = sys_get_temp_dir() . '/nimbly-managed-pages-' . bin2hex(random_bytes(
 mkdir($fixture . '/ext/modules/managed-pages', 0755, true);
 mkdir($fixture . '/ext/data/.navigation', 0755, true);
 file_put_contents($fixture . '/ext/modules/managed-pages/page-types.json', json_encode([
-    'standard' => ['template' => 'page-standard'],
+    'campaign' => ['name' => 'Campaign page', 'template' => 'page-campaign'],
 ]));
 file_put_contents($fixture . '/ext/modules/managed-pages/url-areas.json', json_encode([
     'enabled' => ['en', 'nl'],
@@ -23,14 +23,14 @@ $GLOBALS['SYSTEM'] = [
 $GLOBALS['test_records'] = [
     'pages' => [
         'page-1' => [
-            'type' => 'standard',
+            'type' => 'default',
             'title' => ['en' => 'Campaign', 'nl' => 'Campagne'],
             'path' => ['en' => 'en/campaign', 'nl' => 'nl/campaign'],
             'published' => ['en' => false, 'nl' => true],
             'previous_paths' => ['nl' => ['nl/old-campaign']],
         ],
         'page-2' => [
-            'type' => 'standard',
+            'type' => 'default',
             'title' => ['nl' => 'Hidden'],
             'path' => ['nl' => 'nl/hidden'],
             'published' => ['nl' => false],
@@ -67,6 +67,9 @@ function managed_pages_test_assert($condition, string $message): void
     }
 }
 
+managed_pages_test_assert(managed_pages_types()['default']['template'] === 'managed-page-default', 'Core default page type is unavailable.');
+managed_pages_test_assert(managed_pages_types()['campaign']['template'] === 'page-campaign', 'Application page type was not merged.');
+managed_pages_test_assert(managed_pages_type_options() === ['default' => 'Default page', 'campaign' => 'Campaign page'], 'Page type options do not match declarations.');
 managed_pages_test_assert(managed_pages_normalize_path('/nl/campaign/') === 'nl/campaign', 'Canonical path normalization failed.');
 managed_pages_test_assert(managed_pages_normalize_path('nl//campaign') === null, 'Ambiguous path was accepted.');
 managed_pages_test_assert(!managed_pages_path_in_area('en/private/report'), 'Reserved subtree was accepted.');
@@ -76,7 +79,7 @@ managed_pages_test_assert(managed_pages_find('en/campaign') === null, 'Unpublish
 managed_pages_test_assert(managed_pages_url('page-1', 'en') === null, 'Unpublished URL lookup succeeded.');
 
 $candidate = [
-    'type' => 'standard',
+    'type' => 'default',
     'path' => ['nl' => 'nl/code-route'],
     'published' => ['nl' => false],
 ];

@@ -1,8 +1,8 @@
 <?php
 
 /**
- * Optional record-backed pages. Applications opt in by declaring page types
- * and URL areas in ext/modules/managed-pages.
+ * Optional record-backed pages. Core provides a default page type;
+ * applications opt in with URL areas and may add or override page types.
  */
 
 function managed_pages_declaration(string $file): array
@@ -17,7 +17,24 @@ function managed_pages_declaration(string $file): array
 
 function managed_pages_types(): array
 {
-    return managed_pages_declaration('page-types.json');
+    return array_replace([
+        'default' => [
+            'name' => 'Default page',
+            'description' => 'A standard editorial page with a title and rich content.',
+            'template' => 'managed-page-default',
+        ],
+    ], managed_pages_declaration('page-types.json'));
+}
+
+function managed_pages_type_options(): array
+{
+    $options = [];
+    foreach (managed_pages_types() as $id => $definition) {
+        if (is_array($definition) && !empty($definition['name']) && !empty($definition['template'])) {
+            $options[(string)$id] = (string)$definition['name'];
+        }
+    }
+    return $options;
 }
 
 function managed_pages_url_config(): array

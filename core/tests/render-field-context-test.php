@@ -28,6 +28,11 @@ function run_single_sc(string $name): void
     $GLOBALS['rendered_field_contexts'][$name] = $GLOBALS['SYSTEM']['variables'];
 }
 
+function render_field_context_options(): array
+{
+    return ['default' => 'Default page', 'campaign' => 'Campaign page'];
+}
+
 require_once __DIR__ . '/../modules/forms/lib/render-field.php';
 
 render_field(['type' => 'slug', 'name' => 'Slug', 'source' => 'title'], 'title_slug');
@@ -38,6 +43,15 @@ render_field_context_assert(
     'language-prefixed slug field did not expose its prefix setting'
 );
 render_field(['type' => 'image', 'name' => 'Main image'], 'image');
+render_field(['type' => 'select', 'name' => 'Type', 'options_function' => 'render_field_context_options'], 'type');
+$type_context = $GLOBALS['rendered_field_contexts']['field-select'];
+render_field_context_assert(
+    $type_context['_f.options'] === [
+        ['code' => 'default', 'label' => 'Default page'],
+        ['code' => 'campaign', 'label' => 'Campaign page'],
+    ],
+    'dynamic select options were not resolved'
+);
 
 $fields = [
     'title' => ['type' => 'text', 'name' => 'Title', 'i18n' => true],
