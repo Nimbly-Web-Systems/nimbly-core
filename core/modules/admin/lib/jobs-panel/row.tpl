@@ -1,4 +1,4 @@
-<tr class="border-b border-neutral-200">
+<tr class="border-b border-neutral-200" x-show="matches(records[[#_row.index#] - 1])">
     <td class="py-3 pr-4 text-neutral-600 [#_row.status_class#]">[#_row.status#]</td>
     <td class="py-3 pr-4 text-neutral-600">[#_row.type#]</td>
     <td class="py-3 pr-4 text-neutral-600 text-center">[#_row.attempts#]</td>

@@ -14,6 +14,9 @@
         </thead>
         <tbody>
             [#_jp.rows#]
+            <tr x-show="records.length > 0 && filtered_count() === 0" x-cloak>
+                <td colspan="6" class="py-3 pr-4 text-neutral-600">[#text No matching jobs#]</td>
+            </tr>
         </tbody>
     </table>
     </div>
