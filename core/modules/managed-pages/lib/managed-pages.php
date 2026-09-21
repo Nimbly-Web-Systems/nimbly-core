@@ -17,13 +17,19 @@ function managed_pages_declaration(string $file): array
 
 function managed_pages_types(): array
 {
+    $config = data_exists('.config', 'managed_pages')
+        ? data_read('.config', 'managed_pages')
+        : [];
+    $application_types = is_array($config['page_types'] ?? null)
+        ? $config['page_types']
+        : [];
     return array_replace([
         'default' => [
             'name' => 'Default page',
             'description' => 'A standard editorial page with a title and rich content.',
             'template' => 'managed-page-default',
         ],
-    ], managed_pages_declaration('page-types.json'));
+    ], $application_types);
 }
 
 function managed_pages_type_options(): array

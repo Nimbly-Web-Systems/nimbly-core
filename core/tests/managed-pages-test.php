@@ -3,9 +3,6 @@
 $fixture = sys_get_temp_dir() . '/nimbly-managed-pages-' . bin2hex(random_bytes(5));
 mkdir($fixture . '/ext/modules/managed-pages', 0755, true);
 mkdir($fixture . '/ext/data/.navigation', 0755, true);
-file_put_contents($fixture . '/ext/modules/managed-pages/page-types.json', json_encode([
-    'campaign' => ['name' => 'Campaign page', 'template' => 'page-campaign'],
-]));
 file_put_contents($fixture . '/ext/modules/managed-pages/url-areas.json', json_encode([
     'enabled' => ['en', 'nl'],
     'reserved' => ['en/private'],
@@ -21,6 +18,13 @@ $GLOBALS['SYSTEM'] = [
     'data_error' => null,
 ];
 $GLOBALS['test_records'] = [
+    '.config' => [
+        'managed_pages' => [
+            'page_types' => [
+                'campaign' => ['name' => 'Campaign page', 'template' => 'page-campaign'],
+            ],
+        ],
+    ],
     'pages' => [
         'page-1' => [
             'type' => 'default',
