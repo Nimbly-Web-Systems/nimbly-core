@@ -1,0 +1,120 @@
+<?php
+
+$fixture = sys_get_temp_dir() . '/nimbly-managed-pages-' . bin2hex(random_bytes(5));
+mkdir($fixture . '/ext/modules/managed-pages', 0755, true);
+mkdir($fixture . '/ext/data/.navigation', 0755, true);
+file_put_contents($fixture . '/ext/modules/managed-pages/page-types.json', json_encode([
+    'standard' => ['template' => 'page-standard'],
+]));
+file_put_contents($fixture . '/ext/modules/managed-pages/url-areas.json', json_encode([
+    'enabled' => ['en', 'nl'],
+    'reserved' => ['en/private'],
+]));
+file_put_contents($fixture . '/ext/modules/managed-pages/navigation-slots.json', json_encode([
+    'main' => ['name' => 'Main', 'depth' => 2],
+]));
+
+$GLOBALS['SYSTEM'] = [
+    'file_base' => $fixture . '/',
+    'request_uri' => 'nl/campaign',
+    'variables' => [],
+    'data_error' => null,
+];
+$GLOBALS['test_records'] = [
+    'pages' => [
+        'page-1' => [
+            'type' => 'standard',
+            'title' => ['en' => 'Campaign', 'nl' => 'Campagne'],
+            'path' => ['en' => 'en/campaign', 'nl' => 'nl/campaign'],
+            'published' => ['en' => false, 'nl' => true],
+            'previous_paths' => ['nl' => ['nl/old-campaign']],
+        ],
+        'page-2' => [
+            'type' => 'standard',
+            'title' => ['nl' => 'Hidden'],
+            'path' => ['nl' => 'nl/hidden'],
+            'published' => ['nl' => false],
+        ],
+    ],
+    '.navigation' => [],
+];
+
+function load_library($name) {}
+function find_uri($path, $file = 'index.tpl') { return $path === 'nl/code-route' ? '/code/' . $file : false; }
+function data_exists($resource, $uuid = null) {
+    if ($uuid === null) return array_key_exists($resource, $GLOBALS['test_records']);
+    return isset($GLOBALS['test_records'][$resource][$uuid]);
+}
+function data_read($resource, $uuid = null) {
+    return $uuid === null ? ($GLOBALS['test_records'][$resource] ?? []) : ($GLOBALS['test_records'][$resource][$uuid] ?? null);
+}
+function data_list($resource) { return array_keys($GLOBALS['test_records'][$resource] ?? []); }
+function data_lookup($resource, $uuid, $field, $default = null) {
+    return $resource === '.config' && $uuid === 'site' && $field === 'languages' ? ['en', 'nl'] : $default;
+}
+function data_path($resource) { return $GLOBALS['SYSTEM']['file_base'] . 'ext/data/' . $resource; }
+function data_create($resource, $uuid, $record) { $GLOBALS['test_records'][$resource][$uuid] = $record; return true; }
+function data_error_set($error, $detail = null) { $GLOBALS['SYSTEM']['data_error'] = $error; $GLOBALS['SYSTEM']['data_error_detail'] = $detail; }
+
+require_once __DIR__ . '/../modules/managed-pages/lib/managed-pages.php';
+require_once __DIR__ . '/../modules/managed-pages/lib/managed-navigation.php';
+
+function managed_pages_test_assert($condition, string $message): void
+{
+    if (!$condition) {
+        fwrite(STDERR, "FAIL: {$message}\n");
+        exit(1);
+    }
+}
+
+managed_pages_test_assert(managed_pages_normalize_path('/nl/campaign/') === 'nl/campaign', 'Canonical path normalization failed.');
+managed_pages_test_assert(managed_pages_normalize_path('nl//campaign') === null, 'Ambiguous path was accepted.');
+managed_pages_test_assert(!managed_pages_path_in_area('en/private/report'), 'Reserved subtree was accepted.');
+managed_pages_test_assert(managed_pages_find('nl/campaign')['uuid'] === 'page-1', 'Published localized page was not found.');
+managed_pages_test_assert(managed_pages_find('nl/old-campaign')['alias'] === true, 'Historical alias was not found.');
+managed_pages_test_assert(managed_pages_find('en/campaign') === null, 'Unpublished translation was public.');
+managed_pages_test_assert(managed_pages_url('page-1', 'en') === null, 'Unpublished URL lookup succeeded.');
+
+$candidate = [
+    'type' => 'standard',
+    'path' => ['nl' => 'nl/code-route'],
+    'published' => ['nl' => false],
+];
+managed_pages_test_assert(managed_pages_validate_record('pages', 'new-page', $candidate) === false, 'Code-route collision was accepted.');
+
+$tree = [[
+    'id' => 'page',
+    'label' => 'Campaign',
+    'target' => ['kind' => 'page', 'value' => 'page-1'],
+    'children' => [],
+], [
+    'id' => 'hidden',
+    'label' => 'Hidden',
+    'target' => ['kind' => 'page', 'value' => 'page-2'],
+    'children' => [],
+]];
+$saved = managed_navigation_save('main', 'nl', $tree, '');
+managed_pages_test_assert($saved['ok'] === true, 'Initial navigation save failed.');
+managed_pages_test_assert(managed_navigation_save('main', 'nl', [], '')['error'] === 'stale', 'Stale navigation save was accepted.');
+$nested = [[
+    'id' => 'parent', 'label' => 'Parent', 'target' => ['kind' => 'group', 'value' => ''],
+    'children' => [[
+        'id' => 'child', 'label' => 'Child', 'target' => ['kind' => 'internal_url', 'value' => 'nl/child'], 'children' => [],
+    ]],
+]];
+managed_pages_test_assert(managed_navigation_validate_items($nested, 2) !== null, 'Allowed navigation depth was rejected.');
+managed_pages_test_assert(managed_navigation_validate_items($nested, 1) === null, 'Excess navigation depth was accepted.');
+$public_tree = managed_navigation_load('main', 'nl');
+managed_pages_test_assert(count($public_tree) === 1 && $public_tree[0]['url'] === 'nl/campaign', 'Unavailable navigation target was not filtered.');
+managed_pages_test_assert($public_tree[0]['current'] === 'true', 'Current navigation state was not exposed to templates.');
+
+$remove = function ($path) use (&$remove) {
+    if (is_dir($path)) {
+        foreach (array_diff(scandir($path), ['.', '..']) as $item) $remove($path . '/' . $item);
+        rmdir($path);
+    } elseif (file_exists($path)) {
+        unlink($path);
+    }
+};
+$remove($fixture);
+echo "Managed pages tests passed\n";

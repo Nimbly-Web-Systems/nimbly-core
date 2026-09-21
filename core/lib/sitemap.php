@@ -60,15 +60,21 @@ function sitemap_source_state(): array
     $data_root = $GLOBALS['SYSTEM']['file_base'] . 'ext/data';
     foreach (glob($data_root . '/*/.meta') ?: [] as $meta_file) {
         $meta = sitemap_read_json($meta_file);
-        if (!is_array($meta['sitemap'] ?? null) || empty($meta['sitemap']['url'])) {
+        if (!is_array($meta['sitemap'] ?? null)
+            || (empty($meta['sitemap']['url']) && empty($meta['sitemap']['localized_path']))) {
             continue;
         }
         $resource = basename(dirname($meta_file));
-        $resources[$resource] = [
+        $resource_state = [
             'modified' => data_modified($resource),
             'meta' => hash_file('sha256', $meta_file),
             'config' => $meta['sitemap'],
         ];
+        if (!empty($meta['sitemap']['localized_path'])) {
+            $records = data_read($resource);
+            $resource_state['localized_content'] = hash('sha256', json_encode($records, JSON_UNESCAPED_SLASHES));
+        }
+        $resources[$resource] = $resource_state;
     }
     ksort($resources);
     return [
@@ -185,6 +191,26 @@ function sitemap_resource_entries(string $resource, array $config, array $state)
     $records = data_read($resource);
     $entries = [];
     foreach ($records ?: [] as $record) {
+        if (!empty($config['localized_path'])) {
+            $path_field = (string)$config['localized_path'];
+            $published_field = (string)($config['localized_published'] ?? 'published');
+            foreach ($state['_languages'] as $language) {
+                $path = $record[$path_field][$language] ?? null;
+                $published = $record[$published_field][$language] ?? false;
+                if (!is_string($path) || $path === '' || !filter_var($published, FILTER_VALIDATE_BOOLEAN)) {
+                    continue;
+                }
+                $entry = ['loc' => seo_canonical_url($path)];
+                if (!empty($record['_modified'])) {
+                    $timestamp = is_numeric($record['_modified']) ? (int)$record['_modified'] : strtotime($record['_modified']);
+                    if ($timestamp) {
+                        $entry['lastmod'] = gmdate('c', $timestamp);
+                    }
+                }
+                $entries[] = $entry;
+            }
+            continue;
+        }
         $published = $config['published'] ?? null;
         if ($published && empty($record[$published])) {
             continue;

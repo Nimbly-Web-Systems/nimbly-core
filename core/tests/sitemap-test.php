@@ -36,6 +36,19 @@ $xml = sitemap_xml([
 sitemap_test_assert(str_contains($xml, '&amp;'), 'XML URL escaping failed.');
 sitemap_test_assert(str_contains($xml, '<lastmod>2026-08-11T00:00:00+00:00</lastmod>'), 'lastmod was omitted.');
 
+$localized_records = [[
+    'path' => ['en' => 'en/published', 'nl' => 'nl/unpublished'],
+    'published' => ['en' => true, 'nl' => false],
+]];
+function data_read($resource) { return $GLOBALS['localized_records'] ?? []; }
+$GLOBALS['localized_records'] = $localized_records;
+$localized_entries = sitemap_resource_entries('pages', [
+    'localized_path' => 'path',
+    'localized_published' => 'published',
+], ['_languages' => ['en', 'nl']]);
+sitemap_test_assert(count($localized_entries) === 1, 'Localized sitemap publication was not enforced per language.');
+sitemap_test_assert(str_ends_with($localized_entries[0]['loc'], '/en/published/'), 'Localized sitemap path was incorrect.');
+
 $remove = function ($path) use (&$remove) {
     if (is_dir($path)) {
         foreach (array_diff(scandir($path), ['.', '..']) as $item) {
