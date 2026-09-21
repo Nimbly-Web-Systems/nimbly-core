@@ -31,6 +31,12 @@ function run_single_sc(string $name): void
 require_once __DIR__ . '/../modules/forms/lib/render-field.php';
 
 render_field(['type' => 'slug', 'name' => 'Slug', 'source' => 'title'], 'title_slug');
+render_field(['type' => 'slug', 'name' => 'Path', 'source' => 'title', 'language_prefix' => true], 'path');
+$path_context = $GLOBALS['rendered_field_contexts']['field-slug'];
+render_field_context_assert(
+    $path_context['_f.slug_language_prefix'] === 'true',
+    'language-prefixed slug field did not expose its prefix setting'
+);
 render_field(['type' => 'image', 'name' => 'Main image'], 'image');
 
 $fields = [

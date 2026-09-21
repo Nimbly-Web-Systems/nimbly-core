@@ -4,7 +4,8 @@
              const _value = form_data[f.trim()] || '';
              return _value && typeof _value === 'object' ? (_value[lang] || '') : _value;
          }).join(' ');
-         [#_f.model#] = slugify(_parts);
+         const _prefix = [#_f.slug_language_prefix#] && lang ? `${lang}/` : '';
+         [#_f.model#] = _prefix + slugify(_parts);
      "
      class="[#_f.wrapper_class#] max-w-md">
     <input type="text"

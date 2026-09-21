@@ -142,6 +142,7 @@ function render_field(array $def, string $field = '', $value = null, string $sto
     $wrapper_classes = preg_split('/\s+/', trim((string)($def['wrapper_class'] ?? '')));
     $is_hidden_wrapper = in_array('hidden', $wrapper_classes, true);
     set_variable('_f.required', !empty($def['required']) && !$is_hidden_wrapper);
+    set_variable('_f.slug_language_prefix', !empty($def['language_prefix']) ? 'true' : 'false');
     // nb_form_edit is a template variable — [#set nb_form_edit=false#] stores
     // the literal string "false", which is truthy to PHP's empty(), so this
     // must compare the string value rather than testing emptiness.
