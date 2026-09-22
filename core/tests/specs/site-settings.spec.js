@@ -15,9 +15,12 @@ test.beforeEach(async ({ page }) => {
 });
 
 test('settings sections and dashboard navigation render through their real routes', async ({ page }) => {
+  await page.goto('/nb-admin/settings?section=page-templates');
+  const pagesEnabled = await page.getByLabel('Enable custom pages').isChecked();
+
   await page.goto('/nb-admin');
   await expect(page.locator('main a[href$="/nb-admin/navigation"]')).toHaveCount(0);
-  await expect(page.locator('main a[href$="/nb-admin/pages"]')).toHaveCount(0);
+  await expect(page.locator('main a[href$="/nb-admin/pages"]')).toHaveCount(pagesEnabled ? 1 : 0);
 
   await page.goto('/nb-admin/navigation');
   await expect(page.getByLabel('Slot')).toHaveValue('main');
@@ -44,10 +47,15 @@ test('settings sections and dashboard navigation render through their real route
 
   await page.getByRole('tab', { name: 'Custom pages', exact: true }).click();
   await expect(page).toHaveURL(/section=page-templates/);
-  await expect(page.getByLabel('Enable custom pages')).not.toBeChecked();
-  await page.getByLabel('Enable custom pages').check();
-  await expect(page.getByText('Default page', { exact: true })).toBeVisible();
-  await expect(page.getByText('Campaign page', { exact: true })).toBeVisible();
+  if (pagesEnabled) {
+    await expect(page.getByLabel('Enable custom pages')).toBeChecked();
+    await expect(page.getByText('Default page', { exact: true })).toBeVisible();
+    await expect(page.getByText('Campaign page', { exact: true })).toBeVisible();
+  } else {
+    await expect(page.getByLabel('Enable custom pages')).not.toBeChecked();
+    await expect(page.getByText('Default page', { exact: true })).not.toBeVisible();
+    await expect(page.getByText('Campaign page', { exact: true })).not.toBeVisible();
+  }
 });
 
 test('general settings warns before leaving with unsaved edits', async ({ page }) => {
@@ -66,6 +74,8 @@ test.describe('narrow settings', () => {
     await page.goto('/nb-admin/settings?section=page-templates');
     const dimensions = await page.evaluate(() => ({ width: window.innerWidth, scrollWidth: document.documentElement.scrollWidth }));
     expect(dimensions.scrollWidth).toBeLessThanOrEqual(dimensions.width + 1);
+    const tabs = page.getByRole('tablist', { name: 'Site settings' });
     await expect(page.getByRole('tab', { name: 'Custom pages', exact: true })).toBeVisible();
+    expect(await tabs.evaluate(element => getComputedStyle(element).overflowX)).toBe('visible');
   });
 });
