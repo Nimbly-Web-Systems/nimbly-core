@@ -12,13 +12,21 @@
                 <template x-for="option in options" :key="option.value"><option :value="option.value" x-text="option.label"></option></template>
             </select>
         </label>
-        <label class="form-control"><span class="label-text">[#text Language#]</span>
-            <select class="select select-bordered" name="language" onchange="this.form.submit()"
-                x-data='{ options: [#get navigation_editor_languages_json echo#] }' x-init="$el.value = '[#navigation_editor_language#]'">
-                <template x-for="option in options" :key="option.value"><option :value="option.value" x-text="option.label"></option></template>
-            </select>
-        </label>
+        <input type="hidden" name="language" value="[#navigation_editor_language#]">
     </form>
+
+    <nav class="mt-6 overflow-x-auto" aria-label="[#text Language#]"
+        x-data='[#get navigation_editor_language_tabs_json echo#]' x-show="options.length > 1">
+        <ul class="flex min-w-max flex-row" role="tablist">
+            <template x-for="option in options" :key="option.value">
+                <li><a role="tab" :aria-selected="option.value === current"
+                    :href="'?slot=' + encodeURIComponent(slot) + '&language=' + encodeURIComponent(option.value)"
+                    :class="option.value === current ? 'border-b-primary' : 'border-b-transparent'"
+                    class="block cursor-pointer border-b-2 px-4 py-2 text-xs uppercase text-gray-600 hover:font-bold hover:text-black"
+                    x-text="option.label"></a></li>
+            </template>
+        </ul>
+    </nav>
 
     <p class="alert alert-success mt-4 [#if navigation_editor_notice=(empty) echo=hidden#]">[#get navigation_editor_notice echo#]</p>
     <p class="alert alert-error mt-4 [#if navigation_editor_error=(empty) echo=hidden#]">[#get navigation_editor_error echo#]</p>

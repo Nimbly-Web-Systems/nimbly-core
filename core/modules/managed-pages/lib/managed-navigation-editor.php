@@ -25,7 +25,11 @@ function managed_navigation_editor_sc($params = null): string
     }
     $json_flags = JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT;
     set_variable('navigation_editor_slots_json', json_encode($slot_options, $json_flags));
-    set_variable('navigation_editor_languages_json', json_encode($language_options, $json_flags));
+    set_variable('navigation_editor_language_tabs_json', json_encode([
+        'options' => $language_options,
+        'current' => $language,
+        'slot' => $slot,
+    ], $json_flags));
     set_variable('navigation_editor_slot', $slot);
     set_variable('navigation_editor_language', $language);
     set_variable('navigation_editor_depth', max(1, (int)($slots[$slot]['depth'] ?? 1)));

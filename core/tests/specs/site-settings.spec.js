@@ -20,7 +20,10 @@ test('settings sections and dashboard navigation render through their real route
 
   await page.goto('/nb-admin/navigation');
   await expect(page.getByLabel('Slot')).toHaveValue('main');
-  await expect(page.getByLabel('Language')).toHaveValue('en');
+  await expect(page.getByRole('tab', { name: 'EN' })).toHaveAttribute('aria-selected', 'true');
+  await page.getByRole('tab', { name: 'NL' }).click();
+  await expect(page).toHaveURL(/language=nl/);
+  await expect(page.getByRole('tab', { name: 'NL' })).toHaveAttribute('aria-selected', 'true');
   await expect(page.locator('body')).not.toContainText('"#]');
 
   await page.goto('/nb-admin/settings');
