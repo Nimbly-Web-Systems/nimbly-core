@@ -1,11 +1,11 @@
 <section class="overflow-hidden rounded-2xl bg-neutral-50 shadow-md">
     <div class="border-b border-neutral-200 p-5">
         <h2 class="text-lg font-semibold text-neutral-800">[#text Site#]</h2>
-        <p class="mt-1 text-sm text-neutral-500">[#text Manage identity, languages, and the page templates available to editors.#]</p>
-        <nav class="mt-5 flex gap-1 overflow-x-auto" aria-label="[#text Site settings#]">
-            <a href="[#base-url#]/nb-admin/settings?section=general" [#if _ss.section=general echo="aria-current='page'"#] class="whitespace-nowrap rounded-lg px-3 py-2 text-sm [#if _ss.section=general echo='bg-neutral-200 font-semibold text-neutral-900' echo_else='text-neutral-600 hover:bg-neutral-100'#]">[#text General#]</a>
-            <a href="[#base-url#]/nb-admin/settings?section=languages" [#if _ss.section=languages echo="aria-current='page'"#] class="whitespace-nowrap rounded-lg px-3 py-2 text-sm [#if _ss.section=languages echo='bg-neutral-200 font-semibold text-neutral-900' echo_else='text-neutral-600 hover:bg-neutral-100'#]">[#text Languages#]</a>
-            <a href="[#base-url#]/nb-admin/settings?section=page-templates" [#if _ss.section=page-templates echo="aria-current='page'"#] class="whitespace-nowrap rounded-lg px-3 py-2 text-sm [#if _ss.section=page-templates echo='bg-neutral-200 font-semibold text-neutral-900' echo_else='text-neutral-600 hover:bg-neutral-100'#]">[#text Page templates#]</a>
+        <p class="mt-1 text-sm text-neutral-500">[#text Manage identity, languages, and custom pages available to editors.#]</p>
+        <nav class="tabs tabs-lift mt-5 w-fit max-w-full flex-nowrap overflow-x-auto" role="tablist" aria-label="[#text Site settings#]">
+            <a role="tab" href="[#base-url#]/nb-admin/settings?section=general" aria-selected="[#if _ss.section=general echo=true echo_else=false#]" [#if _ss.section=general echo="aria-current='page' class='tab tab-active whitespace-nowrap font-semibold'" echo_else="class='tab whitespace-nowrap'"#]>[#text General#]</a>
+            <a role="tab" href="[#base-url#]/nb-admin/settings?section=languages" aria-selected="[#if _ss.section=languages echo=true echo_else=false#]" [#if _ss.section=languages echo="aria-current='page' class='tab tab-active whitespace-nowrap font-semibold'" echo_else="class='tab whitespace-nowrap'"#]>[#text Languages#]</a>
+            <a role="tab" href="[#base-url#]/nb-admin/settings?section=page-templates" aria-selected="[#if _ss.section=page-templates echo=true echo_else=false#]" [#if _ss.section=page-templates echo="aria-current='page' class='tab tab-active whitespace-nowrap font-semibold'" echo_else="class='tab whitespace-nowrap'"#]>[#text Custom pages#]</a>
         </nav>
     </div>
     <div class="p-5">[#_ss.content#]</div>

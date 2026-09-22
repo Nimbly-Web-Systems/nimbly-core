@@ -15,11 +15,23 @@ function managed_pages_declaration(string $file): array
     return is_array($value) ? $value : [];
 }
 
-function managed_pages_types(): array
+function managed_pages_config(): array
 {
     $config = data_exists('.config', 'managed_pages')
         ? data_read('.config', 'managed_pages')
         : [];
+    return is_array($config) ? $config : [];
+}
+
+/** Whether the optional custom-pages feature is enabled. Disabled by default. */
+function managed_pages_feature_enabled(): bool
+{
+    return (managed_pages_config()['enabled'] ?? false) === true;
+}
+
+function managed_pages_types(): array
+{
+    $config = managed_pages_config();
     $application_types = is_array($config['page_types'] ?? null)
         ? $config['page_types']
         : [];
@@ -49,10 +61,11 @@ function managed_pages_type_options(): array
 /** Page types currently available when creating a page. */
 function managed_pages_creation_types(): array
 {
+    if (!managed_pages_feature_enabled()) {
+        return [];
+    }
     $types = managed_pages_types();
-    $config = data_exists('.config', 'managed_pages')
-        ? data_read('.config', 'managed_pages')
-        : [];
+    $config = managed_pages_config();
     if (!is_array($config) || !array_key_exists('enabled_page_types', $config)) {
         return $types;
     }
@@ -90,7 +103,7 @@ function managed_pages_url_config(): array
 function managed_pages_enabled(): bool
 {
     $config = managed_pages_url_config();
-    return managed_pages_types() !== [] && !empty($config['enabled']);
+    return managed_pages_feature_enabled() && managed_pages_types() !== [] && !empty($config['enabled']);
 }
 
 function managed_pages_normalize_path($path): ?string

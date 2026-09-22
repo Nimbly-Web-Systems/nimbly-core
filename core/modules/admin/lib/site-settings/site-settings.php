@@ -46,6 +46,10 @@ function site_settings_validate_config($resource, $uuid, &$record): bool
         }
         $record['languages'] = $languages;
     }
+    if ($uuid === 'managed_pages' && array_key_exists('enabled', $record) && !is_bool($record['enabled'])) {
+        data_error_set('VALIDATION_FAILED', 'enabled:boolean');
+        return false;
+    }
     if ($uuid === 'managed_pages' && array_key_exists('enabled_page_types', $record)) {
         $enabled = $record['enabled_page_types'];
         if (!is_array($enabled) || count($enabled) !== count(array_unique($enabled))) {
@@ -101,6 +105,7 @@ function site_settings_sc($params)
     load_library('managed-pages');
     $types = managed_pages_types();
     $managed_config = data_exists('.config', 'managed_pages') ? data_read('.config', 'managed_pages') : [];
+    $pages_enabled = is_array($managed_config) && ($managed_config['enabled'] ?? false) === true;
     $has_policy = is_array($managed_config) && array_key_exists('enabled_page_types', $managed_config);
     $enabled = $has_policy && is_array($managed_config['enabled_page_types']) ? $managed_config['enabled_page_types'] : array_keys($types);
     $type_rows = [];
@@ -111,6 +116,7 @@ function site_settings_sc($params)
     }
     set_variable('_ss.page_types_json', htmlspecialchars(json_encode($type_rows, JSON_UNESCAPED_UNICODE), ENT_QUOTES, 'UTF-8'));
     set_variable('_ss.enabled_page_types_json', htmlspecialchars(json_encode(array_values($enabled), JSON_UNESCAPED_UNICODE), ENT_QUOTES, 'UTF-8'));
+    set_variable('_ss.pages_enabled_json', $pages_enabled ? 'true' : 'false');
 
     $section = (string)($_GET['section'] ?? 'general');
     if (!in_array($section, ['general', 'languages', 'page-templates'], true)) {

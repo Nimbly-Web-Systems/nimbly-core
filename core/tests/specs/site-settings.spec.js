@@ -17,6 +17,7 @@ test.beforeEach(async ({ page }) => {
 test('settings sections and dashboard navigation render through their real routes', async ({ page }) => {
   await page.goto('/nb-admin');
   await expect(page.locator('main a[href$="/nb-admin/navigation"]')).toHaveCount(0);
+  await expect(page.locator('main a[href$="/nb-admin/pages"]')).toHaveCount(0);
 
   await page.goto('/nb-admin/navigation');
   await expect(page.getByLabel('Slot')).toHaveValue('main');
@@ -28,18 +29,23 @@ test('settings sections and dashboard navigation render through their real route
 
   await page.goto('/nb-admin/settings');
   await expect(page.getByRole('heading', { name: 'Site', exact: true })).toBeVisible();
-  await expect(page.getByRole('link', { name: 'General', exact: true })).toHaveAttribute('aria-current', 'page');
+  await expect(page.getByRole('tab', { name: 'General', exact: true })).toHaveAttribute('aria-selected', 'true');
+  await expect(page.getByRole('tab', { name: 'General', exact: true })).toHaveClass(/tab-active/);
   await expect(page.getByLabel('Site name')).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Users & access' })).toBeVisible();
   await expect(page.getByRole('link', { name: 'Manage navigation' })).toBeVisible();
 
-  await page.getByRole('link', { name: 'Languages', exact: true }).click();
+  await page.getByRole('tab', { name: 'Languages', exact: true }).click();
   await expect(page).toHaveURL(/section=languages/);
+  await expect(page.getByRole('tab', { name: 'Languages', exact: true })).toHaveAttribute('aria-selected', 'true');
+  await expect(page.getByRole('tab', { name: 'General', exact: true })).toHaveAttribute('aria-selected', 'false');
   await expect(page.getByLabel('Add language')).toBeVisible();
   await expect(page.getByText('English', { exact: true })).toBeVisible();
 
-  await page.getByRole('link', { name: 'Page templates', exact: true }).click();
+  await page.getByRole('tab', { name: 'Custom pages', exact: true }).click();
   await expect(page).toHaveURL(/section=page-templates/);
+  await expect(page.getByLabel('Enable custom pages')).not.toBeChecked();
+  await page.getByLabel('Enable custom pages').check();
   await expect(page.getByText('Default page', { exact: true })).toBeVisible();
   await expect(page.getByText('Campaign page', { exact: true })).toBeVisible();
 });
@@ -49,7 +55,7 @@ test('general settings warns before leaving with unsaved edits', async ({ page }
   const input = page.getByLabel('Site name');
   await input.fill((await input.inputValue()) + ' draft');
   page.once('dialog', dialog => dialog.dismiss());
-  await page.getByRole('link', { name: 'Languages', exact: true }).click();
+  await page.getByRole('tab', { name: 'Languages', exact: true }).click();
   await expect(page).toHaveURL(/section=general/);
 });
 
@@ -60,6 +66,6 @@ test.describe('narrow settings', () => {
     await page.goto('/nb-admin/settings?section=page-templates');
     const dimensions = await page.evaluate(() => ({ width: window.innerWidth, scrollWidth: document.documentElement.scrollWidth }));
     expect(dimensions.scrollWidth).toBeLessThanOrEqual(dimensions.width + 1);
-    await expect(page.getByRole('link', { name: 'Page templates', exact: true })).toBeVisible();
+    await expect(page.getByRole('tab', { name: 'Custom pages', exact: true })).toBeVisible();
   });
 });

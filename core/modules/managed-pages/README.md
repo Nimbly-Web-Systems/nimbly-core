@@ -12,6 +12,11 @@ Create `pages` and `.navigation` resources using the schemas required by the app
 
 Core always provides `default`, rendered by `managed-page-default`. A page-type definition uses the type ID as its key and provides `name`, `description`, and `template`. The admin field can use `options_library: managed-pages` and `options_function: managed_pages_type_options` to derive its choices from the merged configuration. Application definitions replace a Core definition when they use the same ID.
 
+Custom pages are disabled by default. Set `enabled` to `true` in
+`.config/managed_pages` to show Pages in the admin resource menu, allow page
+creation, and enable the public router fallback. Disabling it preserves page
+records but stops their public addresses from resolving.
+
 An optional `enabled_page_types` list in `.config/managed_pages` limits which
 registered types may be used for new pages. Omitting it enables every registered
 type; an empty list disables page creation. Existing pages continue to resolve

@@ -22,6 +22,7 @@ $GLOBALS['test_records'] = [
     '.config' => [
         'site' => ['languages' => ['en', 'nl', 'de']],
         'managed_pages' => [
+            'enabled' => true,
             'page_types' => [
                 'campaign' => ['name' => 'Campaign page', 'template' => 'page-campaign'],
             ],
@@ -91,6 +92,12 @@ managed_pages_test_assert(managed_pages_find('nl/campaign')['uuid'] === 'page-1'
 managed_pages_test_assert(managed_pages_find('nl/old-campaign')['alias'] === true, 'Historical alias was not found.');
 managed_pages_test_assert(managed_pages_find('en/campaign') === null, 'Unpublished translation was public.');
 managed_pages_test_assert(managed_pages_url('page-1', 'en') === null, 'Unpublished URL lookup succeeded.');
+
+$GLOBALS['test_records']['.config']['managed_pages']['enabled'] = false;
+managed_pages_test_assert(!managed_pages_feature_enabled(), 'Disabled custom pages were reported as enabled.');
+managed_pages_test_assert(managed_pages_default_creation_type() === null, 'Disabled custom pages still allowed page creation.');
+managed_pages_test_assert(managed_pages_run('nl/campaign') === false, 'Disabled custom pages still resolved through the router fallback.');
+$GLOBALS['test_records']['.config']['managed_pages']['enabled'] = true;
 
 $german_page = [
     'type' => 'default',

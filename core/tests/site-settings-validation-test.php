@@ -36,6 +36,12 @@ site_settings_validation_assert(!site_settings_validate_config('.config', 'site'
 $valid_policy = ['page_types' => ['campaign' => ['template' => 'page-campaign']], 'enabled_page_types' => ['campaign']];
 site_settings_validation_assert(site_settings_validate_config('.config', 'managed_pages', $valid_policy), 'Valid page type policy was rejected.');
 
+$valid_enabled = ['enabled' => true];
+site_settings_validation_assert(site_settings_validate_config('.config', 'managed_pages', $valid_enabled), 'Boolean custom pages setting was rejected.');
+
+$invalid_enabled = ['enabled' => 'true'];
+site_settings_validation_assert(!site_settings_validate_config('.config', 'managed_pages', $invalid_enabled), 'Non-boolean custom pages setting was accepted.');
+
 $invalid_policy = ['page_types' => ['campaign' => ['template' => 'page-campaign']], 'enabled_page_types' => ['missing']];
 site_settings_validation_assert(!site_settings_validate_config('.config', 'managed_pages', $invalid_policy), 'Unknown page type policy was accepted.');
 
