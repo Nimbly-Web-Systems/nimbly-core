@@ -16,8 +16,12 @@ test.beforeEach(async ({ page }) => {
 
 test('settings sections and dashboard navigation render through their real routes', async ({ page }) => {
   await page.goto('/nb-admin');
-  await expect(page.locator('a[href$="/nb-admin/navigation"]')).toBeVisible();
-  await expect(page.locator('body')).not.toContainText('[#dashboard-navigation-btn#]');
+  await expect(page.locator('main a[href$="/nb-admin/navigation"]')).toHaveCount(0);
+
+  await page.goto('/nb-admin/navigation');
+  await expect(page.getByLabel('Slot')).toHaveValue('main');
+  await expect(page.getByLabel('Language')).toHaveValue('en');
+  await expect(page.locator('body')).not.toContainText('"#]');
 
   await page.goto('/nb-admin/settings');
   await expect(page.getByRole('heading', { name: 'Site', exact: true })).toBeVisible();

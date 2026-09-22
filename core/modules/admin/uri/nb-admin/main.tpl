@@ -10,7 +10,6 @@
             <h3 class="text-sm md:text-base pt-1 pb-2 text-neutral-700">[#text dashboard-subtitle#]</h3>
         </div>
         <div class="flex shrink-0 items-center gap-1">
-            [#feature-cond features=edit-.navigation tpl=dashboard-navigation-btn#]
             [#feature-cond features=edit-.config,view-users,view-roles,view-.routes,edit-.navigation tpl=dashboard-settings-btn#]
         </div>
     </div>

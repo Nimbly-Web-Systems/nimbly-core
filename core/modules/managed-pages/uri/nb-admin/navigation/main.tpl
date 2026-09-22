@@ -7,19 +7,21 @@
 
     <form method="get" class="mt-6 flex flex-wrap items-end gap-3">
         <label class="form-control"><span class="label-text">[#text Slot#]</span>
-            <select class="select select-bordered" name="slot" onchange="this.form.submit()">
-                [#repeat navigation_editor_slots tpl=navigation-editor-slot-option var=option#]
+            <select class="select select-bordered" name="slot" onchange="this.form.submit()"
+                x-data='{ options: [#get navigation_editor_slots_json echo#] }' x-init="$el.value = '[#navigation_editor_slot#]'">
+                <template x-for="option in options" :key="option.value"><option :value="option.value" x-text="option.label"></option></template>
             </select>
         </label>
         <label class="form-control"><span class="label-text">[#text Language#]</span>
-            <select class="select select-bordered" name="language" onchange="this.form.submit()">
-                [#repeat navigation_editor_languages tpl=navigation-editor-language-option var=option#]
+            <select class="select select-bordered" name="language" onchange="this.form.submit()"
+                x-data='{ options: [#get navigation_editor_languages_json echo#] }' x-init="$el.value = '[#navigation_editor_language#]'">
+                <template x-for="option in options" :key="option.value"><option :value="option.value" x-text="option.label"></option></template>
             </select>
         </label>
     </form>
 
-    [#if navigation_editor_notice=(not-empty) echo="<p class='alert alert-success mt-4'>[#navigation_editor_notice#]</p>"#]
-    [#if navigation_editor_error=(not-empty) echo="<p class='alert alert-error mt-4'>[#navigation_editor_error#]</p>"#]
+    <p class="alert alert-success mt-4 [#if navigation_editor_notice=(empty) echo=hidden#]">[#get navigation_editor_notice echo#]</p>
+    <p class="alert alert-error mt-4 [#if navigation_editor_error=(empty) echo=hidden#]">[#get navigation_editor_error echo#]</p>
 
     <form method="post" id="navigation-editor" class="mt-6 rounded-box border border-base-300 bg-base-100 p-4">
         [#form-key navigation#]
