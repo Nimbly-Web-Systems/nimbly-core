@@ -1047,7 +1047,12 @@ function data_meta($resource, $uuid = null)
     static $meta_result = [];
     $cache_key = $resource . '|' . $uuid;
     if (!empty($meta_result[$cache_key])) {
-        return $meta_result[$cache_key];
+        $meta = $meta_result[$cache_key];
+        if (($meta['languages'] ?? null) === 'site') {
+            $languages = data_lookup('.config', 'site', 'languages', ['en']);
+            $meta['languages'] = is_array($languages) ? array_values($languages) : ['en'];
+        }
+        return $meta;
     }
     if (data_exists($resource, ".meta")) {
         $meta = data_read($resource, ".meta");
@@ -1065,6 +1070,10 @@ function data_meta($resource, $uuid = null)
         }
     }
     $meta_result[$cache_key] = $meta;
+    if (($meta['languages'] ?? null) === 'site') {
+        $languages = data_lookup('.config', 'site', 'languages', ['en']);
+        $meta['languages'] = is_array($languages) ? array_values($languages) : ['en'];
+    }
     return $meta;
 }
 

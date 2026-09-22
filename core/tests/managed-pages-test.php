@@ -5,6 +5,7 @@ mkdir($fixture . '/ext/modules/managed-pages', 0755, true);
 mkdir($fixture . '/ext/data/.navigation', 0755, true);
 file_put_contents($fixture . '/ext/modules/managed-pages/url-areas.json', json_encode([
     'enabled' => ['en', 'nl'],
+    'include_site_languages' => true,
     'reserved' => ['en/private'],
 ]));
 file_put_contents($fixture . '/ext/modules/managed-pages/navigation-slots.json', json_encode([
@@ -19,6 +20,7 @@ $GLOBALS['SYSTEM'] = [
 ];
 $GLOBALS['test_records'] = [
     '.config' => [
+        'site' => ['languages' => ['en', 'nl', 'de']],
         'managed_pages' => [
             'page_types' => [
                 'campaign' => ['name' => 'Campaign page', 'template' => 'page-campaign'],
@@ -54,7 +56,7 @@ function data_read($resource, $uuid = null) {
 }
 function data_list($resource) { return array_keys($GLOBALS['test_records'][$resource] ?? []); }
 function data_lookup($resource, $uuid, $field, $default = null) {
-    return $resource === '.config' && $uuid === 'site' && $field === 'languages' ? ['en', 'nl'] : $default;
+    return $GLOBALS['test_records'][$resource][$uuid][$field] ?? $default;
 }
 function data_path($resource) { return $GLOBALS['SYSTEM']['file_base'] . 'ext/data/' . $resource; }
 function data_create($resource, $uuid, $record) { $GLOBALS['test_records'][$resource][$uuid] = $record; return true; }
@@ -74,6 +76,14 @@ function managed_pages_test_assert($condition, string $message): void
 managed_pages_test_assert(managed_pages_types()['default']['template'] === 'managed-page-default', 'Core default page type is unavailable.');
 managed_pages_test_assert(managed_pages_types()['campaign']['template'] === 'page-campaign', 'Application page type was not merged.');
 managed_pages_test_assert(managed_pages_type_options() === ['default' => 'Default page', 'campaign' => 'Campaign page'], 'Page type options do not match declarations.');
+managed_pages_test_assert(managed_pages_path_in_area('de/new-page'), 'Site language URL prefix was not enabled by the declaration opt-in.');
+file_put_contents($fixture . '/ext/modules/managed-pages/url-areas.json', json_encode([
+    'enabled' => ['en', 'nl'], 'reserved' => ['en/private'],
+]));
+managed_pages_test_assert(!managed_pages_path_in_area('de/new-page'), 'Fixed URL declaration unexpectedly inherited site languages.');
+file_put_contents($fixture . '/ext/modules/managed-pages/url-areas.json', json_encode([
+    'enabled' => ['en', 'nl'], 'include_site_languages' => true, 'reserved' => ['en/private'],
+]));
 managed_pages_test_assert(managed_pages_normalize_path('/nl/campaign/') === 'nl/campaign', 'Canonical path normalization failed.');
 managed_pages_test_assert(managed_pages_normalize_path('nl//campaign') === null, 'Ambiguous path was accepted.');
 managed_pages_test_assert(!managed_pages_path_in_area('en/private/report'), 'Reserved subtree was accepted.');
@@ -82,12 +92,38 @@ managed_pages_test_assert(managed_pages_find('nl/old-campaign')['alias'] === tru
 managed_pages_test_assert(managed_pages_find('en/campaign') === null, 'Unpublished translation was public.');
 managed_pages_test_assert(managed_pages_url('page-1', 'en') === null, 'Unpublished URL lookup succeeded.');
 
+$german_page = [
+    'type' => 'default',
+    'title' => ['de' => 'Neu'],
+    'path' => ['de' => 'de/neu'],
+    'published' => ['de' => true],
+];
+managed_pages_test_assert(managed_pages_validate_record('pages', 'page-de', $german_page) === true, 'New site language page was rejected.');
+$GLOBALS['test_records']['pages']['page-de'] = $german_page;
+managed_pages_test_assert(managed_pages_find('de/neu')['uuid'] === 'page-de', 'Published site language page did not resolve.');
+$german_navigation = [[
+    'id' => 'de-page', 'label' => 'Neu', 'target' => ['kind' => 'page', 'value' => 'page-de'], 'children' => [],
+]];
+managed_pages_test_assert(managed_navigation_save('main', 'de', $german_navigation, '')['ok'] === true, 'New site language navigation was rejected.');
+managed_pages_test_assert(managed_navigation_load('main', 'de')[0]['url'] === 'de/neu', 'New site language navigation target did not resolve.');
+
 $candidate = [
     'type' => 'default',
     'path' => ['nl' => 'nl/code-route'],
     'published' => ['nl' => false],
 ];
 managed_pages_test_assert(managed_pages_validate_record('pages', 'new-page', $candidate) === false, 'Code-route collision was accepted.');
+
+$GLOBALS['test_records']['.config']['managed_pages']['enabled_page_types'] = ['campaign'];
+managed_pages_test_assert(managed_pages_type_options() === ['campaign' => 'Campaign page'], 'Creation choices ignore enabled page types.');
+managed_pages_test_assert(managed_pages_default_creation_type() === 'campaign', 'First enabled page type was not selected as the creation default.');
+$disabled_type = ['type' => 'default', 'path' => ['nl' => 'nl/new'], 'published' => ['nl' => false]];
+managed_pages_test_assert(managed_pages_validate_record('pages', 'new-disabled', $disabled_type) === false, 'Disabled type was accepted for a new page.');
+$existing_page = $GLOBALS['test_records']['pages']['page-1'];
+managed_pages_test_assert(managed_pages_validate_record('pages', 'page-1', $existing_page) === true, 'Existing page with a disabled type could not be edited.');
+$GLOBALS['test_records']['.config']['managed_pages']['enabled_page_types'] = [];
+managed_pages_test_assert(managed_pages_default_creation_type() === null, 'Empty availability policy did not disable page creation.');
+unset($GLOBALS['test_records']['.config']['managed_pages']['enabled_page_types']);
 
 $tree = [[
     'id' => 'page',

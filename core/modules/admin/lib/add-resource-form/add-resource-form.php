@@ -30,6 +30,18 @@ function add_resource_form_sc($params)
         return;
     }
 
+    if ($resource === 'pages') {
+        load_library('managed-pages');
+        $default_type = managed_pages_default_creation_type();
+        if ($default_type === null) {
+            echo run_buffered(dirname(__FILE__) . '/no-page-types.tpl');
+            return;
+        }
+        if (isset($meta['fields']['type'])) {
+            $meta['fields']['type']['default'] = $default_type;
+        }
+    }
+
     $form_def = [
         'name'                => 'add_resource_' . $resource,
         'resource'            => $resource,

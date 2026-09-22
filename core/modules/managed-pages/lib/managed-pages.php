@@ -35,7 +35,10 @@ function managed_pages_types(): array
 function managed_pages_type_options(): array
 {
     $options = [];
-    foreach (managed_pages_types() as $id => $definition) {
+    $types = function_exists('get_variable') && get_variable('nb_form_edit') === 'true'
+        ? managed_pages_types()
+        : managed_pages_creation_types();
+    foreach ($types as $id => $definition) {
         if (is_array($definition) && !empty($definition['name']) && !empty($definition['template'])) {
             $options[(string)$id] = (string)$definition['name'];
         }
@@ -43,9 +46,45 @@ function managed_pages_type_options(): array
     return $options;
 }
 
+/** Page types currently available when creating a page. */
+function managed_pages_creation_types(): array
+{
+    $types = managed_pages_types();
+    $config = data_exists('.config', 'managed_pages')
+        ? data_read('.config', 'managed_pages')
+        : [];
+    if (!is_array($config) || !array_key_exists('enabled_page_types', $config)) {
+        return $types;
+    }
+    if (!is_array($config['enabled_page_types'])) {
+        return [];
+    }
+    $enabled = array_values(array_filter($config['enabled_page_types'], 'is_string'));
+    return array_intersect_key($types, array_fill_keys($enabled, true));
+}
+
+function managed_pages_default_creation_type(): ?string
+{
+    $types = managed_pages_creation_types();
+    if (isset($types['default'])) {
+        return 'default';
+    }
+    $first = array_key_first($types);
+    return $first === null ? null : (string)$first;
+}
+
 function managed_pages_url_config(): array
 {
-    return managed_pages_declaration('url-areas.json');
+    $config = managed_pages_declaration('url-areas.json');
+    if (!empty($config['include_site_languages'])) {
+        $languages = data_lookup('.config', 'site', 'languages', []);
+        $enabled = is_array($config['enabled'] ?? null) ? $config['enabled'] : [];
+        $config['enabled'] = array_values(array_unique(array_merge(
+            $enabled,
+            is_array($languages) ? $languages : []
+        )));
+    }
+    return $config;
 }
 
 function managed_pages_enabled(): bool
@@ -142,7 +181,12 @@ function managed_pages_validate_record($resource, $uuid, &$record): bool
         data_error_set('VALIDATION_FAILED', 'type:undeclared');
         return false;
     }
-    if (data_exists('pages', $uuid)) {
+    $exists = data_exists('pages', $uuid);
+    if (!$exists && !isset(managed_pages_creation_types()[$type])) {
+        data_error_set('VALIDATION_FAILED', 'type:disabled');
+        return false;
+    }
+    if ($exists) {
         $existing = data_read('pages', $uuid);
         if (!empty($existing['type']) && $existing['type'] !== $type) {
             data_error_set('VALIDATION_FAILED', 'type:immutable');

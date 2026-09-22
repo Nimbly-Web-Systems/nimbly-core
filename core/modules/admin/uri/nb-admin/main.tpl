@@ -11,7 +11,7 @@
         </div>
         <div class="flex shrink-0 items-center gap-1">
             [#feature-cond features=edit-.navigation tpl=dashboard-navigation-btn#]
-            [#feature-cond features=edit-.config tpl=dashboard-settings-btn#]
+            [#feature-cond features=edit-.config,view-users,view-roles,view-.routes,edit-.navigation tpl=dashboard-settings-btn#]
         </div>
     </div>
 </section>

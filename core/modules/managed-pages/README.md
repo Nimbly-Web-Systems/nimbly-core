@@ -12,6 +12,17 @@ Create `pages` and `.navigation` resources using the schemas required by the app
 
 Core always provides `default`, rendered by `managed-page-default`. A page-type definition uses the type ID as its key and provides `name`, `description`, and `template`. The admin field can use `options_library: managed-pages` and `options_function: managed_pages_type_options` to derive its choices from the merged configuration. Application definitions replace a Core definition when they use the same ID.
 
+An optional `enabled_page_types` list in `.config/managed_pages` limits which
+registered types may be used for new pages. Omitting it enables every registered
+type; an empty list disables page creation. Existing pages continue to resolve
+and edit with their registered type.
+
+Applications may set `"include_site_languages": true` in `url-areas.json` to
+add the configured `.config/site.languages` to the explicitly enabled URL
+prefixes. Without the option, the declaration remains fixed. A resource schema
+may likewise set `"languages": "site"` to resolve its authoring languages from
+the site configuration; explicit language arrays retain their existing behavior.
+
 For example, `ext/data/.config/managed_pages` can add a landing page:
 
 ```json
