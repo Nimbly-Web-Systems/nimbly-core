@@ -47,6 +47,11 @@ Its templates live at `ext/tpl/page-landing/index.tpl` and, when using the share
 
 The declared template renders the full page. When a companion `<template>-main` exists, it supplies the HTML shell's main region. The resolver exposes the record as `page`, including `page.uuid`, and prepares canonical and language-switch metadata.
 
+Unpublished addresses remain unavailable to anonymous visitors. Editors with
+`edit-pages` may open them as previews and receive an unpublished-page warning.
+Add `managed-page-preview-action` to the page resource's `record_actions` for a
+preview button that follows the active editor language.
+
 Use `[#managed-navigation slot=main var=main_navigation#]` to load a public, normalized tree. Page references follow current localized addresses. Unpublished or missing targets and their branches are omitted. Rendering remains application-owned.
 
 Editors with `edit-.navigation` can use `/nb-admin/navigation`. Saves replace the complete tree and require its current revision, so stale edits are rejected. Run `./nimbly pages:check` before release to check declarations, missing templates, invalid addresses, duplicate claims, and collisions with code routes.

@@ -347,8 +347,9 @@ function managed_pages_run(string $uri): bool
     if (!managed_pages_enabled()) {
         return false;
     }
-    load_library('data');
-    $match = managed_pages_find($uri, true);
+    load_libraries(['access', 'data']);
+    $can_preview_unpublished = access_by_feature('edit-pages');
+    $match = managed_pages_find($uri, !$can_preview_unpublished);
     if ($match === null) {
         return false;
     }
@@ -356,7 +357,7 @@ function managed_pages_run(string $uri): bool
     $language = $match['language'];
     if ($match['alias']) {
         load_library('redirect');
-        redirect(managed_pages_url($match['uuid'], $language), 301);
+        redirect(managed_pages_url($match['uuid'], $language, !$can_preview_unpublished), 301);
     }
     $type = managed_pages_types()[$record['type']] ?? null;
     if (!is_array($type) || empty($type['template'])) {
@@ -380,7 +381,7 @@ function managed_pages_run(string $uri): bool
     $description = managed_pages_localized_value($record, 'seo_description', $language, '');
     set_variable('page-title', htmlspecialchars(strip_tags((string)$title), ENT_QUOTES, 'UTF-8'));
     set_variable('page-description', htmlspecialchars(strip_tags((string)$description), ENT_QUOTES, 'UTF-8'));
-    set_variable('page-canonical-url', managed_pages_url($match['uuid'], $language));
+    set_variable('page-canonical-url', managed_pages_url($match['uuid'], $language, !$can_preview_unpublished));
     $languages = data_lookup('.config', 'site', 'languages', ['en']);
     foreach (is_array($languages) ? $languages : ['en'] as $variant_language) {
         set_variable('i18n-url.' . $variant_language, '(hide)');
@@ -389,6 +390,10 @@ function managed_pages_run(string $uri): bool
         if (managed_pages_is_published($record, (string)$variant_language)) {
             set_variable('i18n-url.' . $variant_language, $variant_path);
         }
+    }
+    if (!managed_pages_is_published($record, $language)) {
+        load_libraries(['system-messages', 'text']);
+        system_message(text_translate($language, "You're previewing an unpublished page. Only editors can see this."));
     }
     $GLOBALS['SYSTEM']['uri'] = $uri;
     $GLOBALS['SYSTEM']['uri_key'] = preg_replace('/[^ \w]+/', '_', $uri);

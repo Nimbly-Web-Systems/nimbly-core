@@ -47,7 +47,18 @@ $GLOBALS['test_records'] = [
 ];
 
 function load_library($name) {}
+function load_libraries($names) {}
 function find_uri($path, $file = 'index.tpl') { return $path === 'nl/code-route' ? '/code/' . $file : false; }
+function find_template($name) { return str_ends_with($name, '-main') ? false : '/templates/' . $name . '/index.tpl'; }
+function run_buffered($path) { return 'rendered:' . $path; }
+function run($path) { $GLOBALS['test_rendered_template'] = $path; }
+function redirect($path, $status = 302) { $GLOBALS['test_redirect'] = [$path, $status]; }
+function access_by_feature($feature) { return $feature === 'edit-pages' && !empty($GLOBALS['test_can_edit_pages']); }
+function text_translate($language, $text) { return $text; }
+function system_message($message) { $GLOBALS['test_system_message'] = $message; }
+function set_variable($name, $value) { $GLOBALS['SYSTEM']['variables'][$name] = $value; }
+function set_variable_dot($name, $value) { $GLOBALS['SYSTEM']['variables'][$name] = $value; }
+function get_variable($name, $default = null) { return $GLOBALS['SYSTEM']['variables'][$name] ?? $default; }
 function data_exists($resource, $uuid = null) {
     if ($uuid === null) return array_key_exists($resource, $GLOBALS['test_records']);
     return isset($GLOBALS['test_records'][$resource][$uuid]);
@@ -65,6 +76,7 @@ function data_error_set($error, $detail = null) { $GLOBALS['SYSTEM']['data_error
 
 require_once __DIR__ . '/../modules/managed-pages/lib/managed-pages.php';
 require_once __DIR__ . '/../modules/managed-pages/lib/managed-navigation.php';
+require_once __DIR__ . '/../modules/managed-pages/lib/managed-page-preview.php';
 
 function managed_pages_test_assert($condition, string $message): void
 {
@@ -157,6 +169,21 @@ managed_pages_test_assert(managed_navigation_validate_items($nested, 1) === null
 $public_tree = managed_navigation_load('main', 'nl');
 managed_pages_test_assert(count($public_tree) === 1 && $public_tree[0]['url'] === 'nl/campaign', 'Unavailable navigation target was not filtered.');
 managed_pages_test_assert($public_tree[0]['current'] === 'true', 'Current navigation state was not exposed to templates.');
+
+$GLOBALS['test_can_edit_pages'] = false;
+managed_pages_test_assert(managed_pages_run('nl/hidden') === false, 'An anonymous visitor could resolve an unpublished page.');
+$GLOBALS['test_can_edit_pages'] = true;
+managed_pages_test_assert(managed_pages_run('nl/hidden') === true, 'An editor could not preview an unpublished page.');
+managed_pages_test_assert(
+    ($GLOBALS['test_system_message'] ?? '') === "You're previewing an unpublished page. Only editors can see this.",
+    'The unpublished-page preview message was not created.'
+);
+$GLOBALS['SYSTEM']['variables']['_bf_uuid'] = 'page-2';
+managed_pages_test_assert(managed_page_preview_sc() === '[#managed-page-preview-panel#]', 'The page preview action was unavailable.');
+managed_pages_test_assert(
+    ($GLOBALS['SYSTEM']['variables']['managed_page_preview_languages'][0]['preview_url'] ?? '') === '/nl/hidden',
+    'The page preview action URL was incorrect.'
+);
 
 $remove = function ($path) use (&$remove) {
     if (is_dir($path)) {
