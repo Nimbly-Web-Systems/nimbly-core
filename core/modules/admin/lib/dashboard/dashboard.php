@@ -90,7 +90,7 @@ function dashboard_site_status_section(bool $can_pull_ext, bool $can_pull_core):
     if ($can_pull_ext) {
         $items[] = dashboard_repo_status_item(
             'Ext',
-            dashboard_repo_last_update(['ext/lib', 'ext/modules', 'ext/tpl', 'ext/uri']),
+            dashboard_repo_last_update(['ext/lib', 'ext/modules', 'ext/static', 'ext/tpl', 'ext/uri']),
             'site_updates',
             'pull_site',
             'site_updated_label'
