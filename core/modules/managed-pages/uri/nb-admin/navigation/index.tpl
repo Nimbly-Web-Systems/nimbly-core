@@ -1,0 +1,5 @@
+[#access feature=edit-.navigation#]
+[#post#]
+[#managed-navigation-editor#]
+[#set page-title="[#text Navigation#]"#]
+[#html#]

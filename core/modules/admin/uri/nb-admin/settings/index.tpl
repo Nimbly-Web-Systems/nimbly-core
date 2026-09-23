@@ -1,3 +1,3 @@
-[#access feature=edit-.config#]
-[#set page-title="[#text Site settings#]"#]
+[#access feature=edit-.config,view-users,view-roles,view-.routes,edit-.navigation#]
+[#set page-title="[#text Settings#]"#]
 [#html#]

@@ -101,11 +101,11 @@ function agent_ssh_bounded_field($value, array $rule)
     };
 }
 
-function agent_ssh_run_process(array $command): array
+function agent_ssh_run_process(array $command, ?string $cwd = null): array
 {
     $process = proc_open($command, [
         0 => ['file', '/dev/null', 'r'], 1 => ['pipe', 'w'], 2 => ['pipe', 'w'],
-    ], $pipes, null, null, ['bypass_shell' => true]);
+    ], $pipes, $cwd, null, ['bypass_shell' => true]);
     if (!is_resource($process)) {
         throw new RuntimeException('Could not start SSH gateway process');
     }

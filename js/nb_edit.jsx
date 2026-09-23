@@ -335,7 +335,7 @@ nb_edit.insert_html = function (html) {
     if (!this.active_editor) {
         return;
     }
-    this.on_input({ currentTarget: this.active_editor });
+    const editor = this.active_editor;
     var sel = window.getSelection();
     var range = sel.getRangeAt(0);
     range.deleteContents();
@@ -355,6 +355,15 @@ nb_edit.insert_html = function (html) {
         range.collapse(true);
         sel.removeAllRanges();
         sel.addRange(range);
+    }
+
+    if (editor._nb_mode === 'form') {
+        editor.dispatchEvent(new CustomEvent('nb:editor-change', {
+            bubbles: true,
+            detail: { value: editor.innerHTML.trim() }
+        }));
+    } else {
+        this.on_input({ currentTarget: editor });
     }
 };
 

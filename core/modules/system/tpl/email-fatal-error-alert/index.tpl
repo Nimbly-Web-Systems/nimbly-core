@@ -2,6 +2,8 @@
 <p>[#text A fatal PHP error occurred.#]</p>
 <table cellpadding="4" cellspacing="0" style="border-collapse:collapse;">
     <tr><td><strong>[#text Site#]</strong></td><td>[#get site_name#]</td></tr>
+    <tr><td><strong>[#text Environment#]</strong></td><td>[#get environment#]</td></tr>
+    <tr><td><strong>[#text Host#]</strong></td><td>[#get fatal_host#]</td></tr>
     <tr><td><strong>[#text Type#]</strong></td><td>[#get fatal_type#]</td></tr>
     <tr><td><strong>[#text Message#]</strong></td><td>[#get fatal_message#]</td></tr>
     <tr><td><strong>[#text File#]</strong></td><td>[#get fatal_file#]</td></tr>

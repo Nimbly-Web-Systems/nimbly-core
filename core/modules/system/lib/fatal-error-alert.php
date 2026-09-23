@@ -17,12 +17,16 @@ function fatal_error_alert_job($job)
         $site_name = get_i18n_resolve($site_name, 'auto');
     }
 
+    $environment = trim((string)env('APP_ENV', 'unknown'));
+
     set_variable('site_name', system_alert_html($site_name));
+    set_variable('environment', system_alert_html($environment));
     set_variable('fatal_type', system_alert_html($payload['type'] ?? ''));
     set_variable('fatal_message', system_alert_html($message));
     set_variable('fatal_file', system_alert_html($payload['file'] ?? ''));
     set_variable('fatal_line', system_alert_html($payload['line'] ?? ''));
     set_variable('fatal_url', system_alert_html($payload['url'] ?? ''));
+    set_variable('fatal_host', system_alert_html($payload['host'] ?? ''));
     set_variable('fatal_signature', system_alert_html($payload['signature'] ?? ''));
 
     $sent = email([
@@ -30,7 +34,7 @@ function fatal_error_alert_job($job)
         'from' => env('MAIL_FROM'),
         'from_name' => env('MAIL_FROM_NAME', 'Nimbly'),
         'recipient' => $recipient,
-        'subject' => '[' . $site_name . '] ' . t('Fatal PHP error'),
+        'subject' => '[' . $site_name . ' · ' . $environment . '] ' . t('Fatal PHP error'),
         'tpl' => 'email-fatal-error-alert',
         'idempotency_key' => (string)($job['uuid'] ?? ''),
     ]);

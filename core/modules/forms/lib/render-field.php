@@ -110,6 +110,17 @@ function render_field(array $def, string $field = '', $value = null, string $sto
     }
 
     $type = $def['type'] ?? 'text';
+    if (!empty($def['options_function']) && is_string($def['options_function'])) {
+        if (!empty($def['options_library']) && is_string($def['options_library'])) {
+            load_library($def['options_library']);
+        }
+        if (function_exists($def['options_function'])) {
+            $options = $def['options_function']();
+            if (is_array($options)) {
+                $def['options'] = $options;
+            }
+        }
+    }
     if ($type === 'slug' && !empty($def['source']) && empty($def['i18n'])) {
         foreach (explode(',', $def['source']) as $source_field) {
             $source_field = trim($source_field);
@@ -142,6 +153,7 @@ function render_field(array $def, string $field = '', $value = null, string $sto
     $wrapper_classes = preg_split('/\s+/', trim((string)($def['wrapper_class'] ?? '')));
     $is_hidden_wrapper = in_array('hidden', $wrapper_classes, true);
     set_variable('_f.required', !empty($def['required']) && !$is_hidden_wrapper);
+    set_variable('_f.slug_language_prefix', !empty($def['language_prefix']) ? 'true' : 'false');
     // nb_form_edit is a template variable — [#set nb_form_edit=false#] stores
     // the literal string "false", which is truthy to PHP's empty(), so this
     // must compare the string value rather than testing emptiness.

@@ -38,7 +38,7 @@ function fatal_alert_enqueue($error, ?int $now = null)
                 $state = [
                     'signature' => $signature, 'first_at' => $now, 'count' => 0,
                     'events' => [], 'overflow' => 0, 'notifications' => [],
-                    'type' => $type, 'file' => substr(basename($file), 0, 120), 'line' => $line,
+                    'type' => $type, 'file' => substr(fatal_alert_relative_file($file), 0, 120), 'line' => $line,
                 ];
             }
             $events = array_values(array_filter((array)$state['events'],
@@ -77,7 +77,8 @@ function fatal_alert_enqueue($error, ?int $now = null)
                         'signature' => $signature, 'stage' => $stage,
                         'count' => $state['count'], 'first_at' => $state['first_at'],
                         'last_at' => $now, 'type' => $type, 'message' => 'PHP fatal error',
-                        'file' => $state['file'], 'line' => $line, 'url' => '',
+                        'file' => $state['file'], 'line' => $line,
+                        'url' => fatal_alert_current_url(), 'host' => gethostname() ?: '',
                     ], ['max_attempts' => 10, 'omit_request_context' => true]);
                     if ($job_uuid === false) {
                         throw new RuntimeException('Fatal alert job could not be queued');
@@ -94,6 +95,27 @@ function fatal_alert_enqueue($error, ?int $now = null)
     } catch (Throwable $e) {
         error_log('Nimbly: fatal alert enqueue failed');
     }
+}
+
+function fatal_alert_current_url(): string
+{
+    if (empty($_SERVER['SERVER_NAME'])) {
+        return '';
+    }
+    $scheme = empty($_SERVER['HTTPS']) ? 'http' : 'https';
+    $port = $_SERVER['SERVER_PORT'] ?? '';
+    $port_part = ($port !== '' && $port !== '80' && $port !== '443') ? ':' . $port : '';
+    $path = explode('?', (string)($_SERVER['REQUEST_URI'] ?? ''), 2)[0];
+    return $scheme . '://' . $_SERVER['SERVER_NAME'] . $port_part . $path;
+}
+
+function fatal_alert_relative_file(string $file): string
+{
+    $base = fatal_alert_base_dir();
+    if ($base !== '' && str_starts_with($file, $base)) {
+        return substr($file, strlen($base));
+    }
+    return basename($file);
 }
 
 function fatal_alert_lock()

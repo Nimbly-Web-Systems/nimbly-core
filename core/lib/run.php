@@ -66,6 +66,16 @@ function run_uri($uri) {
     }
 
     /*
+     * Optional data-backed pages resolve only after every code-owned route has
+     * had a chance to handle the request. The library is part of the optional
+     * managed-pages module; without application declarations it is a no-op.
+     */
+    load_library('managed-pages');
+    if (function_exists('managed_pages_run') && managed_pages_run($uri)) {
+        exit();
+    }
+
+    /*
      * Not routed either.. fallback to page not found error
      */
     run_log_validated_route_404();

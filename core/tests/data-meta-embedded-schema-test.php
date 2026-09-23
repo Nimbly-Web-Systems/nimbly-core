@@ -39,6 +39,20 @@ load_library('data');
 // Redirect data_*() calls to an isolated fixture dir instead of real ext/data.
 $GLOBALS['SYSTEM']['data_base'] = $fixture;
 
+mkdir("$fixture/.config", 0755, true);
+file_put_contents("$fixture/.config/.meta", json_encode(['fields' => false]));
+file_put_contents("$fixture/.config/site", json_encode(['languages' => ['en', 'nl'], 'uuid' => 'site']));
+mkdir("$fixture/site_language_resource", 0755, true);
+file_put_contents("$fixture/site_language_resource/.meta", json_encode([
+    'fields' => ['title' => ['type' => 'text', 'i18n' => true]],
+    'languages' => 'site',
+]));
+$site_meta = data_meta('site_language_resource');
+data_meta_embedded_schema_assert($site_meta['languages'] === ['en', 'nl'], 'site language metadata opt-in did not resolve configured languages');
+file_put_contents("$fixture/.config/site", json_encode(['languages' => ['en', 'nl', 'de'], 'uuid' => 'site']));
+$updated_site_meta = data_meta('site_language_resource');
+data_meta_embedded_schema_assert($updated_site_meta['languages'] === ['en', 'nl', 'de'], 'site language metadata was stale after configuration changed');
+
 // A resource with no external .meta and no uuid given falls back to the
 // auto-created default (fields: false) — unchanged, pre-existing behavior.
 $meta = data_meta('settings_a');

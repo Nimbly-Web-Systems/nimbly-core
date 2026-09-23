@@ -8,6 +8,12 @@ function get_user_resources_sc($params) {
 	$result = array();
     $rs = data_resources_list();
     foreach ($rs as $k => $v) {
+		if ($k === 'pages') {
+			load_library('managed-pages');
+			if (!managed_pages_feature_enabled()) {
+				continue;
+			}
+		}
 		$meta = data_meta($k);
 		$visible_by_default = !in_array($k, ['users', 'roles'], true);
 		$visible = array_key_exists('nimblybar', $meta) ? $meta['nimblybar'] === true : $visible_by_default;

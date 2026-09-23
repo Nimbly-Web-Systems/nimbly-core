@@ -1,130 +1,493 @@
-Nimbly is a full-stack design system. Read
-[NIMBLY-QUICKSTART.md](NIMBLY-QUICKSTART.md) first for every task. It is an
-entry point, not a replacement for the complete reference. Read
-[NIMBLY.md](NIMBLY.md), the complete Nimbly implementation reference, once per
-session before making any significant change, then consult only the relevant
-sections. Use `./nimbly docs:section` or `./nimbly docs:search` for targeted
-lookup; read the full reference directly only for genuinely cross-cutting work.
+# Nimbly Agent Guide
 
-For project-specific workflow rules, also read `ext/.context/AGENTS.md` once per
-session when that file exists. Treat its instructions as applying to work in
-the separate `ext/` repository, alongside this file.
+Nimbly is a full-stack atomic design system and digital product platform covering structure, behavior, implementation, and reusable application building blocks.
 
-## Workflow
+This file is the default starting point for development work.
 
-For every task, follow this workflow unless explicitly instructed otherwise.
+## Nimbly documentation lookup
 
-1. Start from `main` or `master` with the latest live changes merged in.
-   - Development must happen on the main development branch, usually `main` or `master`.
-   - Check the current branch and working tree status.
-   - Fetch the latest remote changes.
-   - Update the local `main` or `master` branch.
-   - Check whether the live or production branch has changes that are not yet in `main` or `master`.
-   - If live has newer changes, merge those live changes into `main` or `master` before editing.
-   - Do not develop directly on the live or production branch.
-   - Remember that `ext/` is a separate Git repository. Application changes use Git inside `ext/`.
+`NIMBLY.md` is the complete implementation reference and is intentionally large.
 
-2. Decide core vs. ext before touching files.
-   - Ask: would every Nimbly app need this, not just this project? If yes, it is framework work and belongs in `core/`. If it is this project's own resources, routes, business logic, or configuration, it belongs in `ext/`.
-   - See "Deciding core vs. ext" in `NIMBLY.md` for the full test and a worked example, including the role editor pages that were originally stranded in `ext/`.
-   - If genuinely ambiguous, ask rather than defaulting to `ext/`.
+**Do not read `NIMBLY.md` in full by default.**
 
-3. Plan the work.
-   - Inspect the relevant code first.
-   - Consult only the relevant sections of `NIMBLY.md` after the required initial read.
-   - Break the task into small, logical steps.
-   - Do not start with broad rewrites.
-   - Narrow searches to the relevant repository, directories, file types, and patterns.
-   - Exclude generated files, dependencies, runtime data, and build output unless directly relevant.
-   - Do not repeat repository inspection already completed in the same session. Reuse established findings.
-   - Prefer one focused objective per session.
+Inspect the relevant implementation first. When additional framework documentation is needed, retrieve only the necessary material using:
 
-4. Implement one logical step.
-   - Keep the change focused.
-   - Prefer existing Nimbly building blocks.
-   - Follow the conventions in `NIMBLY.md`.
+```bash
+./nimbly docs:list
+./nimbly docs:search "<term>"
+./nimbly docs:section "<section>"
+```
 
-5. Sanity test the step.
-   - Run relevant local checks.
-   - Be efficient with verification time and tokens:
-     - Confirm the local environment is running before browser tests. If needed, ask the user to run `./nimbly up`, or run it yourself only when server startup is part of the task.
-     - Prefer targeted CLI, `curl`, and Git checks for health, routing, authentication reachability, branch or tag state, migrations, and deployment verification.
-     - For presentation-only changes such as spacing, utility classes, copy, labels, or simple static links, do not run Playwright or the full test suite by default. Verify with the diff, relevant lint or template checks, an asset build when required, and a focused visual inspection only when it adds value.
-     - Use Playwright only when browser behavior is genuinely under test, such as admin forms, inline editing, media picker behavior, Alpine interactions, or responsive and visual regressions.
-     - Reserve browser and full-suite testing for changes involving interaction, permissions, data flow, business logic, or a concrete regression risk.
-     - Run the smallest relevant test first.
-     - Run the full suite only after focused checks pass, normally near completion.
-     - Avoid repeated full E2E runs after infrastructure or setup failures. Fix or confirm the environment first, then rerun the smallest relevant specification.
-     - Do not rerun an unchanged failing command. Diagnose the failure or change something first.
-     - Use timeouts for commands that may hang and stop unnecessary background processes after verification.
-   - Context and output discipline:
-     - Keep displayed command output below roughly 200 lines unless more is genuinely necessary.
-     - Redirect verbose build and test output to a temporary file, then inspect only failures, warnings, relevant excerpts, and the final summary.
-     - Do not stream thousands of successful test or build lines into the conversation.
-     - Prefer quiet flags, targeted specifications, `rg`, `head`, `tail`, and focused `sed` ranges over complete output.
-     - Avoid reading generated assets, compiled files, dependency trees, large data directories, and complete logs unless specifically required.
-     - After completing a major phase, summarize the current state before beginning another large phase.
-     - Check `/status` before a major phase and after unusually expensive work.
-     - If a small task consumes an unexpectedly large part of the five hour limit, stop and provide a concise handoff.
-     - When the session context becomes large, stop before beginning another major phase and provide a concise handoff for a fresh session.
-     - Start a fresh session before a separate major implementation, migration, or deployment phase.
-   - Compare the result against the requested outcome, not only against whether the code compiles.
+Use the documentation commands deliberately:
 
-6. Adjust until correct.
-   - If the sanity test or visual result is not correct, fix it before moving on.
-   - Rerun the relevant check after adjustments.
+* Use `docs:search` when you know the concept, command, API, capability, or likely Nimbly term but do not know the section.
+* Use `docs:section` when you already know the relevant documentation section.
+* Use `docs:list` when you do not know the correct Nimbly terminology or where the capability is documented.
 
-7. Complete migration bookkeeping.
-   - For every Nimbly 1.1 project migration, reconcile the Intra project record
-     before considering the migration complete.
-   - All projects are expected to run the current `master` core. Record any
-     temporary exception in the project's free-form notes instead of structured
-     version or verification fields.
-   - Book two hours to the migrated project for the migration and production
-     verification. Reuse or normalize an existing migration booking instead of
-     creating a duplicate.
-   - Migrate every legacy SMTP or `.services` mail configuration to Resend.
-     Reuse the established Resend credential when appropriate, keep it only in
-     runtime `.env` files, set `MAIL_FROM_NAME` to the project site name, and
-     verify that no obsolete SMTP variables or tracked service credentials
-     remain.
+### How to search
 
-8. Commit the completed step.
-   - Commit only after the step is implemented and sanity tested.
-   - Use Conventional Commits.
-   - Keep commit messages short, specific, professional, and usually one line.
-   - Do not add commercial noise such as `Co-Authored-By`.
-   - Do not narrate bugs, vulnerabilities, or internal shortcomings in commit messages. Describe what changed, not how something was broken or exploitable. This is open source history, so do not hand future readers an exploit writeup.
+Treat `docs:search` as a documentation-text lookup, not as a general web search.
 
-9. Repeat.
-   - Continue step by step until the task is complete.
+Search for **one concept, command, API, capability, or established Nimbly term at a time**.
 
-10. Final handoff.
-   - Summarize what changed.
-   - List commits created.
-   - List tests and checks performed.
-   - Mention anything not completed or not verified.
+Prefer:
 
-## Restrictions
+```bash
+./nimbly docs:search "registered action"
+./nimbly docs:search "gateway"
+./nimbly docs:search "orchestration"
+./nimbly docs:search "PHP-FPM"
+```
 
-- Never push to a remote branch unless explicitly instructed.
-- Never create, merge, or close pull requests unless explicitly instructed.
-- Never run destructive Git commands such as `reset --hard`, `clean`, forced push, rebase, or branch deletion unless explicitly instructed.
-- Do not discard, overwrite, or remove existing local changes unless explicitly instructed.
-- Do not modify `core/` unless the task is explicitly framework work. The test is whether every Nimbly app would need the change, not just this project. See "Deciding core vs. ext" in `NIMBLY.md`.
+Do not combine the whole problem into one long query such as:
+
+```bash
+./nimbly docs:search "operating system upgrade runtime baseline PHP-FPM registered action gateway"
+```
+
+If a search returns no useful result:
+
+1. Shorten the query to the main concept.
+2. Try the actual command, function, configuration, or capability name found in the code.
+3. Try one close synonym or established Nimbly term.
+4. If the terminology is still unclear, run `./nimbly docs:list` once and identify the likely section.
+5. Retrieve that section with `./nimbly docs:section "<section>"`.
+6. If documentation still does not cover the capability, rely on the existing implementation rather than repeatedly broadening the search.
+
+A failed `docs:search` does **not** prove that a capability does not exist. It only means that the particular search term did not match the documentation.
+
+Prefer terminology already discovered in:
+
+* existing code,
+* function names,
+* command names,
+* agent definitions,
+* configuration,
+* resource names,
+* or previous documentation results.
+
+Do not repeatedly try increasingly long keyword strings.
+
+Read the complete `NIMBLY.md` only when the task is genuinely framework-wide and targeted code inspection plus `docs:search`, `docs:section`, and `docs:list` have proved insufficient.
+
+Do not read the full reference merely to begin a task, understand Nimbly generally, search for a capability, or make sure nothing was missed.
+
+For project-specific workflow rules, also read `.context/AGENTS.md` and, when present, `ext/.context/AGENTS.md` once per session. Treat `.context/AGENTS.md` as applying to the project as a whole and `ext/.context/AGENTS.md` as applying specifically to work in the separate `ext/` repository.
+
+
+## 1. Start from current application state
+
+Development must happen on the main development branch, normally `main` or `master`.
+
+Before diagnosing or modifying application code:
+
+* Check the current branch and working tree.
+* Fetch the latest remote state.
+* Update the local development branch.
+* Check whether the live or production branch contains changes not yet present in the development branch.
+* Merge newer live changes into `main` or `master` before editing.
+* Do not develop directly on the live or production branch.
+* Preserve unrelated local changes.
+
+Production may contain live-edited resource data that has been published through the normal synchronization workflow. Do not diagnose or implement against a stale checkout.
+
+Remember that `ext/` is a separate Git repository. Application Git operations normally use:
+
+```bash
+git -C ext status
+```
+
+For existing Nimbly synchronization workflows, reuse the established commands and implementation. Do not create replacement synchronization mechanisms merely to obtain current state.
+
+## 2. Choose the correct repository
+
+Nimbly combines two independent repositories:
+
+* `core/`: reusable framework functionality and building blocks.
+* `ext/`: application-specific routes, data, templates, libraries, modules, agents, configuration, and theme.
+
+Before editing, ask:
+
+> Would every Nimbly application need this?
+
+If yes, it is probably framework work and belongs in `core/`.
+
+If it belongs specifically to this application, it belongs in `ext/`.
+
+If the distinction is unclear, inspect the existing implementation first and, if needed, retrieve:
+
+```bash
+./nimbly docs:section "Project Structure > Deciding core vs. ext"
+```
+
+Do not default to `ext/` merely because it appears safer.
+
+Do not modify `core/` unless the task genuinely requires framework work.
+
+## 3. Inspect before designing
+
+For an existing feature, bug, or integration:
+
+1. Inspect the current implementation.
+2. Identify the specific behavior, data flow, integration point, or missing capability.
+3. Search `core/` and `ext/` for an existing Nimbly building block or established project pattern.
+4. Retrieve targeted documentation only if necessary.
+5. Make the smallest change that addresses the root cause.
+
+For bug fixes, prefer correcting the existing mechanism over designing a replacement system.
+
+Do not expand into:
+
+* adjacent cleanup,
+* speculative edge cases,
+* generalized abstractions,
+* replacement persistence,
+* new APIs,
+* new schedulers,
+* new permission systems,
+* new synchronization layers,
+* or architectural redesign
+
+unless they are actually required to solve the requested problem.
+
+If the task unexpectedly requires substantial new architecture or becomes materially larger than expected, stop and report the discrepancy before implementing the broader design.
+
+## 4. Reuse Nimbly building blocks
+
+Prefer existing Nimbly functionality before adding custom infrastructure.
+
+Before creating a new library, subsystem, persistence mechanism, API, or abstraction:
+
+1. Search the relevant `core/` and `ext/` code.
+2. Check whether an established Nimbly capability already exists.
+3. Use `docs:search` or `docs:section` if its behavior is unclear.
+4. Extend the existing pattern where appropriate.
+5. Introduce something new only when the framework genuinely lacks the required capability.
+
+Do not introduce architecture merely because a local solution could theoretically be generalized.
+
+## 5. Keep responsibilities separated
+
+Use the established application structure.
+
+### Templates
+
+Use:
+
+```text
+ext/tpl/
+ext/uri/
+```
+
+for markup and presentation.
+
+Do not generate template-owned HTML inside PHP libraries.
+
+### Libraries
+
+Use:
+
+```text
+ext/lib/
+```
+
+for PHP business logic, data preparation, backend behavior, and integration code.
+
+### Modules
+
+Use:
+
+```text
+ext/modules/
+```
+
+for reusable application functionality where appropriate.
+
+### Resources
+
+Application resources live under:
+
+```text
+ext/data/<resource>/
+```
+
+with `.meta` defining fields, validation, indexes, permissions, and lifecycle behavior.
+
+Before inventing custom storage, check whether the existing Nimbly resource/data system already solves the problem.
+
+## 6. Routes and templates
+
+Folders under `ext/uri/` map to application routes.
+
+Static routes generally use an `index.tpl`.
+
+Dynamic routes containing segments such as:
+
+```text
+(slug)
+```
+
+may require matching route definitions and `route.inc`.
+
+Never add `route.inc` to a static route. `route.inc` exists for dynamic routing that needs `router_accept()` or `router_deny()`. Adding it to a static route causes a 404.
+
+When route definitions change, use the established route synchronization tooling where required:
+
+```bash
+./nimbly routes:sync
+```
+
+Reusable presentation belongs in `ext/tpl/`.
+
+## 7. Template syntax rules
+
+### `[#if#]`
+
+`[#if#]` has no block form.
+
+Never write:
+
+```text
+[#if#]
+...
+[/#if#]
+```
+
+It is always a self-closing tag.
+
+Use `tpl=` to render conditional template content or `echo=` to output a conditional value.
+
+Conditional markup belongs in a separate template.
+
+### `[#set#]`
+
+`[#set#]` does not overwrite an existing value by default.
+
+This allows route templates to set page variables early while shared or core templates act as fallbacks.
+
+Use `overwrite` only when replacing an existing value is explicitly intended.
+
+## 8. Permissions and authorization
+
+Use the existing Nimbly authorization mechanisms.
+
+Validate input before accepting a route or request.
+
+Use:
+
+```php
+router_accept()
+router_deny()
+```
+
+where appropriate.
+
+Apply authorization before exposing protected data or performing protected actions.
+
+Reuse existing roles, permissions, approval flows, and project authorization mechanisms instead of introducing parallel permission systems.
+
+Do not confuse an approval record with executable capability. If an approved action lacks an actual implementation or registered execution path, treat that as a missing capability rather than weakening authorization boundaries.
+
+## 9. PHP conventions
+
+Use snake_case for PHP:
+
+* functions,
+* variables,
+* parameters,
+* and file names.
+
+Do not use camelCase or PascalCase for ordinary PHP application code.
+
+Keep functions focused.
+
+Shortcodes should coordinate data and rendering rather than contain large amounts of business logic or inline markup.
+
+Prefer proper fixes over hacks. Correct the underlying layout, field type, data flow, or integration issue rather than hiding its symptom.
+
+## 10. Plan narrowly
+
+Before implementation:
+
+* inspect only relevant code,
+* search narrowly,
+* reuse findings already established in the current session,
+* and keep one focused objective per session where practical.
+
+Exclude generated files, dependencies, runtime data, build output, and large unrelated directories unless directly relevant.
+
+Do not repeatedly inspect the repository simply to reassure yourself that nothing was missed.
+
+Do not read the complete `NIMBLY.md` to begin a task, understand Nimbly generally, search for a capability, or make sure nothing was overlooked.
+
+Use targeted documentation retrieval instead.
+
+## 11. Implement one logical step at a time
+
+Keep each change focused.
+
+Follow established Nimbly and project patterns.
+
+Do not silently broaden scope after implementation begins.
+
+If the approved plan says not to implement a related issue, leave it untouched and mention it in the handoff.
+
+Preserve unrelated local work.
+
+## 12. Test efficiently
+
+Run the smallest relevant verification first.
+
+Common commands include:
+
+```bash
+./nimbly test:architecture --strict
+./nimbly build
+./nimbly test:run
+```
+
+Use only those relevant to the actual change.
+
+For targeted PHP changes, focused syntax or project-specific tests may be more appropriate than a complete suite.
+
+Prefer targeted CLI, Git, and `curl` checks for:
+
+* routing,
+* authentication reachability,
+* branch state,
+* migrations,
+* synchronization,
+* deployment state,
+* and backend behavior.
+
+Do not run browser tests for presentation-only changes unless visual or browser behavior genuinely needs verification.
+
+Use Playwright when browser interaction itself is under test, for example:
+
+* forms,
+* inline editing,
+* media pickers,
+* Alpine behavior,
+* responsive behavior,
+* or concrete visual regressions.
+
+Run full suites only when justified by the change.
+
+Do not rerun an unchanged failing command. Diagnose the failure or change something first.
+
+Use timeouts for commands that may hang.
+
+Do not execute production maintenance merely to verify application code.
+
+## 13. Keep context and output small
+
+Context usage matters.
+
+* Keep command output focused.
+* Avoid dumping hundreds or thousands of successful lines into the conversation.
+* Prefer `rg`, `head`, `tail`, targeted `sed` ranges, quiet flags, and focused test specifications.
+* Redirect verbose output to temporary files when useful and inspect only relevant sections.
+* Avoid reading complete logs, compiled assets, dependencies, generated files, large datasets, or complete documentation unless necessary.
+* Do not repeat inspection already performed in the same session.
+
+Check `/status` before major phases and after unexpectedly expensive work.
+
+If a small task consumes an unexpectedly large part of the five-hour allowance, stop and provide a concise handoff.
+
+If context becomes large, stop before starting another major phase and continue in a fresh session.
+
+Use a fresh session for a separate substantial implementation, migration, or deployment phase.
+
+## 14. Local environment
+
+Confirm the local environment is available before browser or runtime verification.
+
+When appropriate:
+
+```bash
+./nimbly up
+```
+
+Do not restart or rebuild the environment unnecessarily when it is already running.
+
+## 15. Migration bookkeeping
+
+For Nimbly 1.1 project migrations:
+
+* Reconcile the Intra project record before considering the migration complete.
+* Projects are expected to use current `master` Core unless a temporary exception is documented in project notes.
+* Book two hours to the migrated project for migration and production verification, reusing or normalizing an existing booking rather than creating duplicates.
+* Migrate legacy SMTP or `.services` mail configuration to Resend.
+* Reuse established Resend credentials where appropriate.
+* Keep credentials only in runtime `.env` files.
+* Set `MAIL_FROM_NAME` to the project site name.
+* Verify obsolete SMTP variables or tracked service credentials are removed.
+
+## 16. Commit completed work
+
+Commit only after the logical step is implemented and relevant checks pass.
+
+Use Conventional Commits.
+
+Commit messages should be:
+
+* short,
+* specific,
+* professional,
+* and normally one line.
+
+Do not add `Co-Authored-By` or similar commercial/tooling noise.
+
+Do not narrate vulnerabilities, exploit details, or internal failures in commit messages. Describe the change rather than documenting how something was exploitable.
+
+## 17. Git restrictions
+
+Never push to a remote branch unless explicitly instructed.
+
+Never create, merge, or close pull requests unless explicitly instructed.
+
+Never run destructive Git operations such as:
+
+```text
+reset --hard
+clean
+forced push
+rebase
+branch deletion
+```
+
+unless explicitly instructed.
+
+Do not discard, overwrite, or remove existing local changes without explicit authorization.
+
+## 18. Final handoff
+
+When the task is complete:
+
+* summarize what changed,
+* list commits created,
+* list relevant tests and checks performed,
+* mention anything not completed or not verified,
+* and explicitly identify issues that were diagnosed but intentionally left outside scope.
+
+Compare the finished result with the requested outcome, not merely with whether the code compiles.
 
 ## At a glance
 
-- **`ext/` is a separate Git repository.** Always run Git commands inside `ext/` for application changes, for example `git -C ext status`. The project root is the core repository and knows nothing about `ext/` changes.
-- Work in `ext/` for project customizations. Work in `core/` for framework work, meaning anything every Nimbly app would need, not just this one. Do not default to `ext/` merely because it looks safer.
-- Follow the PHP naming convention documented in `NIMBLY.md`: snake_case everywhere for functions, variables, parameters, and file names. Do not use camelCase or PascalCase in PHP.
-- Prefer proper fixes over hacks. If a layout, field type, or data flow is wrong, fix the underlying issue rather than hiding the symptom.
-- Use existing Nimbly building blocks first: core libraries, templates, and established shortcodes before adding custom code.
-- Build self contained UI features as reusable components in `ext/tpl/<name>/` or focused custom shortcodes in `ext/lib/<name>/`, not as inline page code.
-- Keep shortcode functions short. They should coordinate data and rendering, with logic and layout separated into libraries and templates where possible.
-- Never add `route.inc` to a static route, meaning one with no `(param)` URL segments. `route.inc` exists only for dynamic routes that need to call `router_accept()` or `router_deny()`. Adding it to a static route causes a 404.
-- **`[#if#]` has no block form, ever.** There is no `[#if#]…[#/if#]` syntax. `[#if#]` is always a single self closing tag. Conditional content lives in a separate template via `tpl=`. This is by design because templates contain no business logic. Never write block style conditionals in templates.
-- **`[#set#]` does not overwrite by default.** Without the `overwrite` parameter, a `[#set#]` on an already set variable is a no op. Route templates can therefore set page variables early and core or shared templates act as fallbacks. Use `overwrite` only when you explicitly need to replace an existing value, for example when passing data into a reusable template component.
-
-Commit messages must follow the Conventional Commits style documented in
-`NIMBLY.md`: short, specific, professional, and usually one line.
+* Start from current `main` or `master`, including newer published live changes.
+* `ext/` is a separate Git repository.
+* Use `core/` only for functionality every Nimbly application needs.
+* Inspect existing implementation before designing.
+* Reuse Nimbly building blocks before adding custom architecture.
+* Keep templates, libraries, modules, and resources in their proper roles.
+* Keep HTML out of PHP libraries when markup belongs in templates.
+* Static routes do not use `route.inc`.
+* `[#if#]` is always self-closing.
+* `[#set#]` does not overwrite by default.
+* Use existing permissions and authorization mechanisms.
+* Use snake_case in PHP.
+* Run the smallest relevant tests.
+* Keep command output and context small.
+* Use targeted Nimbly documentation instead of reading `NIMBLY.md` in full.
+* Stop rather than silently expanding a task into new architecture.
+* Never push or perform destructive Git actions without explicit permission.

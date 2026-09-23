@@ -560,6 +560,7 @@ function array_merge_recursive_distinct(array &$array1, array &$array2)
     foreach ($array2 as $key => &$value) {
         if (
             is_array($value) &&
+            $value !== [] &&
             isset($merged[$key]) &&
             is_array($merged[$key]) &&
             array_keys($value) !== range(0, count($value) - 1) // associative check
@@ -689,50 +690,70 @@ function data_create($resource, $uuid, $data_ls)
     $file = $path;
     $exists = file_exists($file);
 
-    if (_data_validate($resource, $uuid, $data_ls) !== true) {
-        return false;
+    $meta = $uuid === '.meta' && is_array($data_ls) ? $data_ls : data_meta($resource);
+    $write_lock = false;
+    if (!empty($meta['write_lock'])) {
+        $write_lock = @fopen($dir . '/.write.lock', 'c');
+        if ($write_lock === false || !flock($write_lock, LOCK_EX)) {
+            if (is_resource($write_lock)) {
+                fclose($write_lock);
+            }
+            data_error_set('WRITE_LOCK_FAILED');
+            return false;
+        }
     }
 
-    if (isset($data_ls['form-key'])) {
-        unset($data_ls['form-key']);
-    }
+    try {
 
-    if (!isset($data_ls['_created_by'])) {
-        load_library('util');
-        load_library('username');
-        $data_ls['_created_by'] = md5_uuid(username_get());
-    }
+        if (_data_validate($resource, $uuid, $data_ls) !== true) {
+            return false;
+        }
 
-    if (!isset($data_ls['_created'])) {
-        $data_ls['_created'] = time();
-        $data_ls['_modified'] = time();
-    }
+        if (isset($data_ls['form-key'])) {
+            unset($data_ls['form-key']);
+        }
 
-    $data_ls['uuid'] = $uuid;
-
-    $json_data = json_encode($data_ls, JSON_UNESCAPED_UNICODE);
-    if (_data_write_file_atomically($file, $json_data) !== false) {
-        touch($dir); // Update directory modification time to signal change and invalidate caches
-        _data_clear_cache('_data_read_all', $resource);
-
-        $meta = data_meta($resource);
-        if (isset($meta['index']) && is_array($meta['index'])) {
+        if (!isset($data_ls['_created_by'])) {
             load_library('util');
-            foreach ($meta['index'] as $index_name) {
-                if (empty($data_ls[$index_name])) {
-                    continue;
-                }
-                foreach (data_index_uuids($data_ls[$index_name]) as $index_uuid) {
-                    _data_create_index($resource, $file, $index_name, $index_uuid);
+            load_library('username');
+            $data_ls['_created_by'] = md5_uuid(username_get());
+        }
+
+        if (!isset($data_ls['_created'])) {
+            $data_ls['_created'] = time();
+            $data_ls['_modified'] = time();
+        }
+
+        $data_ls['uuid'] = $uuid;
+
+        $json_data = json_encode($data_ls, JSON_UNESCAPED_UNICODE);
+        if (_data_write_file_atomically($file, $json_data) !== false) {
+            touch($dir); // Update directory modification time to signal change and invalidate caches
+            _data_clear_cache('_data_read_all', $resource);
+
+            if (isset($meta['index']) && is_array($meta['index'])) {
+                load_library('util');
+                foreach ($meta['index'] as $index_name) {
+                    if (empty($data_ls[$index_name])) {
+                        continue;
+                    }
+                    foreach (data_index_uuids($data_ls[$index_name]) as $index_uuid) {
+                        _data_create_index($resource, $file, $index_name, $index_uuid);
+                    }
                 }
             }
-        }
 
-        if ($uuid !== '.meta') {
-            load_library('event');
-            event_resource_lifecycle($exists ? 'update' : 'create', $resource, $uuid, $data_ls);
+            if ($uuid !== '.meta') {
+                load_library('event');
+                event_resource_lifecycle($exists ? 'update' : 'create', $resource, $uuid, $data_ls);
+            }
+            return true;
         }
-        return true;
+    } finally {
+        if (is_resource($write_lock)) {
+            flock($write_lock, LOCK_UN);
+            fclose($write_lock);
+        }
     }
 
     return false;
@@ -832,6 +853,19 @@ function data_delete($resource, $uuid = null)
         }
         $data_ls = $data_ls ?? data_read($resource, $uuid);
         $result += (int)unlink($file);
+        if ($result > 0) {
+            // Unlike data_create()/data_update(), a delete never rewrites a
+            // surviving file, so it produces no newer max-mtime for
+            // _data_read_all()'s cache-vs-data_modified() comparison to
+            // detect. touch() alone is not reliable here: filemtime() has
+            // 1-second resolution, and a create-then-delete within the same
+            // second (e.g. a script, or two quick requests) leaves the
+            // touched dir's mtime equal to — not greater than — the cache
+            // file's, so the stale-check ("cache_time < modified") misses
+            // it. Clear the cache file directly instead.
+            touch($dir);
+            _data_clear_cache('_data_read_all', $resource);
+        }
         if ($result > 0 && $uuid !== '.meta') {
             load_library('event');
             event_resource_lifecycle('delete', $resource, $uuid, $data_ls);
@@ -858,6 +892,7 @@ function data_delete($resource, $uuid = null)
         }
     }
     @rmdir($dir);
+    _data_clear_cache('_data_read_all', $resource);
     return $result;
 }
 
@@ -1012,7 +1047,12 @@ function data_meta($resource, $uuid = null)
     static $meta_result = [];
     $cache_key = $resource . '|' . $uuid;
     if (!empty($meta_result[$cache_key])) {
-        return $meta_result[$cache_key];
+        $meta = $meta_result[$cache_key];
+        if (($meta['languages'] ?? null) === 'site') {
+            $languages = data_lookup('.config', 'site', 'languages', ['en']);
+            $meta['languages'] = is_array($languages) ? array_values($languages) : ['en'];
+        }
+        return $meta;
     }
     if (data_exists($resource, ".meta")) {
         $meta = data_read($resource, ".meta");
@@ -1030,6 +1070,10 @@ function data_meta($resource, $uuid = null)
         }
     }
     $meta_result[$cache_key] = $meta;
+    if (($meta['languages'] ?? null) === 'site') {
+        $languages = data_lookup('.config', 'site', 'languages', ['en']);
+        $meta['languages'] = is_array($languages) ? array_values($languages) : ['en'];
+    }
     return $meta;
 }
 
@@ -1193,6 +1237,17 @@ function _data_validate($resource, $uuid, &$data_ls)
     if (!empty($meta['unique']) && _data_validate_unique($resource, $uuid, $data_ls, $meta['unique']) !== true) {
         data_error_set('RESOURCE_EXISTS');
         return false;
+    }
+
+    if (!empty($meta['validate_library']) && !empty($meta['validate_function'])) {
+        load_library((string)$meta['validate_library']);
+        $validator = (string)$meta['validate_function'];
+        if (!function_exists($validator) || $validator($resource, $uuid, $data_ls) !== true) {
+            if (data_error_get() === null) {
+                data_error_set('VALIDATION_FAILED', 'custom');
+            }
+            return false;
+        }
     }
 
     return true;
