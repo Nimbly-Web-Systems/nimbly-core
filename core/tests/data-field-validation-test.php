@@ -19,6 +19,7 @@ $meta = [
     'fields' => [
         'label' => ['required' => true],
         'position' => ['required' => true, 'min' => 0, 'max' => 1],
+        'locations' => ['type' => 'group', 'multi' => true, 'max' => 2],
     ],
 ];
 
@@ -45,5 +46,22 @@ data_field_assert(
     'non-numeric constrained value was accepted'
 );
 data_field_assert(data_error_detail_get() === 'position:numeric', 'numeric failure detail was not recorded');
+data_field_assert(
+    _data_validate_field_definitions($meta, [
+        'label' => 'Point',
+        'position' => 0.5,
+        'locations' => [['name' => 'Office'], ['name' => 'Plant']],
+    ]) === true,
+    'group values within the item limit were rejected as non-numeric'
+);
+data_field_assert(
+    _data_validate_field_definitions($meta, [
+        'label' => 'Point',
+        'position' => 0.5,
+        'locations' => [['name' => 'Office'], ['name' => 'Lab'], ['name' => 'Plant']],
+    ]) === false,
+    'group values above the item limit were accepted'
+);
+data_field_assert(data_error_detail_get() === 'locations:max', 'group maximum failure detail was not recorded');
 
 echo "Data field validation tests passed.\n";

@@ -1267,6 +1267,18 @@ function _data_validate_field_definitions($meta, $data_ls)
         if (!$has_value || (!isset($definition['min']) && !isset($definition['max']))) {
             continue;
         }
+        if (($definition['type'] ?? '') === 'group' && is_array($data_ls[$field])) {
+            $value_count = count($data_ls[$field]);
+            if (isset($definition['min']) && $value_count < (int)$definition['min']) {
+                $GLOBALS['SYSTEM']['data_error_detail'] = $field . ':min';
+                return false;
+            }
+            if (isset($definition['max']) && $value_count > (int)$definition['max']) {
+                $GLOBALS['SYSTEM']['data_error_detail'] = $field . ':max';
+                return false;
+            }
+            continue;
+        }
         if (!is_numeric($data_ls[$field])) {
             $GLOBALS['SYSTEM']['data_error_detail'] = $field . ':numeric';
             return false;
