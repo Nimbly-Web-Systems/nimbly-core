@@ -10,6 +10,7 @@
     <h1 class="mb-6 text-2xl font-semibold text-neutral-800 md:mb-8 md:text-3xl">
         [#text Add [#resource-name [#resource-id#]#]#]
     </h1>
+    [#admin-resource-tabs#]
 
     <div class="flex flex-col gap-6 lg:flex-row lg:items-start">
         <div class="order-2 min-w-0 flex-1 lg:order-1">

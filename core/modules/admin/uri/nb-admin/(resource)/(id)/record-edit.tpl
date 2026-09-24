@@ -17,6 +17,8 @@
         </div>
     </div>
 
+    [#admin-resource-tabs#]
+
     [#resource-switcher [#resource-id#] [#get uuid#]#]
 
     <div class="flex flex-col gap-6 lg:flex-row lg:items-start">

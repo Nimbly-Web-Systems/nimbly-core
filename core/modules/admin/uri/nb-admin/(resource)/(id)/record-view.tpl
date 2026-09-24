@@ -17,6 +17,8 @@
         </div>
     </div>
 
+    [#admin-resource-tabs#]
+
     [#get-resource-meta [#resource-id#]#]
     [#get-resource-record [#resource-id#] [#get uuid#]#]
 
