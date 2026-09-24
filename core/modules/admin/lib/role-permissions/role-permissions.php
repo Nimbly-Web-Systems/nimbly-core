@@ -58,12 +58,17 @@ function role_permissions_resource_rows(): array
 
 function role_permissions_hidden_rows(): array
 {
-    return [
+    $rows = [
         '.content' => 'Content',
         '.config' => 'Config',
         '.files' => 'Files',
         '.jobs' => 'Jobs',
     ];
+    load_library('managed-navigation');
+    if (managed_navigation_slots() !== []) {
+        $rows['.navigation'] = 'Navigation';
+    }
+    return $rows;
 }
 
 function role_permissions_system_features(): array

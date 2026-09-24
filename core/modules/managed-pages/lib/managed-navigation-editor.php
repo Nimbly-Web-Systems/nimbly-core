@@ -46,7 +46,11 @@ function managed_navigation_editor_sc($params = null): string
 
 function managed_navigation_editor_pages(string $language): array
 {
+    load_library('access');
     $result = [];
+    if (!access_by_feature('view-pages')) {
+        return $result;
+    }
     foreach (data_read('pages') as $uuid => $record) {
         $title = managed_pages_localized_value($record, 'title', $language);
         if ($title !== null) {

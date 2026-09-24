@@ -20,6 +20,8 @@ function permission_editor_static_features(): array
         'view-.config',
         'create-.config',
         'edit-.config',
+        'view-.navigation',
+        'edit-.navigation',
         'view-.files',
         'create-.files',
         'edit-.files',
