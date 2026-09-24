@@ -54,4 +54,6 @@ preview button that follows the active editor language.
 
 Use `[#managed-navigation slot=main var=main_navigation#]` to load a public, normalized tree. Page references follow current localized addresses. Unpublished or missing targets and their branches are omitted. Rendering remains application-owned.
 
-Editors with `edit-.navigation` can use `/nb-admin/navigation`. Saves replace the complete tree and require its current revision, so stale edits are rejected. Run `./nimbly pages:check` before release to check declarations, missing templates, invalid addresses, duplicate claims, and collisions with code routes.
+Editors with `edit-.navigation` can use `/nb-admin/navigation`. The editor saves through the API (`PUT /api/v1/.navigation/<slot>-<language>`), so the standard `edit-.navigation` permission applies. Saves replace the complete tree and must send the `revision` they were loaded with; stale edits are rejected with `revision:stale`, and an invalid item is reported as `items.<item id>:<reason>` in the response `detail`.
+
+The `.navigation` resource's `.meta` must enable `write_lock` and `upsert` and use `managed-navigation` / `managed_navigation_validate_record` as its custom validator. Run `./nimbly pages:check` before release to check declarations, missing templates, invalid addresses, duplicate claims, and collisions with code routes.

@@ -16,54 +16,63 @@ function managed_navigation_revision(?array $document): string
     return is_array($document) ? (string)($document['_revision'] ?? '') : '';
 }
 
-function managed_navigation_validate_items(array $items, int $max_depth, int $depth = 1): ?array
+/**
+ * Normalize a navigation tree. Returns null on the first problem and sets
+ * $error to "<item id>:<reason>" so the editor can point at the offending row.
+ */
+function managed_navigation_check_items(array $items, int $max_depth, ?string &$error = null, int $depth = 1): ?array
 {
     if ($items === []) {
         return [];
     }
-    if ($depth > $max_depth) {
-        return null;
-    }
     $result = [];
-    foreach ($items as $item) {
+    foreach ($items as $index => $item) {
+        $id = is_array($item) && preg_match('/^[a-zA-Z0-9_-]+$/', (string)($item['id'] ?? ''))
+            ? (string)$item['id'] : 'index-' . $index;
         if (!is_array($item)) {
+            $error = $id . ':item';
+            return null;
+        }
+        if ($depth > $max_depth) {
+            $error = $id . ':depth';
             return null;
         }
         $kind = (string)($item['target']['kind'] ?? '');
         if (!in_array($kind, ['page', 'internal_url', 'external_url', 'group'], true)) {
+            $error = $id . ':kind';
             return null;
         }
         $label = trim((string)($item['label'] ?? ''));
         if ($label === '' || mb_strlen($label) > 120) {
+            $error = $id . ':label';
             return null;
         }
         $value = trim((string)($item['target']['value'] ?? $item['target']['id'] ?? $item['target']['path'] ?? ''));
         if ($kind === 'internal_url') {
             $value = managed_pages_normalize_path($value);
-            if ($value === null) {
-                return null;
-            }
         } elseif ($kind === 'external_url') {
             $scheme = strtolower((string)parse_url($value, PHP_URL_SCHEME));
-            if (!filter_var($value, FILTER_VALIDATE_URL) || !in_array($scheme, ['http', 'https'], true)) {
-                return null;
-            }
-        } elseif ($kind === 'page' && ($value === '' || !data_exists('pages', $value))) {
-            return null;
-        } elseif ($kind === 'group') {
+            $value = filter_var($value, FILTER_VALIDATE_URL) && in_array($scheme, ['http', 'https'], true) ? $value : null;
+        } elseif ($kind === 'page') {
+            $value = $value !== '' && data_exists('pages', $value) ? $value : null;
+        } else {
             $value = '';
+        }
+        if ($value === null) {
+            $error = $id . ':target';
+            return null;
         }
         $children = $item['children'] ?? [];
         if (!is_array($children)) {
+            $error = $id . ':children';
             return null;
         }
-        $children = managed_navigation_validate_items($children, $max_depth, $depth + 1);
+        $children = managed_navigation_check_items($children, $max_depth, $error, $depth + 1);
         if ($children === null) {
             return null;
         }
         $result[] = [
-            'id' => preg_match('/^[a-zA-Z0-9_-]+$/', (string)($item['id'] ?? ''))
-                ? (string)$item['id'] : bin2hex(random_bytes(8)),
+            'id' => $id === 'index-' . $index ? bin2hex(random_bytes(8)) : $id,
             'label' => $label,
             'target' => ['kind' => $kind, 'value' => $value],
             'children' => $children,
@@ -72,50 +81,59 @@ function managed_navigation_validate_items(array $items, int $max_depth, int $de
     return $result;
 }
 
-/** Replace a complete tree and reject saves based on an older revision. */
-function managed_navigation_save(string $slot, string $language, array $items, string $expected_revision): array
+function managed_navigation_validate_items(array $items, int $max_depth, int $depth = 1): ?array
 {
+    $error = null;
+    return managed_navigation_check_items($items, $max_depth, $error, $depth);
+}
+
+/**
+ * Resource validator for `.navigation`, run on every write path (API PUT
+ * included, under the resource write lock). A record replaces the complete tree
+ * and must carry the `revision` it was loaded with; a mismatch is a stale edit.
+ */
+function managed_navigation_validate_record($resource, $uuid, &$record): bool
+{
+    if ($resource !== '.navigation' || !is_array($record) || $record === []) {
+        return true;
+    }
+    $slot = (string)($record['slot'] ?? '');
+    $language = (string)($record['language'] ?? '');
     $slots = managed_navigation_slots();
-    if (empty($slots[$slot])) {
-        return ['ok' => false, 'error' => 'unknown-slot'];
-    }
     $languages = data_lookup('.config', 'site', 'languages', ['en']);
+    if (empty($slots[$slot])) {
+        data_error_set('VALIDATION_FAILED', 'slot:unknown');
+        return false;
+    }
     if (!in_array($language, is_array($languages) ? $languages : ['en'], true)) {
-        return ['ok' => false, 'error' => 'unknown-language'];
+        data_error_set('VALIDATION_FAILED', 'language:unknown');
+        return false;
     }
-    $items = managed_navigation_validate_items($items, max(1, (int)($slots[$slot]['depth'] ?? 1)));
+    if ((string)$uuid !== managed_navigation_document_id($slot, $language)) {
+        data_error_set('VALIDATION_FAILED', 'uuid:mismatch');
+        return false;
+    }
+    if (!is_array($record['items'] ?? [])) {
+        data_error_set('VALIDATION_FAILED', 'items:list');
+        return false;
+    }
+    $error = null;
+    $items = managed_navigation_check_items($record['items'] ?? [], max(1, (int)($slots[$slot]['depth'] ?? 1)), $error);
     if ($items === null) {
-        return ['ok' => false, 'error' => 'invalid-tree'];
+        data_error_set('VALIDATION_FAILED', 'items.' . $error);
+        return false;
     }
-    $resource_dir = data_path('.navigation');
-    if (!is_dir($resource_dir) && !mkdir($resource_dir, 0750, true) && !is_dir($resource_dir)) {
-        return ['ok' => false, 'error' => 'write-failed'];
+    $existing = data_read('.navigation', $uuid);
+    $base = (string)($record['revision'] ?? '');
+    if ($base !== managed_navigation_revision(is_array($existing) ? $existing : null)) {
+        data_error_set('VALIDATION_FAILED', 'revision:stale');
+        return false;
     }
-    $lock = @fopen($resource_dir . '/.tree.lock', 'c');
-    if ($lock === false || !flock($lock, LOCK_EX)) {
-        if (is_resource($lock)) fclose($lock);
-        return ['ok' => false, 'error' => 'write-failed'];
-    }
-    try {
-        $uuid = managed_navigation_document_id($slot, $language);
-        $existing = data_read('.navigation', $uuid);
-        if (managed_navigation_revision(is_array($existing) ? $existing : null) !== $expected_revision) {
-            return ['ok' => false, 'error' => 'stale'];
-        }
-        $document = [
-            'slot' => $slot,
-            'language' => $language,
-            'items' => $items,
-            '_revision' => bin2hex(random_bytes(16)),
-        ];
-        if (!data_create('.navigation', $uuid, $document)) {
-            return ['ok' => false, 'error' => 'write-failed'];
-        }
-        return ['ok' => true, 'document' => data_read('.navigation', $uuid)];
-    } finally {
-        flock($lock, LOCK_UN);
-        fclose($lock);
-    }
+    $record['items'] = $items;
+    // Derived from the base revision and content, so the second validation
+    // inside the write lock computes the same value.
+    $record['_revision'] = substr(hash('sha256', $base . json_encode($items)), 0, 32);
+    return true;
 }
 
 function managed_navigation_resolve_items(array $items, string $language, string $current_path, bool $ancestor = false): array

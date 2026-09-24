@@ -123,7 +123,9 @@ managed_pages_test_assert(managed_pages_find('de/neu')['uuid'] === 'page-de', 'P
 $german_navigation = [[
     'id' => 'de-page', 'label' => 'Neu', 'target' => ['kind' => 'page', 'value' => 'page-de'], 'children' => [],
 ]];
-managed_pages_test_assert(managed_navigation_save('main', 'de', $german_navigation, '')['ok'] === true, 'New site language navigation was rejected.');
+$german_record = ['slot' => 'main', 'language' => 'de', 'items' => $german_navigation, 'revision' => ''];
+managed_pages_test_assert(managed_navigation_validate_record('.navigation', 'main-de', $german_record) === true, 'New site language navigation was rejected.');
+data_create('.navigation', 'main-de', $german_record);
 managed_pages_test_assert(managed_navigation_load('main', 'de')[0]['url'] === 'de/neu', 'New site language navigation target did not resolve.');
 
 $candidate = [
@@ -155,9 +157,33 @@ $tree = [[
     'target' => ['kind' => 'page', 'value' => 'page-2'],
     'children' => [],
 ]];
-$saved = managed_navigation_save('main', 'nl', $tree, '');
-managed_pages_test_assert($saved['ok'] === true, 'Initial navigation save failed.');
-managed_pages_test_assert(managed_navigation_save('main', 'nl', [], '')['error'] === 'stale', 'Stale navigation save was accepted.');
+$saved = ['slot' => 'main', 'language' => 'nl', 'items' => $tree, 'revision' => ''];
+managed_pages_test_assert(managed_navigation_validate_record('.navigation', 'main-nl', $saved) === true, 'Initial navigation save failed.');
+$revalidated = $saved;
+managed_navigation_validate_record('.navigation', 'main-nl', $revalidated);
+managed_pages_test_assert($revalidated['_revision'] === $saved['_revision'], 'Revision differs between the two validations of one write.');
+data_create('.navigation', 'main-nl', $saved);
+$stale = ['slot' => 'main', 'language' => 'nl', 'items' => [], 'revision' => ''];
+managed_pages_test_assert(managed_navigation_validate_record('.navigation', 'main-nl', $stale) === false, 'Stale navigation save was accepted.');
+managed_pages_test_assert(($GLOBALS['SYSTEM']['data_error_detail'] ?? null) === 'revision:stale', 'Stale navigation save did not report the revision.');
+$current = ['slot' => 'main', 'language' => 'nl', 'items' => [], 'revision' => $saved['_revision']];
+managed_pages_test_assert(managed_navigation_validate_record('.navigation', 'main-nl', $current) === true, 'Save with the current revision was rejected.');
+$blank_label = ['slot' => 'main', 'language' => 'nl', 'revision' => $saved['_revision'], 'items' => [[
+    'id' => 'row-a', 'label' => ' ', 'target' => ['kind' => 'group', 'value' => ''], 'children' => [],
+]]];
+managed_pages_test_assert(managed_navigation_validate_record('.navigation', 'main-nl', $blank_label) === false
+    && $GLOBALS['SYSTEM']['data_error_detail'] === 'items.row-a:label', 'Blank label was not reported against its item.');
+$empty_target = ['slot' => 'main', 'language' => 'nl', 'revision' => $saved['_revision'], 'items' => [[
+    'id' => 'row-b', 'label' => 'Link', 'target' => ['kind' => 'internal_url', 'value' => ''], 'children' => [],
+]]];
+managed_pages_test_assert(managed_navigation_validate_record('.navigation', 'main-nl', $empty_target) === false
+    && $GLOBALS['SYSTEM']['data_error_detail'] === 'items.row-b:target', 'Empty destination was not reported against its item.');
+$wrong_uuid = ['slot' => 'main', 'language' => 'nl', 'items' => [], 'revision' => $saved['_revision']];
+managed_pages_test_assert(managed_navigation_validate_record('.navigation', 'main-en', $wrong_uuid) === false, 'Record stored under another slot/language id was accepted.');
+$unknown_slot = ['slot' => 'footer', 'language' => 'nl', 'items' => [], 'revision' => ''];
+managed_pages_test_assert(managed_navigation_validate_record('.navigation', 'footer-nl', $unknown_slot) === false, 'Undeclared slot was accepted.');
+$upsert_seed = [];
+managed_pages_test_assert(managed_navigation_validate_record('.navigation', 'main-nl', $upsert_seed) === true, 'Empty upsert seed record was rejected.');
 $nested = [[
     'id' => 'parent', 'label' => 'Parent', 'target' => ['kind' => 'group', 'value' => ''],
     'children' => [[
