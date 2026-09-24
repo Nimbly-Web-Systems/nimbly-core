@@ -200,6 +200,12 @@ $GLOBALS['test_can_edit_pages'] = false;
 managed_pages_test_assert(managed_pages_run('nl/hidden') === false, 'An anonymous visitor could resolve an unpublished page.');
 $GLOBALS['test_can_edit_pages'] = true;
 managed_pages_test_assert(managed_pages_run('nl/hidden') === true, 'An editor could not preview an unpublished page.');
+$_SERVER['QUERY_STRING'] = 'utm_source=mail&utm_campaign=zomer';
+managed_pages_run('nl/old-campaign');
+managed_pages_test_assert($GLOBALS['test_redirect'] === ['nl/campaign?utm_source=mail&utm_campaign=zomer', 301], 'Alias redirect dropped the query string.');
+$_SERVER['QUERY_STRING'] = '';
+managed_pages_run('nl/old-campaign');
+managed_pages_test_assert($GLOBALS['test_redirect'] === ['nl/campaign', 301], 'Alias redirect without a query string changed the target.');
 managed_pages_test_assert(
     ($GLOBALS['test_system_message'] ?? '') === "You're previewing an unpublished page. Only editors can see this.",
     'The unpublished-page preview message was not created.'
@@ -210,6 +216,46 @@ managed_pages_test_assert(
     ($GLOBALS['SYSTEM']['variables']['managed_page_preview_languages'][0]['preview_url'] ?? '') === '/nl/hidden',
     'The page preview action URL was incorrect.'
 );
+
+// Pages without a language prefix.
+$write_areas = function (array $extra) use ($fixture) {
+    file_put_contents($fixture . '/ext/modules/managed-pages/url-areas.json', json_encode($extra + [
+        'enabled' => ['en', 'nl'], 'include_site_languages' => true, 'reserved' => ['en/private', 'api'],
+    ]));
+};
+$open_page = ['type' => 'default', 'title' => ['nl' => 'Zomer'], 'path' => ['nl' => 'zomer'], 'published' => ['nl' => true]];
+$candidate = $open_page;
+managed_pages_test_assert(managed_pages_validate_record('pages', 'open-1', $candidate) === false, 'Unprefixed path was accepted on a multi-language site by default.');
+$write_areas(['allow_unprefixed' => true]);
+$candidate = $open_page;
+managed_pages_test_assert(managed_pages_validate_record('pages', 'open-1', $candidate) === true, 'Unprefixed path was rejected although the site allows it.');
+$GLOBALS['test_records']['pages']['open-1'] = $open_page;
+$found = managed_pages_find('zomer');
+managed_pages_test_assert($found !== null && $found['uuid'] === 'open-1' && $found['language'] === 'nl', 'Unprefixed page did not resolve with its authoring language.');
+$other_language = ['type' => 'default', 'path' => ['en' => 'zomer'], 'published' => ['en' => true]];
+managed_pages_test_assert(managed_pages_validate_record('pages', 'open-2', $other_language) === false, 'Unprefixed path was claimed by two languages.');
+$same_record = ['type' => 'default', 'path' => ['nl' => 'winter', 'en' => 'winter'], 'published' => ['nl' => true, 'en' => true]];
+managed_pages_test_assert(managed_pages_validate_record('pages', 'open-3', $same_record) === false, 'One record claimed the same unprefixed path for two languages.');
+$reserved = ['type' => 'default', 'path' => ['nl' => 'api/x'], 'published' => ['nl' => false]];
+managed_pages_test_assert(managed_pages_validate_record('pages', 'open-4', $reserved) === false, 'Reserved unprefixed path was accepted.');
+$wrong_prefix = ['type' => 'default', 'path' => ['nl' => 'en/zomer2'], 'published' => ['nl' => false]];
+managed_pages_test_assert(managed_pages_validate_record('pages', 'open-5', $wrong_prefix) === false, 'A prefix of another language was accepted.');
+managed_pages_test_assert(managed_pages_find('nl/zomer') === null, 'Unprefixed page resolved under a language prefix.');
+managed_pages_test_assert(managed_pages_check() === [], 'Release check flagged a valid unprefixed page.');
+unset($GLOBALS['test_records']['pages']['open-1']);
+
+// Single-language site: unprefixed by default, no configuration needed.
+$write_areas([]);
+$GLOBALS['test_records']['.config']['site']['languages'] = ['en'];
+$single = ['type' => 'default', 'title' => ['en' => 'Campaign'], 'path' => ['en' => 'summer-sale'], 'published' => ['en' => true]];
+$candidate = $single;
+managed_pages_test_assert(managed_pages_validate_record('pages', 'single-1', $candidate) === true, 'Unprefixed path was rejected on a single-language site.');
+$GLOBALS['test_records']['pages']['single-1'] = $single;
+managed_pages_test_assert(managed_pages_find('summer-sale')['language'] === 'en', 'Single-language page did not resolve.');
+$prefixed_single = ['type' => 'default', 'path' => ['en' => 'en/summer'], 'published' => ['en' => false]];
+managed_pages_test_assert(managed_pages_validate_record('pages', 'single-2', $prefixed_single) === true, 'Prefixed path stopped working on a single-language site.');
+unset($GLOBALS['test_records']['pages']['single-1']);
+$GLOBALS['test_records']['.config']['site']['languages'] = ['en', 'nl', 'de'];
 
 $remove = function ($path) use (&$remove) {
     if (is_dir($path)) {

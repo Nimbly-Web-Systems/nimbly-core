@@ -28,6 +28,8 @@ prefixes. Without the option, the declaration remains fixed. A resource schema
 may likewise set `"languages": "site"` to resolve its authoring languages from
 the site configuration; explicit language arrays retain their existing behavior.
 
+Pages normally live under their language (`nl/zomer`). Set `"allow_unprefixed": true` in `url-areas.json` to let editors also publish a page without a prefix (`zomer`); the page keeps the language it was authored in, and the path must be unique across all languages and outside the `reserved` list. Without the option, single-language sites allow unprefixed pages and multi-language sites do not. The path field then offers a "Publish without a language prefix" choice on multi-language sites.
+
 For example, `ext/data/.config/managed_pages` can add a landing page:
 
 ```json

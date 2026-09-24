@@ -131,16 +131,52 @@ function managed_pages_normalize_path($path): ?string
     return implode('/', $segments);
 }
 
-function managed_pages_path_in_area(string $path): bool
+function managed_pages_site_languages(): array
 {
-    $config = managed_pages_url_config();
-    foreach (($config['reserved'] ?? []) as $reserved) {
+    $languages = data_lookup('.config', 'site', 'languages', ['en']);
+    return is_array($languages) && $languages !== [] ? array_values(array_map('strval', $languages)) : ['en'];
+}
+
+/**
+ * Whether pages may live outside a language prefix (`/zomer` instead of
+ * `/nl/zomer`). Explicit `allow_unprefixed` in url-areas.json wins; without it
+ * single-language sites allow it and multi-language sites do not.
+ */
+function managed_pages_unprefixed_allowed(): bool
+{
+    $config = managed_pages_declaration('url-areas.json');
+    if (array_key_exists('allow_unprefixed', $config)) {
+        return $config['allow_unprefixed'] === true;
+    }
+    return count(managed_pages_site_languages()) === 1;
+}
+
+function managed_pages_path_is_reserved(string $path): bool
+{
+    foreach ((managed_pages_url_config()['reserved'] ?? []) as $reserved) {
         $reserved = trim((string)$reserved, '/');
         if ($reserved !== '' && ($path === $reserved || str_starts_with($path, $reserved . '/'))) {
-            return false;
+            return true;
         }
     }
-    foreach (($config['enabled'] ?? []) as $enabled) {
+    return false;
+}
+
+/** Whether the path starts with one of the site's language codes. */
+function managed_pages_path_is_prefixed(string $path): bool
+{
+    return in_array(managed_pages_path_language($path), managed_pages_site_languages(), true);
+}
+
+function managed_pages_path_in_area(string $path): bool
+{
+    if (managed_pages_path_is_reserved($path)) {
+        return false;
+    }
+    if (!managed_pages_path_is_prefixed($path)) {
+        return managed_pages_unprefixed_allowed();
+    }
+    foreach ((managed_pages_url_config()['enabled'] ?? []) as $enabled) {
         $enabled = trim((string)$enabled, '/');
         if ($enabled !== '' && ($path === $enabled || str_starts_with($path, $enabled . '/'))) {
             return true;
@@ -152,6 +188,12 @@ function managed_pages_path_in_area(string $path): bool
 function managed_pages_path_language(string $path): string
 {
     return explode('/', $path, 2)[0];
+}
+
+/** A prefixed path must carry its own language; an unprefixed one fits any. */
+function managed_pages_path_fits_language(string $path, string $language): bool
+{
+    return !managed_pages_path_is_prefixed($path) || managed_pages_path_language($path) === $language;
 }
 
 function managed_pages_path_has_code_route(string $path): bool
@@ -215,7 +257,7 @@ function managed_pages_validate_record($resource, $uuid, &$record): bool
     foreach (($record['path'] ?? []) as $language => $raw_path) {
         $path = managed_pages_normalize_path($raw_path);
         if ($path === null || $path !== trim((string)$raw_path, '/')
-            || managed_pages_path_language($path) !== (string)$language
+            || !managed_pages_path_fits_language($path, (string)$language)
             || !managed_pages_path_in_area($path)
             || managed_pages_path_has_code_route($path)) {
             data_error_set('VALIDATION_FAILED', 'path:' . $language);
@@ -227,7 +269,7 @@ function managed_pages_validate_record($resource, $uuid, &$record): bool
         $clean = [];
         foreach (array_unique(is_array($paths) ? $paths : []) as $raw_path) {
             $path = managed_pages_normalize_path($raw_path);
-            if ($path === null || managed_pages_path_language($path) !== (string)$language
+            if ($path === null || !managed_pages_path_fits_language($path, (string)$language)
                 || !managed_pages_path_in_area($path) || managed_pages_path_has_code_route($path)) {
                 data_error_set('VALIDATION_FAILED', 'previous_paths:' . $language);
                 return false;
@@ -239,6 +281,19 @@ function managed_pages_validate_record($resource, $uuid, &$record): bool
         $record['previous_paths'][$language] = array_values($clean);
     }
     $candidate = managed_pages_all_addresses($record);
+    $candidate_open = [];
+    foreach ($candidate as $language => $addresses) {
+        foreach ($addresses as $path => $_kind) {
+            if (managed_pages_path_is_prefixed($path)) {
+                continue;
+            }
+            if (isset($candidate_open[$path])) {
+                data_error_set('RESOURCE_EXISTS', 'path:' . $language);
+                return false;
+            }
+            $candidate_open[$path] = $language;
+        }
+    }
     foreach (data_list('pages') as $other_uuid) {
         if ((string)$other_uuid === (string)$uuid) {
             continue;
@@ -252,6 +307,15 @@ function managed_pages_validate_record($resource, $uuid, &$record): bool
             if (array_intersect_key($addresses, $other_addresses[$language] ?? [])) {
                 data_error_set('RESOURCE_EXISTS', 'path:' . $language);
                 return false;
+            }
+        }
+        // Unprefixed paths carry no language, so they must be unique across all languages.
+        foreach ($other_addresses as $addresses) {
+            foreach (array_keys($addresses) as $path) {
+                if (isset($candidate_open[$path])) {
+                    data_error_set('RESOURCE_EXISTS', 'path:' . $candidate_open[$path]);
+                    return false;
+                }
             }
         }
     }
@@ -275,17 +339,25 @@ function managed_pages_find(string $path, bool $published_only = true): ?array
     if ($path === null || !managed_pages_path_in_area($path) || !data_exists('pages')) {
         return null;
     }
-    $language = managed_pages_path_language($path);
+    // A prefixed path names its language; an unprefixed one belongs to whichever
+    // language of a record holds it.
+    $prefixed = managed_pages_path_is_prefixed($path);
     foreach (data_read('pages') as $uuid => $record) {
-        if ($published_only && !managed_pages_is_published($record, $language)) {
-            continue;
-        }
-        if (managed_pages_localized_value($record, 'path', $language) === $path) {
-            return ['uuid' => $uuid, 'record' => $record, 'language' => $language, 'alias' => false];
-        }
-        $aliases = $record['previous_paths'][$language] ?? [];
-        if (is_array($aliases) && in_array($path, $aliases, true)) {
-            return ['uuid' => $uuid, 'record' => $record, 'language' => $language, 'alias' => true];
+        $languages = $prefixed
+            ? [managed_pages_path_language($path)]
+            : array_unique(array_merge(array_keys($record['path'] ?? []), array_keys($record['previous_paths'] ?? [])));
+        foreach ($languages as $language) {
+            $language = (string)$language;
+            if ($published_only && !managed_pages_is_published($record, $language)) {
+                continue;
+            }
+            if (managed_pages_localized_value($record, 'path', $language) === $path) {
+                return ['uuid' => $uuid, 'record' => $record, 'language' => $language, 'alias' => false];
+            }
+            $aliases = $record['previous_paths'][$language] ?? [];
+            if (is_array($aliases) && in_array($path, $aliases, true)) {
+                return ['uuid' => $uuid, 'record' => $record, 'language' => $language, 'alias' => true];
+            }
         }
     }
     return null;
@@ -323,7 +395,7 @@ function managed_pages_check(): array
         foreach (managed_pages_all_addresses($record) as $language => $addresses) {
             foreach ($addresses as $path => $kind) {
                 if (managed_pages_normalize_path($path) !== $path
-                    || managed_pages_path_language($path) !== (string)$language
+                    || !managed_pages_path_fits_language($path, (string)$language)
                     || !managed_pages_path_in_area($path)) {
                     $errors[] = "Page {$uuid} has invalid {$kind} {$path}.";
                     continue;
@@ -331,7 +403,7 @@ function managed_pages_check(): array
                 if (managed_pages_path_has_code_route($path)) {
                     $errors[] = "Page {$uuid} {$kind} {$path} collides with a code route.";
                 }
-                $key = $language . ':' . $path;
+                $key = (managed_pages_path_is_prefixed($path) ? $language : '*') . ':' . $path;
                 if (isset($claimed[$key]) && $claimed[$key] !== $uuid) {
                     $errors[] = "Pages {$claimed[$key]} and {$uuid} both claim {$path}.";
                 }
@@ -357,7 +429,9 @@ function managed_pages_run(string $uri): bool
     $language = $match['language'];
     if ($match['alias']) {
         load_library('redirect');
-        redirect(managed_pages_url($match['uuid'], $language, !$can_preview_unpublished), 301);
+        $target = managed_pages_url($match['uuid'], $language, !$can_preview_unpublished);
+        $query = (string)($_SERVER['QUERY_STRING'] ?? '');
+        redirect($query === '' ? $target : $target . '?' . $query, 301);
     }
     $type = managed_pages_types()[$record['type']] ?? null;
     if (!is_array($type) || empty($type['template'])) {
