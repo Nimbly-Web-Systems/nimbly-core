@@ -154,6 +154,14 @@ function render_field(array $def, string $field = '', $value = null, string $sto
     $is_hidden_wrapper = in_array('hidden', $wrapper_classes, true);
     set_variable('_f.required', !empty($def['required']) && !$is_hidden_wrapper);
     set_variable('_f.slug_language_prefix', !empty($def['language_prefix']) ? 'true' : 'false');
+    // Whether a prefixed slug may be switched to no prefix; the policy belongs
+    // to the managed-pages module when it is available.
+    $allow_unprefixed = false;
+    if (!empty($def['language_prefix'])) {
+        load_library('managed-pages');
+        $allow_unprefixed = function_exists('managed_pages_unprefixed_allowed') && managed_pages_unprefixed_allowed();
+    }
+    set_variable('_f.slug_allow_unprefixed', $allow_unprefixed ? 'true' : 'false');
     // nb_form_edit is a template variable — [#set nb_form_edit=false#] stores
     // the literal string "false", which is truthy to PHP's empty(), so this
     // must compare the string value rather than testing emptiness.
