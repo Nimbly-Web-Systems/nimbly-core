@@ -48,4 +48,31 @@ site_settings_validation_assert(!site_settings_validate_config('.config', 'manag
 $unrelated = ['anything' => true];
 site_settings_validation_assert(site_settings_validate_config('.config', 'other', $unrelated), 'Unrelated configuration was rejected.');
 
+$old = ['enabled' => true, 'enabled_page_types' => ['default'], 'page_types' => [], '_modified' => 1];
+site_settings_validation_assert(site_settings_managed_pages_changed_keys($old, $old + ['_modified' => 2]) === [], 'Metadata changes were treated as configuration changes.');
+site_settings_validation_assert(site_settings_managed_pages_changed_keys($old, ['enabled' => false] + $old) === ['enabled'], 'Switching custom pages off was not reported as a restricted change.');
+site_settings_validation_assert(site_settings_managed_pages_changed_keys($old, $old + ['navigation_slots' => ['main' => ['name' => 'Main', 'depth' => 2]]]) === ['navigation_slots'], 'Adding a menu was not reported as a restricted change.');
+site_settings_validation_assert(site_settings_managed_pages_changed_keys([], ['enabled_page_types' => ['default']]) === ['enabled_page_types'], 'A first write of restricted keys was not reported.');
+
+$valid_areas = ['url_areas' => ['enabled' => ['en'], 'reserved' => ['api'], 'include_site_languages' => true, 'allow_unprefixed' => false]];
+site_settings_validation_assert(site_settings_validate_config('.config', 'managed_pages', $valid_areas), 'Valid URL areas were rejected.');
+foreach ([
+    'url_areas as a string' => ['url_areas' => 'en'],
+    'reserved entries that are not strings' => ['url_areas' => ['reserved' => [1]]],
+    'a non-boolean flag' => ['url_areas' => ['allow_unprefixed' => 'yes']],
+] as $label => $bad) {
+    site_settings_validation_assert(!site_settings_validate_config('.config', 'managed_pages', $bad), "Invalid URL areas accepted: {$label}.");
+}
+$valid_slots = ['navigation_slots' => ['main' => ['name' => 'Main navigation', 'depth' => 2], 'footer' => ['name' => 'Footer', 'depth' => 1]]];
+site_settings_validation_assert(site_settings_validate_config('.config', 'managed_pages', $valid_slots), 'Valid menus were rejected.');
+foreach ([
+    'an id with spaces' => ['navigation_slots' => ['Main Menu' => ['name' => 'Main', 'depth' => 1]]],
+    'a missing name' => ['navigation_slots' => ['main' => ['depth' => 1]]],
+    'a depth of zero' => ['navigation_slots' => ['main' => ['name' => 'Main', 'depth' => 0]]],
+    'a depth that is not a number' => ['navigation_slots' => ['main' => ['name' => 'Main', 'depth' => 'deep']]],
+    'a menu list that is not an object' => ['navigation_slots' => 'main'],
+] as $label => $bad) {
+    site_settings_validation_assert(!site_settings_validate_config('.config', 'managed_pages', $bad), "Invalid menu accepted: {$label}.");
+}
+
 echo "Site settings validation tests passed.\n";

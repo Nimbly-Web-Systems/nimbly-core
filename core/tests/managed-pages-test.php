@@ -244,6 +244,16 @@ managed_pages_test_assert(managed_pages_find('nl/zomer') === null, 'Unprefixed p
 managed_pages_test_assert(managed_pages_check() === [], 'Release check flagged a valid unprefixed page.');
 unset($GLOBALS['test_records']['pages']['open-1']);
 
+// Configuration in `.config/managed_pages` wins over the legacy JSON declarations.
+managed_pages_test_assert(array_keys(managed_navigation_slots()) === ['main'], 'Legacy menu declaration was not used as a fallback.');
+$GLOBALS['test_records']['.config']['managed_pages']['navigation_slots'] = ['footer' => ['name' => 'Footer', 'depth' => 1]];
+managed_pages_test_assert(array_keys(managed_navigation_slots()) === ['footer'], 'Menus from the site configuration were ignored.');
+unset($GLOBALS['test_records']['.config']['managed_pages']['navigation_slots']);
+$GLOBALS['test_records']['.config']['managed_pages']['url_areas'] = ['enabled' => ['nl'], 'allow_unprefixed' => true];
+managed_pages_test_assert(managed_pages_unprefixed_allowed() === true, 'URL areas from the site configuration were ignored.');
+managed_pages_test_assert(managed_pages_path_in_area('en/zomer') === false, 'A language outside the configured URL areas was accepted.');
+unset($GLOBALS['test_records']['.config']['managed_pages']['url_areas']);
+
 // Single-language site: unprefixed by default, no configuration needed.
 $write_areas([]);
 $GLOBALS['test_records']['.config']['site']['languages'] = ['en'];

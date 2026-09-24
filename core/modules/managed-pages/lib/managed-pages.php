@@ -86,9 +86,19 @@ function managed_pages_default_creation_type(): ?string
     return $first === null ? null : (string)$first;
 }
 
+/** URL areas from `.config/managed_pages`; the legacy url-areas.json declaration is only a fallback. */
+function managed_pages_url_areas(): array
+{
+    $config = managed_pages_config();
+    if (is_array($config['url_areas'] ?? null)) {
+        return $config['url_areas'];
+    }
+    return managed_pages_declaration('url-areas.json');
+}
+
 function managed_pages_url_config(): array
 {
-    $config = managed_pages_declaration('url-areas.json');
+    $config = managed_pages_url_areas();
     if (!empty($config['include_site_languages'])) {
         $languages = data_lookup('.config', 'site', 'languages', []);
         $enabled = is_array($config['enabled'] ?? null) ? $config['enabled'] : [];
@@ -144,7 +154,7 @@ function managed_pages_site_languages(): array
  */
 function managed_pages_unprefixed_allowed(): bool
 {
-    $config = managed_pages_declaration('url-areas.json');
+    $config = managed_pages_url_areas();
     if (array_key_exists('allow_unprefixed', $config)) {
         return $config['allow_unprefixed'] === true;
     }

@@ -46,6 +46,19 @@ function site_settings_validate_config($resource, $uuid, &$record): bool
         }
         $record['languages'] = $languages;
     }
+    if ($uuid === 'managed_pages') {
+        $existing = data_exists('.config', 'managed_pages') ? data_read('.config', 'managed_pages') : [];
+        $changed = site_settings_managed_pages_changed_keys(is_array($existing) ? $existing : [], $record);
+        if ($changed !== [] && !site_settings_is_system_manager()) {
+            data_error_set('VALIDATION_FAILED', 'managed_pages:forbidden');
+            return false;
+        }
+        $error = site_settings_managed_pages_structure_error($record);
+        if ($error !== null) {
+            data_error_set('VALIDATION_FAILED', $error);
+            return false;
+        }
+    }
     if ($uuid === 'managed_pages' && array_key_exists('enabled', $record) && !is_bool($record['enabled'])) {
         data_error_set('VALIDATION_FAILED', 'enabled:boolean');
         return false;
@@ -71,6 +84,70 @@ function site_settings_validate_config($resource, $uuid, &$record): bool
         $record['enabled_page_types'] = array_values($enabled);
     }
     return true;
+}
+
+/** Custom pages configuration that only system managers may change; editors use the feature, not its setup. */
+function site_settings_managed_pages_restricted_keys(): array
+{
+    return ['enabled', 'enabled_page_types', 'page_types', 'url_areas', 'navigation_slots'];
+}
+
+function site_settings_managed_pages_changed_keys(array $old, array $new): array
+{
+    $changed = [];
+    foreach (site_settings_managed_pages_restricted_keys() as $key) {
+        if (json_encode($old[$key] ?? null) !== json_encode($new[$key] ?? null)) {
+            $changed[] = $key;
+        }
+    }
+    return $changed;
+}
+
+/** CLI, sync and migrations have no session and are trusted; web requests need manage-system. */
+function site_settings_is_system_manager(): bool
+{
+    if (PHP_SAPI === 'cli') {
+        return true;
+    }
+    load_library('access');
+    return access_by_feature('manage-system');
+}
+
+/** Returns a validation detail for a malformed url_areas or navigation_slots value, or null. */
+function site_settings_managed_pages_structure_error(array $record): ?string
+{
+    if (array_key_exists('url_areas', $record)) {
+        $areas = $record['url_areas'];
+        if (!is_array($areas)) {
+            return 'url_areas:object';
+        }
+        foreach (['enabled', 'reserved'] as $list) {
+            if (isset($areas[$list]) && (!is_array($areas[$list]) || array_filter($areas[$list], fn($value) => !is_string($value)))) {
+                return 'url_areas.' . $list . ':list';
+            }
+        }
+        foreach (['include_site_languages', 'allow_unprefixed'] as $flag) {
+            if (isset($areas[$flag]) && !is_bool($areas[$flag])) {
+                return 'url_areas.' . $flag . ':boolean';
+            }
+        }
+    }
+    if (array_key_exists('navigation_slots', $record)) {
+        $slots = $record['navigation_slots'];
+        if (!is_array($slots)) {
+            return 'navigation_slots:object';
+        }
+        foreach ($slots as $id => $slot) {
+            if (!is_string($id) || !preg_match('/^[a-z0-9_-]+$/', $id)) {
+                return 'navigation_slots:id';
+            }
+            $depth = is_array($slot) ? ($slot['depth'] ?? 1) : null;
+            if (!is_array($slot) || trim((string)($slot['name'] ?? '')) === '' || !is_int($depth) || $depth < 1 || $depth > 5) {
+                return 'navigation_slots.' . $id . ':definition';
+            }
+        }
+    }
+    return null;
 }
 
 function site_settings_sc($params)

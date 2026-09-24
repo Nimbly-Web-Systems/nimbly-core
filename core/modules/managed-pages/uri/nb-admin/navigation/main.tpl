@@ -3,15 +3,21 @@
 
     <p class="max-w-2xl text-sm text-neutral-600">[#text Use the arrow buttons to reorder links and to move them a level in or out.#]</p>
 
-    <form method="get" class="mt-6 flex flex-wrap items-end gap-3">
-        <label class="form-control"><span class="label-text">[#text Slot#]</span>
-            <select class="select select-bordered" name="slot" onchange="this.form.submit()"
-                x-data='{ options: [#get navigation_editor_slots_json echo#] }' x-init="$el.value = '[#navigation_editor_slot#]'">
-                <template x-for="option in options" :key="option.value"><option :value="option.value" x-text="option.label"></option></template>
-            </select>
-        </label>
-        <input type="hidden" name="language" value="[#navigation_editor_language#]">
-    </form>
+    <div class="mt-4" x-data='{ options: [#get navigation_editor_slots_json echo#], current: "[#navigation_editor_slot#]", language: "[#navigation_editor_language#]",
+            go(slot) { location.href = "?slot=" + encodeURIComponent(slot) + "&language=" + encodeURIComponent(this.language); } }'
+        x-show="options.length > 1" x-cloak>
+        <div x-show="options.length <= 8" class="flex flex-wrap items-center gap-2" role="group" aria-label="[#text Navigation#]">
+            <template x-for="option in options" :key="option.value">
+                <a :href="'?slot=' + encodeURIComponent(option.value) + '&language=' + encodeURIComponent(language)"
+                    class="inline-flex items-center rounded-full px-3 py-1.5 text-sm font-medium transition"
+                    :class="option.value === current ? 'bg-cnormal text-white shadow-sm' : 'border border-neutral-300 bg-white text-neutral-700 hover:bg-neutral-100'"
+                    :aria-current="option.value === current ? 'page' : null" x-text="option.label"></a>
+            </template>
+        </div>
+        <select x-show="options.length > 8" class="select select-bordered select-sm" aria-label="[#text Navigation#]" x-model="current" @change="go(current)">
+            <template x-for="option in options" :key="option.value"><option :value="option.value" x-text="option.label"></option></template>
+        </select>
+    </div>
 
     <nav class="mt-6 overflow-x-auto" aria-label="[#text Language#]"
         x-data='[#get navigation_editor_language_tabs_json echo#]' x-show="options.length > 1">

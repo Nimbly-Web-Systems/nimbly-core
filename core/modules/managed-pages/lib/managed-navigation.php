@@ -3,6 +3,10 @@
 function managed_navigation_slots(): array
 {
     load_library('managed-pages');
+    $config = managed_pages_config();
+    if (is_array($config['navigation_slots'] ?? null)) {
+        return $config['navigation_slots'];
+    }
     return managed_pages_declaration('navigation-slots.json');
 }
 
