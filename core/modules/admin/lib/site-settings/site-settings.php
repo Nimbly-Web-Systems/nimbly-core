@@ -59,9 +59,11 @@ function site_settings_validate_config($resource, $uuid, &$record): bool
             return false;
         }
     }
-    if ($uuid === 'managed_pages' && array_key_exists('enabled', $record) && !is_bool($record['enabled'])) {
-        data_error_set('VALIDATION_FAILED', 'enabled:boolean');
-        return false;
+    foreach (['enabled', 'navigation_enabled'] as $flag) {
+        if ($uuid === 'managed_pages' && array_key_exists($flag, $record) && !is_bool($record[$flag])) {
+            data_error_set('VALIDATION_FAILED', $flag . ':boolean');
+            return false;
+        }
     }
     if ($uuid === 'managed_pages' && array_key_exists('enabled_page_types', $record)) {
         $enabled = $record['enabled_page_types'];
@@ -89,7 +91,7 @@ function site_settings_validate_config($resource, $uuid, &$record): bool
 /** Custom pages configuration that only system managers may change; editors use the feature, not its setup. */
 function site_settings_managed_pages_restricted_keys(): array
 {
-    return ['enabled', 'enabled_page_types', 'page_types', 'url_areas', 'navigation_slots'];
+    return ['enabled', 'enabled_page_types', 'page_types', 'url_areas', 'navigation_slots', 'navigation_enabled'];
 }
 
 function site_settings_managed_pages_changed_keys(array $old, array $new): array
@@ -103,14 +105,10 @@ function site_settings_managed_pages_changed_keys(array $old, array $new): array
     return $changed;
 }
 
-/** CLI, sync and migrations have no session and are trusted; web requests need manage-system. */
 function site_settings_is_system_manager(): bool
 {
-    if (PHP_SAPI === 'cli') {
-        return true;
-    }
-    load_library('access');
-    return access_by_feature('manage-system');
+    load_library('managed-pages');
+    return managed_pages_is_system_manager();
 }
 
 /** Returns a validation detail for a malformed url_areas or navigation_slots value, or null. */

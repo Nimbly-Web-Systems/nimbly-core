@@ -254,6 +254,15 @@ managed_pages_test_assert(managed_pages_unprefixed_allowed() === true, 'URL area
 managed_pages_test_assert(managed_pages_path_in_area('en/zomer') === false, 'A language outside the configured URL areas was accepted.');
 unset($GLOBALS['test_records']['.config']['managed_pages']['url_areas']);
 
+// Navigation editing is a separate switch; system managers can always edit.
+managed_pages_test_assert(managed_navigation_feature_enabled() === false, 'Navigation editing was on without configuration.');
+managed_pages_test_assert(managed_navigation_editable(false, false) === false, 'Editors could edit navigation while it was off.');
+managed_pages_test_assert(managed_navigation_editable(false, true) === true, 'System managers could not edit navigation while it was off.');
+managed_pages_test_assert(managed_navigation_editable(true, false) === true, 'Editors could not edit navigation while it was on.');
+$GLOBALS['test_records']['.config']['managed_pages']['navigation_enabled'] = true;
+managed_pages_test_assert(managed_navigation_feature_enabled() === true, 'Navigation editing switch was ignored.');
+unset($GLOBALS['test_records']['.config']['managed_pages']['navigation_enabled']);
+
 // Single-language site: unprefixed by default, no configuration needed.
 $write_areas([]);
 $GLOBALS['test_records']['.config']['site']['languages'] = ['en'];

@@ -2,7 +2,10 @@
 
 function managed_navigation_editor_sc($params = null): string
 {
-    load_libraries(['data', 'get', 'set', 'managed-pages', 'managed-navigation']);
+    load_libraries(['data', 'get', 'set', 'access', 'managed-pages', 'managed-navigation']);
+    if (!managed_navigation_editable(managed_navigation_feature_enabled(), access_by_feature('manage-system'))) {
+        access_denied();
+    }
     $slots = managed_navigation_slots();
     $languages = data_lookup('.config', 'site', 'languages', ['en']);
     $slot = (string)($_GET['slot'] ?? array_key_first($slots));

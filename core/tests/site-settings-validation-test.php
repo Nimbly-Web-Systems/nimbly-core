@@ -8,6 +8,7 @@ function data_exists($resource, $uuid = null) { return $resource === '.config' &
 function data_read($resource, $uuid = null) { return $uuid === 'site' ? $GLOBALS['test_site_config'] : []; }
 function data_error_set($error, $detail = null) { $GLOBALS['SYSTEM']['data_error'] = $error; $GLOBALS['SYSTEM']['data_error_detail'] = $detail; }
 
+require_once __DIR__ . '/../modules/managed-pages/lib/managed-pages.php';
 require_once __DIR__ . '/../modules/admin/lib/site-settings/site-settings.php';
 
 function site_settings_validation_assert(bool $condition, string $message): void
@@ -75,4 +76,9 @@ foreach ([
     site_settings_validation_assert(!site_settings_validate_config('.config', 'managed_pages', $bad), "Invalid menu accepted: {$label}.");
 }
 
+site_settings_validation_assert(site_settings_managed_pages_changed_keys(['navigation_enabled' => false], ['navigation_enabled' => true]) === ['navigation_enabled'], 'Switching navigation editing on was not reported as a restricted change.');
+$navigation_on = ['navigation_enabled' => true];
+site_settings_validation_assert(site_settings_validate_config('.config', 'managed_pages', $navigation_on), 'Boolean navigation setting was rejected.');
+$navigation_bad = ['navigation_enabled' => 'yes'];
+site_settings_validation_assert(!site_settings_validate_config('.config', 'managed_pages', $navigation_bad), 'Non-boolean navigation setting was accepted.');
 echo "Site settings validation tests passed.\n";

@@ -10,6 +10,19 @@ function managed_navigation_slots(): array
     return managed_pages_declaration('navigation-slots.json');
 }
 
+/** Whether editors may use the navigation editor (`navigation_enabled`, off by default). */
+function managed_navigation_feature_enabled(): bool
+{
+    load_library('managed-pages');
+    return (managed_pages_config()['navigation_enabled'] ?? false) === true;
+}
+
+/** Editors need the feature switched on; system managers may always edit. */
+function managed_navigation_editable(bool $enabled, bool $is_manager): bool
+{
+    return $enabled || $is_manager;
+}
+
 function managed_navigation_document_id(string $slot, string $language): string
 {
     return preg_replace('/[^a-zA-Z0-9_-]/', '-', $slot . '-' . $language);
@@ -100,6 +113,10 @@ function managed_navigation_validate_record($resource, $uuid, &$record): bool
 {
     if ($resource !== '.navigation' || !is_array($record) || $record === []) {
         return true;
+    }
+    if (!managed_navigation_editable(managed_navigation_feature_enabled(), managed_pages_is_system_manager())) {
+        data_error_set('VALIDATION_FAILED', 'navigation:disabled');
+        return false;
     }
     $slot = (string)($record['slot'] ?? '');
     $language = (string)($record['language'] ?? '');

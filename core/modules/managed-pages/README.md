@@ -6,6 +6,7 @@ Enable it with application-owned configuration in `ext/data/.config/managed_page
 
 - `enabled` turns the feature on; `enabled_page_types` limits the types available for new pages; `page_types` adds application page types or overrides Core types.
 - `url_areas` lists enabled and reserved path prefixes (`enabled`, `reserved`, `include_site_languages`, `allow_unprefixed`).
+- `navigation_enabled` lets editors use the navigation editor (off by default). While off, editors lose the Navigation tab, the editor page and API writes; the saved menus keep rendering on the site. Admins can always edit and see a switch on the Navigation tab.
 - `navigation_slots` declares the editable menus as `{"main": {"name": "Main navigation", "depth": 2}}`. A menu shows on the site only where a template outputs it with `[#managed-navigation slot=main#]`, so adding one is a developer step.
 
 Only users with `manage-system` may change this record through the web or API; editors use the feature but cannot change how it is set up. Older projects may still keep `url-areas.json` and `navigation-slots.json` in `ext/modules/managed-pages/`; they are read only when the matching key is missing from the record.

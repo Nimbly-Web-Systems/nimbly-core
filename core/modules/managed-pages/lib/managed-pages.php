@@ -29,6 +29,16 @@ function managed_pages_feature_enabled(): bool
     return (managed_pages_config()['enabled'] ?? false) === true;
 }
 
+/** CLI, sync and migrations have no session and are trusted; web requests need manage-system. */
+function managed_pages_is_system_manager(): bool
+{
+    if (PHP_SAPI === 'cli') {
+        return true;
+    }
+    load_library('access');
+    return access_by_feature('manage-system');
+}
+
 function managed_pages_types(): array
 {
     $config = managed_pages_config();
