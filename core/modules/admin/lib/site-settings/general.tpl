@@ -1,6 +1,6 @@
 <form x-data="site_settings_general([#_ss.name_json#], [#_ss.description_json#], [#_ss.side_json#], [#_ss.languages_json#])" @submit.prevent="submit" class="max-w-2xl space-y-4">
     <div class="mb-6 border-b border-neutral-200 pb-4">
-        <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-neutral-500">[#text Content language#]</p>
+        <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-neutral-500">[#text Language#]</p>
         <div x-show="languages.length > 1" class="flex flex-wrap" role="tablist">
             <template x-for="language in languages" :key="language"><button type="button" role="tab" @click="active_language = language" :aria-selected="active_language === language" :class="active_language === language ? 'border-b-primary font-semibold text-neutral-900' : 'border-b-transparent text-neutral-500'" class="cursor-pointer border-b-2 px-4 py-2 text-xs uppercase" x-text="language"></button></template>
         </div>

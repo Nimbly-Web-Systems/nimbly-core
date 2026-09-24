@@ -3,12 +3,12 @@
     <label class="flex cursor-pointer items-center justify-between gap-4">
         <span>
             <strong class="block text-sm">[#text Custom pages#]</strong>
-            <span class="text-sm text-neutral-500">[#text While on, editors can add pages and edit the navigation. Turn off to take all custom pages offline; nothing is deleted.#]</span>
+            <span class="text-sm text-neutral-500">[#text While on, editors can add pages. Turn off to take all custom pages offline; nothing is deleted.#]</span>
         </span>
         <input type="checkbox" class="toggle toggle-primary" x-model="pages_enabled" aria-label="[#text Enable custom pages#]">
     </label>
     <div x-show="pages_enabled" x-cloak class="mt-4">
-        <p class="text-sm text-neutral-600">[#text Choose which page types editors may use for new pages. Existing pages keep their type when it is disabled here.#]</p>
+        <p class="text-sm text-neutral-600">[#text Choose the page types editors can use for new pages. Pages that already exist keep theirs.#]</p>
         <fieldset class="mt-3 flex flex-wrap gap-3">
             <legend class="sr-only">[#text Available page types#]</legend>
             <template x-for="type in types" :key="type.id">
@@ -18,7 +18,7 @@
                 </label>
             </template>
         </fieldset>
-        <p class="alert alert-warning mt-3 text-sm" x-show="enabled.length === 0">[#text With no page types enabled, editors cannot create new pages. Existing pages remain available.#]</p>
+        <p class="alert alert-warning mt-3 text-sm" x-show="enabled.length === 0">[#text No page type selected: editors can't add new pages. Existing pages stay as they are.#]</p>
     </div>
     <div class="mt-4 flex items-center gap-3" x-show="dirty" x-cloak>
         <button type="submit" class="[#btn-class-primary#]" :disabled="busy">[#text Save#]</button>

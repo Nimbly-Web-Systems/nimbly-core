@@ -2,6 +2,6 @@
 [#managed-navigation-editor#]
 [#set admin_tab=navigation#]
 [#set admin_header_title="[#text Navigation#]"#]
-[#set admin_header_subtitle="[#text Arrange the menus visitors use to find pages.#]"#]
+[#set admin_header_subtitle="[#text Arrange the links visitors use to find your pages.#]"#]
 [#set page-title="[#text Navigation#]"#]
 [#html#]

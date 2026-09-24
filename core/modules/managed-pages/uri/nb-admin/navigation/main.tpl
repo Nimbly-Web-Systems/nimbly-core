@@ -1,7 +1,7 @@
 <section class="bg-neutral-100 p-3 sm:p-4 md:p-6 lg:p-8 font-primary">
     [#admin-page-header#]
 
-    <p class="max-w-2xl text-sm text-neutral-600">[#text Use the arrow buttons to reorder links and to move them a level in or out.#]</p>
+    <p class="max-w-2xl text-sm text-neutral-600">[#text Use the arrows to reorder links and to nest them under each other.#]</p>
 
     [#managed-navigation-toggle#]
 
@@ -36,14 +36,14 @@
 
     <div class="mt-6" x-data='navigation_editor([#get navigation_editor_config_json echo#])' id="navigation-editor"
         data-text-label="[#text Enter a label for this link.#]"
-        data-text-target="[#text Choose a page or enter a valid destination.#]"
-        data-text-depth="[#text This menu does not allow that many levels.#]"
-        data-text-failed="[#text Navigation could not be saved.#]">
+        data-text-target="[#text Choose a page or enter an address.#]"
+        data-text-depth="[#text This menu can't nest links that deeply.#]"
+        data-text-failed="[#text Couldn't save the menu. Please try again.#]">
         <div x-show="stale" x-cloak class="alert alert-warning" role="alert">
-            <span>[#text This navigation changed after you opened it. Reload to see the latest version; your unsaved edits on this page will be lost.#]</span>
+            <span>[#text This menu was changed while you were editing it. Reload to see the latest version; your unsaved changes here will be lost.#]</span>
             <a class="btn btn-sm" href="">[#text Reload#]</a>
         </div>
-        <p x-show="failed" x-cloak class="alert alert-error" role="alert">[#text Navigation could not be saved.#]</p>
+        <p x-show="failed" x-cloak class="alert alert-error" role="alert">[#text Couldn't save the menu. Please try again.#]</p>
 
         <div class="rounded-box border border-base-300 bg-base-100 p-4">
             <p x-show="!items.length" class="text-sm text-neutral-500">[#text No links yet.#]</p>
@@ -54,12 +54,12 @@
                         <div class="flex flex-wrap items-center gap-2">
                             <input data-field="label" class="input input-bordered input-sm min-w-40 flex-1" x-model="row.item.label"
                                 placeholder="[#text Label#]" aria-label="[#text Label#]">
-                            <select class="select select-bordered select-sm" aria-label="[#text Destination type#]"
+                            <select class="select select-bordered select-sm" aria-label="[#text Link to#]"
                                 :value="row.item.target.kind" @change="set_kind(row.item, $event.target.value)">
                                 <option value="page">[#text Page#]</option>
-                                <option value="internal_url">[#text Internal URL#]</option>
-                                <option value="external_url">[#text External URL#]</option>
-                                <option value="group">[#text Group label#]</option>
+                                <option value="internal_url">[#text Address on this site#]</option>
+                                <option value="external_url">[#text Other website#]</option>
+                                <option value="group">[#text Heading without link#]</option>
                             </select>
                             <template x-if="row.item.target.kind === 'page'">
                                 <select class="select select-bordered select-sm" aria-label="[#text Page#]"
@@ -67,7 +67,7 @@
                                     :class="page_missing(row.item) ? 'select-error' : ''">
                                     <option value="">[#text Choose a page#]</option>
                                     <template x-if="page_missing(row.item)">
-                                        <option :value="row.item.target.value">[#text Missing page#]</option>
+                                        <option :value="row.item.target.value">[#text Page no longer exists#]</option>
                                     </template>
                                     <template x-for="page in pages" :key="page.id">
                                         <option :value="page.id" x-text="page.title + (page.published ? '' : ' ([#text draft#])')"></option>
@@ -75,8 +75,8 @@
                                 </select>
                             </template>
                             <template x-if="row.item.target.kind === 'internal_url' || row.item.target.kind === 'external_url'">
-                                <input class="input input-bordered input-sm min-w-52" x-model="row.item.target.value" aria-label="[#text Destination#]"
-                                    :placeholder="row.item.target.kind === 'external_url' ? 'https://…' : 'path/to/page'">
+                                <input class="input input-bordered input-sm min-w-52" x-model="row.item.target.value" aria-label="[#text Address#]"
+                                    :placeholder="row.item.target.kind === 'external_url' ? 'https://…' : 'en/contact'">
                             </template>
                             <button type="button" class="btn btn-square btn-ghost btn-sm" :disabled="row.index === 0" @click="move(row.item.id, 'up')" aria-label="[#text Move up#]">↑</button>
                             <button type="button" class="btn btn-square btn-ghost btn-sm" :disabled="row.index === row.count - 1" @click="move(row.item.id, 'down')" aria-label="[#text Move down#]">↓</button>

@@ -12,7 +12,7 @@
     <label class="flex cursor-pointer items-center justify-between gap-4">
         <span>
             <strong class="block text-sm">[#text Navigation editing#]</strong>
-            <span class="text-sm text-neutral-500">[#text While on, editors can change the menus. Turn off to lock them; the saved menus stay on the site.#]</span>
+            <span class="text-sm text-neutral-500">[#text While on, editors can change the menus. Turn off to lock them as they are; visitors still see them.#]</span>
         </span>
         <input type="checkbox" class="toggle toggle-primary" x-model="enabled" @change="toggle()" :disabled="busy" aria-label="[#text Enable navigation editing#]">
     </label>
