@@ -1,5 +1,6 @@
 [#access feature=edit-.navigation#]
 [#post#]
 [#managed-navigation-editor#]
+[#set admin_tab=navigation#]
 [#set page-title="[#text Navigation#]"#]
 [#html#]

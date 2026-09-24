@@ -5,6 +5,7 @@
         <span class="text-neutral-700">[#text Settings#]</span>
     </nav>
     <h1 class="mb-4 text-2xl md:text-3xl font-semibold text-neutral-800">[#text Settings#]</h1>
+    [#admin-tabs#]
 </section>
 <section class="bg-neutral-100 px-2 sm:px-4 md:px-6 lg:px-8 pb-10">
     [#site-settings#]

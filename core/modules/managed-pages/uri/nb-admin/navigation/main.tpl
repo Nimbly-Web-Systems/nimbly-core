@@ -2,7 +2,8 @@
     <nav class="mb-2 flex items-center gap-1.5 text-xs font-medium text-neutral-500" aria-label="Breadcrumb">
         [#breadcrumb-home#]<span aria-hidden="true">/</span><span class="text-neutral-700">[#text Navigation#]</span>
     </nav>
-    <h1 class="text-2xl font-semibold text-neutral-800 md:text-3xl">[#text Navigation#]</h1>
+    <h1 class="mb-4 text-2xl font-semibold text-neutral-800 md:text-3xl">[#text Navigation#]</h1>
+    [#admin-tabs#]
     <p class="mt-2 max-w-2xl text-sm text-neutral-600">[#text Arrange links independently from their destination pages. Use the arrow controls from the keyboard or drag items with a pointer.#]</p>
 
     <form method="get" class="mt-6 flex flex-wrap items-end gap-3">

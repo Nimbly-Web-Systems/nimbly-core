@@ -1,0 +1,1 @@
+<a role="tab" href="[#base-url#]/nb-admin/pages" aria-selected="[#if admin_tab=pages echo=true echo_else=false#]" [#if admin_tab=pages echo="aria-current='page' class='tab tab-active whitespace-nowrap font-semibold'" echo_else="class='tab whitespace-nowrap'"#]>[#text Pages#]</a>
