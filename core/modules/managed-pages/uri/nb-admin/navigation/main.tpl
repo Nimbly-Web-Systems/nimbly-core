@@ -1,10 +1,7 @@
 <section class="bg-neutral-100 p-3 sm:p-4 md:p-6 lg:p-8 font-primary">
-    <nav class="mb-2 flex items-center gap-1.5 text-xs font-medium text-neutral-500" aria-label="Breadcrumb">
-        [#breadcrumb-home#]<span aria-hidden="true">/</span><span class="text-neutral-700">[#text Navigation#]</span>
-    </nav>
-    <h1 class="mb-4 text-2xl font-semibold text-neutral-800 md:text-3xl">[#text Navigation#]</h1>
-    [#admin-tabs#]
-    <p class="mt-2 max-w-2xl text-sm text-neutral-600">[#text Arrange links independently from their destination pages. Use the arrow buttons to reorder links and to move them a level in or out.#]</p>
+    [#admin-page-header#]
+
+    <p class="max-w-2xl text-sm text-neutral-600">[#text Use the arrow buttons to reorder links and to move them a level in or out.#]</p>
 
     <form method="get" class="mt-6 flex flex-wrap items-end gap-3">
         <label class="form-control"><span class="label-text">[#text Slot#]</span>

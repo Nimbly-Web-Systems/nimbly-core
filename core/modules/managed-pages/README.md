@@ -28,7 +28,7 @@ prefixes. Without the option, the declaration remains fixed. A resource schema
 may likewise set `"languages": "site"` to resolve its authoring languages from
 the site configuration; explicit language arrays retain their existing behavior.
 
-To keep the Pages overview, add and edit screens inside the admin tab bar, add `"admin_tab": "pages"` to the `pages` resource's `.meta`. Adding `"admin_panel": {"template": "managed-pages-toggle", "feature": "manage-system"}` shows the custom-pages switch above the overview to admins only. While custom pages are off, the Pages and Navigation tabs are hidden from everyone except users with `manage-system`.
+To keep the Pages overview, add and edit screens inside the admin tab bar, add `"admin_tab": "pages"` (and an `"admin_subtitle"` line, so the tab bar sits at the same height as on the other tabs) to the `pages` resource's `.meta`. Adding `"admin_panel": {"template": "managed-pages-toggle", "feature": "manage-system"}` shows the custom-pages panel above the overview to admins only: the on/off switch and the page types editors may use. While custom pages are off, the Pages and Navigation tabs are hidden from everyone except users with `manage-system`.
 
 Pages normally live under their language (`nl/zomer`). Set `"allow_unprefixed": true` in `url-areas.json` to let editors also publish a page without a prefix (`zomer`); the page keeps the language it was authored in, and the path must be unique across all languages and outside the `reserved` list. Without the option, single-language sites allow unprefixed pages and multi-language sites do not. The path field then offers a "Publish without a language prefix" choice on multi-language sites.
 

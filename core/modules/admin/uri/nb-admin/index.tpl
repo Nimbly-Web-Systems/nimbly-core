@@ -1,5 +1,7 @@
 [#access feature=view-admin-dashboard#]
 [#post#]
-[#set admin_tab=dashboard#]
+[#set admin_tab=overview#]
+[#set admin_header_title="[#text Dashboard#]"#]
+[#set admin_header_subtitle="[#text dashboard-subtitle#]"#]
 [#set page-title="[#text Dashboard#]"#]
 [#html#]

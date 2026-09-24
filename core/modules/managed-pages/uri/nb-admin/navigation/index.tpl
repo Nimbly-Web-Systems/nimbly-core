@@ -1,5 +1,7 @@
 [#access feature=edit-.navigation#]
 [#managed-navigation-editor#]
 [#set admin_tab=navigation#]
+[#set admin_header_title="[#text Navigation#]"#]
+[#set admin_header_subtitle="[#text Arrange the menus visitors use to find pages.#]"#]
 [#set page-title="[#text Navigation#]"#]
 [#html#]

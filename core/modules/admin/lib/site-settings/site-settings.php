@@ -102,28 +102,12 @@ function site_settings_sc($params)
     set_variable('_ss.language_rows_json', htmlspecialchars(json_encode($language_rows, JSON_UNESCAPED_UNICODE), ENT_QUOTES, 'UTF-8'));
     set_variable('_ss.language_catalog_json', htmlspecialchars(json_encode($catalog, JSON_UNESCAPED_UNICODE), ENT_QUOTES, 'UTF-8'));
 
-    load_library('managed-pages');
-    $types = managed_pages_types();
-    $managed_config = data_exists('.config', 'managed_pages') ? data_read('.config', 'managed_pages') : [];
-    $pages_enabled = is_array($managed_config) && ($managed_config['enabled'] ?? false) === true;
-    $has_policy = is_array($managed_config) && array_key_exists('enabled_page_types', $managed_config);
-    $enabled = $has_policy && is_array($managed_config['enabled_page_types']) ? $managed_config['enabled_page_types'] : array_keys($types);
-    $type_rows = [];
-    foreach ($types as $id => $definition) {
-        if (is_array($definition) && !empty($definition['name']) && !empty($definition['template'])) {
-            $type_rows[] = ['id' => (string)$id, 'name' => (string)$definition['name'], 'description' => (string)($definition['description'] ?? '')];
-        }
-    }
-    set_variable('_ss.page_types_json', htmlspecialchars(json_encode($type_rows, JSON_UNESCAPED_UNICODE), ENT_QUOTES, 'UTF-8'));
-    set_variable('_ss.enabled_page_types_json', htmlspecialchars(json_encode(array_values($enabled), JSON_UNESCAPED_UNICODE), ENT_QUOTES, 'UTF-8'));
-    set_variable('_ss.pages_enabled_json', $pages_enabled ? 'true' : 'false');
-
     $section = (string)($_GET['section'] ?? 'general');
-    if (!in_array($section, ['general', 'languages', 'page-templates'], true)) {
+    if (!in_array($section, ['general', 'languages'], true)) {
         $section = 'general';
     }
     set_variable('_ss.section', $section);
-    $templates = ['general' => 'general.tpl', 'languages' => 'languages.tpl', 'page-templates' => 'page-templates.tpl'];
+    $templates = ['general' => 'general.tpl', 'languages' => 'languages.tpl'];
     set_variable('_ss.content', run_buffered(dirname(__FILE__) . '/' . $templates[$section]));
 
     return run_buffered(dirname(__FILE__) . '/panel.tpl');

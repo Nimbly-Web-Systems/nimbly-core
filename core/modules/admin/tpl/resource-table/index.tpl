@@ -27,7 +27,7 @@
             [#feature-cond features="export-[#resource-id#]" tpl=btn_export#]
         </span>
     </div>
-    <div class="mt-4">[#admin-resource-tabs panel=true#]</div>
+    [#admin-resource-tabs panel=true#]
 
     <div class="mt-4 rounded-box border border-base-300 bg-base-100 p-2 sm:p-3">
         <div class="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">

@@ -76,15 +76,4 @@ document.addEventListener("alpine:init", () => {
             });
         },
     }));
-
-    Alpine.data("site_settings_page_types", (types, enabled, pages_enabled) => ({
-        busy: false, saved: false, types, enabled, pages_enabled,
-        original: json({ enabled, pages_enabled }),
-        init() { warn_if_dirty(this); },
-        get dirty() { return json({ enabled: this.enabled, pages_enabled: this.pages_enabled }) !== this.original; },
-        submit() {
-            return save("/api/v1/.config/managed_pages", { enabled: this.pages_enabled, enabled_page_types: this.enabled }, this, "Custom pages saved")
-                .then(ok => { if (ok) this.original = json({ enabled: this.enabled, pages_enabled: this.pages_enabled }); });
-        },
-    }));
 });

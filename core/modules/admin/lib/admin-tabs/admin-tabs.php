@@ -6,7 +6,7 @@ load_library('set');
 /**
  * Top-level admin tab bar. Which tabs show is decided here from the user's
  * features; the markup lives in tabs.tpl and the admin-tab-* templates.
- * Pages set `admin_tab` (dashboard|pages|navigation|settings) to mark the active tab.
+ * Pages set `admin_tab` (overview|pages|navigation|settings) to mark the active tab.
  */
 function admin_tabs_sc($params)
 {
@@ -17,7 +17,7 @@ function admin_tabs_sc($params)
     $available = managed_pages_feature_enabled() || access_by_feature('manage-system');
     $show_pages = $available && access_by_feature('view-pages');
     $show_navigation = $available && access_by_feature('edit-.navigation') && managed_navigation_slots() !== [];
-    $show_settings = access_by_feature('edit-.config,view-users,view-roles,view-.routes');
+    $show_settings = access_by_feature('edit-.config');
 
     set_variable('_at.show_pages', $show_pages ? 'true' : 'false');
     set_variable('_at.show_navigation', $show_navigation ? 'true' : 'false');

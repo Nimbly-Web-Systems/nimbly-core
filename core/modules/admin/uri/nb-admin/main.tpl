@@ -1,16 +1,5 @@
 <section class="bg-neutral-100 p-3 sm:p-4 md:p-6 lg:p-8 font-primary">
-    <nav class="mb-2 flex items-center gap-1.5 text-xs font-medium text-neutral-500" aria-label="Breadcrumb">
-        [#breadcrumb-home#]
-        <span aria-hidden="true">/</span>
-        <span class="text-neutral-700">[#text Dashboard#]</span>
-    </nav>
-    <div class="flex flex-col items-stretch gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
-        <div class="min-w-0">
-            <h1 class="text-2xl md:text-3xl font-semibold text-neutral-800">[#text Dashboard#]</h1>
-            <h3 class="text-sm md:text-base pt-1 pb-2 text-neutral-700">[#text dashboard-subtitle#]</h3>
-        </div>
-    </div>
-    [#admin-tabs#]
+    [#admin-page-header#]
 </section>
 <section class="bg-neutral-100 px-3 pb-10 sm:px-4 md:px-6 lg:px-8">
     [#dashboard#]

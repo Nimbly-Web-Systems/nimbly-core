@@ -1,4 +1,6 @@
-[#access feature=edit-.config,view-users,view-roles,view-.routes#]
+[#access feature=edit-.config#]
 [#set admin_tab=settings#]
+[#set admin_header_title="[#text Settings#]"#]
+[#set admin_header_subtitle="[#text Site identity and languages.#]"#]
 [#set page-title="[#text Settings#]"#]
 [#html#]
