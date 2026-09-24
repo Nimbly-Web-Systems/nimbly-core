@@ -26,7 +26,13 @@ $remove = ['languages' => ['en', 'nl']];
 site_settings_validation_assert(!site_settings_validate_config('.config', 'site', $remove), 'Language removal was accepted.');
 
 $reorder = ['languages' => ['nl', 'en', 'pt']];
-site_settings_validation_assert(!site_settings_validate_config('.config', 'site', $reorder), 'Language reorder was accepted.');
+site_settings_validation_assert(site_settings_validate_config('.config', 'site', $reorder), 'Choosing another default language was rejected.');
+
+$reorder_and_add = ['languages' => ['nl', 'en', 'pt', 'de']];
+site_settings_validation_assert(!site_settings_validate_config('.config', 'site', $reorder_and_add), 'A reorder combined with an added language was accepted.');
+
+$swap_one = ['languages' => ['en', 'nl', 'de']];
+site_settings_validation_assert(!site_settings_validate_config('.config', 'site', $swap_one), 'Replacing a language was accepted.');
 
 $unsupported = ['languages' => ['en', 'nl', 'pt', 'xx']];
 site_settings_validation_assert(!site_settings_validate_config('.config', 'site', $unsupported), 'Unsupported language was accepted.');

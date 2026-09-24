@@ -57,6 +57,13 @@ document.addEventListener("alpine:init", () => {
     });
 
     Alpine.data("site_settings_languages", (configured, catalog) => ({
+        // The first language is the default: put the chosen one first, keep the rest in order.
+        make_default(code) {
+            const order = [code, ...this.configured.map(language => language.code).filter(other => other !== code)];
+            return save("/api/v1/.config/site", { languages: order }, this, "Default language changed").then(ok => {
+                if (ok) location.reload();
+            });
+        },
         busy: false, saved: false, configured, catalog, new_language: "", original: json(configured),
         init() { warn_if_dirty(this); },
         get dirty() { return this.new_language !== ""; },

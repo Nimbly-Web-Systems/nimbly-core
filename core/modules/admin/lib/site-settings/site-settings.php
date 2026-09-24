@@ -29,13 +29,23 @@ function site_settings_validate_config($resource, $uuid, &$record): bool
         $existing = data_exists('.config', 'site') ? data_read('.config', 'site') : [];
         $old_languages = is_array($existing['languages'] ?? null) ? array_values($existing['languages']) : [];
         $languages = array_values($languages);
-        if ($old_languages !== [] && (
-            count($languages) < count($old_languages)
-            || count($languages) > count($old_languages) + 1
-            || array_slice($languages, 0, count($old_languages)) !== $old_languages
-        )) {
-            data_error_set('VALIDATION_FAILED', 'languages:append-only');
+        // A language may be added, or the same languages put in a new order
+        // (the first one is the default); removing one would orphan its content.
+        $reordered = count($languages) === count($old_languages) && array_diff($languages, $old_languages) === [];
+        $appended = count($languages) === count($old_languages) + 1
+            && array_slice($languages, 0, count($old_languages)) === $old_languages;
+        if ($old_languages !== [] && !$reordered && !$appended) {
+            data_error_set('VALIDATION_FAILED', 'languages:append-or-reorder');
             return false;
+        }
+        if ($reordered && $languages[0] !== $old_languages[0]) {
+            // A plain-text name or description shows in every language today; keep it that way, but
+            // as per-language values, so it does not silently become the new default language's text.
+            foreach (['name', 'description'] as $field) {
+                if (isset($record[$field]) && is_string($record[$field])) {
+                    $record[$field] = array_fill_keys($languages, $record[$field]);
+                }
+            }
         }
         $catalog = site_settings_language_catalog();
         foreach (array_slice($languages, count($old_languages)) as $language) {

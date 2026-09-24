@@ -50,9 +50,20 @@ $added = data_update('.config', 'site', ['languages' => ['en', 'nl', 'pt', 'de']
 site_settings_data_assert(is_array($added) && $added['languages'][3] === 'de', 'Supported language append failed through data_update().');
 
 $before_invalid = file_get_contents($fixture . '/.config/site');
-$invalid = data_update('.config', 'site', ['languages' => ['nl', 'en', 'pt', 'de']]);
-site_settings_data_assert($invalid === false, 'Language reorder was accepted through data_update().');
+foreach ([['nl', 'en', 'pt'], ['nl', 'en', 'pt', 'de', 'fr'], ['en', 'nl', 'pt', 'fr']] as $invalid_languages) {
+    $invalid = data_update('.config', 'site', ['languages' => $invalid_languages]);
+    site_settings_data_assert($invalid === false, 'Invalid language change was accepted through data_update(): ' . implode(',', $invalid_languages));
+}
 site_settings_data_assert(file_get_contents($fixture . '/.config/site') === $before_invalid, 'Rejected language update partially changed the record.');
+
+$reordered = data_update('.config', 'site', ['languages' => ['nl', 'en', 'pt', 'de']]);
+site_settings_data_assert(is_array($reordered) && $reordered['languages'] === ['nl', 'en', 'pt', 'de'], 'Choosing another default language failed through data_update().');
+site_settings_data_assert($reordered['name']['nl'] === 'Naam' && $reordered['name']['en'] === 'New name', 'Changing the default language altered stored translations.');
+
+data_update('.config', 'site', ['name' => 'Plain name', 'description' => 'Plain description']);
+$plain = data_update('.config', 'site', ['languages' => ['en', 'nl', 'pt', 'de']]);
+site_settings_data_assert(is_array($plain) && $plain['name'] === ['en' => 'Plain name', 'nl' => 'Plain name', 'pt' => 'Plain name', 'de' => 'Plain name'], 'Plain-text name was not kept visible in every language.');
+site_settings_data_assert($plain['description'] === ['en' => 'Plain description', 'nl' => 'Plain description', 'pt' => 'Plain description', 'de' => 'Plain description'], 'Plain-text description was not kept visible in every language.');
 
 site_settings_data_remove_fixture($fixture);
 echo "Site settings data tests passed.\n";
