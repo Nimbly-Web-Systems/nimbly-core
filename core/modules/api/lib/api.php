@@ -452,6 +452,10 @@ function resource_id_put($resource, $uuid) { // update one
     if (data_error_get() === 'RESOURCE_EXISTS') {
         return json_result(array('message' => 'RESOURCE_EXISTS'), 409);
     }
+    if (data_error_get() === 'VALIDATION_FAILED') {
+        $detail = preg_replace('/[^a-zA-Z0-9_.:-]+/', '', (string)data_error_detail_get());
+        return json_result(array('message' => 'INVALID_DATA', 'detail' => $detail), 422);
+    }
     return json_result(array('message' => 'RESOURCE_UPDATE_FAILED'), 500);
 }
 
