@@ -14,8 +14,7 @@
         <textarea :id="'site_description_' + active.description" :value="value('description')" @input="set_value('description', $event.target.value)" rows="3" class="textarea textarea-bordered w-full"></textarea>
     </div>
     <div class="py-5">
-        <p class="mb-1 text-sm font-medium">[#text Languages#]</p>
-        <p class="mb-3 text-sm text-neutral-500">[#text str="Visitors see the site in their own language when it is available, and in the default language when it is not."#]</p>
+        <p class="mb-2 text-sm font-medium">[#text Languages#]</p>
         <div class="flex flex-wrap items-center gap-2">
             <template x-for="(language, index) in languages" :key="language.code">
                 <div class="dropdown">
@@ -31,7 +30,6 @@
             </select>
         </div>
         <p class="mt-2 text-xs text-warning" x-show="dirty" x-cloak>[#text Save your other changes before changing languages.#]</p>
-        <p class="mt-2 text-xs text-neutral-500">[#text Language changes are saved right away. A new language starts empty: add its translations to your pages and menus.#]</p>
     </div>
     [#_ss.pages_row#]
     [#_ss.navigation_row#]
@@ -41,7 +39,6 @@
             <div class="join" x-show="codes.length > 1" role="group" aria-label="[#text str="Language of the text direction"#]"><template x-for="code in codes" :key="code"><button type="button" class="btn join-item btn-xs uppercase" :class="active.direction === code && 'btn-active'" :aria-pressed="active.direction === code" @click="active.direction = code" x-text="code"></button></template></div>
         </div>
         <select :id="'text_direction_' + active.direction" :value="value('direction')" @change="set_value('direction', $event.target.value)" class="select select-bordered w-full"><option value="ltr">[#text Left to right#]</option><option value="rtl">[#text Right to left#]</option></select>
-        <p class="mt-1 text-xs text-neutral-500">[#text str="How the site's text runs in this language. Arabic, Persian and Hebrew start right to left."#]</p>
     </div>
     <div class="py-5">
         <div class="mb-1 flex flex-wrap items-center justify-between gap-2">
@@ -49,7 +46,6 @@
             <div class="join" x-show="codes.length > 1" role="group" aria-label="[#text Language of the sidebar position#]"><template x-for="code in codes" :key="code"><button type="button" class="btn join-item btn-xs uppercase" :class="active.side === code && 'btn-active'" :aria-pressed="active.side === code" @click="active.side = code" x-text="code"></button></template></div>
         </div>
         <select :id="'nimblybar_side_' + active.side" :value="value('side')" @change="set_value('side', $event.target.value)" class="select select-bordered w-full"><option value="left">[#text Left#]</option><option value="right">[#text Right#]</option></select>
-        <p class="mt-1 text-xs text-neutral-500">[#text str="Set per language. Right-to-left languages start with the sidebar on the right."#]</p>
     </div>
     <div class="flex items-center gap-3 pt-5"><button type="submit" class="[#btn-class-primary#]" :disabled="busy || !dirty" x-text="busy ? '[#text Saving…#]' : '[#text Save#]'"></button><span class="text-sm text-neutral-500" x-show="dirty" x-cloak>[#text Unsaved changes#]</span></div>
 </form>
