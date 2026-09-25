@@ -7,6 +7,7 @@ function maintenance_tasks(): array
         ['id' => 'sessions-prune', 'command' => 'sessions:prune', 'every_minutes' => 30],
         ['id' => 'jobs-run', 'command' => 'jobs:run 10', 'every_minutes' => 1],
         ['id' => 'jobs-prune', 'command' => 'jobs:prune --days=30', 'every_minutes' => 1440],
+        ['id' => 'stats-rollup', 'command' => 'stats:rollup', 'every_minutes' => 60],
     ];
 }
 

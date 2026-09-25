@@ -14,7 +14,7 @@ maintenance_test_assert(count(scheduler_orchestrator_projects(['projects' => [
 maintenance_test_assert(!isset(scheduler_orchestrator_default_config()['default_delay_after_seconds']), 'no inter-project delay setting');
 $now = time();
 $state = ['tasks' => []];
-maintenance_test_assert(count(maintenance_health($state, $now)) === 3, 'never-run tasks unhealthy');
+maintenance_test_assert(count(maintenance_health($state, $now)) === count(maintenance_tasks()), 'never-run tasks unhealthy');
 foreach (maintenance_tasks() as $task) {
     $state['tasks'][$task['id']] = ['last_success_at' => $now, 'last_exit_code' => 0];
 }
@@ -36,7 +36,7 @@ foreach (['schedule.php', 'schedule_status.php', 'cli_bootstrap.inc'] as $file) 
 symlink($root . 'core/cli/helpers/output.php', $tmp . '/core/cli/helpers/output.php');
 file_put_contents($tmp . '/.env', "APP_ENV=stage\n");
 $commands = [];
-foreach (['sessions:prune', 'jobs:run', 'jobs:prune', 'app:test'] as $command) {
+foreach (['sessions:prune', 'jobs:run', 'jobs:prune', 'stats:rollup', 'app:test'] as $command) {
     $commands[$command] = ['file' => 'ext/cli/task.php', 'desc' => 'fixture'];
 }
 file_put_contents($tmp . '/ext/cli/commands.php', '<?php return ' . var_export($commands, true) . ';');
@@ -49,11 +49,11 @@ function maintenance_test_run(string $tmp, string $args): array {
 try {
     file_put_contents($tmp . '/ext/cli/schedule.stage.inc', '<?php return [];');
     [$code, $output] = maintenance_test_run($tmp, 'schedule:run --dry-run');
-    maintenance_test_assert($code === 0 && substr_count($output, 'due  ') === 3, 'empty ext schedule still includes maintenance');
+    maintenance_test_assert($code === 0 && substr_count($output, 'due  ') === count(maintenance_tasks()), 'empty ext schedule still includes maintenance');
     maintenance_test_assert(!file_exists($tmp . '/calls') && !file_exists($tmp . '/ext/data/.state/schedule'), 'dry-run no commands or state');
     [$code, $output] = maintenance_test_run($tmp, 'schedule:run');
     maintenance_test_assert($code === 0, 'overridden implementations succeed: ' . $output);
-    maintenance_test_assert(file($tmp . '/calls', FILE_IGNORE_NEW_LINES) === ['sessions:prune','jobs:run','jobs:prune'], 'each ext implementation runs once');
+    maintenance_test_assert(file($tmp . '/calls', FILE_IGNORE_NEW_LINES) === ['sessions:prune','jobs:run','jobs:prune','stats:rollup'], 'each ext implementation runs once');
     maintenance_test_assert(maintenance_test_run($tmp, 'schedule:status')[0] === 0, 'status observes successful completion');
     unlink($tmp . '/ext/data/.state/schedule');
     file_put_contents($tmp . '/ext/cli/schedule.stage.inc', '<?php return ' . var_export([
@@ -63,12 +63,12 @@ try {
     ], true) . ';');
     file_put_contents($tmp . '/calls', '');
     [$code, $output] = maintenance_test_run($tmp, 'schedule:run');
-    maintenance_test_assert($code === 0 && count(file($tmp . '/calls')) === 4, 'duplicates removed, app task preserved');
+    maintenance_test_assert($code === 0 && count(file($tmp . '/calls')) === count(maintenance_tasks()) + 1, 'duplicates removed, app task preserved');
     unlink($tmp . '/ext/data/.state/schedule');
     file_put_contents($tmp . '/ext/cli/schedule.stage.inc', '<?php syntax error');
     file_put_contents($tmp . '/calls', '');
     [$code, $output] = maintenance_test_run($tmp, 'schedule:run');
-    maintenance_test_assert($code !== 0 && count(file($tmp . '/calls')) === 3, 'malformed app schedule cannot prevent mandatory tasks');
+    maintenance_test_assert($code !== 0 && count(file($tmp . '/calls')) === count(maintenance_tasks()), 'malformed app schedule cannot prevent mandatory tasks');
     unlink($tmp . '/ext/data/.state/schedule');
     file_put_contents($tmp . '/ext/cli/schedule.stage.inc', '<?php return [];');
     touch($tmp . '/fail');

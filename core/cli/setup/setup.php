@@ -228,6 +228,13 @@ if (empty($pepper)) {
     echo "Generated new PEPPER: $pepper\n";
 }
 
+// Stats archive key: losing it makes the encrypted raw request history unreadable
+$stats_key = getenv('STATS_KEY') ?: ($env['STATS_KEY'] ?? '');
+if (empty($stats_key)) {
+    $stats_key = bin2hex(random_bytes(32));
+    echo "Generated new STATS_KEY. Back it up: it decrypts the request stats archive.\n";
+}
+
 // Write/update .env
 if (!file_exists($env_file)) {
     $env_lines = [
@@ -239,6 +246,7 @@ if (!file_exists($env_file)) {
         $env_lines[] = 'BASE_PATH=' . $base_path;
     }
     $env_lines[] = 'PEPPER=' . $pepper;
+    $env_lines[] = 'STATS_KEY=' . $stats_key;
 
     $env_content = implode("\n", $env_lines) . "\n";
     file_put_contents($env_file, $env_content);
@@ -262,6 +270,11 @@ if (!file_exists($env_file)) {
 
     if (!isset($env['PEPPER']) || trim($env['PEPPER']) === '') {
         $env_lines = nb_env_set($env_lines, 'PEPPER', $pepper);
+        $changed = true;
+    }
+
+    if (!isset($env['STATS_KEY']) || trim($env['STATS_KEY']) === '') {
+        $env_lines = nb_env_set($env_lines, 'STATS_KEY', $stats_key);
         $changed = true;
     }
 

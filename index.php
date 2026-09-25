@@ -39,6 +39,8 @@ foreach ($SYSTEM['env_paths'] as $env_path) {
 }
 load_library('fatal-alert');
 fatal_alert_register();
+load_library('stats');
+stats_register();
 load_library('run');
 run_uri($SYSTEM['request_uri']);
 
