@@ -18,8 +18,9 @@ function seo_page_sc($params = null)
 function seo_site_root(): string
 {
     load_library('data');
+    load_library('env');
 
-    $configured = trim((string)(getenv('SITE_URL') ?: ''));
+    $configured = trim((string)env('SITE_URL', ''));
     if ($configured === '') {
         $configured = trim((string)data_lookup('.config', 'site', 'site_url', ''));
     }
