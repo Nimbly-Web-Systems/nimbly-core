@@ -57,6 +57,7 @@ function dashboard_sc($params)
 
     $body = dashboard_attention_section();
     $body .= dashboard_site_status_section($can_pull_ext, $can_pull_core);
+    $body .= dashboard_stats_section();
     $body .= dashboard_data_section();
     $body .= dashboard_manage_section();
     set_variable('_dash.body', $body);
@@ -139,6 +140,72 @@ function dashboard_system_status_item(): string
             ? '<a href="' . base_url_sc() . '/nb-admin/.routes" class="' . dashboard_touch_link_class() . '">Dynamic routing</a>'
             : '')
         . '</li>';
+}
+
+/** Visits over the last 30 days, compared with the 30 days before. */
+function dashboard_stats_section(): string
+{
+    if (!access_by_feature('view-stats')) {
+        return '';
+    }
+    load_library('stats');
+    $days = stats_recent_days(60);
+    $current = array_slice($days, 30, null, true);
+    $totals = dashboard_stats_totals($current);
+    $previous = dashboard_stats_totals(array_slice($days, 0, 30, true));
+
+    set_variable('_dash.stats_enabled', stats_enabled() ? 'true' : 'false');
+    set_variable('_dash.stats_has_data', array_filter($current) ? 'true' : 'false');
+    set_variable('_dash.stats_visits', number_format($totals['visits']));
+    set_variable('_dash.stats_pageviews', number_format($totals['pageviews']));
+    set_variable('_dash.stats_bots', number_format($totals['bots']));
+    set_variable('_dash.stats_visits_change', dashboard_stats_change($totals['visits'], $previous['visits']));
+    set_variable('_dash.stats_pageviews_change', dashboard_stats_change($totals['pageviews'], $previous['pageviews']));
+    set_variable('_dash.stats_scanners', number_format($totals['scanners']));
+    set_variable('_dash.stats_days', dashboard_stats_bars($current));
+    set_variable('_dash.stats_first_day', date('j M', strtotime(array_key_first($current))));
+    return run_buffered(dirname(__FILE__) . '/stats-band.tpl');
+}
+
+function dashboard_stats_totals(array $days): array
+{
+    $totals = ['visits' => 0, 'pageviews' => 0, 'bots' => 0, 'scanners' => 0];
+    foreach (array_filter($days) as $day) {
+        $class = (array)($day['class'] ?? []);
+        $totals['visits'] += (int)($day['visitors'] ?? 0);
+        $totals['pageviews'] += (int)($day['pageviews'] ?? 0);
+        $totals['scanners'] += (int)($class['scanner'] ?? 0) + (int)($class['suspect'] ?? 0);
+        $totals['bots'] += (int)($class['bot'] ?? 0) + (int)($class['tool'] ?? 0)
+            + (int)($class['scanner'] ?? 0) + (int)($class['suspect'] ?? 0);
+    }
+    return $totals;
+}
+
+function dashboard_stats_change(int $current, int $previous): string
+{
+    if ($previous === 0) {
+        return 'No earlier period yet';
+    }
+    $change = (int)round(($current - $previous) / $previous * 100);
+    return ($change > 0 ? '+' : '') . $change . '% vs previous 30 days';
+}
+
+/** One bar per day, scaled to the busiest day of the period. */
+function dashboard_stats_bars(array $days): array
+{
+    $max = max(1, ...array_values(array_map(fn($day) => (int)($day['pageviews'] ?? 0), $days)));
+    $today = date('Y-m-d');
+    $bars = [];
+    foreach ($days as $date => $day) {
+        $views = (int)($day['pageviews'] ?? 0);
+        $bars[$date] = [
+            'height' => $views > 0 ? max(3, (int)round($views / $max * 100)) : 0,
+            'today' => $date === $today ? 1 : 0,
+            'title' => date('D j M', strtotime($date)) . ': ' . number_format($views) . ' pageviews, '
+                . number_format((int)($day['visitors'] ?? 0)) . ' visits' . ($date === $today ? ' (so far)' : ''),
+        ];
+    }
+    return $bars;
 }
 
 function dashboard_data_section(): string

@@ -79,6 +79,7 @@ function role_permissions_system_features(): array
         'edit-inline-content' => ['label' => 'Inline editing', 'description' => 'Edit page content directly on the live site.'],
         'view-system-log' => ['label' => 'View system log', 'description' => 'See recorded system events and errors.'],
         'clear-system-log' => ['label' => 'Clear system log', 'description' => 'Clear the recorded system log.'],
+        'view-stats' => ['label' => 'View visitor statistics', 'description' => 'See visits, page views and bot traffic on the dashboard.'],
         'view-debug' => ['label' => 'View debug info', 'description' => 'See technical debug information.'],
         'clear-cache' => ['label' => 'Clear cache', 'description' => 'Clear cached data to force a refresh.'],
         'pull-core-updates' => ['label' => 'Pull core updates', 'description' => 'Update Nimbly itself to the latest version.'],

@@ -71,6 +71,7 @@ function permission_any_features(): array
         'export-roles',
         'view-system-log',
         'clear-system-log',
+        'view-stats',
         'view-debug',
         'clear-cache',
         'pull-core-updates',

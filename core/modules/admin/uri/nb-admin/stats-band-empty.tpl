@@ -1,0 +1,1 @@
+<p class="text-sm text-neutral-500">[#if _dash.stats_enabled=true echo="No visits recorded yet. The first numbers appear as soon as the site gets traffic."#][#if _dash.stats_enabled=false echo="Visit statistics are not recorded in this environment."#]</p>

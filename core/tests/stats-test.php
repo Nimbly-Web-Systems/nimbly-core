@@ -132,6 +132,11 @@ stats_assert($september['paths']['/news'] === ['hits' => 3, 'ms' => 60, 'status'
 stats_assert($september['bots']['Googlebot'] === 1 && $september['enriched_days'] === 1, 'bots and enriched days per month');
 stats_assert($year['total']['requests'] === 9 && !is_file($out . '/summary.json'), 'year total, no summary file');
 
+$recent = stats_recent_days(4, '2026-09-24', $tmp, $out);
+stats_assert(array_keys($recent) === ['2026-09-21', '2026-09-22', '2026-09-23', '2026-09-24'], 'recent days oldest first');
+stats_assert($recent['2026-09-21'] === null && $recent['2026-09-23']['requests'] === 8, 'archived days from month file');
+stats_assert($recent['2026-09-24']['requests'] === 1 && is_file($tmp . '/cache-2026-09-24.json'), 'today counted from running log and cached');
+
 // Idempotence: a rebuild from raw produces the same files, and late lines are appended.
 $before = file_get_contents($out . '/months/2026-09.json');
 stats_assert(stats_rollup('2026-09-24', true, $tmp, $out, $key) === [], 'nothing left to archive');

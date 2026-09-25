@@ -1,5 +1,7 @@
 <?php
 
+load_library('env');
+
 /*
  * Request statistics without cookies or JavaScript.
  *
@@ -21,7 +23,6 @@ const STATS_ARCHIVE_MAGIC = 'NBS1';
 
 function stats_register(): void
 {
-    load_library('env');
     if (PHP_SAPI === 'cli' || !stats_enabled()) {
         return;
     }
@@ -151,7 +152,6 @@ function stats_rollup_quietly(): void
  */
 function stats_rollup(?string $today = null, bool $rebuild = false, ?string $tmp_dir = null, ?string $stats_dir = null, ?string $key = null): ?array
 {
-    load_library('env');
     $tmp_dir ??= stats_tmp_dir();
     $stats_dir ??= stats_dir();
     $today ??= date('Y-m-d');
@@ -209,6 +209,7 @@ function stats_archive_day(string $date, string $tmp_dir, string $stats_dir, str
         unlink($overflow);
     }
     stats_append_archive($running, stats_raw_path($stats_dir, $date, 'app'), $key);
+    @unlink($tmp_dir . '/cache-' . $date . '.json');
     stats_append_archive($tmp_dir . '/apache-' . $date . '.log', stats_raw_path($stats_dir, $date, 'apache'), $key);
 }
 
@@ -288,6 +289,64 @@ function stats_read_lines(string $file, string $key): iterable
     }
 }
 
+/** @return iterable<array> */
+function stats_read_running_lines(string $file): iterable
+{
+    $in = @fopen($file, 'rb');
+    if ($in === false) {
+        return;
+    }
+    while (($line = fgets($in)) !== false) {
+        $entry = json_decode($line, true);
+        if (is_array($entry)) {
+            yield $entry;
+        }
+    }
+    fclose($in);
+}
+
+/**
+ * Day counts for the last $count days up to today, oldest first; null for a
+ * day without data. Days not yet archived are counted from their running log.
+ */
+function stats_recent_days(int $count, ?string $today = null, ?string $tmp_dir = null, ?string $stats_dir = null): array
+{
+    $today ??= date('Y-m-d');
+    $tmp_dir ??= stats_tmp_dir();
+    $stats_dir ??= stats_dir();
+    $months = [];
+    $days = [];
+    for ($offset = $count - 1; $offset >= 0; $offset--) {
+        $date = date('Y-m-d', strtotime($today . ' 12:00 -' . $offset . ' days'));
+        $running = $tmp_dir . '/running-' . $date . '.log';
+        if (is_file($running)) {
+            $days[$date] = stats_running_day($running, $tmp_dir . '/cache-' . $date . '.json');
+            continue;
+        }
+        $month = substr($date, 0, 7);
+        if (!isset($months[$month])) {
+            $file = $stats_dir . '/months/' . $month . '.json';
+            $months[$month] = is_file($file) ? (array)(json_decode((string)file_get_contents($file), true)['days'] ?? []) : [];
+        }
+        $days[$date] = $months[$month][$date] ?? null;
+    }
+    return $days;
+}
+
+/** Counts of a running log, cached for a few minutes because it keeps growing. */
+function stats_running_day(string $running, string $cache): array
+{
+    if (is_file($cache) && filemtime($cache) > time() - 300) {
+        $day = json_decode((string)file_get_contents($cache), true);
+        if (is_array($day)) {
+            return $day;
+        }
+    }
+    $day = stats_summarize_day([fn() => stats_read_running_lines($running)], false);
+    @file_put_contents($cache, json_encode($day));
+    return $day;
+}
+
 function stats_raw_months(string $stats_dir): array
 {
     $months = [];
@@ -315,10 +374,11 @@ function stats_write_month(string $month, string $stats_dir, string $key, ?array
         $dates = array_keys($dates);
     }
     foreach ($dates as $date) {
+        $app = stats_raw_path($stats_dir, $date, 'app');
+        $apache = stats_raw_path($stats_dir, $date, 'apache');
         $days[$date] = stats_summarize_day(
-            stats_raw_path($stats_dir, $date, 'app'),
-            stats_raw_path($stats_dir, $date, 'apache'),
-            $key
+            [fn() => stats_read_lines($app, $key), fn() => stats_read_lines($apache, $key)],
+            is_file($apache)
         );
     }
     ksort($days);
@@ -333,25 +393,28 @@ function stats_write_json(string $path, array $data): void
     rename($tmp, $path);
 }
 
-/** Two streaming passes: first per-IP behaviour, then classified totals. */
-function stats_summarize_day(string $app_file, string $apache_file, string $key): array
+/**
+ * Two streaming passes: first per-IP behaviour, then classified totals.
+ * @param callable[] $readers each returns an iterable of entries
+ */
+function stats_summarize_day(array $readers, bool $enriched): array
 {
     $behaviour = [];
-    foreach ([$app_file, $apache_file] as $file) {
-        foreach (stats_read_lines($file, $key) as $entry) {
+    foreach ($readers as $reader) {
+        foreach ($reader() as $entry) {
             if (isset($entry['ip'], $entry['t'])) {
                 stats_observe_behaviour($behaviour, $entry);
             }
         }
     }
     $day = [
-        'requests' => 0, 'pageviews' => 0, 'visitors' => 0, 'enriched' => is_file($apache_file), 'overflow' => 0,
+        'requests' => 0, 'pageviews' => 0, 'visitors' => 0, 'enriched' => $enriched, 'overflow' => 0,
         'status' => [], 'route' => [], 'class' => [], 'device' => [], 'browser' => [], 'language' => [],
         'bots' => [], 'referrers' => [], 'paths' => [],
     ];
     $visitors = [];
-    foreach ([$app_file, $apache_file] as $file) {
-        foreach (stats_read_lines($file, $key) as $entry) {
+    foreach ($readers as $reader) {
+        foreach ($reader() as $entry) {
             if (isset($entry['overflow'])) {
                 $day['overflow'] += (int)$entry['overflow'];
                 continue;
