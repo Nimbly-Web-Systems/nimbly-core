@@ -20,5 +20,8 @@ function git_pull_sc() {
         $response['error'] = false;
     }
 
+    load_library('app-build');
+    $response['assets_stale'] = app_build_stale();
+
     return json_encode($response);
 }

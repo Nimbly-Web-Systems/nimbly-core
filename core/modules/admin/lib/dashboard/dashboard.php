@@ -51,6 +51,12 @@ function dashboard_sc($params)
     set_variable('_dash.low_disk', $low_disk ? 'true' : 'false');
     set_variable('_dash.can_pull_ext', $can_pull_ext ? 'true' : 'false');
     set_variable('_dash.can_pull_core', $can_pull_core ? 'true' : 'false');
+    $assets_stale = false;
+    if ($can_pull_core) {
+        load_library('app-build');
+        $assets_stale = app_build_stale();
+    }
+    set_variable('_dash.assets_stale', $assets_stale ? 'true' : 'false');
 
     load_library('get-user-resources');
     get_user_resources_sc([]);

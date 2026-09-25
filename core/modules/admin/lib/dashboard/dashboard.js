@@ -60,12 +60,13 @@ document.addEventListener("alpine:init", () => {
         },
     }));
 
-    Alpine.data("dashboard_status", (failed_jobs, has_recent_error, low_disk, can_pull_ext, can_pull_core, maintenance_unhealthy = false) => ({
+    Alpine.data("dashboard_status", (failed_jobs, has_recent_error, low_disk, can_pull_ext, can_pull_core, maintenance_unhealthy = false, assets_stale = false) => ({
         busy: false,
         failed_jobs,
         maintenance_unhealthy,
         has_recent_error,
         low_disk,
+        assets_stale,
         can_pull_ext,
         can_pull_core,
         site_updates: null,
@@ -73,7 +74,7 @@ document.addEventListener("alpine:init", () => {
         site_updated_label: null,
         core_updated_label: null,
         get attention_visible() {
-            return this.maintenance_unhealthy || this.failed_jobs > 0 || this.has_recent_error || this.low_disk;
+            return this.maintenance_unhealthy || this.failed_jobs > 0 || this.has_recent_error || this.low_disk || this.assets_stale;
         },
         get_updates() {
             if (!this.can_pull_ext && !this.can_pull_core) {
@@ -100,6 +101,7 @@ document.addEventListener("alpine:init", () => {
             nb.api.get(nb.base_url + "/api/v1/git-pull?dir=ext").then((data) => {
                 this.site_updates = data.error ? this.site_updates : 0;
                 this.site_updated_label = data.error ? this.site_updated_label : "now";
+                this.assets_stale = data.assets_stale ?? this.assets_stale;
             }).finally(() => {
                 this.busy = false;
             });
@@ -109,6 +111,7 @@ document.addEventListener("alpine:init", () => {
             nb.api.get(nb.base_url + "/api/v1/git-pull").then((data) => {
                 this.core_updates = data.error ? this.core_updates : 0;
                 this.core_updated_label = data.error ? this.core_updated_label : "now";
+                this.assets_stale = data.assets_stale ?? this.assets_stale;
             }).finally(() => {
                 this.busy = false;
             });

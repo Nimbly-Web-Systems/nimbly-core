@@ -2511,7 +2511,7 @@ Runs one full build, then keeps assets live during development:
 - **JS** — esbuild watches `js/index.jsx` and rebuilds `ext/static/app.js`
 - **Text** — polls `text.po` files every 2 s and reruns `merge-text-po.mjs` on change
 
-`ext/static/app.version` is updated after every rebuild to preserve cache busting. Press `Ctrl+C` to stop.
+`ext/static/app.version` is updated after every rebuild to preserve cache busting, and `ext/static/app.core` records the core commit the assets were built from (commit both with the assets). Press `Ctrl+C` to stop.
 
 ---
 
@@ -3012,7 +3012,7 @@ The legacy `_dep_` admin UI has been removed. Active admin routes and templates 
 
 `/nb-admin/` (`[#dashboard#]`, `core/modules/admin/lib/dashboard/`) is organized around what a user needs to act on, not one card per subsystem. It renders up to five bands, each present only when it has something to show for the current user's role:
 
-- **Needs attention** — failed jobs, a recent fatal error, or low disk space. Absent entirely if the role has none of the relevant `view-*` features.
+- **Needs attention** — failed jobs, a recent fatal error, low disk space, or (for `pull-core-updates`) stale assets: core changed build inputs (`css/`, `js/`, Tailwind config, `package*.json`, core templates, scripts, styles, text or static files) since the commit in `ext/static/app.core`, so `app.css`/`app.js` need a rebuild. `app_build_stale()` in `core/lib/app-build.php` decides; a missing stamp or unknown commit never warns. The git-pull API returns the same flag as `assets_stale`. Absent entirely if the role has none of the relevant `view-*` features.
 - **Site status** — is the site current and healthy, in one glance. Every item follows the same shape: a dark, small uppercase label (Data/Core/Ext/System), then the one fact that actually answers "is this OK" rendered large but in a lighter tone (so labels anchor the eye and values don't shout), with supporting detail as a small caption underneath. For **Data**, the large fact is *when* ("18 hours ago", with the specific resource named in the caption below it — e.g. "Projects updated" — so it's directly checkable against the matching row in Your data, not an anonymous number). For **Core**/**Ext**, the large fact is *status* ("Up to date" or "N updates", amber when something's pending), with the raw "Updated X ago" timestamp demoted to the caption, plus an inline **Update now** for roles with `pull-core-updates`/`pull-ext-updates`. For **System** (`view-debug`), the large fact is a plain-language status — "OK" or "Low resources" (below 1GB RAM or 500MB disk free) — with the actual RAM/disk numbers as the caption and a **View debug** link into `/nb-admin/debug`. Everything here is a fact (with an action attached where one applies), never bare navigation — that's what Manage below is for.
 - **Visits** — for roles with `view-stats`: visits, pageviews and bot/scanner requests over the last 30 days with the change against the 30 days before, and one bar per day (today partial, from the running log). PHP passes UTC hourly counts from `stats_recent_days()` in `core/lib/stats.php`; the `dashboard_stats` Alpine component groups them into the viewer's local days. See Request statistics.
 - **Your data** — the resources the current role can see, with record counts, disk usage, and last-updated time per resource.
