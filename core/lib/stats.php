@@ -19,6 +19,7 @@ load_library('env');
 const STATS_DEFAULT_MAX_DAY_BYTES = 200000000;
 const STATS_BURST_PER_MINUTE = 120;
 const STATS_SCANNER_PROBES = 3;
+const STATS_SCANNER_NOT_FOUND = 10;
 const STATS_ARCHIVE_MAGIC = 'NBS1';
 
 function stats_register(): void
@@ -454,6 +455,9 @@ function stats_observe_behaviour(array &$behaviour, array $entry): void
     if (stats_is_probe_path((string)($entry['p'] ?? ''))) {
         $behaviour[$ip]['probes'] = ($behaviour[$ip]['probes'] ?? 0) + 1;
     }
+    if ((int)($entry['s'] ?? 0) === 404) {
+        $behaviour[$ip]['not_found'] = ($behaviour[$ip]['not_found'] ?? 0) + 1;
+    }
 }
 
 function stats_count_entry(array &$day, array &$visitors, array $entry, array $class): void
@@ -529,7 +533,8 @@ function stats_classify(array $entry, array $behaviour = []): array
             return ['group' => $group, 'name' => $name];
         }
     }
-    if (($behaviour['probes'] ?? 0) >= STATS_SCANNER_PROBES || stats_is_probe_path((string)($entry['p'] ?? ''))) {
+    if (($behaviour['probes'] ?? 0) >= STATS_SCANNER_PROBES || ($behaviour['not_found'] ?? 0) >= STATS_SCANNER_NOT_FOUND
+        || stats_is_probe_path((string)($entry['p'] ?? ''))) {
         return ['group' => 'scanner', 'name' => 'scanner'];
     }
     if (($name = stats_match_agent($ua, stats_tool_agents())) !== null) {
@@ -565,6 +570,7 @@ function stats_monitor_agents(): array
         'UptimeRobot' => 'UptimeRobot', 'Pingdom' => 'Pingdom', 'StatusCake' => 'StatusCake',
         'Better Uptime' => 'Better Stack', 'BetterStack' => 'Better Stack', 'Site24x7' => 'Site24x7',
         'Uptime-Kuma' => 'Uptime Kuma', 'nimbly-host-audit' => 'Nimbly audit',
+        'Nimbly infrastructure' => 'Nimbly monitor',
     ];
 }
 

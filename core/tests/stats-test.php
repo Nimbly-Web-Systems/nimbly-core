@@ -67,6 +67,8 @@ stats_assert(stats_classify(stats_test_entry(), ['probes' => 5])['group'] === 's
 stats_assert(stats_classify(stats_test_entry(['al' => '']))['group'] === 'suspect', 'browser agent without language is suspect');
 stats_assert(stats_classify(stats_test_entry(['al' => '', 'src' => 'apache']))['group'] === 'human', 'apache lines not judged on language');
 stats_assert(stats_classify(stats_test_entry(), ['minutes' => ['x' => 500]])['group'] === 'suspect', 'burst rate is suspect');
+stats_assert(stats_classify(stats_test_entry(['src' => 'apache', 'al' => '']), ['not_found' => 12])['group'] === 'scanner', 'ip with many 404s is scanner');
+stats_assert(stats_classify(stats_test_entry(['ua' => 'Nimbly infrastructure latency monitor', 'm' => 'HEAD']))['name'] === 'Nimbly monitor', 'own monitor');
 stats_assert(stats_classify(stats_test_entry(['u' => 1, 'p' => '/.env']))['group'] === 'editor', 'editors counted separately');
 stats_assert(stats_classify(stats_test_entry(['ua' => 'Mozilla/5.0+(compatible; UptimeRobot/2.0)']))['group'] === 'monitor', 'monitor');
 stats_assert(stats_device('Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) Mobile/15E148 Safari/604.1') === 'mobile', 'iphone mobile');
