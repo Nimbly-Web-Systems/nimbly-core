@@ -2141,10 +2141,12 @@ commits:
 | `raw/YYYY/YYYY-MM-DD.log.gz.enc` | the complete day, gzipped and AES-256-GCM encrypted |
 | `raw/YYYY/YYYY-MM-DD.apache.log.gz.enc` | optional Apache enrichment from `apache-YYYY-MM-DD.log` |
 | `months/YYYY-MM.json` | complete counts per day by status, route, visitor class, device, browser, language, bot, referrer and path |
-| `summary.json` | counts per month and year, per page with first and last seen, and per bot |
+| `years/YYYY.json` | the same counts summed per month, plus a year total |
 
-The JSON files hold counts only, never rankings or IP addresses; interfaces
-derive top lists from them. Classification (human, editor, bot, scanner,
+Zoom from year to month to day to the raw requests; weeks and all-time views
+are derived from these files. Above day level `visitors` becomes `visits`, the
+sum of daily unique visitors. The JSON files hold counts only, never rankings
+or IP addresses; interfaces derive top lists from them. Classification (human, editor, bot, scanner,
 suspect, monitor, tool) happens during rollup, so `stats:rollup --rebuild`
 recomputes every month from `raw/` after rules improve.
 

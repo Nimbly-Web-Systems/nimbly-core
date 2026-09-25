@@ -7,7 +7,8 @@
  * in ext/data/.tmp/stats/. Once a day the running log is archived unchanged,
  * gzipped and encrypted with STATS_KEY, as
  * ext/data/.stats/<env>/raw/YYYY/YYYY-MM-DD.log.gz.enc and counted into
- * months/YYYY-MM.json and summary.json. Those files hold complete counts only;
+ * months/YYYY-MM.json (per day) and years/YYYY.json (per month). Those files
+ * hold complete counts only;
  * rankings are for the interface. IP addresses exist only in the encrypted raw
  * archive. Counts can always be rebuilt from raw/, so classification rules may
  * improve without losing history.
@@ -181,8 +182,8 @@ function stats_rollup(?string $today = null, bool $rebuild = false, ?string $tmp
             stats_write_month($month, $stats_dir, $key, $rebuild ? null : array_values(array_filter(
                 $dates, fn($date) => str_starts_with($date, $month))));
         }
-        if ($months !== []) {
-            stats_write_json($stats_dir . '/summary.json', stats_build_summary($stats_dir));
+        foreach (array_unique(array_map(fn($month) => substr($month, 0, 4), $months)) as $year) {
+            stats_write_year($year, $stats_dir);
         }
         return $dates;
     } finally {
@@ -539,57 +540,47 @@ function stats_browser(string $ua): string
     return 'other';
 }
 
-/** All-time counts per month, year, page and bot, rebuilt from the month files. */
-function stats_build_summary(string $stats_dir): array
+/** Complete counts per month of a year, summed from the month files. */
+function stats_write_year(string $year, string $stats_dir): void
 {
-    $summary = ['environment' => basename($stats_dir), 'first_day' => null, 'last_day' => null,
-        'totals' => [], 'years' => [], 'months' => [], 'pages' => [], 'bots' => []];
-    $files = glob($stats_dir . '/months/*.json') ?: [];
-    sort($files);
-    foreach ($files as $file) {
+    $months = [];
+    $total = [];
+    foreach (glob($stats_dir . '/months/' . $year . '-*.json') ?: [] as $file) {
         $month = json_decode((string)file_get_contents($file), true);
-        foreach ((array)($month['days'] ?? []) as $date => $day) {
-            stats_add_day_to_summary($summary, (string)$date, (array)$day);
+        $counts = [];
+        foreach ((array)($month['days'] ?? []) as $day) {
+            stats_add_counts($counts, stats_day_counts((array)$day));
         }
+        $months[basename($file, '.json')] = $counts;
+        stats_add_counts($total, $counts);
     }
-    ksort($summary['pages']);
-    ksort($summary['bots']);
-    return $summary;
+    ksort($months);
+    stats_write_json($stats_dir . '/years/' . $year . '.json',
+        ['year' => $year, 'environment' => basename($stats_dir), 'months' => $months, 'total' => $total]);
 }
 
-function stats_add_day_to_summary(array &$summary, string $date, array $day): void
+/**
+ * Day counts as they sum above day level: daily unique visitors add up to
+ * visits, and enriched days are counted.
+ */
+function stats_day_counts(array $day): array
 {
-    $summary['first_day'] ??= $date;
-    $summary['last_day'] = $date;
-    $numbers = [
-        'requests' => (int)($day['requests'] ?? 0),
-        'pageviews' => (int)($day['pageviews'] ?? 0),
-        'visits' => (int)($day['visitors'] ?? 0),
-        'human' => (int)($day['class']['human'] ?? 0),
-        'bots' => (int)($day['class']['bot'] ?? 0),
-        'scanners' => (int)($day['class']['scanner'] ?? 0) + (int)($day['class']['suspect'] ?? 0),
-        'api' => (int)($day['route']['api'] ?? 0),
-        'overflow' => (int)($day['overflow'] ?? 0),
-    ];
-    foreach ([&$summary['totals'], &$summary['years'][substr($date, 0, 4)], &$summary['months'][substr($date, 0, 7)]] as &$bucket) {
-        foreach ($numbers as $key => $value) {
-            $bucket[$key] = ($bucket[$key] ?? 0) + $value;
+    $day['days'] = 1;
+    $day['visits'] = (int)($day['visitors'] ?? 0);
+    $day['enriched_days'] = empty($day['enriched']) ? 0 : 1;
+    unset($day['visitors'], $day['enriched']);
+    return $day;
+}
+
+function stats_add_counts(array &$total, array $counts): void
+{
+    foreach ($counts as $key => $value) {
+        if (is_array($value)) {
+            $total[$key] ??= [];
+            stats_add_counts($total[$key], $value);
+        } else {
+            $total[$key] = ($total[$key] ?? 0) + (int)$value;
         }
     }
-    unset($bucket);
-    foreach ((array)($day['paths'] ?? []) as $path => $counts) {
-        $views = (int)($counts['views'] ?? 0);
-        if ($views === 0) {
-            continue;
-        }
-        $page = &$summary['pages'][$path];
-        $page['views'] = ($page['views'] ?? 0) + $views;
-        $page['first_seen'] ??= $date;
-        $page['last_seen'] = $date;
-        unset($page);
-    }
-    foreach ((array)($day['bots'] ?? []) as $name => $count) {
-        $summary['bots'][$name]['requests'] = ($summary['bots'][$name]['requests'] ?? 0) + (int)$count;
-        $summary['bots'][$name]['last_seen'] = $date;
-    }
+    ksort($total);
 }

@@ -109,7 +109,7 @@ try {
 } catch (RuntimeException $e) {
 }
 stats_assert(is_file($out . '/raw/2026/2026-09-23.apache.log.gz.enc'), 'apache enrichment archived separately');
-foreach (glob($out . '/{months/*,summary}.json', GLOB_BRACE) as $json) {
+foreach (glob($out . '/{months,years}/*.json', GLOB_BRACE) as $json) {
     stats_assert(!str_contains(file_get_contents($json), '203.0.113'), 'no ip addresses outside the encrypted archive');
 }
 
@@ -125,9 +125,12 @@ stats_assert($day['paths']['/news']['status'] === ['200' => 3] && !isset($day['i
 stats_assert($day['device'] === ['desktop' => 2, 'mobile' => 1], 'devices of human pageviews');
 stats_assert($month['days']['2026-09-22']['overflow'] === 2, 'overflow survives in the raw archive');
 
-$summary = json_decode(file_get_contents($out . '/summary.json'), true);
-stats_assert($summary['first_day'] === '2026-09-22' && $summary['pages']['/news']['first_seen'] === '2026-09-23', 'summary first seen');
-stats_assert($summary['bots']['Googlebot']['last_seen'] === '2026-09-23', 'summary bot last seen');
+$year = json_decode(file_get_contents($out . '/years/2026.json'), true);
+$september = $year['months']['2026-09'];
+stats_assert($september['days'] === 2 && $september['requests'] === 9 && $september['visits'] === 3, 'month counts summed from days');
+stats_assert($september['paths']['/news'] === ['hits' => 3, 'ms' => 60, 'status' => ['200' => 3], 'views' => 2], 'complete path counts per month');
+stats_assert($september['bots']['Googlebot'] === 1 && $september['enriched_days'] === 1, 'bots and enriched days per month');
+stats_assert($year['total']['requests'] === 9 && !is_file($out . '/summary.json'), 'year total, no summary file');
 
 // Idempotence: a rebuild from raw produces the same files, and late lines are appended.
 $before = file_get_contents($out . '/months/2026-09.json');
@@ -137,6 +140,8 @@ stats_record(stats_test_entry(['t' => '2026-09-23T23:59:59+02:00', 'p' => '/late
 stats_rollup('2026-09-24', false, $tmp, $out, $key);
 $month = json_decode(file_get_contents($out . '/months/2026-09.json'), true);
 stats_assert($month['days']['2026-09-23']['requests'] === 9, 'late line appended to existing archive');
+$year = json_decode(file_get_contents($out . '/years/2026.json'), true);
+stats_assert($year['months']['2026-09']['requests'] === 10, 'year file follows late lines');
 
 // A second rollup while one holds the lock does nothing.
 $lock = fopen($tmp . '/rollup.lock', 'c');
