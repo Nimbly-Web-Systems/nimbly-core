@@ -10,12 +10,14 @@ load_library('set');
  */
 function admin_tabs_sc($params)
 {
+    load_library('data');
     load_library('managed-pages');
     load_library('managed-navigation');
 
     // Admins keep both tabs while a feature is off, so they can switch it back on.
+    // Applications without a pages resource have no Pages overview to link to.
     $available = managed_pages_feature_enabled() || access_by_feature('manage-system');
-    $show_pages = $available && access_by_feature('view-pages');
+    $show_pages = $available && data_exists('pages') && access_by_feature('view-pages');
     $show_navigation = managed_navigation_editable(managed_navigation_feature_enabled(), access_by_feature('manage-system'))
         && access_by_feature('edit-.navigation') && managed_navigation_slots() !== [];
     $show_settings = access_by_feature('edit-.config');
