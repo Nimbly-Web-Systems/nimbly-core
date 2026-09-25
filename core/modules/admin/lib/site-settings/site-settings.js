@@ -4,24 +4,28 @@ document.addEventListener("alpine:init", () => {
         if (!data.success) throw new Error(data.message || "Could not save settings");
     });
 
-    Alpine.data("site_settings", (name, description, side, languages, catalog, features) => {
+    Alpine.data("site_settings", (name, description, direction, side, languages, catalog, rtl, features) => {
         const codes = languages.map(language => language.code);
-        const localize = (value, fallback = "") => {
+        // A plain-text name or description belongs to the default language. A plain-text
+        // direction or side applies to every language; `choices` is its [ltr, rtl] default.
+        const localize = (value, choices = null) => {
             const source = value && typeof value === "object" ? value : {};
+            const plain = typeof value === "string" && value !== "" ? value : null;
             return Object.fromEntries(codes.map((code, index) => [
                 code,
-                source[code] ?? (typeof value === "string" && index === 0 ? value : fallback),
+                source[code] ?? (choices ? plain ?? choices[rtl.includes(code) ? 1 : 0] : (index === 0 && plain) || ""),
             ]));
         };
         const site = {
             name: codes.length ? localize(name) : name,
             description: codes.length ? localize(description) : description,
-            nimblybar: { side: codes.length ? localize(side, "left") : side },
+            direction: codes.length ? localize(direction, ["ltr", "rtl"]) : (direction || "ltr"),
+            nimblybar: { side: codes.length ? localize(side, ["left", "right"]) : (side || "left") },
         };
         const start = codes[0] || "";
         return {
             busy: false, languages, catalog, codes, site, features, new_language: "",
-            active: { name: start, description: start, side: start },
+            active: { name: start, description: start, direction: start, side: start },
             original_site: json(site), original_features: json(features),
 
             init() {

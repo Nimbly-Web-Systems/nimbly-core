@@ -7,11 +7,38 @@ load_library('set');
 function site_settings_language_catalog(): array
 {
     return [
-        'da' => 'Danish', 'de' => 'German', 'en' => 'English',
-        'es' => 'Spanish', 'fi' => 'Finnish', 'fr' => 'French',
+        'ar' => 'Arabic', 'da' => 'Danish', 'de' => 'German',
+        'en' => 'English', 'es' => 'Spanish', 'fa' => 'Persian',
+        'fi' => 'Finnish', 'fr' => 'French', 'he' => 'Hebrew',
         'it' => 'Italian', 'nl' => 'Dutch', 'no' => 'Norwegian',
         'pl' => 'Polish', 'pt' => 'Portuguese', 'sv' => 'Swedish',
     ];
+}
+
+/** Catalog languages written right to left; they start with rtl text and the admin sidebar on the right. */
+function site_settings_rtl_languages(): array
+{
+    return ['ar', 'fa', 'he'];
+}
+
+/**
+ * Stores a per-language value for every site language. A missing language would
+ * otherwise show another language's value. A plain string keeps applying to the
+ * languages it covered; languages without a value get their ltr or rtl default.
+ */
+function site_settings_per_language($value, array $languages, array $new_languages, array $defaults): ?array
+{
+    $values = is_array($value) ? $value : [];
+    foreach ($languages as $language) {
+        if (!isset($values[$language]) && is_string($value) && !in_array($language, $new_languages, true)) {
+            $values[$language] = $value;
+        }
+        $values[$language] ??= $defaults[in_array($language, site_settings_rtl_languages(), true) ? 1 : 0];
+        if (!in_array($values[$language], $defaults, true)) {
+            return null;
+        }
+    }
+    return $values;
 }
 
 /** Validator for the application .config resource. Unrelated records pass through. */
@@ -55,6 +82,15 @@ function site_settings_validate_config($resource, $uuid, &$record): bool
             }
         }
         $record['languages'] = $languages;
+        $new_languages = array_values(array_diff($languages, $old_languages));
+        $direction = site_settings_per_language($record['direction'] ?? null, $languages, $new_languages, ['ltr', 'rtl']);
+        $side = site_settings_per_language($record['nimblybar']['side'] ?? null, $languages, $new_languages, ['left', 'right']);
+        if ($direction === null || $side === null) {
+            data_error_set('VALIDATION_FAILED', $direction === null ? 'direction:value' : 'nimblybar.side:value');
+            return false;
+        }
+        $record['direction'] = $direction;
+        $record['nimblybar'] = array_merge(is_array($record['nimblybar'] ?? null) ? $record['nimblybar'] : [], ['side' => $side]);
     }
     if ($uuid === 'managed_pages') {
         $existing = data_exists('.config', 'managed_pages') ? data_read('.config', 'managed_pages') : [];
@@ -177,7 +213,9 @@ function site_settings_sc($params)
     set_variable('_ss.name_json', htmlspecialchars(json_encode($site['name'] ?? '', JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE), ENT_QUOTES, 'UTF-8'));
     set_variable('_ss.description_json', htmlspecialchars(json_encode($site['description'] ?? '', JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE), ENT_QUOTES, 'UTF-8'));
     set_variable('_ss.languages_json', htmlspecialchars(json_encode(array_values($languages), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE), ENT_QUOTES, 'UTF-8'));
-    set_variable('_ss.side_json', htmlspecialchars(json_encode($site['nimblybar']['side'] ?? 'left', JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE), ENT_QUOTES, 'UTF-8'));
+    set_variable('_ss.side_json', htmlspecialchars(json_encode($site['nimblybar']['side'] ?? '', JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE), ENT_QUOTES, 'UTF-8'));
+    set_variable('_ss.direction_json', htmlspecialchars(json_encode($site['direction'] ?? '', JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE), ENT_QUOTES, 'UTF-8'));
+    set_variable('_ss.rtl_json', htmlspecialchars(json_encode(site_settings_rtl_languages()), ENT_QUOTES, 'UTF-8'));
 
     $catalog = site_settings_language_catalog();
     $language_rows = [];

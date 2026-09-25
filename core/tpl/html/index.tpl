@@ -11,7 +11,7 @@
 [#set main=#]
 [#init#]
 <!doctype html>
-<html class="[#html-classes#] scroll-smooth" lang="[#language#]">
+<html class="[#html-classes#] scroll-smooth" lang="[#language#]" dir="[#get data.config.site.direction default=ltr#]">
 <head>
     <title>[#if page-title=(not-empty) echo="[#page-title#] | "#][#site-name#]</title>
     [#meta#]
