@@ -1,6 +1,6 @@
 [#access feature=edit-.config#]
 [#set admin_tab=settings#]
 [#set admin_header_title="[#text Settings#]"#]
-[#set admin_header_subtitle="[#text Your site's name, description and languages.#]"#]
+[#set admin_header_subtitle="[#text Your site's name, languages and features.#]"#]
 [#set page-title="[#text Settings#]"#]
 [#html#]

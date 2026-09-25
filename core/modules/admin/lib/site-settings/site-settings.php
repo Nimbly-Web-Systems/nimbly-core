@@ -181,19 +181,49 @@ function site_settings_sc($params)
 
     $catalog = site_settings_language_catalog();
     $language_rows = [];
-    foreach (array_values($languages) as $index => $code) {
-        $language_rows[] = ['code' => (string)$code, 'label' => $catalog[$code] ?? strtoupper((string)$code), 'fallback' => $index === 0];
+    foreach (array_values($languages) as $code) {
+        $language_rows[] = ['code' => (string)$code, 'label' => $catalog[$code] ?? strtoupper((string)$code)];
     }
     set_variable('_ss.language_rows_json', htmlspecialchars(json_encode($language_rows, JSON_UNESCAPED_UNICODE), ENT_QUOTES, 'UTF-8'));
     set_variable('_ss.language_catalog_json', htmlspecialchars(json_encode($catalog, JSON_UNESCAPED_UNICODE), ENT_QUOTES, 'UTF-8'));
 
-    $section = (string)($_GET['section'] ?? 'general');
-    if (!in_array($section, ['general', 'languages'], true)) {
-        $section = 'general';
-    }
-    set_variable('_ss.section', $section);
-    $templates = ['general' => 'general.tpl', 'languages' => 'languages.tpl'];
-    set_variable('_ss.content', run_buffered(dirname(__FILE__) . '/' . $templates[$section]));
+    site_settings_set_features();
+    set_variable('_ss.pages_row', site_settings_row('pages'));
+    set_variable('_ss.navigation_row', site_settings_row('navigation'));
+    set_variable('_ss.content', run_buffered(dirname(__FILE__) . '/settings.tpl'));
 
     return run_buffered(dirname(__FILE__) . '/panel.tpl');
+}
+
+/** Pages and navigation switches: system managers only, and only when there is something to switch on. */
+function site_settings_set_features(): void
+{
+    load_library('managed-pages');
+    load_library('managed-navigation');
+    $manager = managed_pages_is_system_manager();
+    $types = [];
+    foreach (managed_pages_types() as $id => $definition) {
+        if (is_array($definition) && !empty($definition['name']) && !empty($definition['template'])) {
+            $types[] = ['id' => (string)$id, 'name' => (string)$definition['name'], 'description' => (string)($definition['description'] ?? '')];
+        }
+    }
+    $config = managed_pages_config();
+    $enabled_types = is_array($config['enabled_page_types'] ?? null) ? $config['enabled_page_types'] : array_column($types, 'id');
+    $features = [
+        'pages' => managed_pages_feature_enabled(),
+        'navigation' => managed_navigation_feature_enabled(),
+        'page_types' => array_values($enabled_types),
+    ];
+    $attribute = fn($value) => htmlspecialchars(json_encode($value, JSON_UNESCAPED_UNICODE), ENT_QUOTES, 'UTF-8');
+    set_variable('_ss.features_json', $attribute($features));
+    set_variable('_ss.page_types_json', $attribute($types));
+    set_variable('_ss.show_pages', $manager && data_exists('pages') ? 'true' : 'false');
+    set_variable('_ss.show_navigation', $manager && managed_navigation_slots() !== [] ? 'true' : 'false');
+}
+
+function site_settings_row(string $feature): string
+{
+    return get_variable('_ss.show_' . $feature) === 'true'
+        ? run_buffered(dirname(__FILE__) . '/settings-' . $feature . '.tpl')
+        : '';
 }

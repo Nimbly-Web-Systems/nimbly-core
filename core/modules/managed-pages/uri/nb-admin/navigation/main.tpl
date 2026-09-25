@@ -3,8 +3,6 @@
 
     <p class="max-w-2xl text-sm text-neutral-600">[#text Use the arrows to reorder links and to nest them under each other.#]</p>
 
-    [#managed-navigation-toggle#]
-
     <div class="mt-4" x-data='{ options: [#get navigation_editor_slots_json echo#], current: "[#navigation_editor_slot#]", language: "[#navigation_editor_language#]",
             go(slot) { location.href = "?slot=" + encodeURIComponent(slot) + "&language=" + encodeURIComponent(this.language); } }'
         x-show="options.length > 1" x-cloak>

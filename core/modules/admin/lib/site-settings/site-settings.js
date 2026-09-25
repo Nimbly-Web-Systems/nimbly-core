@@ -1,86 +1,99 @@
 document.addEventListener("alpine:init", () => {
     const json = value => JSON.stringify(value);
-    const warn_if_dirty = component => window.addEventListener("beforeunload", event => {
-        if (!component.dirty) return;
-        event.preventDefault();
-        event.returnValue = "";
+    const put = (url, payload) => nb.api.put(nb.base_url + url, payload).then(data => {
+        if (!data.success) throw new Error(data.message || "Could not save settings");
     });
-    const save = (url, payload, component, success_message) => {
-        component.busy = true;
-        component.saved = false;
-        return nb.api.put(nb.base_url + url, payload).then(data => {
-            component.busy = false;
-            if (!data.success) {
-                nb.notify(data.message || "Could not save settings");
-                return false;
-            }
-            component.saved = true;
-            component.original = json(payload);
-            nb.notify(success_message);
-            return true;
-        }).catch(error => {
-            component.busy = false;
-            nb.notify(error.message || "Could not save settings");
-            return false;
-        });
-    };
 
-    Alpine.data("site_settings_general", (name, description, side, languages = []) => {
+    Alpine.data("site_settings", (name, description, side, languages, catalog, features) => {
+        const codes = languages.map(language => language.code);
         const localize = (value, fallback = "") => {
             const source = value && typeof value === "object" ? value : {};
-            return Object.fromEntries(languages.map((language, index) => [
-                language,
-                source[language] ?? (typeof value === "string" && index === 0 ? value : fallback),
+            return Object.fromEntries(codes.map((code, index) => [
+                code,
+                source[code] ?? (typeof value === "string" && index === 0 ? value : fallback),
             ]));
         };
-        const form_data = {
-            name: languages.length ? localize(name) : name,
-            description: languages.length ? localize(description) : description,
-            nimblybar: { side: languages.length ? localize(side, "left") : side },
+        const site = {
+            name: codes.length ? localize(name) : name,
+            description: codes.length ? localize(description) : description,
+            nimblybar: { side: codes.length ? localize(side, "left") : side },
         };
+        const start = codes[0] || "";
         return {
-            busy: false, saved: false, languages, active_language: languages[0] || "", form_data,
-            original: json(form_data),
-            init() { warn_if_dirty(this); },
-            get dirty() { return json(this.form_data) !== this.original; },
-            get current_name() { return this.languages.length ? this.form_data.name[this.active_language] : this.form_data.name; },
-            get current_description() { return this.languages.length ? this.form_data.description[this.active_language] : this.form_data.description; },
-            get current_side() { return this.languages.length ? this.form_data.nimblybar.side[this.active_language] : this.form_data.nimblybar.side; },
-            set_current(field, value) {
-                this.saved = false;
-                const target = field === "side" ? this.form_data.nimblybar : this.form_data;
-                if (this.languages.length) target[field][this.active_language] = value;
-                else target[field] = value;
+            busy: false, languages, catalog, codes, site, features, new_language: "",
+            active: { name: start, description: start, side: start },
+            original_site: json(site), original_features: json(features),
+
+            init() {
+                window.addEventListener("beforeunload", event => {
+                    if (!this.dirty) return;
+                    event.preventDefault();
+                    event.returnValue = "";
+                });
             },
-            submit() { return save("/api/v1/.config/site", this.form_data, this, "Settings saved"); },
+
+            get site_dirty() { return json(this.site) !== this.original_site; },
+            get features_dirty() { return json(this.features) !== this.original_features; },
+            get dirty() { return this.site_dirty || this.features_dirty; },
+            get available() {
+                return Object.entries(this.catalog).filter(([code]) => !this.codes.includes(code)).map(([code, label]) => ({ code, label }));
+            },
+
+            // Each per-language field has its own language switch (`active`).
+            target(field) { return field === "side" ? this.site.nimblybar : this.site; },
+            value(field) {
+                return this.codes.length ? this.target(field)[field][this.active[field]] : this.target(field)[field];
+            },
+            set_value(field, value) {
+                if (this.codes.length) this.target(field)[field][this.active[field]] = value;
+                else this.target(field)[field] = value;
+            },
+
+            submit() {
+                this.busy = true;
+                const was = JSON.parse(this.original_features);
+                const switched = was.pages !== this.features.pages || was.navigation !== this.features.navigation;
+                const site = this.site_dirty ? put("/api/v1/.config/site", this.site) : Promise.resolve();
+                return site.then(() => {
+                    this.original_site = json(this.site);
+                    if (!this.features_dirty) return;
+                    return put("/api/v1/.config/managed_pages", {
+                        enabled: this.features.pages,
+                        navigation_enabled: this.features.navigation,
+                        enabled_page_types: this.features.page_types,
+                    }).then(() => { this.original_features = json(this.features); });
+                }).then(() => {
+                    // The Pages and Navigation tabs follow these switches, so show the new tab bar.
+                    if (switched) return location.reload();
+                    this.busy = false;
+                    nb.notify("Settings saved");
+                }).catch(error => {
+                    this.busy = false;
+                    nb.notify(error.message || "Could not save settings");
+                });
+            },
+
+            // Language changes save right away (a save may add a language or reorder them, not both),
+            // so they wait until the other changes are saved.
+            save_languages(order, message) {
+                this.busy = true;
+                return put("/api/v1/.config/site", { languages: order }).then(() => {
+                    nb.notify(message);
+                    location.reload();
+                }).catch(error => {
+                    this.busy = false;
+                    nb.notify(error.message || "Could not save settings");
+                });
+            },
+            // The first language is the default: put the chosen one first, keep the rest in order.
+            make_default(code) {
+                return this.save_languages([code, ...this.codes.filter(other => other !== code)], "Default language changed");
+            },
+            add_language() {
+                const code = this.new_language;
+                this.new_language = "";
+                if (code) return this.save_languages([...this.codes, code], "Language added");
+            },
         };
     });
-
-    Alpine.data("site_settings_languages", (configured, catalog) => ({
-        // The first language is the default: put the chosen one first, keep the rest in order.
-        make_default(code) {
-            const order = [code, ...this.configured.map(language => language.code).filter(other => other !== code)];
-            return save("/api/v1/.config/site", { languages: order }, this, "Default language changed").then(ok => {
-                if (ok) location.reload();
-            });
-        },
-        busy: false, saved: false, configured, catalog, new_language: "", original: json(configured),
-        init() { warn_if_dirty(this); },
-        get dirty() { return this.new_language !== ""; },
-        get available() {
-            const used = new Set(this.configured.map(language => language.code));
-            return Object.entries(this.catalog).filter(([code]) => !used.has(code)).map(([code, label]) => ({ code, label }));
-        },
-        submit() {
-            if (!this.new_language) return;
-            const code = this.new_language;
-            const payload = { languages: [...this.configured.map(language => language.code), code] };
-            return save("/api/v1/.config/site", payload, this, "Language added").then(ok => {
-                if (!ok) return;
-                this.configured.push({ code, label: this.catalog[code] || code.toUpperCase(), fallback: false });
-                this.new_language = "";
-                this.original = json(this.configured);
-            });
-        },
-    }));
 });
