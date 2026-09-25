@@ -95,10 +95,10 @@ function stats_request_entry(array $server, array $headers, int $status, float $
     $start = (float)($GLOBALS['SYSTEM']['request_time'] ?? $server['REQUEST_TIME_FLOAT'] ?? $now);
     preg_match('/^\s*([a-zA-Z]{1,8}(?:-[a-zA-Z0-9]{1,8})?)/', (string)($server['HTTP_ACCEPT_LANGUAGE'] ?? ''), $language);
     return [
-        't' => date('c', (int)$now),
+        't' => gmdate('Y-m-d\\TH:i:s\\Z', (int)$now),
         'm' => substr((string)($server['REQUEST_METHOD'] ?? 'GET'), 0, 10),
         'h' => substr(strtolower((string)($server['HTTP_HOST'] ?? '')), 0, 255),
-        'p' => substr((string)($server['REQUEST_URI'] ?? '/'), 0, 2000),
+        'p' => substr(stats_site_path((string)($server['REQUEST_URI'] ?? '/'), (string)($GLOBALS['SYSTEM']['uri_base'] ?? '/')), 0, 2000),
         's' => $status,
         'ct' => strtolower(trim(explode(';', $content_type)[0])),
         'ms' => max(0, (int)round(($now - $start) * 1000)),
@@ -109,6 +109,15 @@ function stats_request_entry(array $server, array $headers, int $status, float $
         'u' => $user,
         'src' => 'app',
     ];
+}
+
+/** Path relative to the site's base url, so subdirectory installs count like root installs. */
+function stats_site_path(string $request_uri, string $uri_base): string
+{
+    if ($uri_base !== '/' && $uri_base !== '' && str_starts_with($request_uri, $uri_base)) {
+        return '/' . substr($request_uri, strlen($uri_base));
+    }
+    return $request_uri;
 }
 
 /**
@@ -154,7 +163,7 @@ function stats_rollup(?string $today = null, bool $rebuild = false, ?string $tmp
 {
     $tmp_dir ??= stats_tmp_dir();
     $stats_dir ??= stats_dir();
-    $today ??= date('Y-m-d');
+    $today ??= gmdate('Y-m-d');
     @mkdir($tmp_dir, 0775, true);
     $lock = fopen($tmp_dir . '/rollup.lock', 'c');
     if ($lock === false || !flock($lock, LOCK_EX | LOCK_NB)) {
@@ -205,7 +214,7 @@ function stats_archive_day(string $date, string $tmp_dir, string $stats_dir, str
     if (is_file($overflow)) {
         // Keep the overflow in the raw archive so rebuilt summaries retain it.
         $count = (int)filesize($overflow);
-        file_put_contents($running, json_encode(['t' => $date . 'T23:59:59', 'overflow' => $count]) . "\n", FILE_APPEND | LOCK_EX);
+        file_put_contents($running, json_encode(['t' => $date . 'T23:59:59Z', 'overflow' => $count]) . "\n", FILE_APPEND | LOCK_EX);
         unlink($overflow);
     }
     stats_append_archive($running, stats_raw_path($stats_dir, $date, 'app'), $key);
@@ -311,13 +320,13 @@ function stats_read_running_lines(string $file): iterable
  */
 function stats_recent_days(int $count, ?string $today = null, ?string $tmp_dir = null, ?string $stats_dir = null): array
 {
-    $today ??= date('Y-m-d');
+    $today ??= gmdate('Y-m-d');
     $tmp_dir ??= stats_tmp_dir();
     $stats_dir ??= stats_dir();
     $months = [];
     $days = [];
     for ($offset = $count - 1; $offset >= 0; $offset--) {
-        $date = date('Y-m-d', strtotime($today . ' 12:00 -' . $offset . ' days'));
+        $date = gmdate('Y-m-d', strtotime($today . 'T12:00:00Z -' . $offset . ' days'));
         $running = $tmp_dir . '/running-' . $date . '.log';
         if (is_file($running)) {
             $days[$date] = stats_running_day($running, $tmp_dir . '/cache-' . $date . '.json');
@@ -410,7 +419,7 @@ function stats_summarize_day(array $readers, bool $enriched): array
     $day = [
         'requests' => 0, 'pageviews' => 0, 'visitors' => 0, 'enriched' => $enriched, 'overflow' => 0,
         'status' => [], 'route' => [], 'class' => [], 'device' => [], 'browser' => [], 'language' => [],
-        'bots' => [], 'referrers' => [], 'paths' => [],
+        'bots' => [], 'referrers' => [], 'paths' => [], 'hours' => [],
     ];
     $visitors = [];
     foreach ($readers as $reader) {
@@ -423,9 +432,13 @@ function stats_summarize_day(array $readers, bool $enriched): array
         }
     }
     $day['visitors'] = count($visitors);
-    foreach (['status', 'route', 'class', 'device', 'browser', 'language', 'bots', 'referrers', 'paths'] as $dimension) {
+    foreach (['status', 'route', 'class', 'device', 'browser', 'language', 'bots', 'referrers', 'paths', 'hours'] as $dimension) {
         ksort($day[$dimension]);
     }
+    foreach ($day['hours'] as &$hour) {
+        ksort($hour);
+    }
+    unset($hour);
     return $day;
 }
 
@@ -446,7 +459,14 @@ function stats_count_entry(array &$day, array &$visitors, array $entry, array $c
     $route = stats_route_type($path, (string)($entry['ct'] ?? ''), $status);
     $name = $class['name'];
     $group = $class['group'];
+    $hour = gmdate('H', strtotime((string)($entry['t'] ?? '')) ?: 0);
     $day['requests']++;
+    stats_increment_hour($day['hours'], $hour, 'requests');
+    if (in_array($group, ['bot', 'tool'], true)) {
+        stats_increment_hour($day['hours'], $hour, 'bots');
+    } elseif (in_array($group, ['scanner', 'suspect'], true)) {
+        stats_increment_hour($day['hours'], $hour, 'scanners');
+    }
     stats_increment($day['status'], (string)$status);
     stats_increment($day['route'], $route);
     stats_increment($day['class'], $group);
@@ -466,8 +486,14 @@ function stats_count_entry(array &$day, array &$visitors, array $entry, array $c
     }
     $ua = (string)($entry['ua'] ?? '');
     $day['pageviews']++;
+    stats_increment_hour($day['hours'], $hour, 'pageviews');
     $day['paths'][$path]['views'] = ($day['paths'][$path]['views'] ?? 0) + 1;
-    $visitors[($entry['ip'] ?? '') . '|' . $ua] = true;
+    $visitor = ($entry['ip'] ?? '') . '|' . $ua;
+    if (!isset($visitors[$visitor])) {
+        // A visitor counts in the UTC hour of their first pageview of the day.
+        $visitors[$visitor] = true;
+        stats_increment_hour($day['hours'], $hour, 'visitors');
+    }
     stats_increment($day['device'], stats_device($ua));
     stats_increment($day['browser'], stats_browser($ua));
     stats_increment($day['language'], (string)($entry['al'] ?? '') ?: 'unknown');
@@ -475,6 +501,11 @@ function stats_count_entry(array &$day, array &$visitors, array $entry, array $c
     if ($referrer !== '' && $referrer !== ($entry['h'] ?? '')) {
         stats_increment($day['referrers'], $referrer);
     }
+}
+
+function stats_increment_hour(array &$hours, string $hour, string $key): void
+{
+    $hours[$hour][$key] = ($hours[$hour][$key] ?? 0) + 1;
 }
 
 function stats_increment(array &$counts, string $key): void

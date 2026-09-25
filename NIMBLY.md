@@ -2127,8 +2127,8 @@ JavaScript. Recording is on for `APP_ENV=prod` and `stage`; set
 never reach PHP and are not recorded.
 
 A shutdown function appends one JSON line per request to
-`ext/data/.tmp/stats/running-YYYY-MM-DD.log`: time, method, host, path with
-query, status, content type, duration, IP, user agent, referrer, first
+`ext/data/.tmp/stats/running-YYYY-MM-DD.log`: UTC time, method, host, path with
+query (relative to the base url), status, content type, duration, IP, user agent, referrer, first
 `Accept-Language` tag and a logged-in flag. Past `STATS_MAX_DAY_BYTES`
 (default 200 MB) a day only counts further requests as overflow.
 
@@ -2140,10 +2140,12 @@ commits:
 |---|---|
 | `raw/YYYY/YYYY-MM-DD.log.gz.enc` | the complete day, gzipped and AES-256-GCM encrypted |
 | `raw/YYYY/YYYY-MM-DD.apache.log.gz.enc` | optional Apache enrichment from `apache-YYYY-MM-DD.log` |
-| `months/YYYY-MM.json` | complete counts per day by status, route, visitor class, device, browser, language, bot, referrer and path |
+| `months/YYYY-MM.json` | complete counts per day by status, route, visitor class, device, browser, language, bot, referrer and path, plus `hours` (requests, pageviews, visitors, bots, scanners per UTC hour) |
 | `years/YYYY.json` | the same counts summed per month, plus a year total |
 
-Zoom from year to month to day to the raw requests; weeks and all-time views
+All dates, file names and day boundaries are UTC. Interfaces convert to the
+viewer's timezone by regrouping `hours`; a visitor counts in the hour of their
+first pageview of the UTC day. Zoom from year to month to day to the raw requests; weeks and all-time views
 are derived from these files. Above day level `visitors` becomes `visits`, the
 sum of daily unique visitors. The JSON files hold counts only, never rankings
 or IP addresses; interfaces derive top lists from them. Classification (human, editor, bot, scanner,
@@ -2994,7 +2996,7 @@ The legacy `_dep_` admin UI has been removed. Active admin routes and templates 
 
 - **Needs attention** — failed jobs, a recent fatal error, or low disk space. Absent entirely if the role has none of the relevant `view-*` features.
 - **Site status** — is the site current and healthy, in one glance. Every item follows the same shape: a dark, small uppercase label (Data/Core/Ext/System), then the one fact that actually answers "is this OK" rendered large but in a lighter tone (so labels anchor the eye and values don't shout), with supporting detail as a small caption underneath. For **Data**, the large fact is *when* ("18 hours ago", with the specific resource named in the caption below it — e.g. "Projects updated" — so it's directly checkable against the matching row in Your data, not an anonymous number). For **Core**/**Ext**, the large fact is *status* ("Up to date" or "N updates", amber when something's pending), with the raw "Updated X ago" timestamp demoted to the caption, plus an inline **Update now** for roles with `pull-core-updates`/`pull-ext-updates`. For **System** (`view-debug`), the large fact is a plain-language status — "OK" or "Low resources" (below 1GB RAM or 500MB disk free) — with the actual RAM/disk numbers as the caption and a **View debug** link into `/nb-admin/debug`. Everything here is a fact (with an action attached where one applies), never bare navigation — that's what Manage below is for.
-- **Visits** — for roles with `view-stats`: visits, pageviews and bot/scanner requests over the last 30 days with the change against the 30 days before, and one bar per day (today partial, from the running log). Data comes from `stats_recent_days()` in `core/lib/stats.php`; see Request statistics.
+- **Visits** — for roles with `view-stats`: visits, pageviews and bot/scanner requests over the last 30 days with the change against the 30 days before, and one bar per day (today partial, from the running log). PHP passes UTC hourly counts from `stats_recent_days()` in `core/lib/stats.php`; the `dashboard_stats` Alpine component groups them into the viewer's local days. See Request statistics.
 - **Your data** — the resources the current role can see, with record counts, disk usage, and last-updated time per resource.
 - **Manage** — a section card like the others (`rounded-2xl bg-neutral-50 p-6 shadow`, same heading style as Your data), containing grouped clusters, one per resource, laid out with equal height (`items-stretch` on the row) so the row reads as one set rather than cards of mismatched size. Each cluster follows a strict internal order: a dark small uppercase heading, a caption fact (same `text-neutral-500` as Site status), then — only if the cluster genuinely has one — its single most important pill (e.g. `Media Library (N)`, `Jobs (N)`, or `Add user` when a cluster's main draw is a create action rather than a list), and finally a **secondary row** where everything else (remaining entry pills like `Users (N)`/`Roles (N)`, plus every other action) renders as plain underlined text links, all sharing one canonical link style (`dashboard_secondary_link_class()` in `dashboard.php`, reused as-is by the Site status "Update now"/"View debug" links and every `quick-action-*.tpl` partial — one style everywhere, not a per-context variant). A cluster has exactly one pill-weight element, never two competing for attention:
   - **Users & roles**: "N active sessions" caption, `Add user` pill (the create action is the main reason to visit this cluster), then `Users (N)` / `Roles (N)` / `Sign out everyone (N)` as secondary text links.

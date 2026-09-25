@@ -53,6 +53,9 @@ $entry = stats_request_entry([
 stats_assert($entry['p'] === '/news?page=2' && $entry['s'] === 404 && $entry['ms'] === 250, 'path, status and duration recorded');
 stats_assert($entry['ct'] === 'application/json' && $entry['al'] === 'nl-nl' && $entry['h'] === 'example.test', 'content type, language and host normalised');
 stats_assert($entry['u'] === 1 && $entry['ip'] === '203.0.113.9', 'user flag and ip recorded');
+stats_assert($entry['t'] === gmdate('Y-m-d\\TH:i:s\\Z', 1000) && str_ends_with($entry['t'], 'Z'), 'time stored in UTC');
+stats_assert(stats_site_path('/nimbly-site/api/x?y=1', '/nimbly-site/') === '/api/x?y=1', 'path relative to base url');
+stats_assert(stats_site_path('/news', '/') === '/news' && stats_site_path('/other/x', '/nimbly-site/') === '/other/x', 'root and foreign paths unchanged');
 
 // Classification.
 stats_assert(stats_classify(stats_test_entry())['group'] === 'human', 'browser with language is human');
@@ -124,6 +127,8 @@ stats_assert(!isset($day['paths']['/v1/.env']) && ($day['referrers']['www.google
 stats_assert($day['paths']['/news']['status'] === ['200' => 3] && !isset($day['ips']), 'status per path, no ip ranking');
 stats_assert($day['device'] === ['desktop' => 2, 'mobile' => 1], 'devices of human pageviews');
 stats_assert($month['days']['2026-09-22']['overflow'] === 2, 'overflow survives in the raw archive');
+// Fixture times are 10:00+02:00, which is 08 UTC.
+stats_assert($day['hours'] === ['08' => ['bots' => 1, 'pageviews' => 3, 'requests' => 8, 'scanners' => 1, 'visitors' => 2]], 'hourly counts in UTC');
 
 $year = json_decode(file_get_contents($out . '/years/2026.json'), true);
 $september = $year['months']['2026-09'];

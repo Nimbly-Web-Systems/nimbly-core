@@ -142,70 +142,44 @@ function dashboard_system_status_item(): string
         . '</li>';
 }
 
-/** Visits over the last 30 days, compared with the 30 days before. */
+/**
+ * Visits over the last 30 days, compared with the 30 days before. Counts are
+ * passed per UTC hour; the browser groups them into the viewer's local days.
+ */
 function dashboard_stats_section(): string
 {
     if (!access_by_feature('view-stats')) {
         return '';
     }
     load_library('stats');
-    $days = stats_recent_days(60);
-    $current = array_slice($days, 30, null, true);
-    $totals = dashboard_stats_totals($current);
-    $previous = dashboard_stats_totals(array_slice($days, 0, 30, true));
-
+    $hours = dashboard_stats_hours(stats_recent_days(62));
     set_variable('_dash.stats_enabled', stats_enabled() ? 'true' : 'false');
-    set_variable('_dash.stats_has_data', array_filter($current) ? 'true' : 'false');
-    set_variable('_dash.stats_visits', number_format($totals['visits']));
-    set_variable('_dash.stats_pageviews', number_format($totals['pageviews']));
-    set_variable('_dash.stats_bots', number_format($totals['bots']));
-    set_variable('_dash.stats_visits_change', dashboard_stats_change($totals['visits'], $previous['visits']));
-    set_variable('_dash.stats_pageviews_change', dashboard_stats_change($totals['pageviews'], $previous['pageviews']));
-    set_variable('_dash.stats_scanners', number_format($totals['scanners']));
-    set_variable('_dash.stats_days', dashboard_stats_bars($current));
-    set_variable('_dash.stats_first_day', date('j M', strtotime(array_key_first($current))));
+    set_variable('_dash.stats_has_data', $hours ? 'true' : 'false');
+    set_variable('_dash.stats_hours', $hours);
     return run_buffered(dirname(__FILE__) . '/stats-band.tpl');
 }
 
-function dashboard_stats_totals(array $days): array
+/** Hourly counts keyed "YYYY-MM-DDTHH" (UTC); days without hours count at noon. */
+function dashboard_stats_hours(array $days): array
 {
-    $totals = ['visits' => 0, 'pageviews' => 0, 'bots' => 0, 'scanners' => 0];
-    foreach (array_filter($days) as $day) {
-        $class = (array)($day['class'] ?? []);
-        $totals['visits'] += (int)($day['visitors'] ?? 0);
-        $totals['pageviews'] += (int)($day['pageviews'] ?? 0);
-        $totals['scanners'] += (int)($class['scanner'] ?? 0) + (int)($class['suspect'] ?? 0);
-        $totals['bots'] += (int)($class['bot'] ?? 0) + (int)($class['tool'] ?? 0)
-            + (int)($class['scanner'] ?? 0) + (int)($class['suspect'] ?? 0);
+    $hours = [];
+    foreach (array_filter($days) as $date => $day) {
+        $by_hour = (array)($day['hours'] ?? []);
+        if ($by_hour === []) {
+            $class = (array)($day['class'] ?? []);
+            $by_hour = ['12' => [
+                'requests' => (int)($day['requests'] ?? 0),
+                'pageviews' => (int)($day['pageviews'] ?? 0),
+                'visitors' => (int)($day['visitors'] ?? 0),
+                'bots' => (int)($class['bot'] ?? 0) + (int)($class['tool'] ?? 0),
+                'scanners' => (int)($class['scanner'] ?? 0) + (int)($class['suspect'] ?? 0),
+            ]];
+        }
+        foreach ($by_hour as $hour => $counts) {
+            $hours[$date . 'T' . str_pad((string)$hour, 2, '0', STR_PAD_LEFT)] = $counts;
+        }
     }
-    return $totals;
-}
-
-function dashboard_stats_change(int $current, int $previous): string
-{
-    if ($previous === 0) {
-        return 'No earlier period yet';
-    }
-    $change = (int)round(($current - $previous) / $previous * 100);
-    return ($change > 0 ? '+' : '') . $change . '% vs previous 30 days';
-}
-
-/** One bar per day, scaled to the busiest day of the period. */
-function dashboard_stats_bars(array $days): array
-{
-    $max = max(1, ...array_values(array_map(fn($day) => (int)($day['pageviews'] ?? 0), $days)));
-    $today = date('Y-m-d');
-    $bars = [];
-    foreach ($days as $date => $day) {
-        $views = (int)($day['pageviews'] ?? 0);
-        $bars[$date] = [
-            'height' => $views > 0 ? max(3, (int)round($views / $max * 100)) : 0,
-            'today' => $date === $today ? 1 : 0,
-            'title' => date('D j M', strtotime($date)) . ': ' . number_format($views) . ' pageviews, '
-                . number_format((int)($day['visitors'] ?? 0)) . ' visits' . ($date === $today ? ' (so far)' : ''),
-        ];
-    }
-    return $bars;
+    return $hours;
 }
 
 function dashboard_data_section(): string
