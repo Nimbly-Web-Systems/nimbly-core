@@ -2,7 +2,7 @@
 
 require_once __DIR__ . '/cli_bootstrap.inc';
 load_library('stats');
-$date = (string)($argv[1] ?? '');
+$date = (string)($argv[2] ?? '');
 if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
     fwrite(STDERR, "Usage: stats:raw YYYY-MM-DD [--apache]\n");
     exit(2);
