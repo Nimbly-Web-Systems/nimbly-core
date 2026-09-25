@@ -152,6 +152,9 @@ function dashboard_stats_section(): string
         return '';
     }
     load_library('stats');
+    if (!stats_has_key()) {
+        return '';
+    }
     $hours = dashboard_stats_hours(stats_recent_days(62));
     set_variable('_dash.stats_enabled', stats_enabled() ? 'true' : 'false');
     set_variable('_dash.stats_has_data', $hours ? 'true' : 'false');

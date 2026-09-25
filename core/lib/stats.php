@@ -53,11 +53,17 @@ function stats_tmp_dir(): string
 /** 32-byte key from the hex STATS_KEY; archiving waits while it is missing. */
 function stats_key(): string
 {
-    $hex = trim((string)env('STATS_KEY', ''));
-    if (strlen($hex) !== 64 || !ctype_xdigit($hex)) {
+    if (!stats_has_key()) {
         throw new RuntimeException('STATS_KEY must be 64 hexadecimal characters');
     }
-    return hex2bin($hex);
+    return hex2bin(trim((string)env('STATS_KEY', '')));
+}
+
+/** Without a valid key nothing can be archived, so there is no history to show. */
+function stats_has_key(): bool
+{
+    $hex = trim((string)env('STATS_KEY', ''));
+    return strlen($hex) === 64 && ctype_xdigit($hex);
 }
 
 function stats_dir(): string
