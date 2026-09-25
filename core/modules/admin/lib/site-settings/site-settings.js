@@ -53,11 +53,15 @@ document.addEventListener("alpine:init", () => {
                 else this.target(field)[field] = value;
             },
 
-            submit() {
+            // A language change (`languages`, the new order) saves right away, together with any other
+            // unsaved edits; one save may add a language or reorder them, not both.
+            submit(languages = null, message = "Settings saved") {
                 this.busy = true;
                 const was = JSON.parse(this.original_features);
                 const switched = was.pages !== this.features.pages || was.navigation !== this.features.navigation;
-                const site = this.site_dirty ? put("/api/v1/.config/site", this.site) : Promise.resolve();
+                const site = languages || this.site_dirty
+                    ? put("/api/v1/.config/site", languages ? { ...this.site, languages } : this.site)
+                    : Promise.resolve();
                 return site.then(() => {
                     this.original_site = json(this.site);
                     if (!this.features_dirty) return;
@@ -67,23 +71,10 @@ document.addEventListener("alpine:init", () => {
                         enabled_page_types: this.features.page_types,
                     }).then(() => { this.original_features = json(this.features); });
                 }).then(() => {
-                    // The Pages and Navigation tabs follow these switches, so show the new tab bar.
-                    if (switched) return location.reload();
-                    this.busy = false;
-                    nb.notify("Settings saved");
-                }).catch(error => {
-                    this.busy = false;
-                    nb.notify(error.message || "Could not save settings");
-                });
-            },
-
-            // Language changes save right away (a save may add a language or reorder them, not both),
-            // so they wait until the other changes are saved.
-            save_languages(order, message) {
-                this.busy = true;
-                return put("/api/v1/.config/site", { languages: order }).then(() => {
                     nb.notify(message);
-                    location.reload();
+                    // New languages and the Pages and Navigation tabs need a fresh page.
+                    if (languages || switched) return location.reload();
+                    this.busy = false;
                 }).catch(error => {
                     this.busy = false;
                     nb.notify(error.message || "Could not save settings");
@@ -91,12 +82,12 @@ document.addEventListener("alpine:init", () => {
             },
             // The first language is the default: put the chosen one first, keep the rest in order.
             make_default(code) {
-                return this.save_languages([code, ...this.codes.filter(other => other !== code)], "Default language changed");
+                return this.submit([code, ...this.codes.filter(other => other !== code)], "Default language changed");
             },
             add_language() {
                 const code = this.new_language;
                 this.new_language = "";
-                if (code) return this.save_languages([...this.codes, code], "Language added");
+                if (code) return this.submit([...this.codes, code], "Language added");
             },
         };
     });

@@ -1,4 +1,4 @@
-<form x-data="site_settings([#_ss.name_json#], [#_ss.description_json#], [#_ss.direction_json#], [#_ss.side_json#], [#_ss.language_rows_json#], [#_ss.language_catalog_json#], [#_ss.rtl_json#], [#_ss.features_json#])" @submit.prevent="submit" class="max-w-2xl divide-y divide-neutral-200">
+<form x-data="site_settings([#_ss.name_json#], [#_ss.description_json#], [#_ss.direction_json#], [#_ss.side_json#], [#_ss.language_rows_json#], [#_ss.language_catalog_json#], [#_ss.rtl_json#], [#_ss.features_json#])" @submit.prevent="submit()" class="max-w-2xl divide-y divide-neutral-200">
     <div class="pb-5">
         <label :for="'site_name_' + active.name" class="mb-1 block text-sm font-medium">[#text Site name#]</label>
         <ul class="mb-1.5 flex flex-row" x-show="codes.length > 1" role="group" aria-label="[#text Language of the site name#]"><template x-for="code in codes" :key="code"><li><button type="button" class="cursor-pointer border-b-2 px-2 py-1 text-xs uppercase text-gray-600 hover:font-bold hover:text-black" :class="active.name === code ? 'border-b-primary' : 'border-b-transparent'" :aria-pressed="active.name === code" @click="active.name = code" x-text="code"></button></li></template></ul>
@@ -14,18 +14,17 @@
         <div class="flex flex-wrap items-center gap-2">
             <template x-for="(language, index) in languages" :key="language.code">
                 <div class="dropdown">
-                    <button type="button" tabindex="0" class="btn btn-sm rounded-full" :class="index === 0 ? 'btn-primary' : 'btn-outline'" :disabled="busy || dirty" :title="index === 0 ? '[#text Default language#]' : ''">
+                    <button type="button" tabindex="0" class="btn btn-sm rounded-full" :class="index === 0 ? 'btn-primary' : 'btn-outline'" :disabled="busy" :title="index === 0 ? '[#text Default language#]' : ''">
                         <span x-text="language.label"></span><span class="text-xs uppercase opacity-70" x-text="language.code"></span><span class="badge badge-xs" x-show="index === 0">[#text Default#]</span>
                     </button>
                     <ul tabindex="0" class="dropdown-content menu z-10 mt-1 w-44 rounded-box bg-base-100 p-2 shadow" x-show="index > 0"><li><button type="button" @click="make_default(language.code)">[#text Make default#]</button></li></ul>
                 </div>
             </template>
-            <select x-model="new_language" @change="add_language()" :disabled="busy || dirty" class="select select-bordered select-sm w-auto" aria-label="[#text Add language#]">
+            <select x-model="new_language" @change="add_language()" :disabled="busy" class="select select-bordered select-sm w-auto" aria-label="[#text Add language#]">
                 <option value="">+ [#text Add language#]</option>
                 <template x-for="option in available" :key="option.code"><option :value="option.code" x-text="option.label + ' (' + option.code + ')'"></option></template>
             </select>
         </div>
-        <p class="mt-2 text-xs text-warning" x-show="dirty" x-cloak>[#text Save your other changes before changing languages.#]</p>
     </div>
     [#_ss.pages_row#]
     [#_ss.navigation_row#]
