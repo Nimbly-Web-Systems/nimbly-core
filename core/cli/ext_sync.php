@@ -53,8 +53,8 @@ if (
     is_dir($ext_dir . '/.git/rebase-apply') ||
     file_exists($ext_dir . '/.git/MERGE_HEAD')
 ) {
-    echo "ext:sync skipped — rebase or merge in progress\n";
-    exit(0);
+    echo "ext:sync error: rebase or merge in progress\n";
+    exit(1);
 }
 
 $status = git('status --porcelain');
@@ -77,6 +77,8 @@ if (!empty(trim($status['output']))) {
 
 $pull = git('pull --rebase --autostash origin ' . escapeshellarg($branch));
 if ($pull['code'] !== 0) {
+    // Abort so an unresolved rebase does not block every later sync.
+    git('rebase --abort');
     echo "ext:sync error: git pull --rebase failed\n{$pull['output']}\n";
     exit(1);
 }
