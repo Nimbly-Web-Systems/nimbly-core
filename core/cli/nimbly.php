@@ -27,6 +27,7 @@ $commands = [
     'sessions:prune' => ['file' => 'core/cli/sessions_prune.php', 'desc' => 'Remove expired session files (--dry-run)', 'public' => true],
     'schedule:status' => ['file' => 'core/cli/schedule_status.php', 'desc' => 'Check mandatory maintenance completion', 'public' => true],
     'stats:rollup'     => ['file' => 'core/cli/stats_rollup.php',   'desc' => 'Archive finished days of request stats and refresh summaries (--rebuild)', 'public' => true],
+    'stats:import-apache' => ['file' => 'core/cli/stats_import_apache.php', 'desc' => 'Import Apache access log lines from stdin (--mode=enrich|full --before= --base= --host=)', 'public' => true],
     'stats:raw'        => ['file' => 'core/cli/stats_raw.php',      'desc' => 'Print the decrypted raw request log of one day (YYYY-MM-DD [--apache])', 'public' => true],
     'jobs:prune'       => ['file' => 'core/cli/jobs_prune.php',     'desc' => 'Delete completed and terminally failed jobs older than N days (--days=30)', 'public' => false],
     'agent:enqueue'     => ['file' => 'core/cli/agent.php',          'desc' => 'Enqueue an idempotent agent run', 'public' => false],

@@ -328,8 +328,9 @@ function stats_recent_days(int $count, ?string $today = null, ?string $tmp_dir =
     for ($offset = $count - 1; $offset >= 0; $offset--) {
         $date = gmdate('Y-m-d', strtotime($today . 'T12:00:00Z -' . $offset . ' days'));
         $running = $tmp_dir . '/running-' . $date . '.log';
-        if (is_file($running)) {
-            $days[$date] = stats_running_day($running, $tmp_dir . '/cache-' . $date . '.json');
+        $apache = $tmp_dir . '/apache-' . $date . '.log';
+        if (is_file($running) || is_file($apache)) {
+            $days[$date] = stats_running_day($running, $apache, $tmp_dir . '/cache-' . $date . '.json');
             continue;
         }
         $month = substr($date, 0, 7);
@@ -342,8 +343,8 @@ function stats_recent_days(int $count, ?string $today = null, ?string $tmp_dir =
     return $days;
 }
 
-/** Counts of a running log, cached for a few minutes because it keeps growing. */
-function stats_running_day(string $running, string $cache): array
+/** Counts of a day not yet archived, cached for a few minutes because it keeps growing. */
+function stats_running_day(string $running, string $apache, string $cache): array
 {
     if (is_file($cache) && filemtime($cache) > time() - 300) {
         $day = json_decode((string)file_get_contents($cache), true);
@@ -351,7 +352,10 @@ function stats_running_day(string $running, string $cache): array
             return $day;
         }
     }
-    $day = stats_summarize_day([fn() => stats_read_running_lines($running)], false);
+    $day = stats_summarize_day(
+        [fn() => stats_read_running_lines($running), fn() => stats_read_running_lines($apache)],
+        is_file($apache)
+    );
     @file_put_contents($cache, json_encode($day));
     return $day;
 }
@@ -677,4 +681,122 @@ function stats_add_counts(array &$total, array $counts): void
         }
     }
     ksort($total);
+}
+
+/**
+ * Imports Apache access log lines as request entries (src "apache").
+ * Mode "full" takes every line before $before (backfill for days the app did
+ * not record); mode "enrich" only takes what never reaches PHP: static files,
+ * cached thumbnails and blocked .php probes. A watermark makes reruns safe.
+ */
+function stats_import_apache(iterable $lines, string $mode, ?int $before = null, array $options = []): array
+{
+    $tmp_dir = $options['tmp_dir'] ?? stats_tmp_dir();
+    $file_base = $options['file_base'] ?? $GLOBALS['SYSTEM']['file_base'];
+    $base = $options['base'] ?? '/';
+    $host = $options['host'] ?? strtolower((string)parse_url((string)env('SITE_URL', ''), PHP_URL_HOST));
+    @mkdir($tmp_dir, 0775, true);
+    $watermark_file = $tmp_dir . '/apache.watermark';
+    $watermark = is_file($watermark_file) ? (int)file_get_contents($watermark_file) : 0;
+    $result = ['imported' => 0, 'skipped' => 0, 'dates' => []];
+    $latest = $watermark;
+    $buffers = [];
+    foreach ($lines as $line) {
+        $entry = stats_parse_apache_line((string)$line, $base, $host);
+        $time = $entry === null ? 0 : strtotime($entry['t']);
+        if ($entry === null || $time <= $watermark || ($before !== null && $time >= $before)
+            || ($mode === 'enrich' && !stats_apache_unseen_by_app($entry, $file_base))) {
+            $result['skipped']++;
+            continue;
+        }
+        $date = substr($entry['t'], 0, 10);
+        $buffers[$date][] = json_encode($entry, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);
+        $result['imported']++;
+        $latest = max($latest, $time);
+        if (count($buffers[$date]) >= 1000) {
+            file_put_contents($tmp_dir . '/apache-' . $date . '.log', implode("\n", $buffers[$date]) . "\n", FILE_APPEND | LOCK_EX);
+            $buffers[$date] = [];
+        }
+    }
+    foreach ($buffers as $date => $buffer) {
+        if ($buffer !== []) {
+            file_put_contents($tmp_dir . '/apache-' . $date . '.log', implode("\n", $buffer) . "\n", FILE_APPEND | LOCK_EX);
+        }
+        $result['dates'][] = $date;
+    }
+    file_put_contents($watermark_file, (string)$latest);
+    sort($result['dates']);
+    return $result;
+}
+
+/** Parses the Apache "combined" or "vhost_combined" format; null for foreign or broken lines. */
+function stats_parse_apache_line(string $line, string $base = '/', string $host = ''): ?array
+{
+    if (!preg_match('#^(?:\S+:\d+ )?(\S+) \S+ \S+ \[([^\]]+)\] "(\S+) (\S+)[^"]*" (\d{3}) \S+(?: "((?:[^"\\\\]|\\\\.)*)" "((?:[^"\\\\]|\\\\.)*)")?#', $line, $match)) {
+        return null;
+    }
+    $time = DateTime::createFromFormat('d/M/Y:H:i:s O', $match[2]);
+    $path = $match[4];
+    if ($time === false || ($base !== '/' && !str_starts_with($path, $base))) {
+        return null;
+    }
+    $path = substr(stats_site_path($path, $base), 0, 2000);
+    $referrer = ($match[6] ?? '-') === '-' ? '' : $match[6];
+    return [
+        't' => gmdate('Y-m-d\\TH:i:s\\Z', $time->getTimestamp()),
+        'm' => substr($match[3], 0, 10),
+        'h' => $host,
+        'p' => $path,
+        's' => (int)$match[5],
+        'ct' => stats_guess_content_type($path),
+        'ms' => 0,
+        'ip' => substr($match[1], 0, 45),
+        'ua' => substr(stripcslashes($match[7] ?? ''), 0, 500),
+        'ref' => substr(stripcslashes($referrer), 0, 500),
+        'al' => '',
+        'u' => 0,
+        'src' => 'apache',
+    ];
+}
+
+/** Apache logs carry no content type; derive it from the path like the router would serve it. */
+function stats_guess_content_type(string $path): string
+{
+    $path = strtok($path, '?') ?: '/';
+    if (preg_match('#^/api(/|$)#', $path)) {
+        return 'application/json';
+    }
+    $types = [
+        'css' => 'text/css', 'js' => 'application/javascript', 'json' => 'application/json', 'xml' => 'application/xml',
+        'txt' => 'text/plain', 'pdf' => 'application/pdf', 'png' => 'image/png', 'jpg' => 'image/jpeg',
+        'jpeg' => 'image/jpeg', 'gif' => 'image/gif', 'svg' => 'image/svg+xml', 'webp' => 'image/webp',
+        'avif' => 'image/avif', 'ico' => 'image/x-icon', 'woff' => 'font/woff', 'woff2' => 'font/woff2',
+        'ttf' => 'font/ttf', 'mp4' => 'video/mp4', 'webm' => 'video/webm', 'zip' => 'application/zip',
+    ];
+    $extension = strtolower(pathinfo($path, PATHINFO_EXTENSION));
+    if (str_starts_with($path, '/img/')) {
+        return 'image/webp';
+    }
+    return $extension === '' || $extension === 'html' ? 'text/html' : ($types[$extension] ?? 'application/octet-stream');
+}
+
+/** True for requests .htaccess answers without PHP, so the app never recorded them. */
+function stats_apache_unseen_by_app(array $entry, string $file_base): bool
+{
+    $path = rawurldecode(strtok($entry['p'], '?') ?: '/');
+    if ($entry['s'] === 403 && preg_match('#\.php\d?($|/)#i', $path)) {
+        return true;
+    }
+    if (str_starts_with($path, '/img/')) {
+        return true;
+    }
+    if (str_contains($path, '..') || $path === '/') {
+        return false;
+    }
+    foreach (['ext/static', 'core/static'] as $static) {
+        if (is_file($file_base . $static . $path)) {
+            return true;
+        }
+    }
+    return false;
 }

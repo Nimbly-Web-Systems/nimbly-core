@@ -170,5 +170,50 @@ flock($lock, LOCK_EX);
 flock($lock, LOCK_UN);
 fclose($lock);
 
+// Apache import.
+$line = '203.0.113.5 - - [24/Sep/2026:23:30:00 +0200] "GET /nimbly-site/news?x=1 HTTP/2.0" 200 5772 "https://www.google.com/" "Mozilla/5.0 \"quoted\" Chrome/128"';
+$parsed = stats_parse_apache_line($line, '/nimbly-site/', 'example.test');
+stats_assert($parsed['t'] === '2026-09-24T21:30:00Z' && $parsed['p'] === '/news?x=1' && $parsed['s'] === 200, 'apache line parsed to UTC and base-relative path');
+stats_assert($parsed['ua'] === 'Mozilla/5.0 "quoted" Chrome/128' && $parsed['ref'] === 'https://www.google.com/' && $parsed['src'] === 'apache', 'escaped agent and referrer');
+stats_assert($parsed['ct'] === 'text/html' && $parsed['h'] === 'example.test', 'page content type guessed, host set');
+stats_assert(stats_parse_apache_line($line, '/other/') === null && stats_parse_apache_line('garbage') === null, 'foreign and broken lines skipped');
+stats_assert(stats_parse_apache_line('example.test:443 ' . $line)['ip'] === '203.0.113.5', 'vhost_combined format');
+stats_assert(stats_guess_content_type('/api/v1/x') === 'application/json' && stats_guess_content_type('/app.css?v=1') === 'text/css', 'content types guessed');
+
+$site = $stats_test_root . '/site/';
+mkdir($site . 'ext/static', 0777, true);
+file_put_contents($site . 'ext/static/app.css', '');
+$import_tmp = $stats_test_root . '/import';
+$apache_line = fn($time, $request, $status) => '198.51.100.1 - - [' . $time . ' +0000] "GET ' . $request . ' HTTP/1.1" ' . $status . ' 10 "-" "Mozilla/5.0 Chrome/128"';
+$log = [
+    $apache_line('20/Sep/2026:10:00:00', '/news', 200),
+    $apache_line('20/Sep/2026:10:00:01', '/app.css', 200),
+    $apache_line('20/Sep/2026:10:00:02', '/img/photo.jpg', 200),
+    $apache_line('20/Sep/2026:10:00:03', '/wp-login.php', 403),
+    $apache_line('21/Sep/2026:10:00:00', '/news', 200),
+];
+$options = ['tmp_dir' => $import_tmp, 'file_base' => $site, 'host' => 'example.test'];
+$result = stats_import_apache($log, 'full', strtotime('2026-09-21T00:00:00Z'), $options);
+stats_assert($result['imported'] === 4 && $result['dates'] === ['2026-09-20'], 'full import stops at the cut-off');
+stats_assert(stats_import_apache($log, 'full', strtotime('2026-09-21T00:00:00Z'), $options)['imported'] === 0, 'watermark makes reruns safe');
+$enrich = stats_import_apache(array_merge($log, [
+    $apache_line('22/Sep/2026:10:00:00', '/news', 200),
+    $apache_line('22/Sep/2026:10:00:01', '/app.css', 200),
+    $apache_line('22/Sep/2026:10:00:02', '/img/photo.jpg', 200),
+    $apache_line('22/Sep/2026:10:00:03', '/wp-login.php', 403),
+    $apache_line('22/Sep/2026:10:00:04', '/missing.css', 404),
+]), 'enrich', null, $options);
+stats_assert($enrich['imported'] === 3 && $enrich['dates'] === ['2026-09-22'], 'enrich takes only static files, thumbnails and blocked probes');
+
+$import_out = $stats_test_root . '/import-stats';
+$recent = stats_recent_days(1, '2026-09-22', $import_tmp, $import_out);
+stats_assert($recent['2026-09-22']['requests'] === 3 && $recent['2026-09-22']['enriched'] === true, 'unarchived apache day counted');
+stats_rollup('2026-09-23', false, $import_tmp, $import_out, $key);
+$september = json_decode(file_get_contents($import_out . '/months/2026-09.json'), true);
+$backfilled = $september['days']['2026-09-20'];
+stats_assert($backfilled['requests'] === 4 && $backfilled['pageviews'] === 1 && $backfilled['enriched'] === true, 'apache-only day archived and counted');
+stats_assert(($backfilled['class']['scanner'] ?? 0) === 1 && ($backfilled['route']['file'] ?? 0) === 2, 'backfilled probes and files classified');
+stats_assert(is_file($import_out . '/raw/2026/2026-09-20.apache.log.gz.enc') && !is_file($import_tmp . '/apache-2026-09-20.log'), 'apache log archived encrypted');
+
 stats_test_remove($stats_test_root);
 echo "stats tests passed\n";
