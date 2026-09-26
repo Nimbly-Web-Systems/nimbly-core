@@ -39,20 +39,6 @@ function agent_connector_chat_history(array $_source, array $_config, array $con
     return agent_artifact('openai.input', 1, ['messages' => $messages]);
 }
 
-/** The colleague's first name, when their account has one; the agent may use it where it comes naturally. */
-function agent_chat_first_name(array $conversation): ?string
-{
-    load_library('get-user');
-    foreach (array_reverse((array)($conversation['messages'] ?? [])) as $message) {
-        if (($message['asker'] ?? '') !== '') {
-            $user = find_user_by_email((string)$message['asker']);
-            $name = trim((string)(is_array($user) ? ($user['name'] ?? '') : ''));
-            return $name === '' || str_contains($name, '@') ? null : explode(' ', $name)[0];
-        }
-    }
-    return null;
-}
-
 /** Short memory: the same person's other recent conversations with this team. */
 function agent_chat_recent_for(array $conversation, string $uuid, int $limit = 40): array
 {

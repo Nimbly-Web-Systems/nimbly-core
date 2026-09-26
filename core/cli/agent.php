@@ -102,10 +102,11 @@ if ($command === 'agent:chat') {
     if (!$worker || !flock($worker, LOCK_EX | LOCK_NB)) {
         exit(0);
     }
-    load_library('agent-chat');
+    load_libraries(['agent-chat', 'agent-remote']);
     $until = time() + 3600;
     do {
         agent_chat_run_pending();
+        agent_remote_pull();
         usleep(2000000);
     } while (time() < $until);
     exit(0);

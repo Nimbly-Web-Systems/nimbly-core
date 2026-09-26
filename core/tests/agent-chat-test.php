@@ -33,7 +33,7 @@ function access_by_feature(string $feature): bool
 }
 function env($key, $default = null)
 {
-    return ['SYSTEM_ALERT_EMAIL' => 'ops@example.test', 'APP_ENV' => 'testing'][$key] ?? $default;
+    return ($GLOBALS['chat_test_env'] ?? [])[$key] ?? ['SYSTEM_ALERT_EMAIL' => 'ops@example.test', 'APP_ENV' => 'testing'][$key] ?? $default;
 }
 function data_lookup($_resource, $_uuid, $field, $default)
 {
@@ -107,6 +107,8 @@ require_once BASE_DIR . 'core/modules/agent/lib/agent-chat.php';
 require_once BASE_DIR . 'core/modules/agent/lib/agent-connector-chat-history.php';
 require_once BASE_DIR . 'core/modules/agent/lib/agent-connector-chat-reply.php';
 require_once BASE_DIR . 'core/modules/agent/lib/agent-connector-notify-operator.php';
+require_once BASE_DIR . 'core/modules/agent/lib/agent-remote.php';
+require_once BASE_DIR . 'core/modules/agent/lib/agent-connector-chat-post.php';
 
 // Stands in for the model: reads the conversation the way the OpenAI connector does.
 function agent_connector_fixture_model(array $source, array $_config, array $context): array
@@ -367,5 +369,123 @@ chat_test_assert(agent_artifact_data($result)['sent'] === true, 'the escalation 
 chat_test_assert($chat_test_emails[0]['recipient'] === 'ops@example.test' && $chat_test_emails[0]['subject'] === '[Nimbly] Helper: Visitor numbers',
     'the escalation goes to the system alert address');
 chat_test_assert($chat_test_vars['agent_message'] === "Luuk asks for &lt;numbers&gt;<br />\nsince 2025.", 'the agent\'s message is escaped');
+
+// Remote agents: Coder lives on another site (its home). This site (the hub) asks it through the
+// home's API as a user there, and pulls back what it said. Both sites run here, one at a time.
+$GLOBALS['SYSTEM']['file_base'] = sys_get_temp_dir() . '/nimbly-agent-remote-test-' . getmypid() . '/';
+$chat_test_sites = ['home' => ['agent_test_data' => [], 'chat_test_env' => ['NOTICE_TO' => 'hermen@example.test'],
+    'chat_test_user' => 'hub@example.test', 'chat_test_features' => ['agent-remote', 'chat-coder']]];
+function chat_test_site(string $site): void
+{
+    $keys = ['agent_test_data', 'chat_test_env', 'chat_test_user', 'chat_test_features'];
+    $other = $site === 'home' ? 'hub' : 'home';
+    $GLOBALS['chat_test_sites'][$other] = array_combine($keys, array_map(fn($key) => $GLOBALS[$key] ?? [], $keys));
+    foreach ($GLOBALS['chat_test_sites'][$site] as $key => $value) {
+        $GLOBALS[$key] = $value;
+    }
+}
+$chat_test_calls = [];
+$GLOBALS['AGENT_REMOTE_TEST_TRANSPORT'] = function (string $url, array $payload, string $token): array {
+    $GLOBALS['chat_test_calls'][] = $url;
+    if (str_ends_with($url, '/api/v1/auth/token')) {
+        return ['token' => 'token-1', 'token_expires' => time() + 600];
+    }
+    chat_test_assert($url === 'https://home.test/api/v1/agent-remote' && $token === 'token-1', 'the hub calls the home API with its token');
+    chat_test_site('home');
+    try {
+        if (!access_by_feature('agent-remote')) {
+            throw new RuntimeException('The agent\'s home site did not answer (HTTP 403)');
+        }
+        agent_chat_ensure_resource();
+        return match ($payload['operation']) {
+            'ask' => agent_remote_receive_ask($payload),
+            'updates' => ['updates' => agent_remote_updates((int)$payload['since']), 'now' => time()],
+        };
+    } catch (InvalidArgumentException $error) {
+        throw new RuntimeException('The agent\'s home site did not answer (HTTP 422)');
+    } finally {
+        chat_test_site('hub');
+    }
+};
+$chat_test_env = ['AGENT_REMOTES' => 'coder=https://home.test/'];
+chat_test_assert(agent_remote_homes() === ['coder' => 'https://home.test'], 'remote agents are read from the settings');
+chat_test_assert(agent_chat_team() === ['helper' => 'Helper', 'coder' => 'Coder'], 'a remote agent is in the team like any other');
+$agent_test_jobs = [];
+$remote = agent_chat_post('', $owner, '@Coder how is disk space?')['uuid'];
+$hub_message = end(data_read('.agent_conversations', $remote)['messages']);
+$hub_run = $hub_message['runs']['coder'];
+chat_test_assert(data_read('.agent_runs', $hub_run)['trigger'] === 'remote' && $agent_test_jobs === [], 'the turn is not run here');
+chat_test_assert(agent_chat_view($remote, $owner)['working'][0]['status'] === 'working', 'the chat shows the remote agent working');
+chat_test_expect_error(fn() => agent_chat_post($remote, $owner, '@Coder hello?'), 'Still waiting for Coder', 'one question at a time');
+
+chat_test_site('home');
+$mirror = array_values(array_filter(data_read('.agent_conversations'), fn($conversation) => ($conversation['hub_user'] ?? '') === 'hub@example.test'))[0];
+$home_run = end($mirror['messages'])['runs']['coder'];
+chat_test_assert(data_read('.agent_runs', $home_run)['read_only'] === true, 'a question from the hub runs read-only at home');
+chat_test_assert(agent_chat_list(md5_uuid('hub@example.test')) === [], 'the hub\'s conversations are not the hub user\'s chats at home');
+agent_chat_run_pending();
+$intro = json_decode($chat_test_seen['coder'][0]['content'][0]['text'], true);
+chat_test_assert($intro['colleague_first_name'] === 'Hermen' && array_column($intro['team'], 'name') === ['Helper', 'Coder'],
+    'at home the agent knows who asks and the hub\'s team');
+chat_test_site('hub');
+
+chat_test_assert(agent_remote_pull(true) === 1, 'the hub pulls the reply');
+$view = agent_chat_view($remote, $owner);
+chat_test_assert(end($view['messages'])['from'] === 'coder' && end($view['messages'])['text'] === 'Disk is fine.' && $view['working'] === [],
+    'the reply shows in the hub\'s chat');
+chat_test_assert(data_read('.agent_runs', $hub_run)['status'] === 'completed', 'the waiting turn is completed');
+agent_remote_pull(true);
+chat_test_assert(count(agent_chat_view($remote, $owner)['messages']) === 2, 'a reply pulled twice shows once');
+
+// At home the agent hands over to a colleague at the hub; the hub brings them in.
+chat_test_site('home');
+chat_test_assert(agent_chat_hand_over(array_key_first(array_filter(data_read_index('.agent_conversations', 'hub_user', md5_uuid('hub@example.test'))) ?: ['x' => 1]),
+    $home_run, 'coder', 'nobody', '')['handed_over'] === false, 'only a colleague from the hub\'s team is brought in');
+$mirror_uuid = array_key_first(data_read_index('.agent_conversations', 'hub_user', md5_uuid('hub@example.test')));
+chat_test_assert(agent_chat_hand_over($mirror_uuid, $home_run, 'coder', 'helper', 'Content question')['handed_over'], 'the hand-over is noted');
+chat_test_site('hub');
+agent_remote_pull(true);
+chat_test_assert(isset(data_read('.agent_conversations', $remote)['messages'][0]['runs']['helper']), 'the hub brings the colleague in');
+agent_chat_run_pending();
+chat_test_assert(end(agent_chat_view($remote, $owner)['messages'])['from'] === 'helper', 'the colleague answers at the hub');
+agent_remote_pull(true);
+chat_test_assert(count(array_filter(data_read('.agent_conversations', $remote)['messages'], fn($message) => ($message['from'] ?? '') === 'helper')) === 1,
+    'a hand-over pulled twice brings the colleague in once');
+
+// At home the agent tells someone something; the hub puts it in their conversation with the agent.
+chat_test_site('home');
+$posted = agent_connector_chat_post(agent_artifact('agent.tool-request', 1, ['tool' => 'post_to_chat', 'arguments' => ['message' => 'I restarted Apache.']]),
+    ['recipient_env' => 'NOTICE_TO'], ['run' => ['agent_id' => 'coder']]);
+chat_test_assert(agent_artifact_data($posted)['posted'] === true, 'the agent posts a notice');
+chat_test_site('hub');
+$GLOBALS['chat_test_names']['hermen@example.test'] = ['email' => $chat_test_user, 'name' => 'Hermen Reitsma'];
+agent_remote_pull(true);
+agent_remote_pull(true);
+$notices = array_values(array_filter(agent_chat_list($owner), fn($chat) => $chat['title'] === 'Coder'));
+chat_test_assert(count($notices) === 1 && $notices[0]['unread'] === 1 && $notices[0]['last'] === 'I restarted Apache.',
+    'the notice shows once, unread, in the colleague\'s chat with the agent');
+
+// A role at home that may not chat with the agent: the turn fails here, and the message is kept.
+$chat_test_sites['home']['chat_test_features'] = ['agent-remote'];
+$refused = agent_chat_post($notices[0]['uuid'], $owner, 'Thanks, why?');
+chat_test_assert($refused['working'][0]['status'] === 'failed' && end($refused['messages'])['text'] === 'Thanks, why?',
+    'a question the home refuses shows as failed');
+$chat_test_sites['home']['chat_test_features'] = ['agent-remote', 'chat-coder'];
+
+// A turn that fails at home, and one that never comes back, show as failed at the hub.
+$retry = agent_chat_post($notices[0]['uuid'], $owner, 'Once more?');
+$retry_run = end(data_read('.agent_conversations', $notices[0]['uuid'])['messages'])['runs']['coder'];
+chat_test_site('home');
+$chat_test_model_fails = true;
+agent_chat_run_pending();
+$chat_test_model_fails = false;
+chat_test_site('hub');
+agent_remote_pull(true);
+chat_test_assert(data_read('.agent_runs', $retry_run)['status'] === 'failed', 'a failed turn at home fails at the hub');
+agent_chat_post($notices[0]['uuid'], $owner, 'And now?');
+$late_run = end(data_read('.agent_conversations', $notices[0]['uuid'])['messages'])['runs']['coder'];
+data_update('.agent_runs', $late_run, ['scheduled_at' => time() - AGENT_REMOTE_TIMEOUT - 1]);
+chat_test_assert(agent_chat_view($notices[0]['uuid'], $owner)['working'][0]['status'] === 'failed', 'a turn that never comes back fails');
+$chat_test_env = [];
 
 echo "Agent chat tests passed.\n";

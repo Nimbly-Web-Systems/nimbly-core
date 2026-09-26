@@ -19,10 +19,15 @@ function agent_chat_owner(): string
 /** Agents with a chat pipeline that the current user may talk to, as id => display name. */
 function agent_chat_team(): array
 {
-    load_library('access');
+    load_libraries(['access', 'agent-remote']);
     $team = [];
-    foreach (agent_ids() as $agent_id) {
+    $remote = agent_remote_homes();
+    foreach (array_unique([...agent_ids(), ...array_keys($remote)]) as $agent_id) {
         if (!agent_chat_switched_on($agent_id) || !access_by_feature('chat-' . $agent_id)) {
+            continue;
+        }
+        if (isset($remote[$agent_id])) {
+            $team[$agent_id] = agent_chat_name($agent_id);
             continue;
         }
         try {
@@ -102,12 +107,20 @@ function agent_chat_unread_count(array $conversation): int
         fn($message) => !in_array(($message['from'] ?? 'user'), ['user', 'occasion'], true) && (int)($message['at'] ?? 0) > $read_at));
 }
 
+/** A turn as the chat sees it; a turn waiting on another site too long counts as failed. */
+function agent_chat_run(string $run_uuid): ?array
+{
+    load_library('agent-remote');
+    $run = data_read('.agent_runs', $run_uuid);
+    return is_array($run) ? agent_remote_expire($run_uuid, $run) : null;
+}
+
 /** Whether an agent is still working on the latest message of this conversation. */
 function agent_chat_waiting(array $conversation): bool
 {
     $last = end($conversation['messages']) ?: [];
     foreach ((array)($last['runs'] ?? []) as $run_uuid) {
-        $run = data_read('.agent_runs', (string)$run_uuid);
+        $run = agent_chat_run((string)$run_uuid);
         if (is_array($run) && !in_array(($run['status'] ?? ''), AGENT_TERMINAL_STATUSES, true)) {
             return true;
         }
@@ -234,16 +247,14 @@ function agent_chat_post(string $uuid, string $owner, string $text, string $chan
         }
         load_library('util');
         $message_id = substr(md5(generate_uuid()), 0, 12);
-        $runs = [];
-        foreach ($addressees as $agent_id) {
-            $runs[$agent_id] = agent_enqueue_result($agent_id, null, [
-                'trigger' => 'chat', 'idempotency_suffix' => 'chat-' . $message_id,
-                'event_context' => ['conversation' => $uuid],
-            ])['run_uuid'];
-        }
         // The asker is kept with the message (never shown to the model): tools act with their rights.
         $conversation['messages'][] = ['id' => $message_id, 'from' => 'user', 'text' => $text,
-            'at' => time(), 'channel' => $channel, 'runs' => $runs, 'asker' => (string)username_get()];
+            'at' => time(), 'channel' => $channel, 'runs' => [], 'asker' => (string)username_get()];
+        $last = array_key_last($conversation['messages']);
+        foreach ($addressees as $agent_id) {
+            $conversation['messages'][$last]['runs'][$agent_id] = agent_chat_start_turn($uuid, $conversation, $agent_id,
+                $message_id, $team, ['conversation' => $uuid]);
+        }
         data_update('.agent_conversations', $uuid, [
             'agents' => $conversation['agents'],
             'messages' => $conversation['messages'], 'updated_at' => time(), 'read_at' => time(),
@@ -255,6 +266,18 @@ function agent_chat_post(string $uuid, string $owner, string $text, string $chan
     return agent_chat_view($uuid, $owner);
 }
 
+/** An agent's turn on a message: a chat run here, or a question to the site the agent lives on. */
+function agent_chat_start_turn(string $uuid, array $conversation, string $agent_id, string $message_id, array $team, array $context): string
+{
+    load_library('agent-remote');
+    if (isset(agent_remote_homes()[$agent_id])) {
+        return agent_remote_ask($uuid, $conversation, $agent_id, $message_id, $team);
+    }
+    return agent_enqueue_result($agent_id, null, [
+        'trigger' => 'chat', 'idempotency_suffix' => 'chat-' . $message_id, 'event_context' => $context,
+    ])['run_uuid'];
+}
+
 /** The run still working on the latest message to this agent, if any. */
 function agent_chat_pending_run(array $conversation, string $agent_id): ?array
 {
@@ -263,7 +286,7 @@ function agent_chat_pending_run(array $conversation, string $agent_id): ?array
         if ($run_uuid === '') {
             continue;
         }
-        $run = data_read('.agent_runs', $run_uuid);
+        $run = agent_chat_run($run_uuid);
         return is_array($run) && !in_array(($run['status'] ?? ''), AGENT_TERMINAL_STATUSES, true)
             ? $run + ['uuid' => $run_uuid] : null;
     }
@@ -327,16 +350,28 @@ function agent_chat_name(string $agent_id): string
 function agent_chat_colleagues(array $conversation): array
 {
     $colleagues = [];
-    foreach ((array)($conversation['agents'] ?? []) as $agent_id) {
+    foreach (agent_chat_team_of($conversation) as $agent_id => $name) {
         try {
-            $definition = agent_definition($agent_id);
+            $role = (string)(agent_definition($agent_id)['role'] ?? '');
         } catch (Throwable) {
-            continue;
+            $role = '';
         }
-        $colleagues[] = ['id' => $agent_id, 'name' => (string)($definition['name'] ?? $agent_id),
-            'role' => (string)($definition['role'] ?? '')];
+        $colleagues[] = ['id' => $agent_id, 'name' => $name, 'role' => $role];
     }
     return $colleagues;
+}
+
+/** The agents in a conversation as id => name; a conversation from another site has that site's team. */
+function agent_chat_team_of(array $conversation): array
+{
+    if (is_array($conversation['hub_team'] ?? null) && $conversation['hub_team'] !== []) {
+        return array_map('strval', $conversation['hub_team']);
+    }
+    $team = [];
+    foreach ((array)($conversation['agents'] ?? []) as $agent_id) {
+        $team[(string)$agent_id] = agent_chat_name((string)$agent_id);
+    }
+    return $team;
 }
 
 /**
@@ -345,6 +380,17 @@ function agent_chat_colleagues(array $conversation): array
  */
 function agent_chat_hand_over(string $uuid, string $run_uuid, string $from, string $to, string $note): array
 {
+    $mirror = data_read('.agent_conversations', $uuid);
+    if (is_array($mirror) && !empty($mirror['hub_user'])) {
+        // A conversation from another site: its colleagues are there, so that site brings them in.
+        if (!isset($mirror['hub_team'][$to]) || $to === $from) {
+            return ['handed_over' => false, 'reason' => 'That colleague is not in this conversation.'];
+        }
+        load_library('agent-remote');
+        agent_remote_outbox($uuid, ['type' => 'hand_over', 'agent' => $from, 'to' => $to, 'note' => mb_substr($note, 0, 1000),
+            'run' => (string)(data_read('.agent_runs', $run_uuid)['event_context']['hub_run'] ?? '')]);
+        return ['handed_over' => true, 'note' => 'They will answer in the chat after your reply.'];
+    }
     $lock = agent_lock('chat-' . $uuid);
     try {
         $conversation = data_read('.agent_conversations', $uuid);
@@ -359,10 +405,12 @@ function agent_chat_hand_over(string $uuid, string $run_uuid, string $from, stri
             if (!in_array($run_uuid, (array)($message['runs'] ?? []), true)) {
                 continue;
             }
-            $conversation['messages'][$index]['runs'][$to] = agent_enqueue_result($to, null, [
-                'trigger' => 'chat', 'idempotency_suffix' => 'chat-' . $message['id'],
-                'event_context' => ['conversation' => $uuid, 'handed_over_by' => $from, 'note' => mb_substr($note, 0, 1000)],
-            ])['run_uuid'];
+            if (isset($message['runs'][$to])) {
+                return ['handed_over' => true, 'note' => 'They already answered this message.'];
+            }
+            $conversation['messages'][$index]['runs'][$to] = agent_chat_start_turn($uuid, $conversation, $to,
+                (string)$message['id'], agent_chat_team_of($conversation),
+                ['conversation' => $uuid, 'handed_over_by' => $from, 'note' => mb_substr($note, 0, 1000)]);
             data_update('.agent_conversations', $uuid, ['messages' => $conversation['messages']]);
             return ['handed_over' => true, 'note' => 'They will answer in the chat right after your reply.'];
         }
@@ -370,6 +418,51 @@ function agent_chat_hand_over(string $uuid, string $run_uuid, string $from, stri
     } finally {
         agent_unlock($lock);
     }
+}
+
+/**
+ * An agent tells someone something on its own initiative, in that person's conversation with the
+ * agent (made the first time); it shows with a red dot until read.
+ */
+function agent_chat_notice(string $recipient, string $agent_id, string $text, string $notice_id = ''): string
+{
+    load_libraries(['util', 'get-user']);
+    $user = find_user_by_email($recipient);
+    $text = trim($text);
+    if (!filter_var($recipient, FILTER_VALIDATE_EMAIL) || $text === '') {
+        throw new InvalidArgumentException('Nobody to tell, or nothing to say');
+    }
+    // Kept for the recipient also without an account here: a hub may pick it up for them.
+    $owner = md5_uuid(is_array($user) && !empty($user['email']) ? (string)$user['email'] : $recipient);
+    $uuid = substr(hash('sha256', 'notice:' . $owner . ':' . $agent_id), 0, 16);
+    $lock = agent_lock('chat-' . $uuid);
+    try {
+        if (!data_exists('.agent_conversations', $uuid)) {
+            data_create('.agent_conversations', $uuid, ['owner_uuid' => $owner, 'title' => agent_chat_name($agent_id),
+                'agents' => [$agent_id], 'messages' => [], 'read_at' => 0, 'updated_at' => time(), 'notice_for' => $recipient]);
+        }
+    } finally {
+        agent_unlock($lock);
+    }
+    agent_chat_append($uuid, $agent_id, $text, $notice_id !== '' ? $notice_id : 'notice-' . substr(md5(generate_uuid()), 0, 12));
+    return $uuid;
+}
+
+/** The colleague's first name, when known; the agent may use it where it comes naturally. */
+function agent_chat_first_name(array $conversation): ?string
+{
+    if (trim((string)($conversation['first_name'] ?? '')) !== '') {
+        return trim((string)$conversation['first_name']);
+    }
+    load_library('get-user');
+    foreach (array_reverse((array)($conversation['messages'] ?? [])) as $message) {
+        if (($message['asker'] ?? '') !== '') {
+            $user = find_user_by_email((string)$message['asker']);
+            $name = trim((string)(is_array($user) ? ($user['name'] ?? '') : ''));
+            return $name === '' || str_contains($name, '@') ? null : explode(' ', $name)[0];
+        }
+    }
+    return null;
 }
 
 /** A page of this site an agent points to: a same-site path only, with a short label. */
@@ -400,7 +493,7 @@ function agent_chat_view(string $uuid, string $owner): array
         if ($last_message === null) {
             continue;
         }
-        $run = data_read('.agent_runs', (string)$last_message['runs'][$agent_id]);
+        $run = agent_chat_run((string)$last_message['runs'][$agent_id]);
         $answered = array_filter((array)$conversation['messages'],
             fn($message) => ($message['run_uuid'] ?? '') === $last_message['runs'][$agent_id]);
         if ($answered !== [] || !is_array($run)) {
