@@ -173,4 +173,8 @@ site_test_assert(isset(agent_nimbly_docs('search', 'zzqq-no-such-term')['hint'])
 $definition = agent_definition('nimbly');
 site_test_assert(isset($definition['chat_pipeline']) && !isset($definition['pipeline']), 'Nimbly is a chat-only Core agent');
 
+site_test_assert(isset(agent_site_stats(['username' => 'x', 'features' => []], '2026-09-01', '2026-09-02')['error']),
+    'visitor statistics need the view-stats right');
+site_test_assert(isset($definition['tools']['visitor_stats']), 'Nimbly can look at visitor statistics');
+
 echo "Agent site tests passed.\n";

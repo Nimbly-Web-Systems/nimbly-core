@@ -138,6 +138,21 @@
       },
       "connector": "nimbly",
       "config": {"operation": "records"}
+    },
+    "visitor_stats": {
+      "description": "This site's visitor statistics, as on the dashboard: per day pageviews, visitors, requests and bots, plus totals over the period (top pages, referrers, devices, browsers, languages, bots). Dates are UTC, YYYY-MM-DD; at most 400 days.",
+      "risk": "read_only",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "from": {"type": "string"},
+          "to": {"type": "string"}
+        },
+        "required": ["from", "to"],
+        "additionalProperties": false
+      },
+      "connector": "nimbly",
+      "config": {"operation": "stats"}
     }
   }
 }

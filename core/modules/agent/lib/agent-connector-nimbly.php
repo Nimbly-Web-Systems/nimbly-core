@@ -23,6 +23,7 @@ function agent_nimbly_tool(string $operation, array $arguments, array $context):
             trim((string)($arguments['uuid'] ?? '')), trim((string)($arguments['search'] ?? ''))),
         'write' => agent_site_write(agent_site_asker($context), (string)($arguments['action'] ?? ''),
             (string)($arguments['resource'] ?? ''), trim((string)($arguments['uuid'] ?? '')), agent_nimbly_fields($arguments)),
+        'stats' => agent_site_stats(agent_site_asker($context), trim((string)($arguments['from'] ?? '')), trim((string)($arguments['to'] ?? ''))),
         default => throw new RuntimeException('Nimbly agent operation is invalid'),
     };
 }

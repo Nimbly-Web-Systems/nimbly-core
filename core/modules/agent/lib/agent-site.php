@@ -31,6 +31,54 @@ function agent_site_managed_pages(): bool
     return !empty(data_read('.config', 'managed_pages')['enabled']);
 }
 
+/** Visitor statistics as the dashboard shows them, for those who may see them there. */
+function agent_site_stats(array $asker, string $from, string $to): array
+{
+    if (!agent_site_can($asker, 'view-stats')) {
+        return ['error' => 'This colleague may not see the visitor statistics.'];
+    }
+    load_library('stats');
+    if (!stats_has_key()) {
+        return ['error' => 'Visitor statistics are not set up on this site.'];
+    }
+    $date = fn($value) => preg_match('/^\d{4}-\d{2}-\d{2}$/', $value) === 1 ? strtotime($value . 'T12:00:00Z') : false;
+    $start = $date($from);
+    $end = $date($to);
+    if ($start === false || $end === false || $start > $end) {
+        return ['error' => 'Give from and to as YYYY-MM-DD, from not after to.'];
+    }
+    $end = min($end, strtotime(gmdate('Y-m-d') . 'T12:00:00Z'));
+    $count = (int)round(($end - $start) / 86400) + 1;
+    if ($count > 400) {
+        return ['error' => 'Ask for at most 400 days at a time.'];
+    }
+    $days = [];
+    $total = [];
+    foreach (stats_recent_days(max($count, 1), gmdate('Y-m-d', $end)) as $date => $day) {
+        if (!is_array($day)) {
+            continue;
+        }
+        $class = (array)($day['class'] ?? []);
+        $days[$date] = ['pageviews' => (int)($day['pageviews'] ?? 0), 'visitors' => (int)($day['visitors'] ?? 0),
+            'requests' => (int)($day['requests'] ?? 0), 'bots' => (int)($class['bot'] ?? 0) + (int)($class['tool'] ?? 0)];
+        unset($day['hours'], $day['status'], $day['overflow']);
+        stats_add_counts($total, stats_day_counts($day));
+    }
+    if ($days === []) {
+        return ['days' => [], 'note' => 'No statistics were recorded in this period.'];
+    }
+    $views = array_filter(array_map(fn($path) => (int)($path['views'] ?? 0), (array)($total['paths'] ?? [])));
+    arsort($views);
+    $top = fn($counts, $limit = 15) => array_slice((function ($counts) { arsort($counts); return $counts; })((array)$counts), 0, $limit, true);
+    return ['days' => $days, 'totals' => [
+        'pageviews' => (int)($total['pageviews'] ?? 0), 'visitor_days' => (int)($total['visits'] ?? 0),
+        'requests' => (int)($total['requests'] ?? 0), 'traffic' => (array)($total['class'] ?? []),
+        'pages' => array_slice($views, 0, 30, true), 'referrers' => $top($total['referrers'] ?? []),
+        'devices' => $top($total['device'] ?? []), 'browsers' => $top($total['browser'] ?? []),
+        'languages' => $top($total['language'] ?? []), 'bots' => $top($total['bots'] ?? []),
+    ], 'note' => 'Visitors are unique per day, so visitor_days over a period counts a returning visitor once per day.'];
+}
+
 /** Resources the agent may read and write for anyone: the site's records, never its structure. */
 function agent_site_resource_in_scope(string $resource): bool
 {
