@@ -48,6 +48,24 @@
     "delivery_from": "answer"
   },
   "tools": {
+    "save_record": {
+      "description": "Create, update or delete one record, with the colleague's rights. fields_json is a JSON object of field values (empty object for delete). For a translated field send only the languages you change, e.g. {\"title\": {\"nl\": \"...\"}}. Leave uuid empty to create with a new one.",
+      "risk": "governed",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "action": {"type": "string", "enum": ["create", "update", "delete"]},
+          "resource": {"type": "string"},
+          "uuid": {"type": "string"},
+          "fields_json": {"type": "string"}
+        },
+        "required": ["action", "resource", "uuid", "fields_json"],
+        "additionalProperties": false
+      },
+      "authorizer": "nimbly-authorize",
+      "connector": "nimbly",
+      "config": {"operation": "write"}
+    },
     "hand_over": {
       "description": "Bring a colleague agent from this conversation's team into the chat for this message. They answer right after your reply; say in your reply that you asked them.",
       "risk": "read_only",

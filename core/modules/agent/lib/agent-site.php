@@ -145,3 +145,64 @@ function agent_site_trim(array $record): array
     return strlen($json) <= 30000 ? $record : ['uuid' => $record['uuid'] ?? '', 'note' => 'Record too large to show whole.',
         'excerpt' => mb_substr($json, 0, 30000)];
 }
+
+/** Why the asker may not make this change, or null when they may. */
+function agent_site_write_refusal(array $asker, string $action, string $resource, string $uuid): ?string
+{
+    $feature = ['create' => 'create-', 'update' => 'edit-', 'delete' => 'delete-'][$action] ?? null;
+    if ($feature === null || !agent_site_resource_in_scope($resource) || !data_exists($resource, '.meta')) {
+        return 'That is not something I can change here. Structure is developer work.';
+    }
+    $meta = data_meta($resource) ?: [];
+    if (isset($meta['encrypt']) || isset($meta['encrypt2way'])) {
+        return 'This resource holds protected values; change it in the admin yourself.';
+    }
+    if (!agent_site_can($asker, $feature . $resource)) {
+        return 'You do not have the right to ' . $action . ' ' . $resource . ' records.';
+    }
+    if ($action !== 'create' && ($uuid === '' || !data_exists($resource, $uuid))) {
+        return 'No such record.';
+    }
+    if ($action === 'create' && $uuid !== '' && data_exists($resource, $uuid)) {
+        return 'A record with that uuid already exists.';
+    }
+    return null;
+}
+
+/**
+ * Create, update or delete one record the way the admin and API do (validation, HTML sanitizing).
+ * Translated fields merge per language, so sending {"nl": "..."} adds a translation.
+ */
+function agent_site_write(array $asker, string $action, string $resource, string $uuid, array $fields): array
+{
+    $refusal = agent_site_write_refusal($asker, $action, $resource, $uuid);
+    if ($refusal !== null) {
+        return ['status' => 'blocked', 'reason' => $refusal];
+    }
+    load_libraries(['util', 'html-sanitize']);
+    if ($action === 'delete') {
+        return data_delete($resource, $uuid) ? ['status' => 'done', 'deleted' => $uuid] : ['status' => 'failed'];
+    }
+    $meta = data_meta($resource) ?: [];
+    $fields = array_filter($fields, fn($field) => is_string($field) && $field !== 'uuid' && $field[0] !== '_', ARRAY_FILTER_USE_KEY);
+    $current = $action === 'update' ? (data_read($resource, $uuid) ?: []) : [];
+    foreach ($fields as $name => $value) {
+        if (!empty($meta['fields'][$name]['i18n']) && is_array($value) && is_array($current[$name] ?? null)) {
+            $fields[$name] = array_merge($current[$name], $value);
+        }
+    }
+    $fields = sanitize_html_fields($meta, $fields);
+    if ($action === 'create') {
+        $uuid = $uuid !== '' ? $uuid : md5(generate_uuid());
+        $saved = data_create($resource, $uuid, $fields + ['uuid' => $uuid, '_created_by' => md5_uuid($asker['username'])]);
+    } else {
+        $saved = data_update($resource, $uuid, $fields);
+    }
+    if (!$saved) {
+        $error = (string)data_error_get();
+        return ['status' => 'failed', 'reason' => $error === 'VALIDATION_FAILED'
+            ? 'The values did not pass validation: ' . preg_replace('/[^a-zA-Z0-9_.:-]+/', '', (string)data_error_detail_get())
+            : 'The record could not be saved.'];
+    }
+    return ['status' => 'done', 'uuid' => $uuid, 'admin_page' => '/nb-admin/' . $resource . '/' . $uuid];
+}

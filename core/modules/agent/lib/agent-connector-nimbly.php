@@ -21,8 +21,16 @@ function agent_nimbly_tool(string $operation, array $arguments, array $context):
         'site-map' => agent_site_map(agent_site_asker($context)),
         'records' => agent_site_records(agent_site_asker($context), (string)($arguments['resource'] ?? ''),
             trim((string)($arguments['uuid'] ?? '')), trim((string)($arguments['search'] ?? ''))),
+        'write' => agent_site_write(agent_site_asker($context), (string)($arguments['action'] ?? ''),
+            (string)($arguments['resource'] ?? ''), trim((string)($arguments['uuid'] ?? '')), agent_nimbly_fields($arguments)),
         default => throw new RuntimeException('Nimbly agent operation is invalid'),
     };
+}
+
+function agent_nimbly_fields(array $arguments): array
+{
+    $fields = json_decode((string)($arguments['fields_json'] ?? ''), true);
+    return is_array($fields) && !array_is_list($fields) ? $fields : [];
 }
 
 /** The Nimbly reference, a piece at a time: its outline, a search, or one section. */

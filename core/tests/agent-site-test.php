@@ -41,6 +41,33 @@ function data_resources_list(): array
     }
     return $result;
 }
+function data_create($resource, $uuid, $record)
+{
+    if (($record['status'] ?? '') === 'invalid') {
+        $GLOBALS['site_test_error'] = 'VALIDATION_FAILED';
+        return false;
+    }
+    $GLOBALS['site_test_data'][$resource][$uuid] = $record;
+    return true;
+}
+function data_update($resource, $uuid, $changes)
+{
+    $GLOBALS['site_test_data'][$resource][$uuid] = array_merge($GLOBALS['site_test_data'][$resource][$uuid], $changes);
+    return $GLOBALS['site_test_data'][$resource][$uuid];
+}
+function data_delete($resource, $uuid)
+{
+    unset($GLOBALS['site_test_data'][$resource][$uuid]);
+    return true;
+}
+function data_error_get() { return $GLOBALS['site_test_error'] ?? ''; }
+function data_error_detail_get() { return 'status:value'; }
+function generate_uuid() { return 'fresh'; }
+function md5_uuid($value) { return md5((string)$value); }
+function sanitize_html_fields(array $_meta, array $data): array
+{
+    return array_map(fn($value) => is_string($value) ? strip_tags($value) : $value, $data);
+}
 function user_feature_map($name): array { return $GLOBALS['site_test_users'][$name] ?? ['(none)' => true]; }
 function get_i18n_resolve(array $value, $_language) { return reset($value); }
 function site_test_assert(bool $condition, string $message): void
@@ -91,6 +118,37 @@ site_test_assert($list['total'] === 2 && $list['records'][0]['uuid'] === 'a1', '
 site_test_assert(agent_site_records($asker, 'articles', '', 'mos')['total'] === 1, 'records can be searched');
 site_test_assert(agent_site_records($asker, 'articles', 'a1')['record']['title']['nl'] === 'Hallo mos'
     && agent_site_records($asker, 'articles', 'a1')['admin_page'] === '/nb-admin/articles/a1', 'one record is read whole');
+
+// Writing: with the asker's rights, the way the admin does, translations merged per language.
+$writer = ['username' => 'w', 'features' => ['view-articles' => true, 'create-articles' => true, 'edit-articles' => true]];
+site_test_assert(agent_site_write($asker, 'create', 'articles', '', ['title' => ['en' => 'x']])['status'] === 'blocked',
+    'an editor without the create right cannot create');
+site_test_assert(agent_site_write($writer, 'delete', 'articles', 'a2', [])['status'] === 'blocked', 'deleting needs the delete right');
+site_test_assert(agent_site_write(['username' => 'a', 'features' => ['(all)' => true]], 'update', 'users', 'u1', [])['status'] === 'blocked',
+    'users stay out of reach, even for admins');
+$saved = agent_site_write($writer, 'update', 'articles', 'a1', ['title' => ['nl' => 'Hallo wereld'], '_created_by' => 'x', 'uuid' => 'zz']);
+site_test_assert($saved['status'] === 'done' && $site_test_data['articles']['a1']['title'] === ['en' => 'Hello moss', 'nl' => 'Hallo wereld'],
+    'a translation is added without losing the other languages');
+site_test_assert(!isset($site_test_data['articles']['a1']['_created_by']) && $site_test_data['articles']['a1']['uuid'] === 'a1',
+    'system fields and the uuid cannot be written');
+$created = agent_site_write($writer, 'create', 'articles', '', ['title' => ['en' => 'New'], 'status' => 'draft']);
+site_test_assert($site_test_data['articles'][md5('fresh')]['_created_by'] === md5('w'), 'the colleague who asked is the creator');
+site_test_assert($created['uuid'] === md5('fresh') && $created['admin_page'] === '/nb-admin/articles/' . md5('fresh'), 'a new record gets a uuid and a link');
+site_test_assert(str_contains(agent_site_write($writer, 'create', 'articles', '', ['status' => 'invalid'])['reason'], 'validation'),
+    'validation failures come back as a reason');
+require_once BASE_DIR . 'core/modules/agent/lib/agent-connector-nimbly-authorize.php';
+$site_test_data['.agent_conversations']['c1']['messages'][0]['runs']['nimbly'] = 'run-1';
+$decision = agent_artifact_data(agent_connector_nimbly_authorize(agent_artifact('agent.action-request', 1, [
+    'tool' => 'save_record', 'action_digest' => 'digest-1',
+    'arguments' => ['action' => 'delete', 'resource' => 'articles', 'uuid' => 'a2', 'fields_json' => '{}'],
+]), [], $context));
+site_test_assert($decision['status'] === 'denied' && $decision['action_digest'] === 'digest-1', 'the authorizer refuses what the asker may not do');
+$site_test_users['editor@test']['delete-articles'] = true;
+$decision = agent_artifact_data(agent_connector_nimbly_authorize(agent_artifact('agent.action-request', 1, [
+    'tool' => 'save_record', 'action_digest' => 'digest-2',
+    'arguments' => ['action' => 'delete', 'resource' => 'articles', 'uuid' => 'a2', 'fields_json' => '{}'],
+]), [], $context));
+site_test_assert($decision['status'] === 'authorized' && $decision['action_digest'] === 'digest-2', 'and allows what they may');
 
 // Docs: the real Nimbly reference, a piece at a time.
 site_test_assert(count(agent_nimbly_docs('list', '')['outline']) > 10, 'the docs outline is available');
