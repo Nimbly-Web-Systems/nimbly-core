@@ -142,9 +142,6 @@ function dashboard_system_status_item(): string
         . '<div class="text-xl font-semibold ' . $status_class . '">' . $status_text . '</div>'
         . '<div class="text-xs text-neutral-500">' . htmlspecialchars($fact, ENT_QUOTES, 'UTF-8') . '</div>'
         . '<a href="' . base_url_sc() . '/nb-admin/debug" class="' . dashboard_touch_link_class() . '">View debug</a>'
-        . (access_by_feature('view-.routes')
-            ? '<a href="' . base_url_sc() . '/nb-admin/.routes" class="' . dashboard_touch_link_class() . '">Dynamic routing</a>'
-            : '')
         . '</li>';
 }
 
