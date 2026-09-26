@@ -250,6 +250,24 @@ function agent_chat_progress(string $run_uuid): array
     return array_slice($steps, -3);
 }
 
+/** Recent messages from every conversation this agent took part in, oldest first (memory for its other runs). */
+function agent_chat_recent(string $agent_id, int $days = 14, int $limit = 60): array
+{
+    $recent = [];
+    foreach (data_read('.agent_conversations') ?: [] as $conversation) {
+        if (!in_array($agent_id, (array)($conversation['agents'] ?? []), true)
+            || (int)($conversation['updated_at'] ?? 0) < time() - $days * 86400) {
+            continue;
+        }
+        foreach ((array)($conversation['messages'] ?? []) as $message) {
+            $recent[] = ['at' => gmdate('Y-m-d H:i', (int)($message['at'] ?? 0)),
+                'from' => (string)($message['from'] ?? 'user'), 'text' => mb_substr((string)($message['text'] ?? ''), 0, 600)];
+        }
+    }
+    usort($recent, fn($a, $b) => strcmp($a['at'], $b['at']));
+    return array_slice($recent, -$limit);
+}
+
 function agent_chat_mark_read(string $uuid, string $owner): array
 {
     agent_chat_conversation($uuid, $owner);

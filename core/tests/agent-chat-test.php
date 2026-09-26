@@ -234,6 +234,10 @@ $recent = array_column(agent_chat_recent_for(data_read('.agent_conversations', $
 chat_test_assert(in_array('Disk is fine.', $recent, true), 'the same user\'s recent conversations are remembered');
 chat_test_assert(!in_array('Ancient news', $recent, true) && !in_array('Not yours', $recent, true),
     'old conversations and other users\' conversations are not');
+$agent_memory = array_column(agent_chat_recent('helper'), 'text');
+chat_test_assert(in_array('Not yours', $agent_memory, true) && in_array('Disk is fine.', $agent_memory, true)
+    && !in_array('Ancient news', $agent_memory, true), 'an agent remembers its recent conversations with everyone');
+chat_test_assert(agent_chat_recent('coder') === [], 'conversations an agent is not part of are not its memory');
 
 // Escalation: the agent emails the operator in its own words.
 $result = agent_connector_notify_operator(agent_artifact('agent.tool-request', 1, ['tool' => 'notify_operator',
