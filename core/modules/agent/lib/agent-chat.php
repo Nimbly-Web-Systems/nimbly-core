@@ -190,6 +190,73 @@ function agent_chat_append(string $uuid, string $agent_id, string $text, string 
     }
 }
 
+function agent_chat_takes_part(string $agent_id): bool
+{
+    try {
+        return is_array(agent_definition($agent_id)['chat_pipeline'] ?? null);
+    } catch (Throwable) {
+        return false;
+    }
+}
+
+function agent_chat_name(string $agent_id): string
+{
+    try {
+        return (string)(agent_definition($agent_id)['name'] ?? $agent_id);
+    } catch (Throwable) {
+        return $agent_id;
+    }
+}
+
+/** Who is in a conversation, as the agents see it: identity, name and what they do. */
+function agent_chat_colleagues(array $conversation): array
+{
+    $colleagues = [];
+    foreach ((array)($conversation['agents'] ?? []) as $agent_id) {
+        try {
+            $definition = agent_definition($agent_id);
+        } catch (Throwable) {
+            continue;
+        }
+        $colleagues[] = ['id' => $agent_id, 'name' => (string)($definition['name'] ?? $agent_id),
+            'role' => (string)($definition['role'] ?? '')];
+    }
+    return $colleagues;
+}
+
+/**
+ * An agent brings a colleague agent into the conversation: the colleague gets its own turn on the
+ * same message, and answers in the chat after this agent's reply.
+ */
+function agent_chat_hand_over(string $uuid, string $run_uuid, string $from, string $to, string $note): array
+{
+    $lock = agent_lock('chat-' . $uuid);
+    try {
+        $conversation = data_read('.agent_conversations', $uuid);
+        if (!is_array($conversation) || $to === $from || !in_array($to, (array)($conversation['agents'] ?? []), true)
+            || !agent_chat_takes_part($to)) {
+            return ['handed_over' => false, 'reason' => 'That colleague is not in this conversation.'];
+        }
+        if (agent_chat_pending_run($conversation, $to) !== null) {
+            return ['handed_over' => true, 'note' => 'They are already working on it.'];
+        }
+        foreach ($conversation['messages'] as $index => $message) {
+            if (!in_array($run_uuid, (array)($message['runs'] ?? []), true)) {
+                continue;
+            }
+            $conversation['messages'][$index]['runs'][$to] = agent_enqueue_result($to, null, [
+                'trigger' => 'chat', 'idempotency_suffix' => 'chat-' . $message['id'],
+                'event_context' => ['conversation' => $uuid, 'handed_over_by' => $from, 'note' => mb_substr($note, 0, 1000)],
+            ])['run_uuid'];
+            data_update('.agent_conversations', $uuid, ['messages' => $conversation['messages']]);
+            return ['handed_over' => true, 'note' => 'They will answer in the chat right after your reply.'];
+        }
+        return ['handed_over' => false, 'reason' => 'The message you are answering was not found.'];
+    } finally {
+        agent_unlock($lock);
+    }
+}
+
 /** A page of this site an agent points to: a same-site path only, with a short label. */
 function agent_chat_link(array $link): ?array
 {

@@ -1,6 +1,7 @@
 {
   "id": "nimbly",
   "name": "Nimbly",
+  "role": "Knows Nimbly and this site: explains, finds and edits content, and shows the way.",
   "version": "1.0.0",
   "instructions": "chat.md",
   "model": "gpt-5.6-terra",
@@ -47,6 +48,20 @@
     "delivery_from": "answer"
   },
   "tools": {
+    "hand_over": {
+      "description": "Bring a colleague agent from this conversation's team into the chat for this message. They answer right after your reply; say in your reply that you asked them.",
+      "risk": "read_only",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "agent": {"type": "string", "description": "The colleague's id from the team list."},
+          "note": {"type": "string", "description": "What you need from them, in one or two sentences."}
+        },
+        "required": ["agent", "note"],
+        "additionalProperties": false
+      },
+      "connector": "chat-hand-over"
+    },
     "docs": {
       "description": "Read the Nimbly reference a piece at a time. action=list gives the outline (query ignored), action=search finds lines containing one term, action=section returns one section by name (\"Parent > Child\" when ambiguous).",
       "risk": "read_only",

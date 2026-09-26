@@ -17,7 +17,7 @@ function agent_connector_chat_history(array $_source, array $_config, array $con
     }
     $messages = [['role' => 'user', 'content' => [['type' => 'input_text', 'text' => json_encode([
         'chat' => 'You are in a group chat with a colleague and the other agents of this team.',
-        'team' => array_values((array)($conversation['agents'] ?? [])),
+        'team' => agent_chat_colleagues($conversation),
         'earlier_conversations' => agent_chat_recent_for($conversation, $uuid),
     ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)]]]];
     foreach ((array)($conversation['messages'] ?? []) as $message) {
@@ -26,7 +26,7 @@ function agent_connector_chat_history(array $_source, array $_config, array $con
         $messages[] = $from === $agent_id
             ? ['role' => 'assistant', 'content' => [['type' => 'output_text', 'text' => $text]]]
             : ['role' => 'user', 'content' => [['type' => 'input_text',
-                'text' => ($from === 'user' ? 'Colleague' : $from) . ': ' . $text]]];
+                'text' => ($from === 'user' ? 'Colleague' : agent_chat_name($from)) . ': ' . $text]]];
     }
     return agent_artifact('openai.input', 1, ['messages' => $messages]);
 }

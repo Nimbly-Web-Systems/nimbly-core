@@ -213,7 +213,7 @@ chat_test_assert(end($messages)['from'] === 'helper' && end($messages)['text'] =
 chat_test_assert($messages[count($messages) - 2]['asker'] === 'hermen', 'the asker is kept with their message');
 chat_test_assert(!str_contains(json_encode($chat_test_seen['helper']), 'hermen'), 'the model never sees who asked');
 $seen = $chat_test_seen['helper'];
-chat_test_assert($seen[1]['content'][0]['text'] === 'coder: I fixed the build.' && $seen[1]['role'] === 'user',
+chat_test_assert($seen[1]['content'][0]['text'] === 'Coder: I fixed the build.' && $seen[1]['role'] === 'user',
     'other agents\' messages reach the model with their name');
 chat_test_assert($seen[2]['content'][0]['text'] === 'Colleague: How is disk space?', 'the colleague\'s message reaches the model');
 chat_test_assert(agent_chat_view($uuid, $owner)['working'] === [], 'an answered agent is no longer working');
@@ -224,6 +224,28 @@ agent_chat_post($uuid, $owner, 'And memory?');
 agent_chat_run_pending();
 chat_test_assert(end($chat_test_seen['helper'])['role'] === 'user' && $chat_test_seen['helper'][3]['role'] === 'assistant',
     'the agent\'s own earlier replies reach the model as its own');
+
+// Hand-over: an agent brings a colleague in on the same message; the colleague answers after it.
+$group = agent_chat_create($owner, ['helper' => 'Helper', 'coder' => 'Coder']);
+agent_chat_post($group, $owner, 'Is the build broken?');
+$asked = end(data_read('.agent_conversations', $group)['messages']);
+$helper_run = $asked['runs']['helper'];
+chat_test_assert(agent_chat_hand_over($group, $helper_run, 'helper', 'nobody', 'x')['handed_over'] === false
+    && agent_chat_hand_over($group, $helper_run, 'helper', 'helper', 'x')['handed_over'] === false,
+    'only a colleague in the conversation can be brought in');
+chat_test_assert(agent_chat_hand_over($group, $helper_run, 'helper', 'coder', 'Builds are yours')['handed_over'] === true,
+    'a colleague is brought in');
+$runs = end(data_read('.agent_conversations', $group)['messages'])['runs'];
+chat_test_assert(array_keys($runs) === ['helper', 'coder'], 'the colleague works on the same message');
+chat_test_assert(data_read('.agent_runs', $runs['coder'])['event_context']['handed_over_by'] === 'helper',
+    'the colleague knows who brought them in');
+chat_test_assert(agent_chat_hand_over($group, $helper_run, 'helper', 'coder', 'again')['note'] === 'They are already working on it.',
+    'a colleague is not brought in twice');
+chat_test_assert(count(agent_chat_view($group, $owner)['working']) === 2, 'both show as working');
+agent_chat_run_pending();
+agent_chat_run_pending();
+$replies = array_column(array_slice(data_read('.agent_conversations', $group)['messages'], -2), 'from');
+chat_test_assert($replies === ['helper', 'coder'], 'the colleague answers after the agent who brought them in');
 
 // Unread.
 data_update('.agent_conversations', $uuid, ['read_at' => time() - 10]);
@@ -264,7 +286,7 @@ chat_test_assert(!in_array('Ancient news', $recent, true) && !in_array('Not your
 $agent_memory = array_column(agent_chat_recent('helper'), 'text');
 chat_test_assert(in_array('Not yours', $agent_memory, true) && in_array('Disk is fine.', $agent_memory, true)
     && !in_array('Ancient news', $agent_memory, true), 'an agent remembers its recent conversations with everyone');
-chat_test_assert(agent_chat_recent('coder') === [], 'conversations an agent is not part of are not its memory');
+chat_test_assert(agent_chat_recent('silent') === [], 'conversations an agent is not part of are not its memory');
 
 // Escalation: the agent emails the operator in its own words.
 $result = agent_connector_notify_operator(agent_artifact('agent.tool-request', 1, ['tool' => 'notify_operator',
