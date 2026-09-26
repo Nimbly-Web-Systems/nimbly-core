@@ -325,7 +325,8 @@ function agent_chat_link(array $link): ?array
     if ($path === '' || mb_strlen($path) > 300 || preg_match('#^/(?!/)[^\s\\\\]*$#', $path) !== 1) {
         return null;
     }
-    return ['path' => $path, 'label' => mb_substr(trim((string)($link['label'] ?? '')) ?: 'Open', 0, 60)];
+    return ['path' => $path, 'label' => mb_substr(trim((string)($link['label'] ?? '')) ?: 'Open', 0, 60),
+        'open' => !empty($link['open'])];
 }
 
 /** A conversation for display: messages, and what each agent is doing right now. */

@@ -11,6 +11,6 @@ function agent_connector_chat_reply(array $source, array $_config, array $contex
     }
     agent_chat_append((string)($context['run']['event_context']['conversation'] ?? ''),
         (string)$context['run']['agent_id'], $reply, (string)$context['run_uuid'],
-        ['path' => $data['link_path'] ?? '', 'label' => $data['link_label'] ?? '']);
+        ['path' => $data['link_path'] ?? '', 'label' => $data['link_label'] ?? '', 'open' => !empty($data['open_now'])]);
     return agent_artifact('delivery.receipt', 1, ['success' => true, 'deliveries' => ['chat' => ['accepted' => true]]]);
 }

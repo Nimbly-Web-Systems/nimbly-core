@@ -196,8 +196,10 @@ chat_test_assert(agent_chat_addressees($with_nimbly, $nimbly_team, 'and then?') 
 chat_test_assert(agent_chat_addressees($with_nimbly, $nimbly_team, '@nimbly help') === ['nimbly'], '@name still goes direct');
 
 // Links an agent gives are same-site paths only.
-chat_test_assert(agent_chat_link(['path' => '/nb-admin/articles', 'label' => 'Open articles']) === ['path' => '/nb-admin/articles', 'label' => 'Open articles'],
+chat_test_assert(agent_chat_link(['path' => '/nb-admin/articles', 'label' => 'Open articles']) === ['path' => '/nb-admin/articles', 'label' => 'Open articles', 'open' => false],
     'a site path becomes a link');
+chat_test_assert(agent_chat_link(['path' => '/nb-admin/settings', 'label' => 'Settings', 'open' => true])['open'] === true,
+    'an agent can open the page right away');
 foreach (['//evil.test/x', 'https://evil.test', 'javascript:alert(1)', 'nb-admin', '/a b', ''] as $bad) {
     chat_test_assert(agent_chat_link(['path' => $bad, 'label' => 'x']) === null, 'only same-site paths are links: ' . $bad);
 }

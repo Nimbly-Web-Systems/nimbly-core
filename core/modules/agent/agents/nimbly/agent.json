@@ -35,9 +35,10 @@
           "properties": {
             "reply": {"type": "string"},
             "link_path": {"type": "string"},
-            "link_label": {"type": "string"}
+            "link_label": {"type": "string"},
+            "open_now": {"type": "boolean"}
           },
-          "required": ["reply", "link_path", "link_label"],
+          "required": ["reply", "link_path", "link_label", "open_now"],
           "additionalProperties": false
         }
       }

@@ -82,6 +82,16 @@ function agent_chat_widget(nimblybar_side) {
         },
         show(view) {
             const before = this.conversation?.uuid === view.uuid ? this.conversation.messages.length : -1;
+            // A reply that arrived while you were here and asks to open a page: go there (the chat stays open).
+            if (before >= 0) {
+                const opener = view.messages.slice(before).find(message => message.link?.open && message.from !== "user");
+                if (opener) {
+                    this.conversation = view;
+                    this.remember();
+                    window.location.href = nb.base_url + opener.link.path;
+                    return;
+                }
+            }
             const working = JSON.stringify(this.conversation?.working || []);
             this.team = view.team;
             this.conversation = view;

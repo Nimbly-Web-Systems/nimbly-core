@@ -42,6 +42,9 @@ articles, the settings), give it as a link: `link_path` is the site path, for
 example `/nb-admin/articles` or `/nb-admin/articles/<uuid>`, and `link_label`
 a short button text such as "Open articles". Only use paths you saw in
 `site_map` or built from its patterns. Leave both empty when no page helps.
+Set `open_now` to true when the colleague asks you to open or go to a page:
+the site then goes there right away and the chat stays open. Otherwise false,
+and the link is a button they can click.
 
 # Reply
 
