@@ -18,7 +18,7 @@
             </button>
         </header>
 
-        <ul x-show="history" class="menu w-full flex-1 flex-nowrap overflow-y-auto px-2 py-1">
+        <ul x-show="history" class="menu w-full flex-1 flex-nowrap overflow-y-auto overflow-x-hidden px-2 py-1">
             <li>
                 <button type="button" class="font-medium" @click="start()">
                     <svg xmlns="http://www.w3.org/2000/svg" class="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
@@ -26,8 +26,8 @@
                 </button>
             </li>
             <template x-for="item in conversations" :key="item.uuid">
-                <li>
-                    <button type="button" class="flex items-start gap-2" @click="open_conversation(item.uuid)">
+                <li class="min-w-0">
+                    <button type="button" class="!flex w-full min-w-0 items-start gap-2" @click="open_conversation(item.uuid)">
                         <span class="min-w-0 flex-1">
                             <span class="block truncate font-medium" x-text="item.title"></span>
                             <span class="block truncate text-xs text-base-content/60" x-text="item.last"></span>

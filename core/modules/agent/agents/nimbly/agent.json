@@ -49,6 +49,20 @@
     "delivery_from": "answer"
   },
   "tools": {
+    "contact_developer": {
+      "description": "Email the site's developer on behalf of the colleague, for what needs a developer: structural changes, bugs, or questions you cannot answer. Write what is asked and why; they can reply to the colleague directly.",
+      "risk": "read_only",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "subject": {"type": "string"},
+          "message": {"type": "string"}
+        },
+        "required": ["subject", "message"],
+        "additionalProperties": false
+      },
+      "connector": "notify-operator"
+    },
     "save_record": {
       "description": "Create, update or delete one record, with the colleague's rights. fields_json is a JSON object of field values (empty object for delete). For a translated field send only the languages you change, e.g. {\"title\": {\"nl\": \"...\"}}. Leave uuid empty to create with a new one.",
       "risk": "governed",

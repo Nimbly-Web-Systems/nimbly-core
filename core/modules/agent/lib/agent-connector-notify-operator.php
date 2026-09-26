@@ -20,6 +20,13 @@ function agent_connector_notify_operator(array $source, array $_config, array $c
     set_variable('environment', system_alert_html(env('APP_ENV', 'unknown')));
     set_variable('agent_name', system_alert_html($agent_name));
     set_variable('agent_message', nl2br(system_alert_html(mb_substr($message, 0, 8000))));
+    // From a chat: say who asked, and let the developer reply to them directly.
+    $asked_by = '';
+    if (!empty($context['run']['event_context']['conversation'])) {
+        load_library('agent-site');
+        $asked_by = (string)agent_site_asker($context)['username'];
+    }
+    set_variable('asked_by', system_alert_html($asked_by));
     $sent = email([
         'service' => env('MAIL_SERVICE', 'resend'),
         'from' => env('MAIL_FROM'),
@@ -27,7 +34,7 @@ function agent_connector_notify_operator(array $source, array $_config, array $c
         'recipient' => system_alert_require_recipient(),
         'subject' => '[' . $site_name . '] ' . $agent_name . ': ' . mb_substr($subject, 0, 150),
         'tpl' => 'email-agent-notify-operator',
-    ]);
+    ] + (filter_var($asked_by, FILTER_VALIDATE_EMAIL) ? ['reply_to' => $asked_by] : []));
     if (!$sent) {
         throw new AgentTransientException('The email could not be sent');
     }

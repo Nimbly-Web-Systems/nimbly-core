@@ -15,10 +15,10 @@ $site_test_data = [
     '.content' => ['.meta' => ['fields' => ['text' => ['type' => 'html']]]],
     'users' => ['.meta' => ['fields' => []]],
     '.agent_conversations' => ['c1' => ['messages' => [
-        ['from' => 'user', 'text' => 'hi', 'runs' => ['nimbly' => 'run-1'], 'asker' => 'editor@test'],
+        ['from' => 'user', 'text' => 'hi', 'runs' => ['nimbly' => 'run-1'], 'asker' => 'editor@example.test'],
     ]]],
 ];
-$site_test_users = ['editor@test' => ['view-articles' => true, 'edit-articles' => true, 'view-.content' => true]];
+$site_test_users = ['editor@example.test' => ['view-articles' => true, 'edit-articles' => true, 'view-.content' => true]];
 
 function load_library($_name): void {}
 function load_libraries($_names): void {}
@@ -68,6 +68,10 @@ function sanitize_html_fields(array $_meta, array $data): array
 {
     return array_map(fn($value) => is_string($value) ? strip_tags($value) : $value, $data);
 }
+function env($key, $default = '') { return ['SYSTEM_ALERT_EMAIL' => 'dev@test'][$key] ?? $default; }
+function data_lookup($_resource, $_uuid, $_field, $default) { return $default; }
+function set_variable($name, $value): void { $GLOBALS['site_test_vars'][$name] = $value; }
+function email(array $data): bool { $GLOBALS['site_test_emails'][] = $data; return true; }
 function user_feature_map($name): array { return $GLOBALS['site_test_users'][$name] ?? ['(none)' => true]; }
 function get_i18n_resolve(array $value, $_language) { return reset($value); }
 function site_test_assert(bool $condition, string $message): void
@@ -97,7 +101,7 @@ $site_test_data['.config']['managed_pages']['enabled'] = false;
 // The asker is found from the run, with the features of their roles.
 $context = ['run_uuid' => 'run-1', 'run' => ['event_context' => ['conversation' => 'c1']]];
 $asker = agent_site_asker($context);
-site_test_assert($asker['username'] === 'editor@test' && agent_site_can($asker, 'edit-articles')
+site_test_assert($asker['username'] === 'editor@example.test' && agent_site_can($asker, 'edit-articles')
     && !agent_site_can($asker, 'view-projects'), 'tools act with the rights of the colleague who asked');
 site_test_assert(agent_site_asker(['run_uuid' => 'other', 'run' => $context['run']])['features'] === [],
     'an unknown run has no rights');
@@ -143,12 +147,21 @@ $decision = agent_artifact_data(agent_connector_nimbly_authorize(agent_artifact(
     'arguments' => ['action' => 'delete', 'resource' => 'articles', 'uuid' => 'a2', 'fields_json' => '{}'],
 ]), [], $context));
 site_test_assert($decision['status'] === 'denied' && $decision['action_digest'] === 'digest-1', 'the authorizer refuses what the asker may not do');
-$site_test_users['editor@test']['delete-articles'] = true;
+$site_test_users['editor@example.test']['delete-articles'] = true;
 $decision = agent_artifact_data(agent_connector_nimbly_authorize(agent_artifact('agent.action-request', 1, [
     'tool' => 'save_record', 'action_digest' => 'digest-2',
     'arguments' => ['action' => 'delete', 'resource' => 'articles', 'uuid' => 'a2', 'fields_json' => '{}'],
 ]), [], $context));
 site_test_assert($decision['status'] === 'authorized' && $decision['action_digest'] === 'digest-2', 'and allows what they may');
+
+// Contacting the developer from a chat: they learn who asked and can reply to them.
+require_once BASE_DIR . 'core/modules/agent/lib/agent-connector-notify-operator.php';
+$site_test_users['editor@example.test'] = $site_test_users['editor@example.test'] ?? [];
+agent_connector_notify_operator(agent_artifact('agent.tool-request', 1, ['arguments' => [
+    'subject' => 'Remove test resources', 'message' => 'Please remove them.']]), [],
+    $context + ['definition' => ['name' => 'Nimbly']]);
+site_test_assert($site_test_emails[0]['recipient'] === 'dev@test' && $site_test_emails[0]['reply_to'] === 'editor@example.test'
+    && $site_test_vars['asked_by'] === 'editor@example.test', 'the developer gets the request and can reply to the colleague');
 
 // Docs: the real Nimbly reference, a piece at a time.
 site_test_assert(count(agent_nimbly_docs('list', '')['outline']) > 10, 'the docs outline is available');
