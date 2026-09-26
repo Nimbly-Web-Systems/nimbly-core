@@ -150,7 +150,7 @@ function agent_chat_create(string $owner, array $team): string
     return $uuid;
 }
 
-/** Agents a message goes to: those named with @, otherwise the last agent who spoke, otherwise Nimbly. */
+/** Agents a message goes to: those named with @, otherwise the agent most recently involved, otherwise Nimbly. */
 function agent_chat_addressees(array $conversation, array $team, string $text): array
 {
     $participants = array_values(array_intersect((array)($conversation['agents'] ?? []), array_keys($team)));
@@ -166,9 +166,14 @@ function agent_chat_addressees(array $conversation, array $team, string $text): 
     if ($named !== []) {
         return $named;
     }
+    // A follow-up goes to the agent most recently involved: the last to speak, or the last one asked.
     foreach (array_reverse((array)($conversation['messages'] ?? [])) as $message) {
         if (in_array(($message['from'] ?? ''), $participants, true)) {
             return [$message['from']];
+        }
+        $asked = array_values(array_intersect(array_keys((array)($message['runs'] ?? [])), $participants));
+        if ($asked !== []) {
+            return array_slice($asked, 0, 1);
         }
     }
     return in_array('nimbly', $participants, true) ? ['nimbly'] : array_slice($participants, 0, 1);
@@ -184,7 +189,12 @@ function agent_chat_post(string $uuid, string $owner, string $text, string $chan
     $lock = agent_lock('chat-' . $uuid);
     try {
         $conversation = agent_chat_conversation($uuid, $owner);
+        // Everyone the colleague may talk to now takes part, also in conversations from before they joined.
+        $conversation['agents'] = array_values(array_unique([...(array)($conversation['agents'] ?? []), ...array_keys($team)]));
         $addressees = agent_chat_addressees($conversation, $team, $text);
+        if ($addressees === []) {
+            throw new InvalidArgumentException('Nobody in this chat can answer right now');
+        }
         foreach ($addressees as $agent_id) {
             if (agent_chat_pending_run($conversation, $agent_id) !== null) {
                 throw new InvalidArgumentException('Still waiting for ' . $team[$agent_id]);
@@ -203,6 +213,7 @@ function agent_chat_post(string $uuid, string $owner, string $text, string $chan
         $conversation['messages'][] = ['id' => $message_id, 'from' => 'user', 'text' => $text,
             'at' => time(), 'channel' => $channel, 'runs' => $runs, 'asker' => (string)username_get()];
         data_update('.agent_conversations', $uuid, [
+            'agents' => $conversation['agents'],
             'messages' => $conversation['messages'], 'updated_at' => time(), 'read_at' => time(),
             'title' => (string)($conversation['title'] ?? '') ?: mb_substr($text, 0, 60),
         ]);

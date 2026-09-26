@@ -209,7 +209,7 @@ foreach (['//evil.test/x', 'https://evil.test', 'javascript:alert(1)', 'nb-admin
 // A chat turn: no job queue, reply appended once, whole conversation passed to the model.
 $uuid = agent_chat_create($owner, ['helper' => 'Helper']);
 agent_chat_append($uuid, 'coder', 'I fixed the build.', 'earlier-run');
-$view = agent_chat_post($uuid, $owner, 'How is disk space?');
+$view = agent_chat_post($uuid, $owner, '@Helper how is disk space?');
 chat_test_assert($agent_test_jobs === [], 'chat runs stay out of the site-wide job queue');
 chat_test_assert(count($view['working']) === 1 && $view['working'][0]['status'] === 'working', 'the addressed agent is shown working');
 chat_test_expect_error(fn() => agent_chat_post($uuid, $owner, 'Hello?'), 'Still waiting', 'one unanswered message per agent');
@@ -221,7 +221,7 @@ chat_test_assert(!str_contains(json_encode($chat_test_seen['helper']), 'hermen')
 $seen = $chat_test_seen['helper'];
 chat_test_assert($seen[1]['content'][0]['text'] === 'Coder: I fixed the build.' && $seen[1]['role'] === 'user',
     'other agents\' messages reach the model with their name');
-chat_test_assert($seen[2]['content'][0]['text'] === 'Colleague: How is disk space?', 'the colleague\'s message reaches the model');
+chat_test_assert($seen[2]['content'][0]['text'] === 'Colleague: @Helper how is disk space?', 'the colleague\'s message reaches the model');
 chat_test_assert(agent_chat_view($uuid, $owner)['working'] === [], 'an answered agent is no longer working');
 $reply_run = end($messages)['run_uuid'];
 agent_chat_append($uuid, 'helper', 'Disk is fine.', $reply_run);
@@ -268,6 +268,17 @@ $welcome = agent_chat_welcome('newcomer', ['nimbly' => 'Nimbly']);
 chat_test_assert(is_string($welcome) && data_read('.agent_conversations', $welcome)['owner_uuid'] === md5_uuid('newcomer'),
     'a newcomer is welcomed by Nimbly');
 chat_test_assert(agent_chat_welcome('newcomer', ['nimbly' => 'Nimbly']) === null, 'and only once');
+
+// A colleague who joined the team later takes part in an older conversation.
+$older = agent_chat_create($owner, ['helper' => 'Helper']);
+$chat_test_features = ['chat-coder'];
+agent_chat_post($older, $owner, '@coder are you there?');
+chat_test_assert(in_array('coder', data_read('.agent_conversations', $older)['agents'], true)
+    && isset(end(data_read('.agent_conversations', $older)['messages'])['runs']['coder']), 'a newer colleague answers in an older conversation');
+$chat_test_features = [];
+chat_test_expect_error(fn() => agent_chat_post($older, $owner, 'anyone?'), 'Nobody in this chat can answer', 'a message nobody can answer is refused');
+$chat_test_features = ['chat-helper', 'chat-coder', 'chat-silent'];
+agent_chat_run_pending();
 
 // Unread.
 data_update('.agent_conversations', $uuid, ['read_at' => time() - 10]);
