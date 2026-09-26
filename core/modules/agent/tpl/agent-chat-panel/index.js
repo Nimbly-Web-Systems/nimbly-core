@@ -13,6 +13,7 @@ function agent_chat_widget(nimblybar_side) {
         draft: "",
         busy: false,
         unread: 0,
+        waiting: false,
         timer: null,
         get team_names() { return Object.values(this.team).join(", "); },
         init() {
@@ -43,17 +44,19 @@ function agent_chat_widget(nimblybar_side) {
             this.history = !this.history;
             if (this.history) this.load_list();
         },
-        // Every 3 s while a conversation is open, otherwise a light unread check every 30 s.
+        // Every 3 s while a conversation is open or an agent is still answering; otherwise a light check every 30 s.
         poll() {
             clearTimeout(this.timer);
             const active = this.open && this.conversation;
             this.timer = setTimeout(async () => {
                 try { active ? await this.refresh() : await this.check_unread(); } finally { this.poll(); }
-            }, active ? 3000 : 30000);
+            }, active || this.waiting ? 3000 : 30000);
         },
         async check_unread() {
             const response = await nb.api.get(url + "?operation=unread");
-            if (response.success && response.unread !== this.unread) await this.load_list();
+            if (!response.success) return;
+            this.waiting = response.waiting;
+            if (response.unread !== this.unread) await this.load_list();
         },
         async load_list() {
             const response = await nb.api.get(url + "?operation=list");
@@ -61,6 +64,7 @@ function agent_chat_widget(nimblybar_side) {
             this.team = response.team;
             this.conversations = response.conversations;
             this.unread = this.conversations.reduce((sum, item) => sum + item.unread, 0);
+            this.waiting = this.conversations.some(item => item.waiting);
         },
         // A new chat starts empty; the conversation is created with its first message.
         start() {
@@ -103,6 +107,7 @@ function agent_chat_widget(nimblybar_side) {
             const working = JSON.stringify(this.conversation?.working || []);
             this.team = view.team;
             this.conversation = view;
+            if (view.working.some(work => work.status === "working")) this.waiting = true;
             this.remember();
             this.poll();
             if (before !== view.messages.length && this.open) {
@@ -117,12 +122,7 @@ function agent_chat_widget(nimblybar_side) {
             if (!text || this.busy) return;
             this.busy = true;
             try {
-                if (!this.conversation) {
-                    const created = await nb.api.post(url, { operation: "create" });
-                    if (!created.success) throw new Error(created.message);
-                    this.conversation = created;
-                }
-                const response = await nb.api.post(url, { operation: "post", uuid: this.conversation.uuid, text });
+                const response = await nb.api.post(url, { operation: "post", uuid: this.conversation?.uuid || "", text });
                 if (!response.success) throw new Error(response.message);
                 this.draft = "";
                 this.$refs.input.style.height = "auto";

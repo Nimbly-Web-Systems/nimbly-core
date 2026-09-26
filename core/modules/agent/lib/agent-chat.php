@@ -72,10 +72,14 @@ function agent_chat_list(string $owner): array
     $list = [];
     foreach (data_read_index('.agent_conversations', 'owner_uuid', data_index_uuids($owner)[0]) as $uuid => $conversation) {
         $messages = agent_chat_visible((array)($conversation['messages'] ?? []));
+        if ($messages === [] && array_filter(array_column((array)($conversation['messages'] ?? []), 'runs')) === []) {
+            continue;
+        }
         $list[] = [
             'uuid' => $uuid, 'title' => (string)($conversation['title'] ?? ''),
             'updated_at' => (int)($conversation['updated_at'] ?? 0),
             'unread' => agent_chat_unread_count($conversation),
+            'waiting' => agent_chat_waiting($conversation),
             'last' => mb_substr((string)(end($messages)['text'] ?? ''), 0, 120),
         ];
     }
@@ -88,6 +92,19 @@ function agent_chat_unread_count(array $conversation): int
     $read_at = (int)($conversation['read_at'] ?? 0);
     return count(array_filter((array)($conversation['messages'] ?? []),
         fn($message) => !in_array(($message['from'] ?? 'user'), ['user', 'occasion'], true) && (int)($message['at'] ?? 0) > $read_at));
+}
+
+/** Whether an agent is still working on the latest message of this conversation. */
+function agent_chat_waiting(array $conversation): bool
+{
+    $last = end($conversation['messages']) ?: [];
+    foreach ((array)($last['runs'] ?? []) as $run_uuid) {
+        $run = data_read('.agent_runs', (string)$run_uuid);
+        if (is_array($run) && !in_array(($run['status'] ?? ''), AGENT_TERMINAL_STATUSES, true)) {
+            return true;
+        }
+    }
+    return false;
 }
 
 /** Messages people see; an occasion only tells the agent why it starts talking. */
@@ -186,6 +203,13 @@ function agent_chat_post(string $uuid, string $owner, string $text, string $chan
         throw new InvalidArgumentException('Message is empty or too long');
     }
     $team = agent_chat_team();
+    // A new chat is created together with its first message, so a message that cannot be sent leaves nothing behind.
+    if ($uuid === '') {
+        if (agent_chat_addressees(['agents' => array_keys($team), 'messages' => []], $team, $text) === []) {
+            throw new InvalidArgumentException('Nobody in this chat can answer right now');
+        }
+        $uuid = agent_chat_create($owner, $team);
+    }
     $lock = agent_lock('chat-' . $uuid);
     try {
         $conversation = agent_chat_conversation($uuid, $owner);
@@ -462,7 +486,7 @@ function agent_chat_run_pending(): int
     return $count;
 }
 
-/** JSON endpoint: list | create | get | post | read | delete | unread. */
+/** JSON endpoint: list | get | post (without uuid: a new chat) | read | delete | unread. */
 function agent_chat_sc($_params = null): void
 {
     load_libraries(['data', 'json', 'agent']);
@@ -478,12 +502,14 @@ function agent_chat_sc($_params = null): void
     try {
         $result = match ($operation) {
             'list' => ['conversations' => agent_chat_list($owner), 'team' => $team],
-            'create' => agent_chat_view(agent_chat_create($owner, $team), $owner),
             'get' => agent_chat_view((string)($input['uuid'] ?? ''), $owner),
             'post' => agent_chat_post((string)($input['uuid'] ?? ''), $owner, (string)($input['text'] ?? '')),
             'read' => agent_chat_mark_read((string)($input['uuid'] ?? ''), $owner),
             'delete' => agent_chat_delete((string)($input['uuid'] ?? ''), $owner),
-            'unread' => ['unread' => array_sum(array_column(agent_chat_list($owner), 'unread'))],
+            'unread' => (function () use ($owner) {
+                $list = agent_chat_list($owner);
+                return ['unread' => array_sum(array_column($list, 'unread')), 'waiting' => in_array(true, array_column($list, 'waiting'), true)];
+            })(),
             default => throw new InvalidArgumentException('Unknown operation'),
         };
     } catch (InvalidArgumentException $error) {

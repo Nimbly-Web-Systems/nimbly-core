@@ -285,6 +285,18 @@ chat_test_expect_error(fn() => agent_chat_post($older, $owner, 'anyone?'), 'Nobo
 $chat_test_features = ['chat-helper', 'chat-coder', 'chat-silent'];
 agent_chat_run_pending();
 
+// A new chat is created with its first message; if it cannot be sent, nothing is created.
+$count_before = count(data_read('.agent_conversations'));
+$chat_test_features = [];
+chat_test_expect_error(fn() => agent_chat_post('', $owner, 'hello?'), 'Nobody in this chat can answer', 'a message nobody can answer is refused');
+chat_test_assert(count(data_read('.agent_conversations')) === $count_before, 'and leaves no empty chat behind');
+$chat_test_features = ['chat-helper', 'chat-coder', 'chat-silent'];
+$fresh = agent_chat_post('', $owner, '@Helper new question');
+chat_test_assert(end($fresh['messages'])['text'] === '@Helper new question' && $fresh['uuid'] !== '', 'a new chat starts with its first message');
+agent_chat_run_pending();
+$empty = agent_chat_create($owner, ['helper' => 'Helper']);
+chat_test_assert(!in_array($empty, array_column(agent_chat_list($owner), 'uuid'), true), 'an empty chat does not show in the history');
+
 // Deleting a conversation: only your own.
 $trash = agent_chat_create($owner, ['helper' => 'Helper']);
 chat_test_expect_error(fn() => agent_chat_delete($trash, md5_uuid('someone-else')), 'Conversation not found', 'nobody deletes another person\'s chat');

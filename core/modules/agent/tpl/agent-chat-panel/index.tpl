@@ -82,7 +82,10 @@
 
     <button type="button" class="btn btn-circle btn-primary btn-lg relative shadow-lg" @click="toggle()" aria-label="[#text Talk with Nimbly#]" :aria-expanded="open">
         <svg xmlns="http://www.w3.org/2000/svg" class="size-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M21 12c0 4.418-4.03 8-9 8a9.9 9.9 0 01-4-.83L3 20l1.4-3.72A7.6 7.6 0 013 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
-        <span x-show="unread && !open" class="absolute right-0 top-0 size-3.5 rounded-full border-2 border-base-100 bg-error" aria-label="[#text New reply#]"></span>
+        <span x-show="unread && !open" class="absolute right-0 top-0 flex size-3.5" aria-label="[#text New reply#]">
+            <span class="absolute inline-flex size-full animate-ping rounded-full bg-error opacity-75"></span>
+            <span class="relative inline-flex size-3.5 rounded-full border-2 border-base-100 bg-error"></span>
+        </span>
     </button>
 </div>
 
