@@ -4,7 +4,7 @@ document.addEventListener("alpine:init", () => {
         if (!data.success) throw new Error(data.message || "Could not save settings");
     });
 
-    Alpine.data("site_settings", (name, description, direction, side, languages, catalog, rtl, features) => {
+    Alpine.data("site_settings", (name, description, direction, side, languages, catalog, rtl, features, chat) => {
         const codes = languages.map(language => language.code);
         // A plain-text name or description belongs to the default language. A plain-text
         // direction or side applies to every language; `choices` is its [ltr, rtl] default.
@@ -21,6 +21,7 @@ document.addEventListener("alpine:init", () => {
             description: codes.length ? localize(description) : description,
             direction: codes.length ? localize(direction, ["ltr", "rtl"]) : (direction || "ltr"),
             nimblybar: { side: codes.length ? localize(side, ["left", "right"]) : (side || "left") },
+            chat,
         };
         const start = codes[0] || "";
         return {
@@ -58,7 +59,8 @@ document.addEventListener("alpine:init", () => {
             submit(languages = null, message = "Settings saved") {
                 this.busy = true;
                 const was = JSON.parse(this.original_features);
-                const switched = was.pages !== this.features.pages || was.navigation !== this.features.navigation;
+                const switched = was.pages !== this.features.pages || was.navigation !== this.features.navigation
+                    || json(JSON.parse(this.original_site).chat) !== json(this.site.chat);
                 const site = languages || this.site_dirty
                     ? put("/api/v1/.config/site", languages ? { ...this.site, languages } : this.site)
                     : Promise.resolve();
@@ -72,7 +74,7 @@ document.addEventListener("alpine:init", () => {
                     }).then(() => { this.original_features = json(this.features); });
                 }).then(() => {
                     nb.notify(message);
-                    // New languages and the Pages and Navigation tabs need a fresh page.
+                    // New languages, the Pages and Navigation tabs and the team chat need a fresh page.
                     if (languages || switched) return location.reload();
                     this.busy = false;
                 }).catch(error => {

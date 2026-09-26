@@ -91,6 +91,12 @@ function site_settings_validate_config($resource, $uuid, &$record): bool
         }
         $record['direction'] = $direction;
         $record['nimblybar'] = array_merge(is_array($record['nimblybar'] ?? null) ? $record['nimblybar'] : [], ['side' => $side]);
+        foreach (['enabled', 'nimbly'] as $flag) {
+            if (array_key_exists('chat', $record) && (!is_array($record['chat']) || !is_bool($record['chat'][$flag] ?? true))) {
+                data_error_set('VALIDATION_FAILED', 'chat.' . $flag . ':boolean');
+                return false;
+            }
+        }
     }
     if ($uuid === 'managed_pages') {
         $existing = data_exists('.config', 'managed_pages') ? data_read('.config', 'managed_pages') : [];
@@ -215,6 +221,8 @@ function site_settings_sc($params)
     set_variable('_ss.languages_json', htmlspecialchars(json_encode(array_values($languages), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE), ENT_QUOTES, 'UTF-8'));
     set_variable('_ss.side_json', htmlspecialchars(json_encode($site['nimblybar']['side'] ?? '', JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE), ENT_QUOTES, 'UTF-8'));
     set_variable('_ss.direction_json', htmlspecialchars(json_encode($site['direction'] ?? '', JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE), ENT_QUOTES, 'UTF-8'));
+    $chat = is_array($site['chat'] ?? null) ? $site['chat'] : [];
+    set_variable('_ss.chat_json', htmlspecialchars(json_encode(['enabled' => ($chat['enabled'] ?? true) !== false, 'nimbly' => ($chat['nimbly'] ?? true) !== false]), ENT_QUOTES, 'UTF-8'));
     set_variable('_ss.rtl_json', htmlspecialchars(json_encode(site_settings_rtl_languages()), ENT_QUOTES, 'UTF-8'));
 
     $catalog = site_settings_language_catalog();

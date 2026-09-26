@@ -22,7 +22,7 @@ function agent_chat_team(): array
     load_library('access');
     $team = [];
     foreach (agent_ids() as $agent_id) {
-        if (!access_by_feature('chat-' . $agent_id)) {
+        if (!agent_chat_switched_on($agent_id) || !access_by_feature('chat-' . $agent_id)) {
             continue;
         }
         try {
@@ -35,6 +35,14 @@ function agent_chat_team(): array
         }
     }
     return $team;
+}
+
+/** Site settings can turn the whole chat, or a single agent in it, off. Both are on by default. */
+function agent_chat_switched_on(string $agent_id): bool
+{
+    $chat = data_lookup('.config', 'site', 'chat', []);
+    $chat = is_array($chat) ? $chat : [];
+    return ($chat['enabled'] ?? true) !== false && ($chat[$agent_id] ?? true) !== false;
 }
 
 /** An agent joins the chat only where the settings it needs (such as its model key) are present. */
@@ -289,7 +297,7 @@ function agent_chat_append(string $uuid, string $agent_id, string $text, string 
 function agent_chat_takes_part(string $agent_id): bool
 {
     try {
-        return is_array(agent_definition($agent_id)['chat_pipeline'] ?? null);
+        return agent_chat_switched_on($agent_id) && is_array(agent_definition($agent_id)['chat_pipeline'] ?? null);
     } catch (Throwable) {
         return false;
     }

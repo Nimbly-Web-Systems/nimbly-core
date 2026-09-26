@@ -35,9 +35,9 @@ function env($key, $default = null)
 {
     return ['SYSTEM_ALERT_EMAIL' => 'ops@example.test', 'APP_ENV' => 'testing'][$key] ?? $default;
 }
-function data_lookup($_resource, $_uuid, $_field, $default)
+function data_lookup($_resource, $_uuid, $field, $default)
 {
-    return $default;
+    return $GLOBALS['agent_test_site_config'][$field] ?? $default;
 }
 function set_variable($name, $value): void
 {
@@ -181,6 +181,12 @@ unset($GLOBALS['AGENT_TEST_DEFINITIONS']['guide']);
 agent_chat_ensure_resource();
 chat_test_assert(agent_chat_team() === ['helper' => 'Helper', 'coder' => 'Coder'],
     'the team holds agents with a chat pipeline the user may talk to');
+$GLOBALS['agent_test_site_config'] = ['chat' => ['enabled' => true, 'coder' => false]];
+chat_test_assert(agent_chat_team() === ['helper' => 'Helper'] && !agent_chat_takes_part('coder'),
+    'a switched-off agent leaves the team and cannot be handed over to');
+$GLOBALS['agent_test_site_config'] = ['chat' => ['enabled' => false]];
+chat_test_assert(agent_chat_team() === [], 'a switched-off chat has nobody in it');
+unset($GLOBALS['agent_test_site_config']);
 chat_test_assert(agent_chat_configured(['requires_env' => ['APP_ENV']]) && !agent_chat_configured(['requires_env' => ['NO_SUCH_KEY']]),
     'an agent joins the chat only where its settings are present');
 chat_test_assert(agent_chat_now('Europe/Amsterdam', strtotime('2026-09-26T12:00:00Z')) === 'Saturday 2026-09-26 14:00 (Europe/Amsterdam)',

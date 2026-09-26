@@ -98,4 +98,8 @@ $bad_direction = ['languages' => ['en', 'nl'], 'direction' => ['en' => 'up']];
 site_settings_validation_assert(!site_settings_validate_config('.config', 'site', $bad_direction), 'An unknown text direction was accepted.');
 $bad_side = ['languages' => ['en', 'nl'], 'nimblybar' => ['side' => ['nl' => 'top']]];
 site_settings_validation_assert(!site_settings_validate_config('.config', 'site', $bad_side), 'An unknown sidebar side was accepted.');
+$chat_off = ['languages' => ['en', 'nl'], 'chat' => ['enabled' => false, 'nimbly' => true]];
+site_settings_validation_assert(site_settings_validate_config('.config', 'site', $chat_off), 'Switching the team chat off was rejected.');
+$chat_bad = ['languages' => ['en', 'nl'], 'chat' => ['enabled' => true, 'nimbly' => 'no']];
+site_settings_validation_assert(!site_settings_validate_config('.config', 'site', $chat_bad), 'A non-boolean Nimbly agent setting was accepted.');
 echo "Site settings validation tests passed.\n";

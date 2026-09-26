@@ -1,4 +1,4 @@
-<form x-data="site_settings([#_ss.name_json#], [#_ss.description_json#], [#_ss.direction_json#], [#_ss.side_json#], [#_ss.language_rows_json#], [#_ss.language_catalog_json#], [#_ss.rtl_json#], [#_ss.features_json#])" @submit.prevent="submit()" class="max-w-2xl divide-y divide-neutral-200">
+<form x-data="site_settings([#_ss.name_json#], [#_ss.description_json#], [#_ss.direction_json#], [#_ss.side_json#], [#_ss.language_rows_json#], [#_ss.language_catalog_json#], [#_ss.rtl_json#], [#_ss.features_json#], [#_ss.chat_json#])" @submit.prevent="submit()" class="max-w-2xl divide-y divide-neutral-200">
     <div class="pb-5">
         <label :for="'site_name_' + active.name" class="mb-1 block text-sm font-medium">[#text Site name#]</label>
         <ul class="mb-1.5 flex flex-row" x-show="codes.length > 1" role="group" aria-label="[#text Language of the site name#]"><template x-for="code in codes" :key="code"><li><button type="button" class="cursor-pointer border-b-2 px-2 py-1 text-xs uppercase text-gray-600 hover:font-bold hover:text-black" :class="active.name === code ? 'border-b-primary' : 'border-b-transparent'" :aria-pressed="active.name === code" @click="active.name = code" x-text="code"></button></li></template></ul>
@@ -37,6 +37,10 @@
         <label :for="'nimblybar_side_' + active.side" class="mb-1 block text-sm font-medium">[#text Admin sidebar position#]</label>
         <ul class="mb-1.5 flex flex-row" x-show="codes.length > 1" role="group" aria-label="[#text Language of the sidebar position#]"><template x-for="code in codes" :key="code"><li><button type="button" class="cursor-pointer border-b-2 px-2 py-1 text-xs uppercase text-gray-600 hover:font-bold hover:text-black" :class="active.side === code ? 'border-b-primary' : 'border-b-transparent'" :aria-pressed="active.side === code" @click="active.side = code" x-text="code"></button></li></template></ul>
         <select :id="'nimblybar_side_' + active.side" :value="value('side')" @change="set_value('side', $event.target.value)" class="select select-bordered w-48 max-w-full"><option value="left">[#text Left#]</option><option value="right">[#text Right#]</option></select>
+    </div>
+    <div class="py-5">
+        <label class="flex cursor-pointer items-center justify-between gap-4"><span class="text-sm font-medium">[#text Show the team chat#]</span><input type="checkbox" class="toggle toggle-primary" x-model="site.chat.enabled"></label>
+        <label class="mt-4 flex cursor-pointer items-center justify-between gap-4" x-show="site.chat.enabled"><span class="text-sm font-medium">[#text Nimbly agent#]</span><input type="checkbox" class="toggle toggle-primary" x-model="site.chat.nimbly"></label>
     </div>
     <div class="flex items-center gap-3 pt-5"><button type="submit" class="[#btn-class-primary#]" :disabled="busy || !dirty" x-text="busy ? '[#text Saving…#]' : '[#text Save#]'"></button><span class="text-sm text-neutral-500" x-show="dirty" x-cloak>[#text Unsaved changes#]</span></div>
 </form>
