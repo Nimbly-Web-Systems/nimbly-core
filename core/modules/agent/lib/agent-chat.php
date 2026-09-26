@@ -260,6 +260,17 @@ function agent_chat_takes_part(string $agent_id): bool
     }
 }
 
+/** Today as the agent needs it for dates: weekday, date, time and timezone. */
+function agent_chat_now(string $timezone = '', ?int $now = null): string
+{
+    try {
+        $zone = new DateTimeZone($timezone !== '' ? $timezone : date_default_timezone_get());
+    } catch (Throwable) {
+        $zone = new DateTimeZone('UTC');
+    }
+    return (new DateTimeImmutable('@' . ($now ?? time())))->setTimezone($zone)->format('l Y-m-d H:i') . ' (' . $zone->getName() . ')';
+}
+
 function agent_chat_name(string $agent_id): string
 {
     try {

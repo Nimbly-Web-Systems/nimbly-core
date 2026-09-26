@@ -17,6 +17,7 @@ function agent_connector_chat_history(array $_source, array $_config, array $con
     }
     $messages = [['role' => 'user', 'content' => [['type' => 'input_text', 'text' => json_encode([
         'chat' => 'You are in a group chat with a colleague and the other agents of this team.',
+        'now' => agent_chat_now((string)($context['definition']['timezone'] ?? '')),
         'team' => agent_chat_colleagues($conversation),
         'earlier_conversations' => agent_chat_recent_for($conversation, $uuid),
     ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)]]]];
