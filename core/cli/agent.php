@@ -90,13 +90,20 @@ if ($command === 'agent:recover') {
     exit(0);
 }
 if ($command === 'agent:chat') {
-    // Chat has its own worker lane so a long daily run never delays a reply. One worker at a time.
-    $worker = fopen(sys_get_temp_dir() . '/nimbly-agent-chat-' . md5(BASE_DIR) . '.lock', 'c');
+    // Chat has its own worker lane so a long daily run never delays a reply. The scheduler runs
+    // its commands one after another, so the worker is detached and outlives a daily run (max 1 h).
+    $name = sys_get_temp_dir() . '/nimbly-agent-chat-' . md5(BASE_DIR);
+    if (($argv[2] ?? '') !== '--worker') {
+        exec(implode(' ', array_map('escapeshellarg', [PHP_BINARY, BASE_DIR . 'core/cli/nimbly.php', 'agent:chat', '--worker']))
+            . ' >> ' . escapeshellarg($name . '.log') . ' 2>&1 < /dev/null &');
+        exit(0);
+    }
+    $worker = fopen($name . '.lock', 'c');
     if (!$worker || !flock($worker, LOCK_EX | LOCK_NB)) {
         exit(0);
     }
     load_library('agent-chat');
-    $until = time() + 55;
+    $until = time() + 3600;
     do {
         agent_chat_run_pending();
         usleep(2000000);

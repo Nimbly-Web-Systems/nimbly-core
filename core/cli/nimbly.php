@@ -34,7 +34,7 @@ $commands = [
     'agent:run'         => ['file' => 'core/cli/agent.php',          'desc' => 'Run or resume an agent run', 'public' => false],
     'agent:retry'       => ['file' => 'core/cli/agent.php',          'desc' => 'Retry a failed scheduled agent run', 'public' => false],
     'agent:recover'     => ['file' => 'core/cli/agent.php',          'desc' => 'Recover expired agent run leases', 'public' => false],
-    'agent:chat'        => ['file' => 'core/cli/agent.php',          'desc' => 'Answer waiting chat messages for about a minute (run every minute)', 'public' => false],
+    'agent:chat'        => ['file' => 'core/cli/agent.php',          'desc' => 'Start the chat worker if it is not running (run every minute)', 'public' => false],
     'agent:evidence'    => ['file' => 'core/cli/agent.php',          'desc' => 'Print a past run\'s stored evidence and instructions for manual prompt testing', 'public' => false],
     'schedule:run'     => ['file' => 'core/cli/schedule.php',       'desc' => 'Run due scheduled commands', 'public' => false],
     'schedule:init'    => ['file' => 'core/cli/schedule_publish.php', 'desc' => 'Create project schedule files in ext/cli', 'public' => true],
