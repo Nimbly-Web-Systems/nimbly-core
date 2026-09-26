@@ -4,7 +4,9 @@
 // The hub (where people chat) calls the agent's home site through its API, as a user of that
 // site: it asks a question, and pulls back what the agents there said. The home never calls
 // the hub. What the hub user may ask is decided by their role at home: the `agent-remote`
-// feature and a `chat-<agent>` feature per agent. Questions from a hub run read-only.
+// feature and a `chat-<agent>` feature per agent. A question runs read-only unless both the
+// asker's role at the hub and the hub user's role at home have `agent-act`; the agent's own
+// authority at home then applies, as when someone talks to it there.
 
 const AGENT_REMOTE_TIMEOUT = 1800;
 
@@ -73,13 +75,15 @@ function agent_remote_ask(string $uuid, array $conversation, string $agent_id, s
         'event_context' => ['conversation' => $uuid], 'failure_reason' => '',
     ]);
     $messages = [];
+    $asker = '';
     foreach (agent_chat_visible((array)($conversation['messages'] ?? [])) as $message) {
         $messages[] = array_intersect_key($message, array_flip(['id', 'from', 'text', 'at']));
+        $asker = (string)($message['asker'] ?? $asker);
     }
     try {
         agent_remote_call(agent_remote_homes()[$agent_id], [
             'operation' => 'ask', 'conversation' => $uuid, 'owner' => (string)$conversation['owner_uuid'],
-            'agent' => $agent_id, 'run' => $run_uuid, 'message' => $message_id,
+            'agent' => $agent_id, 'run' => $run_uuid, 'message' => $message_id, 'may_act' => agent_remote_may_act($asker),
             'first_name' => (string)agent_chat_first_name($conversation), 'title' => (string)($conversation['title'] ?? ''),
             'team' => $team, 'messages' => array_slice($messages, -60),
         ]);
@@ -87,6 +91,16 @@ function agent_remote_ask(string $uuid, array $conversation, string $agent_id, s
         data_update('.agent_runs', $run_uuid, ['status' => 'failed', 'failure_reason' => $error->getMessage()]);
     }
     return $run_uuid;
+}
+
+/** Whether the person who asked may let an agent living elsewhere act, not only look. */
+function agent_remote_may_act(string $asker): bool
+{
+    if ($asker === '') {
+        return false;
+    }
+    load_libraries(['access', 'permissions']);
+    return permission_features_have(user_feature_map($asker), 'agent-act');
 }
 
 /** A waiting turn elsewhere that never came back counts as failed; a late answer is still taken. */
@@ -203,7 +217,7 @@ function agent_remote_may_ask(string $agent_id): bool
     }
 }
 
-/** The hub's question: kept here as a mirror of its conversation, and answered by a read-only chat turn. */
+/** The hub's question: kept here as a mirror of its conversation, and answered by a chat turn (read-only unless allowed to act). */
 function agent_remote_receive_ask(array $input): array
 {
     $agent_id = (string)($input['agent'] ?? '');
@@ -216,7 +230,8 @@ function agent_remote_receive_ask(array $input): array
     $lock = agent_lock('chat-' . $uuid);
     try {
         $run_uuid = agent_enqueue_result($agent_id, null, [
-            'trigger' => 'chat', 'idempotency_suffix' => 'hub-' . $hub_run, 'read_only' => true,
+            'trigger' => 'chat', 'idempotency_suffix' => 'hub-' . $hub_run,
+            'read_only' => empty($input['may_act']) || !access_by_feature('agent-act'),
             'event_context' => ['conversation' => $uuid, 'hub_run' => $hub_run],
         ])['run_uuid'];
         $messages = [];

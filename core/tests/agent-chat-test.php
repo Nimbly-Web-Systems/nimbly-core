@@ -102,6 +102,11 @@ function data_read_index($resource, $field, $index_uuid): array
     return array_filter($records, fn($record) => md5_uuid((string)($record[$field] ?? '')) === $index_uuid);
 }
 
+function user_feature_map($name): array
+{
+    return array_fill_keys($GLOBALS['chat_test_user_features'][$name] ?? [], true);
+}
+require_once BASE_DIR . 'core/modules/user/lib/permissions.php';
 require_once BASE_DIR . 'core/modules/agent/lib/agent.php';
 require_once BASE_DIR . 'core/modules/agent/lib/agent-chat.php';
 require_once BASE_DIR . 'core/modules/agent/lib/agent-connector-chat-history.php';
@@ -422,7 +427,7 @@ chat_test_expect_error(fn() => agent_chat_post($remote, $owner, '@Coder hello?')
 chat_test_site('home');
 $mirror = array_values(array_filter(data_read('.agent_conversations'), fn($conversation) => ($conversation['hub_user'] ?? '') === 'hub@example.test'))[0];
 $home_run = end($mirror['messages'])['runs']['coder'];
-chat_test_assert(data_read('.agent_runs', $home_run)['read_only'] === true, 'a question from the hub runs read-only at home');
+chat_test_assert(data_read('.agent_runs', $home_run)['read_only'] === true, 'a question from the hub runs read-only at home by default');
 chat_test_assert(agent_chat_list(md5_uuid('hub@example.test')) === [], 'the hub\'s conversations are not the hub user\'s chats at home');
 agent_chat_run_pending();
 $intro = json_decode($chat_test_seen['coder'][0]['content'][0]['text'], true);
@@ -487,6 +492,26 @@ agent_chat_post($notices[0]['uuid'], $owner, 'And now?');
 $late_run = end(data_read('.agent_conversations', $notices[0]['uuid'])['messages'])['runs']['coder'];
 data_update('.agent_runs', $late_run, ['scheduled_at' => time() - AGENT_REMOTE_TIMEOUT - 1]);
 chat_test_assert(agent_chat_view($notices[0]['uuid'], $owner)['working'][0]['status'] === 'failed', 'a turn that never comes back fails');
+
+// Letting the agent act takes agent-act on both sides: the asker's role at the hub, and the hub user's role at home.
+$act_chat = agent_chat_post('', $owner, '@Coder please restart Apache')['uuid'];
+$act_run = fn() => (function () {
+    chat_test_site('home');
+    $runs = array_filter(data_read('.agent_runs'), fn($run) => ($run['trigger'] ?? '') === 'chat' && ($run['status'] ?? '') === 'scheduled');
+    $read_only = end($runs)['read_only'];
+    agent_chat_run_pending();
+    chat_test_site('hub');
+    agent_remote_pull(true);
+    return $read_only;
+})();
+chat_test_assert($act_run() === true, 'without agent-act at the hub the question stays read-only');
+$chat_test_user_features = [$chat_test_user => ['agent-act']];
+agent_chat_post($act_chat, $owner, '@Coder please restart Apache now');
+chat_test_assert($act_run() === true, 'without agent-act for the hub user at home it stays read-only');
+$chat_test_sites['home']['chat_test_features'][] = 'agent-act';
+agent_chat_post($act_chat, $owner, '@Coder go ahead');
+chat_test_assert($act_run() === false, 'with agent-act on both sides the agent may act');
+$chat_test_user_features = [];
 $chat_test_env = [];
 
 // After its email went out, the agent's own chat line (if it wrote one) lands in the recipient's chat.
