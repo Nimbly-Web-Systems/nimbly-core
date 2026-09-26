@@ -39,6 +39,10 @@ function data_lookup($_resource, $_uuid, $field, $default)
 {
     return $GLOBALS['agent_test_site_config'][$field] ?? $default;
 }
+function find_user_by_email($email)
+{
+    return $GLOBALS['chat_test_names'][$email] ?? false;
+}
 function set_variable($name, $value): void
 {
     $GLOBALS['chat_test_vars'][$name] = $value;
@@ -233,6 +237,11 @@ $seen = $chat_test_seen['helper'];
 chat_test_assert($seen[1]['content'][0]['text'] === 'Coder: I fixed the build.' && $seen[1]['role'] === 'user',
     'other agents\' messages reach the model with their name');
 chat_test_assert($seen[2]['content'][0]['text'] === 'Colleague: @Helper how is disk space?', 'the colleague\'s message reaches the model');
+$GLOBALS['chat_test_names'] = [$GLOBALS['chat_test_user'] => ['name' => 'Hermen Reitsma']];
+chat_test_assert(agent_chat_first_name(['messages' => [['asker' => $GLOBALS['chat_test_user']]]]) === 'Hermen',
+    'the agent knows the colleague\'s first name');
+chat_test_assert(agent_chat_first_name(['messages' => [['asker' => 'nobody@example.test']]]) === null,
+    'without a name on the account the agent gets none');
 chat_test_assert(agent_chat_view($uuid, $owner)['working'] === [], 'an answered agent is no longer working');
 $reply_run = end($messages)['run_uuid'];
 agent_chat_append($uuid, 'helper', 'Disk is fine.', $reply_run);
