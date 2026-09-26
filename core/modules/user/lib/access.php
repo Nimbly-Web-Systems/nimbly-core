@@ -189,23 +189,29 @@ function _persist_user_roles($name) {
 }
 
 function _persist_user_features($name) {
+    $_SESSION['features'] = user_feature_map($name);
+}
+
+/** A user's features as the session holds them, computed from their roles right now. */
+function user_feature_map($name): array {
     $features = permission_expand_features(load_user_features($name));
-    $_SESSION['features'] = array();
+    $map = array();
     if (empty($features)) {
-        $_SESSION['features']['(none)'] = true;
+        $map['(none)'] = true;
     } else {
-        foreach ($features as $k => $v) {
-            $_SESSION['features'][$v] = true;
+        foreach ($features as $v) {
+            $map[$v] = true;
         }
     }
     $user = find_user_by_email($name);
     if (!empty($user['uuid'])) {
-        $_SESSION['features']['api_put_users_' . $user['uuid']] = true;
+        $map['api_put_users_' . $user['uuid']] = true;
     }
     if (user_has_role($name, 'admin')) {
-        $_SESSION['features']['(none)'] = false;
-        $_SESSION['features']['(all)'] = true;
+        $map['(none)'] = false;
+        $map['(all)'] = true;
     }
+    return $map;
 }
 
 function user_has_role($username, $role) {

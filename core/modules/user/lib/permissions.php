@@ -169,17 +169,20 @@ function permission_feature_grants(string $stored_feature, string $requested_fea
 
 function permission_session_has(string $feature): bool
 {
-    if (!isset($_SESSION['features'])) {
-        return false;
-    }
-    if (!empty($_SESSION['features']['(all)'])) {
+    return isset($_SESSION['features']) && permission_features_have((array)$_SESSION['features'], $feature);
+}
+
+/** Whether a feature map (as a session holds it) grants a feature; usable without a session. */
+function permission_features_have(array $features, string $feature): bool
+{
+    if (!empty($features['(all)'])) {
         return true;
     }
     foreach (permission_expand_features($feature) as $requested_feature) {
-        if (!empty($_SESSION['features'][$requested_feature])) {
+        if (!empty($features[$requested_feature])) {
             return true;
         }
-        foreach ($_SESSION['features'] as $stored_feature => $enabled) {
+        foreach ($features as $stored_feature => $enabled) {
             if ($enabled === true && permission_feature_grants($stored_feature, $requested_feature)) {
                 return true;
             }

@@ -21,8 +21,7 @@ function agent_chat_team(): array
 {
     load_library('access');
     $team = [];
-    $agent_ids = array_map(fn($path) => basename(dirname($path)), glob(agent_base_dir() . 'ext/agents/*/agent.json') ?: []);
-    foreach (array_unique([...$agent_ids, ...array_keys($GLOBALS['AGENT_TEST_DEFINITIONS'] ?? [])]) as $agent_id) {
+    foreach (agent_ids() as $agent_id) {
         if (!access_by_feature('chat-' . $agent_id)) {
             continue;
         }

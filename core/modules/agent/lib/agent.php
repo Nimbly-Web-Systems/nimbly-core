@@ -20,7 +20,27 @@ class AgentTransientException extends RuntimeException
 {
 }
 
-// Definitions are Ext-owned. Core validates only the generic pipeline contract.
+/** Ext agents override Core agents of the same identity. */
+function agent_definition_dir(string $agent_id): string
+{
+    $ext = agent_base_dir() . 'ext/agents/' . $agent_id . '/';
+    $core = agent_base_dir() . 'core/modules/agent/agents/' . $agent_id . '/';
+    return is_file($ext . 'agent.json') || !is_file($core . 'agent.json') ? $ext : $core;
+}
+
+/** Every agent identity with a definition, in Core or Ext. */
+function agent_ids(): array
+{
+    $ids = [];
+    foreach (['core/modules/agent/agents', 'ext/agents'] as $root) {
+        foreach (glob(agent_base_dir() . $root . '/*/agent.json') ?: [] as $path) {
+            $ids[] = basename(dirname($path));
+        }
+    }
+    return array_values(array_unique([...$ids, ...array_keys($GLOBALS['AGENT_TEST_DEFINITIONS'] ?? [])]));
+}
+
+// Definitions live in Ext (project agents) or Core (agents every site has).
 function agent_definition(string $agent_id): array
 {
     if (preg_match('/^[a-z0-9][a-z0-9-]*$/', $agent_id) !== 1) {
@@ -30,7 +50,7 @@ function agent_definition(string $agent_id): array
         && is_array($GLOBALS['AGENT_TEST_DEFINITIONS'][$agent_id])) {
         $definition = $GLOBALS['AGENT_TEST_DEFINITIONS'][$agent_id];
     } else {
-        $directory = agent_base_dir() . 'ext/agents/' . $agent_id . '/';
+        $directory = agent_definition_dir($agent_id);
         $path = $directory . 'agent.json';
         if (!is_file($path)) {
             throw new RuntimeException('Agent definition not found: ' . $agent_id);
@@ -87,7 +107,7 @@ function agent_validate_definition(array $definition, string $agent_id = ''): vo
     if (($definition['id'] ?? '') !== $agent_id && $agent_id !== '') {
         throw new RuntimeException('Agent definition identity does not match its directory');
     }
-    foreach (['id', 'version', 'instructions', 'pipeline'] as $required) {
+    foreach (['id', 'version', 'instructions'] as $required) {
         if (empty($definition[$required])) {
             throw new RuntimeException('Agent definition is missing ' . $required);
         }
@@ -95,7 +115,10 @@ function agent_validate_definition(array $definition, string $agent_id = ''): vo
     if (!is_file((string)$definition['instructions'])) {
         throw new RuntimeException('Agent instructions are unavailable');
     }
-    agent_validate_pipeline($definition['pipeline'], 'pipeline');
+    // A chat-only agent (such as the site's own Nimbly agent) has no scheduled pipeline.
+    if (isset($definition['pipeline']) || !isset($definition['chat_pipeline'])) {
+        agent_validate_pipeline($definition['pipeline'] ?? null, 'pipeline');
+    }
     if (isset($definition['chat_pipeline'])) {
         agent_validate_pipeline($definition['chat_pipeline'], 'chat pipeline');
     }
@@ -222,6 +245,9 @@ function agent_scope_definition(array $definition, array $run): array
             throw new RuntimeException('Agent does not take part in chat');
         }
         $definition['pipeline'] = $definition['chat_pipeline'];
+    }
+    if (!is_array($definition['pipeline'] ?? null)) {
+        throw new RuntimeException('Agent only takes part in chat');
     }
     $target = trim((string)($run['target'] ?? ''));
     if ($target !== '' && isset($definition['targets'])) {

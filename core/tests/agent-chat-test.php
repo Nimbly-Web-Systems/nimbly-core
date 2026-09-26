@@ -160,6 +160,18 @@ $resolved = agent_resolve_definition_paths(['chat_pipeline' => ['agent' => [['id
     __DIR__ . '/fixtures/');
 chat_test_assert($resolved['chat_pipeline']['agent'][0]['instructions'] === $instructions, 'chat pipeline file references are resolved');
 
+// A chat-only agent needs no scheduled pipeline, and cannot be run as one.
+$GLOBALS['AGENT_TEST_DEFINITIONS']['guide'] = ['id' => 'guide', 'version' => '1.0.0',
+    'instructions' => $instructions, 'chat_pipeline' => $chat, 'tools' => []];
+agent_validate_definition($GLOBALS['AGENT_TEST_DEFINITIONS']['guide'], 'guide');
+$guide_run = agent_enqueue_result('guide', null, ['idempotency_suffix' => 'daily-guide']);
+chat_test_assert(agent_run($guide_run['run_uuid'])['failure_reason'] === 'Agent only takes part in chat',
+    'a chat-only agent has no scheduled work');
+$agent_test_jobs = [];
+chat_test_expect_error(fn() => agent_validate_definition(['id' => 'x', 'version' => '1', 'instructions' => $instructions], 'x'),
+    'pipeline version', 'an agent needs a pipeline or a chat pipeline');
+unset($GLOBALS['AGENT_TEST_DEFINITIONS']['guide']);
+
 // Team: agents with a chat pipeline and the chat feature.
 agent_chat_ensure_resource();
 chat_test_assert(agent_chat_team() === ['helper' => 'Helper', 'coder' => 'Coder'],
