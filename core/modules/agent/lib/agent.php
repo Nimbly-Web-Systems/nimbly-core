@@ -51,17 +51,19 @@ function agent_resolve_definition_paths(array $definition, string $directory): a
     if ($instructions !== '') {
         $definition['instructions'] = agent_definition_file($directory, $instructions, 'md');
     }
-    foreach (['input', 'agent', 'output'] as $group) {
-        foreach ((array)($definition['pipeline'][$group] ?? []) as $index => $step) {
-            if (!is_array($step)) {
-                continue;
-            }
-            foreach (['instructions' => 'md', 'schema' => 'json', 'template' => 'tpl'] as $key => $extension) {
-                if (!empty($step[$key])) {
-                    $step[$key] = agent_definition_file($directory, (string)$step[$key], $extension);
+    foreach (['pipeline', 'chat_pipeline'] as $pipeline) {
+        foreach (['input', 'agent', 'output'] as $group) {
+            foreach ((array)($definition[$pipeline][$group] ?? []) as $index => $step) {
+                if (!is_array($step)) {
+                    continue;
                 }
+                foreach (['instructions' => 'md', 'schema' => 'json', 'template' => 'tpl'] as $key => $extension) {
+                    if (!empty($step[$key])) {
+                        $step[$key] = agent_definition_file($directory, (string)$step[$key], $extension);
+                    }
+                }
+                $definition[$pipeline][$group][$index] = $step;
             }
-            $definition['pipeline'][$group][$index] = $step;
         }
     }
     return $definition;
@@ -93,9 +95,32 @@ function agent_validate_definition(array $definition, string $agent_id = ''): vo
     if (!is_file((string)$definition['instructions'])) {
         throw new RuntimeException('Agent instructions are unavailable');
     }
-    $pipeline = $definition['pipeline'];
+    agent_validate_pipeline($definition['pipeline'], 'pipeline');
+    if (isset($definition['chat_pipeline'])) {
+        agent_validate_pipeline($definition['chat_pipeline'], 'chat pipeline');
+    }
+    foreach ((array)($definition['tools'] ?? []) as $name => $tool) {
+        if (preg_match('/^[a-z][a-z0-9_-]*$/', (string)$name) !== 1 || !is_array($tool)
+            || !agent_valid_capability((string)($tool['connector'] ?? ''))
+            || !in_array(($tool['risk'] ?? ''), ['read_only', 'governed'], true)
+            || !is_array($tool['parameters'] ?? null)) {
+            throw new RuntimeException('Agent tool definition is invalid: ' . $name);
+        }
+        agent_validate_argument_schema($tool['parameters'], 'tool.' . $name);
+        if (($tool['parameters']['type'] ?? '') !== 'object') {
+            throw new RuntimeException('Agent tool parameters must be an object: ' . $name);
+        }
+        if (($tool['risk'] ?? '') === 'governed'
+            && !agent_valid_capability((string)($tool['authorizer'] ?? ''))) {
+            throw new RuntimeException('Governed agent tool authorizer is invalid: ' . $name);
+        }
+    }
+}
+
+function agent_validate_pipeline($pipeline, string $label): void
+{
     if (!is_array($pipeline) || (int)($pipeline['version'] ?? 0) !== AGENT_PIPELINE_VERSION) {
-        throw new RuntimeException('Agent pipeline version must be ' . AGENT_PIPELINE_VERSION);
+        throw new RuntimeException('Agent ' . $label . ' version must be ' . AGENT_PIPELINE_VERSION);
     }
     $known = [];
     foreach (['input', 'agent', 'output'] as $group) {
@@ -127,22 +152,6 @@ function agent_validate_definition(array $definition, string $agent_id = ''): vo
     foreach (['result_from', 'delivery_from'] as $reference) {
         if (!isset($known[$pipeline[$reference] ?? ''])) {
             throw new RuntimeException('Agent pipeline reference is invalid: ' . $reference);
-        }
-    }
-    foreach ((array)($definition['tools'] ?? []) as $name => $tool) {
-        if (preg_match('/^[a-z][a-z0-9_-]*$/', (string)$name) !== 1 || !is_array($tool)
-            || !agent_valid_capability((string)($tool['connector'] ?? ''))
-            || !in_array(($tool['risk'] ?? ''), ['read_only', 'governed'], true)
-            || !is_array($tool['parameters'] ?? null)) {
-            throw new RuntimeException('Agent tool definition is invalid: ' . $name);
-        }
-        agent_validate_argument_schema($tool['parameters'], 'tool.' . $name);
-        if (($tool['parameters']['type'] ?? '') !== 'object') {
-            throw new RuntimeException('Agent tool parameters must be an object: ' . $name);
-        }
-        if (($tool['risk'] ?? '') === 'governed'
-            && !agent_valid_capability((string)($tool['authorizer'] ?? ''))) {
-            throw new RuntimeException('Governed agent tool authorizer is invalid: ' . $name);
         }
     }
 }
@@ -207,6 +216,13 @@ function agent_instructions(array $definition, ?array $step = null): string
 
 function agent_scope_definition(array $definition, array $run): array
 {
+    // A chat turn answers a conversation; it runs the agent's chat pipeline instead of its daily work.
+    if (($run['trigger'] ?? '') === 'chat') {
+        if (!is_array($definition['chat_pipeline'] ?? null)) {
+            throw new RuntimeException('Agent does not take part in chat');
+        }
+        $definition['pipeline'] = $definition['chat_pipeline'];
+    }
     $target = trim((string)($run['target'] ?? ''));
     if ($target !== '' && isset($definition['targets'])) {
         $definition['targets'] = array_values(array_filter(
@@ -399,6 +415,10 @@ function agent_enqueue_result(string $agent_id, ?int $now = null, array $options
 
 function agent_queue(string $run_uuid, string $suffix = ''): void
 {
+    // Chat runs have their own worker lane (agent:chat) so a long daily run never delays a reply.
+    if ((data_read('.agent_runs', $run_uuid)['trigger'] ?? '') === 'chat') {
+        return;
+    }
     load_library('job');
     job_enqueue('agent', ['run_uuid' => $run_uuid], [
         'uuid' => substr(hash('sha256', 'agent-job:' . $run_uuid . ':' . $suffix), 0, 16),

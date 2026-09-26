@@ -1,0 +1,12 @@
+{
+  "fields": {
+    "owner_uuid": {"name": "Owner", "type": "text", "required": true},
+    "title": {"name": "Title", "type": "text"},
+    "agents": {"name": "Agents", "type": "text", "admin_col": false},
+    "messages": {"name": "Messages", "type": "text", "admin_col": false},
+    "read_at": {"name": "Read at", "type": "number", "admin_col": false},
+    "updated_at": {"name": "Updated at", "type": "number"}
+  },
+  "index": ["owner_uuid"],
+  "sort": {"field": "updated_at", "flags": "numeric", "order": "desc"}
+}

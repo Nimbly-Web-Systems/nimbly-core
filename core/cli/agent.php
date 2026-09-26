@@ -89,6 +89,20 @@ if ($command === 'agent:recover') {
     echo "Recovered agent runs: {$count}\n";
     exit(0);
 }
+if ($command === 'agent:chat') {
+    // Chat has its own worker lane so a long daily run never delays a reply. One worker at a time.
+    $worker = fopen(sys_get_temp_dir() . '/nimbly-agent-chat-' . md5(BASE_DIR) . '.lock', 'c');
+    if (!$worker || !flock($worker, LOCK_EX | LOCK_NB)) {
+        exit(0);
+    }
+    load_library('agent-chat');
+    $until = time() + 55;
+    do {
+        agent_chat_run_pending();
+        usleep(2000000);
+    } while (time() < $until);
+    exit(0);
+}
 if ($command === 'agent:evidence') {
     $agent_id = trim((string)($argv[2] ?? ''));
     $run_uuid = '';
@@ -131,5 +145,5 @@ if ($command === 'agent:evidence') {
     exit(0);
 }
 
-fwrite(STDERR, "Usage: agent:enqueue <agent-id> (--scheduled|--manual=<key>|--operator=<key>) [--target=<identity>] [--read-only] | agent:run <run-uuid> | agent:retry <failed-run-uuid> | agent:recover | agent:evidence <agent-id> --run=<run-uuid> [--out=<path>]\n");
+fwrite(STDERR, "Usage: agent:enqueue <agent-id> (--scheduled|--manual=<key>|--operator=<key>) [--target=<identity>] [--read-only] | agent:run <run-uuid> | agent:retry <failed-run-uuid> | agent:recover | agent:chat | agent:evidence <agent-id> --run=<run-uuid> [--out=<path>]\n");
 exit(64);
