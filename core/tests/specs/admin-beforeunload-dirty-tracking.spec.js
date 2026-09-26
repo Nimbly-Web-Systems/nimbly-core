@@ -53,10 +53,10 @@ test('the same latched dirty counter still warns off of admin pages', async ({ p
   await login(page);
   // Not '/': with no project homepage configured (e.g. a blank ext, as in
   // CI), '/' redirects a dashboard-permitted user straight to /nb-admin,
-  // which makes this test's own premise false. /.test/ping is a core
+  // which makes this test's own premise false. /_test/ping is a core
   // fixture route, guaranteed to exist and guaranteed non-admin regardless
   // of what the project's ext provides.
-  await page.goto('/.test/ping');
+  await page.goto('/_test/ping');
   await page.evaluate(() => {
     window.nb.edit.inputs = 1;
   });

@@ -39,12 +39,12 @@ test('desktop resource menu shows counts and permitted add actions', async ({ pa
 
 test('protected test route accessible after login', async ({ page }) => {
   await login(page);
-  await page.goto('/.test/ping');
+  await page.goto('/_test/ping');
   await expect(page.locator('#status')).toHaveText('ok');
 });
 
 test('protected test route redirects when not logged in', async ({ page }) => {
-  await page.goto('/.test/ping');
+  await page.goto('/_test/ping');
   await expect(page).not.toHaveURL(/\.test\/ping/);
 });
 
@@ -52,6 +52,6 @@ test('logout clears session', async ({ page }) => {
   await login(page);
   await page.goto('/logout');
   // session gone: protected page now bounces
-  await page.goto('/.test/ping');
+  await page.goto('/_test/ping');
   await expect(page).not.toHaveURL(/\.test\/ping/);
 });

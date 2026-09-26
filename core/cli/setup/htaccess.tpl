@@ -91,12 +91,13 @@ RewriteCond %{REQUEST_URI} !^/index\.php$
 RewriteCond %{REQUEST_URI} !^/install\.php$
 RewriteRule ^ - [F]
 
+# block hidden files and folders at the web root (.env, .git, ...) before PHP runs,
+# so scanners cost nothing; .well-known stays reachable for certificates
+RewriteRule ^\.(?!well-known/) - [F]
+
 # rewrite: redirect anything that is not a file to index.php
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteRule ^ index.php [END]
-
-#rewrite: redirect any attempt to access a hidden file/dir (starting with a .) to index.php
-RewriteRule ^\..*$ index.php [END]
 
 # rewrite: don't allow a direct request to a static file folder (redirect to index.php)
 RewriteCond %{THE_REQUEST} ^[A-Z]{3,9}\ /[^\ ]+/(ext|core)/static/.*($|\ ) [NC]
