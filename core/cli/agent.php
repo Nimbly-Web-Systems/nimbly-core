@@ -104,7 +104,15 @@ if ($command === 'agent:chat') {
     }
     load_libraries(['agent-chat', 'agent-remote']);
     $until = time() + 3600;
+    $started = time();
     do {
+        // After a deploy, stop rather than mix old code in memory with new files; the scheduler starts a fresh worker.
+        clearstatcache();
+        foreach (get_included_files() as $file) {
+            if ((int)@filemtime($file) > $started) {
+                exit(0);
+            }
+        }
         agent_chat_run_pending();
         agent_remote_pull();
         usleep(2000000);
