@@ -4,6 +4,8 @@
 function maintenance_tasks(): array
 {
     return [
+        // First: it only starts the detached chat worker, so jobs:run can never delay a chat reply.
+        ['id' => 'agent-chat', 'command' => 'agent:chat', 'every_minutes' => 1],
         ['id' => 'sessions-prune', 'command' => 'sessions:prune', 'every_minutes' => 30],
         ['id' => 'jobs-run', 'command' => 'jobs:run 10', 'every_minutes' => 1],
         ['id' => 'jobs-prune', 'command' => 'jobs:prune --days=30', 'every_minutes' => 1440],

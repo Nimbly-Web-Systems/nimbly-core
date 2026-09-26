@@ -176,6 +176,8 @@ unset($GLOBALS['AGENT_TEST_DEFINITIONS']['guide']);
 agent_chat_ensure_resource();
 chat_test_assert(agent_chat_team() === ['helper' => 'Helper', 'coder' => 'Coder'],
     'the team holds agents with a chat pipeline the user may talk to');
+chat_test_assert(agent_chat_configured(['requires_env' => ['APP_ENV']]) && !agent_chat_configured(['requires_env' => ['NO_SUCH_KEY']]),
+    'an agent joins the chat only where its settings are present');
 $owner = agent_chat_owner();
 
 // Addressing.

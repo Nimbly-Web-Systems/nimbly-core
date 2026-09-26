@@ -30,11 +30,23 @@ function agent_chat_team(): array
         } catch (Throwable) {
             continue;
         }
-        if (is_array($definition['chat_pipeline'] ?? null)) {
+        if (is_array($definition['chat_pipeline'] ?? null) && agent_chat_configured($definition)) {
             $team[$agent_id] = (string)($definition['name'] ?? $agent_id);
         }
     }
     return $team;
+}
+
+/** An agent joins the chat only where the settings it needs (such as its model key) are present. */
+function agent_chat_configured(array $definition): bool
+{
+    load_library('env');
+    foreach ((array)($definition['requires_env'] ?? []) as $name) {
+        if (trim((string)env((string)$name)) === '') {
+            return false;
+        }
+    }
+    return true;
 }
 
 function agent_chat_ensure_resource(): void

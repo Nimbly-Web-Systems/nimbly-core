@@ -4,6 +4,7 @@
   "role": "Knows Nimbly and this site: explains, finds and edits content, and shows the way.",
   "version": "1.0.0",
   "instructions": "chat.md",
+  "requires_env": ["OPENAI_API_KEY"],
   "model": "gpt-5.6-terra",
   "reasoning_effort": "low",
   "lease_seconds": 900,

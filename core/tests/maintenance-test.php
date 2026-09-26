@@ -23,7 +23,7 @@ $legacy_state = $state;
 unset($legacy_state['tasks']['jobs-prune']['last_success_at']);
 $legacy_state['tasks']['jobs-prune']['last_finished_at'] = $now;
 maintenance_test_assert(!maintenance_health($legacy_state, $now), 'legacy successful state remains healthy');
-maintenance_test_assert(maintenance_health($state, $now + 121) === ['jobs-run' => 'overdue'], 'per-task freshness');
+maintenance_test_assert(maintenance_health($state, $now + 121) === ['agent-chat' => 'overdue', 'jobs-run' => 'overdue'], 'per-task freshness');
 $state['tasks']['sessions-prune']['last_exit_code'] = 1;
 maintenance_test_assert(maintenance_health($state, $now) === ['sessions-prune' => 'failed'], 'failed run not hidden by earlier success');
 
@@ -36,7 +36,7 @@ foreach (['schedule.php', 'schedule_status.php', 'cli_bootstrap.inc'] as $file) 
 symlink($root . 'core/cli/helpers/output.php', $tmp . '/core/cli/helpers/output.php');
 file_put_contents($tmp . '/.env', "APP_ENV=stage\n");
 $commands = [];
-foreach (['sessions:prune', 'jobs:run', 'jobs:prune', 'stats:rollup', 'app:test'] as $command) {
+foreach (['agent:chat', 'sessions:prune', 'jobs:run', 'jobs:prune', 'stats:rollup', 'app:test'] as $command) {
     $commands[$command] = ['file' => 'ext/cli/task.php', 'desc' => 'fixture'];
 }
 file_put_contents($tmp . '/ext/cli/commands.php', '<?php return ' . var_export($commands, true) . ';');
@@ -53,7 +53,7 @@ try {
     maintenance_test_assert(!file_exists($tmp . '/calls') && !file_exists($tmp . '/ext/data/.state/schedule'), 'dry-run no commands or state');
     [$code, $output] = maintenance_test_run($tmp, 'schedule:run');
     maintenance_test_assert($code === 0, 'overridden implementations succeed: ' . $output);
-    maintenance_test_assert(file($tmp . '/calls', FILE_IGNORE_NEW_LINES) === ['sessions:prune','jobs:run','jobs:prune','stats:rollup'], 'each ext implementation runs once');
+    maintenance_test_assert(file($tmp . '/calls', FILE_IGNORE_NEW_LINES) === ['agent:chat','sessions:prune','jobs:run','jobs:prune','stats:rollup'], 'each ext implementation runs once');
     maintenance_test_assert(maintenance_test_run($tmp, 'schedule:status')[0] === 0, 'status observes successful completion');
     unlink($tmp . '/ext/data/.state/schedule');
     file_put_contents($tmp . '/ext/cli/schedule.stage.inc', '<?php return ' . var_export([
