@@ -16,6 +16,7 @@ file_put_contents($fixture . '/ext/uri/watchdog/index.tpl', '[#watchdog#]');
 $GLOBALS['SYSTEM'] = ['file_base' => $fixture . '/', 'request_uri' => '', 'uri_base' => '/', 'variables' => []];
 function load_library($name) {}
 function data_lookup($resource, $uuid, $field, $default = null) { return $default; }
+require_once __DIR__ . '/../lib/env.php';
 require_once __DIR__ . '/../lib/seo-page.php';
 require_once __DIR__ . '/../lib/sitemap.php';
 
