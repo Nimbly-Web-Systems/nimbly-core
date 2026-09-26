@@ -7,9 +7,12 @@ function agent_chat_widget_sc($_params = null): void
     if (!session_resume() || empty($_SESSION['features'])) {
         return;
     }
-    load_libraries(['agent', 'agent-chat', 'run']);
-    if (agent_chat_team() === []) {
+    load_libraries(['data', 'username', 'agent', 'agent-chat', 'run']);
+    $team = agent_chat_team();
+    if ($team === []) {
         return;
     }
+    agent_chat_ensure_resource();
+    agent_chat_welcome((string)username_get(), $team);
     run_single_sc('agent-chat-panel');
 }

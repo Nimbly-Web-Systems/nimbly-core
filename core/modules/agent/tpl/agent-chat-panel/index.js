@@ -31,7 +31,10 @@ function agent_chat_widget(nimblybar_side) {
             this.open = !this.open;
             this.remember();
             if (this.open) {
-                this.conversation ? this.refresh() : this.load_list();
+                // Someone (an agent) started a conversation: open it right away.
+                const waiting = this.conversations.find(item => item.unread);
+                if (!this.conversation && waiting) this.open_conversation(waiting.uuid);
+                else this.conversation ? this.refresh() : this.load_list();
                 this.$nextTick(() => this.$refs.input.focus());
             }
             this.poll();
@@ -50,7 +53,7 @@ function agent_chat_widget(nimblybar_side) {
         },
         async check_unread() {
             const response = await nb.api.get(url + "?operation=unread");
-            if (response.success) this.unread = response.unread;
+            if (response.success && response.unread !== this.unread) await this.load_list();
         },
         async load_list() {
             const response = await nb.api.get(url + "?operation=list");

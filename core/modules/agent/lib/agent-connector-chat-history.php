@@ -23,6 +23,11 @@ function agent_connector_chat_history(array $_source, array $_config, array $con
     foreach ((array)($conversation['messages'] ?? []) as $message) {
         $from = (string)($message['from'] ?? 'user');
         $text = (string)($message['text'] ?? '');
+        if ($from === 'occasion') {
+            $messages[] = ['role' => 'user', 'content' => [['type' => 'input_text',
+                'text' => json_encode(['you_start_this_conversation_because' => $text], JSON_UNESCAPED_UNICODE)]]];
+            continue;
+        }
         $messages[] = $from === $agent_id
             ? ['role' => 'assistant', 'content' => [['type' => 'output_text', 'text' => $text]]]
             : ['role' => 'user', 'content' => [['type' => 'input_text',

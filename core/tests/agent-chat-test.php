@@ -249,6 +249,22 @@ agent_chat_run_pending();
 $replies = array_column(array_slice(data_read('.agent_conversations', $group)['messages'], -2), 'from');
 chat_test_assert($replies === ['helper', 'coder'], 'the colleague answers after the agent who brought them in');
 
+// An agent starts a conversation: the occasion is for the agent only; its words come first.
+$opened = agent_chat_open('hermen', ['helper' => 'Helper'], 'helper', 'Hello', 'Say hello to a new colleague.');
+$view = agent_chat_view($opened, $owner);
+chat_test_assert($view['messages'] === [] && $view['working'][0]['agent'] === 'helper', 'the occasion is not shown, the agent is at work');
+agent_chat_run_pending();
+chat_test_assert(str_contains(json_encode(end($chat_test_seen['helper'])), 'you_start_this_conversation_because')
+    || str_contains(json_encode($chat_test_seen['helper']), 'Say hello to a new colleague.'), 'the agent knows why it starts talking');
+$list = array_column(agent_chat_list($owner), null, 'uuid');
+chat_test_assert($list[$opened]['unread'] === 1 && $list[$opened]['last'] === 'Disk is fine.', 'its first words arrive as unread');
+chat_test_assert(agent_chat_welcome('hermen', ['helper' => 'Helper']) === null, 'only Nimbly says welcome');
+chat_test_assert(agent_chat_welcome('hermen', ['nimbly' => 'Nimbly']) === null, 'no welcome for someone who already chatted');
+$welcome = agent_chat_welcome('newcomer', ['nimbly' => 'Nimbly']);
+chat_test_assert(is_string($welcome) && data_read('.agent_conversations', $welcome)['owner_uuid'] === md5_uuid('newcomer'),
+    'a newcomer is welcomed by Nimbly');
+chat_test_assert(agent_chat_welcome('newcomer', ['nimbly' => 'Nimbly']) === null, 'and only once');
+
 // Unread.
 data_update('.agent_conversations', $uuid, ['read_at' => time() - 10]);
 chat_test_assert(agent_chat_list($owner)[0]['unread'] === 3, 'agent messages after the last read count as unread');

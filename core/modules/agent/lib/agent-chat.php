@@ -71,7 +71,7 @@ function agent_chat_list(string $owner): array
 {
     $list = [];
     foreach (data_read_index('.agent_conversations', 'owner_uuid', data_index_uuids($owner)[0]) as $uuid => $conversation) {
-        $messages = (array)($conversation['messages'] ?? []);
+        $messages = agent_chat_visible((array)($conversation['messages'] ?? []));
         $list[] = [
             'uuid' => $uuid, 'title' => (string)($conversation['title'] ?? ''),
             'updated_at' => (int)($conversation['updated_at'] ?? 0),
@@ -87,7 +87,56 @@ function agent_chat_unread_count(array $conversation): int
 {
     $read_at = (int)($conversation['read_at'] ?? 0);
     return count(array_filter((array)($conversation['messages'] ?? []),
-        fn($message) => ($message['from'] ?? 'user') !== 'user' && (int)($message['at'] ?? 0) > $read_at));
+        fn($message) => !in_array(($message['from'] ?? 'user'), ['user', 'occasion'], true) && (int)($message['at'] ?? 0) > $read_at));
+}
+
+/** Messages people see; an occasion only tells the agent why it starts talking. */
+function agent_chat_visible(array $messages): array
+{
+    return array_values(array_filter($messages, fn($message) => ($message['from'] ?? '') !== 'occasion'));
+}
+
+/**
+ * An agent starts a conversation with someone: the occasion is for the agent only, and its own
+ * words become the first message (with a red dot until it is read).
+ */
+function agent_chat_open(string $username, array $team, string $agent_id, string $title, string $occasion): string
+{
+    load_library('util');
+    $uuid = substr(md5(generate_uuid()), 0, 16);
+    $message_id = substr(md5(generate_uuid()), 0, 12);
+    data_create('.agent_conversations', $uuid, [
+        'owner_uuid' => md5_uuid($username), 'title' => $title, 'agents' => array_keys($team),
+        'messages' => [], 'read_at' => 0, 'updated_at' => time(),
+    ]);
+    $run_uuid = agent_enqueue_result($agent_id, null, [
+        'trigger' => 'chat', 'idempotency_suffix' => 'chat-' . $message_id,
+        'event_context' => ['conversation' => $uuid],
+    ])['run_uuid'];
+    data_update('.agent_conversations', $uuid, ['messages' => [['id' => $message_id, 'from' => 'occasion',
+        'text' => $occasion, 'at' => time(), 'channel' => 'web', 'runs' => [$agent_id => $run_uuid], 'asker' => $username]]]);
+    return $uuid;
+}
+
+/** Nimbly says hello the first time someone who may chat opens the site. */
+function agent_chat_welcome(string $username, array $team): ?string
+{
+    if (!isset($team['nimbly'])) {
+        return null;
+    }
+    $owner = md5_uuid($username);
+    $lock = agent_lock('chat-welcome-' . $owner);
+    try {
+        if (agent_chat_list($owner) !== []) {
+            return null;
+        }
+        return agent_chat_open($username, $team, 'nimbly', 'Welcome',
+            'This colleague just opened this site for the first time since you are here. Say hello: '
+            . 'introduce yourself in one or two sentences, name one or two useful things you can do '
+            . 'for them on this site (look at the site first), and invite them to ask. Keep it short and warm.');
+    } finally {
+        agent_unlock($lock);
+    }
 }
 
 function agent_chat_create(string $owner, array $team): string
@@ -311,7 +360,7 @@ function agent_chat_view(string $uuid, string $owner): array
     return [
         'uuid' => $uuid, 'title' => (string)($conversation['title'] ?? ''),
         'team' => $team, 'messages' => array_map(fn($message) => array_intersect_key($message,
-            array_flip(['id', 'from', 'text', 'at', 'link'])), (array)$conversation['messages']),
+            array_flip(['id', 'from', 'text', 'at', 'link'])), agent_chat_visible((array)$conversation['messages'])),
         'working' => $working,
     ];
 }
