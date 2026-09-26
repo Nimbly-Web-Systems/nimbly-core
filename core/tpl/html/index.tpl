@@ -35,6 +35,7 @@
             [#footer#]
         </footer>
     </div>
+    [#agent-chat-widget#]
     [#scripts#]
 </body>
 

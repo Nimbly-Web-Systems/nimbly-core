@@ -303,7 +303,9 @@ function agent_canonical_value($value)
 
 function agent_lock(string $key)
 {
-    $lock = fopen(sys_get_temp_dir() . '/nimbly-agent-' . hash('sha256', agent_base_dir() . ':' . $key) . '.lock', 'c');
+    // Web and CLI users share chat locks; /tmp refuses creating-opens of another user's file, so reuse read-only.
+    $path = sys_get_temp_dir() . '/nimbly-agent-' . hash('sha256', agent_base_dir() . ':' . $key) . '.lock';
+    $lock = @fopen($path, 'r') ?: fopen($path, 'c');
     if (!$lock || !flock($lock, LOCK_EX)) {
         throw new RuntimeException('Could not acquire agent lock');
     }
