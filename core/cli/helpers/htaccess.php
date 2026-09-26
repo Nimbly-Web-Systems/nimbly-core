@@ -58,7 +58,6 @@ function upgrade_11_htaccess_state($pepper, $base_path, $rewrite_base_path)
         && str_contains($htaccess_content, 'service-worker\.js');
     $has_default_language = (bool)preg_match('/^DefaultLanguage\s+/m', $htaccess_content);
     $unsets_etag = (bool)preg_match('/^\s*Header\s+unset\s+ETag\s*$/mi', $htaccess_content);
-    $blocks_hidden_files = str_contains($htaccess_content, 'RewriteRule ^\.(?!well-known/) - [F]');
     $existing_base = null;
     if (preg_match('/^RewriteBase\s+(.+)$/m', $htaccess_content, $m)) {
         $existing_base = trim($m[1]);
@@ -96,15 +95,6 @@ function upgrade_11_htaccess_state($pepper, $base_path, $rewrite_base_path)
         return [
             'action' => 'recreate_seo_headers',
             'message' => '.htaccess contains generated directives that override application SEO headers — will recreate it.',
-            'path' => $htaccess_file,
-            'content' => upgrade_11_render_htaccess($pepper, $base_path, $rewrite_base_path),
-        ];
-    }
-
-    if (!$blocks_hidden_files) {
-        return [
-            'action' => 'recreate_hidden_files',
-            'message' => '.htaccess sends requests for hidden files such as .env to PHP — will recreate it to refuse them in Apache.',
             'path' => $htaccess_file,
             'content' => upgrade_11_render_htaccess($pepper, $base_path, $rewrite_base_path),
         ];
