@@ -231,6 +231,11 @@ function agent_instructions(array $definition, ?array $step = null): string
         throw new RuntimeException('Agent instructions are unavailable');
     }
     $instructions = trim((string)file_get_contents($path));
+    // A site can tell any agent, also a Core one, what is particular about it.
+    $project = agent_base_dir() . 'ext/agents/' . (string)($definition['id'] ?? '') . '/project.md';
+    if (preg_match('/^[a-z0-9][a-z0-9-]*$/', (string)($definition['id'] ?? '')) === 1 && is_file($project)) {
+        $instructions .= "\n\n# About this site\n\n" . trim((string)file_get_contents($project));
+    }
     if (!empty($definition['_runtime_instruction'])) {
         $instructions .= "\n\n" . trim((string)$definition['_runtime_instruction']);
     }
