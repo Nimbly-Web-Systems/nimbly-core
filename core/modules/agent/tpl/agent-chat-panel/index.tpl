@@ -45,6 +45,9 @@
                     <div x-show="message.from !== 'user'" class="chat-header text-xs text-base-content/60" x-text="name(message.from)"></div>
                     <div class="chat-bubble whitespace-pre-wrap break-words text-sm"
                         :class="message.from === 'user' ? 'chat-bubble-neutral' : 'bg-base-200 text-base-content'" x-text="message.text"></div>
+                    <div x-show="message.link" class="chat-footer mt-1">
+                        <a class="btn btn-sm btn-outline rounded-full" :href="nb.base_url + (message.link?.path || '')" x-text="message.link?.label"></a>
+                    </div>
                 </div>
             </template>
             <template x-for="work in conversation?.working || []" :key="work.agent">
@@ -61,7 +64,7 @@
 
         <div x-show="!history" class="p-3">
             <div class="flex items-end gap-2 rounded-3xl border border-base-300 bg-base-100 py-1.5 pl-4 pr-1.5 shadow-sm focus-within:border-base-content/40">
-                <textarea x-model="draft" x-ref="input" rows="1" maxlength="8000" :placeholder="'[#text Message#] ' + team_names"
+                <textarea x-model="draft" x-ref="input" rows="1" maxlength="8000" :placeholder="'[#text Message#] ' + (team.nimbly || team_names)"
                     @keydown.enter="if (!$event.shiftKey) { $event.preventDefault(); send(); }"
                     @input="$el.style.height = 'auto'; $el.style.height = Math.min($el.scrollHeight, 160) + 'px'"
                     class="max-h-40 min-h-0 flex-1 resize-none self-center bg-transparent py-1 text-sm leading-5 outline-none"></textarea>

@@ -186,6 +186,19 @@ chat_test_assert(agent_chat_addressees($conversation, $team, '@Helper how?') ===
 chat_test_assert(agent_chat_addressees(['agents' => ['coder']], $team, 'hi') === ['coder'], 'a lone participant answers');
 $conversation['messages'][] = ['from' => 'coder', 'text' => 'done'];
 chat_test_assert(agent_chat_addressees($conversation, $team, 'thanks') === ['coder'], 'without a mention the last speaker answers');
+$with_nimbly = ['agents' => ['nimbly', 'coder'], 'messages' => []];
+$nimbly_team = $team + ['nimbly' => 'Nimbly'];
+chat_test_assert(agent_chat_addressees($with_nimbly, $nimbly_team, 'what is this?') === ['nimbly'], 'Nimbly answers when nobody spoke yet');
+$with_nimbly['messages'][] = ['from' => 'coder', 'text' => 'here'];
+chat_test_assert(agent_chat_addressees($with_nimbly, $nimbly_team, 'and then?') === ['coder'], 'a follow-up stays with the agent who answered');
+chat_test_assert(agent_chat_addressees($with_nimbly, $nimbly_team, '@nimbly help') === ['nimbly'], '@name still goes direct');
+
+// Links an agent gives are same-site paths only.
+chat_test_assert(agent_chat_link(['path' => '/nb-admin/articles', 'label' => 'Open articles']) === ['path' => '/nb-admin/articles', 'label' => 'Open articles'],
+    'a site path becomes a link');
+foreach (['//evil.test/x', 'https://evil.test', 'javascript:alert(1)', 'nb-admin', '/a b', ''] as $bad) {
+    chat_test_assert(agent_chat_link(['path' => $bad, 'label' => 'x']) === null, 'only same-site paths are links: ' . $bad);
+}
 
 // A chat turn: no job queue, reply appended once, whole conversation passed to the model.
 $uuid = agent_chat_create($owner, ['helper' => 'Helper']);
@@ -197,6 +210,8 @@ chat_test_expect_error(fn() => agent_chat_post($uuid, $owner, 'Hello?'), 'Still 
 chat_test_assert(agent_chat_run_pending() === 1, 'the chat worker runs the waiting turn');
 $messages = data_read('.agent_conversations', $uuid)['messages'];
 chat_test_assert(end($messages)['from'] === 'helper' && end($messages)['text'] === 'Disk is fine.', 'the reply is appended');
+chat_test_assert($messages[count($messages) - 2]['asker'] === 'hermen', 'the asker is kept with their message');
+chat_test_assert(!str_contains(json_encode($chat_test_seen['helper']), 'hermen'), 'the model never sees who asked');
 $seen = $chat_test_seen['helper'];
 chat_test_assert($seen[1]['content'][0]['text'] === 'coder: I fixed the build.' && $seen[1]['role'] === 'user',
     'other agents\' messages reach the model with their name');

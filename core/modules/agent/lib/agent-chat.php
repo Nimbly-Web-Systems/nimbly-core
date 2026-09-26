@@ -89,7 +89,7 @@ function agent_chat_create(string $owner, array $team): string
     return $uuid;
 }
 
-/** Agents a message goes to: those named with @, otherwise the only (or last speaking) participant. */
+/** Agents a message goes to: those named with @, otherwise the last agent who spoke, otherwise Nimbly. */
 function agent_chat_addressees(array $conversation, array $team, string $text): array
 {
     $participants = array_values(array_intersect((array)($conversation['agents'] ?? []), array_keys($team)));
@@ -105,15 +105,12 @@ function agent_chat_addressees(array $conversation, array $team, string $text): 
     if ($named !== []) {
         return $named;
     }
-    if (count($participants) === 1) {
-        return $participants;
-    }
     foreach (array_reverse((array)($conversation['messages'] ?? [])) as $message) {
         if (in_array(($message['from'] ?? ''), $participants, true)) {
             return [$message['from']];
         }
     }
-    return array_slice($participants, 0, 1);
+    return in_array('nimbly', $participants, true) ? ['nimbly'] : array_slice($participants, 0, 1);
 }
 
 function agent_chat_post(string $uuid, string $owner, string $text, string $channel = 'web'): array
@@ -141,8 +138,9 @@ function agent_chat_post(string $uuid, string $owner, string $text, string $chan
                 'event_context' => ['conversation' => $uuid],
             ])['run_uuid'];
         }
+        // The asker is kept with the message (never shown to the model): tools act with their rights.
         $conversation['messages'][] = ['id' => $message_id, 'from' => 'user', 'text' => $text,
-            'at' => time(), 'channel' => $channel, 'runs' => $runs];
+            'at' => time(), 'channel' => $channel, 'runs' => $runs, 'asker' => (string)username_get()];
         data_update('.agent_conversations', $uuid, [
             'messages' => $conversation['messages'], 'updated_at' => time(), 'read_at' => time(),
             'title' => (string)($conversation['title'] ?? '') ?: mb_substr($text, 0, 60),
@@ -169,7 +167,7 @@ function agent_chat_pending_run(array $conversation, string $agent_id): ?array
 }
 
 /** Called by an agent's chat pipeline to add its answer. */
-function agent_chat_append(string $uuid, string $agent_id, string $text, string $run_uuid): void
+function agent_chat_append(string $uuid, string $agent_id, string $text, string $run_uuid, array $link = []): void
 {
     $lock = agent_lock('chat-' . $uuid);
     try {
@@ -184,11 +182,22 @@ function agent_chat_append(string $uuid, string $agent_id, string $text, string 
         }
         load_library('util');
         $conversation['messages'][] = ['id' => substr(md5(generate_uuid()), 0, 12), 'from' => $agent_id,
-            'text' => mb_substr(trim($text), 0, 20000), 'at' => time(), 'channel' => 'web', 'run_uuid' => $run_uuid];
+            'text' => mb_substr(trim($text), 0, 20000), 'at' => time(), 'channel' => 'web', 'run_uuid' => $run_uuid]
+            + (agent_chat_link($link) ? ['link' => agent_chat_link($link)] : []);
         data_update('.agent_conversations', $uuid, ['messages' => $conversation['messages'], 'updated_at' => time()]);
     } finally {
         agent_unlock($lock);
     }
+}
+
+/** A page of this site an agent points to: a same-site path only, with a short label. */
+function agent_chat_link(array $link): ?array
+{
+    $path = trim((string)($link['path'] ?? ''));
+    if ($path === '' || mb_strlen($path) > 300 || preg_match('#^/(?!/)[^\s\\\\]*$#', $path) !== 1) {
+        return null;
+    }
+    return ['path' => $path, 'label' => mb_substr(trim((string)($link['label'] ?? '')) ?: 'Open', 0, 60)];
 }
 
 /** A conversation for display: messages, and what each agent is doing right now. */
@@ -223,7 +232,7 @@ function agent_chat_view(string $uuid, string $owner): array
     return [
         'uuid' => $uuid, 'title' => (string)($conversation['title'] ?? ''),
         'team' => $team, 'messages' => array_map(fn($message) => array_intersect_key($message,
-            array_flip(['id', 'from', 'text', 'at'])), (array)$conversation['messages']),
+            array_flip(['id', 'from', 'text', 'at', 'link'])), (array)$conversation['messages']),
         'working' => $working,
     ];
 }

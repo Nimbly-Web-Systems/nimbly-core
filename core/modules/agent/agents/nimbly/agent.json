@@ -1,0 +1,94 @@
+{
+  "id": "nimbly",
+  "name": "Nimbly",
+  "version": "1.0.0",
+  "instructions": "chat.md",
+  "model": "gpt-5.6-terra",
+  "reasoning_effort": "low",
+  "lease_seconds": 900,
+  "max_turns": 16,
+  "max_tool_calls": 24,
+  "max_wall_seconds": 300,
+  "pricing": {
+    "version": "2026-08-10",
+    "input_per_million": 2.5,
+    "cached_input_per_million": 0.25,
+    "output_per_million": 15.0
+  },
+  "chat_pipeline": {
+    "version": 3,
+    "input": [
+      {"id": "history", "connector": "chat-history", "produces": "openai.input"}
+    ],
+    "agent": [
+      {
+        "id": "reply",
+        "connector": "openai",
+        "from": "history",
+        "produces": "chat.reply",
+        "instructions": "chat.md",
+        "config": {"max_output_tokens": 3000},
+        "output_schema": {
+          "type": "object",
+          "properties": {
+            "reply": {"type": "string"},
+            "link_path": {"type": "string"},
+            "link_label": {"type": "string"}
+          },
+          "required": ["reply", "link_path", "link_label"],
+          "additionalProperties": false
+        }
+      }
+    ],
+    "output": [
+      {"id": "answer", "connector": "chat-reply", "from": "reply", "produces": "delivery.receipt"}
+    ],
+    "result_from": "reply",
+    "delivery_from": "answer"
+  },
+  "tools": {
+    "docs": {
+      "description": "Read the Nimbly reference a piece at a time. action=list gives the outline (query ignored), action=search finds lines containing one term, action=section returns one section by name (\"Parent > Child\" when ambiguous).",
+      "risk": "read_only",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "action": {"type": "string", "enum": ["list", "search", "section"]},
+          "query": {"type": "string"}
+        },
+        "required": ["action", "query"],
+        "additionalProperties": false
+      },
+      "connector": "nimbly",
+      "config": {"operation": "docs"}
+    },
+    "site_map": {
+      "description": "What this site holds for the colleague you are talking to: its languages, the resources they may see with their fields and what they may do there, and the admin pages they can open.",
+      "risk": "read_only",
+      "parameters": {
+        "type": "object",
+        "properties": {"reason": {"type": "string", "description": "Why you look, in a few words."}},
+        "required": ["reason"],
+        "additionalProperties": false
+      },
+      "connector": "nimbly",
+      "config": {"operation": "site-map"}
+    },
+    "records": {
+      "description": "Read records of a resource: one record by uuid, or a list (optionally only those containing a search term). Leave uuid or search empty when not used.",
+      "risk": "read_only",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "resource": {"type": "string"},
+          "uuid": {"type": "string"},
+          "search": {"type": "string"}
+        },
+        "required": ["resource", "uuid", "search"],
+        "additionalProperties": false
+      },
+      "connector": "nimbly",
+      "config": {"operation": "records"}
+    }
+  }
+}
