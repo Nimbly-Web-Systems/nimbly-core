@@ -31,6 +31,23 @@ function access_by_feature(string $feature): bool
 {
     return in_array($feature, $GLOBALS['chat_test_features'], true);
 }
+function env($key, $default = null)
+{
+    return ['SYSTEM_ALERT_EMAIL' => 'ops@example.test', 'APP_ENV' => 'testing'][$key] ?? $default;
+}
+function data_lookup($_resource, $_uuid, $_field, $default)
+{
+    return $default;
+}
+function set_variable($name, $value): void
+{
+    $GLOBALS['chat_test_vars'][$name] = $value;
+}
+function email(array $email_data): bool
+{
+    $GLOBALS['chat_test_emails'][] = $email_data;
+    return true;
+}
 function data_exists($resource, $uuid): bool
 {
     return isset($GLOBALS['agent_test_data'][$resource][$uuid]);
@@ -80,6 +97,7 @@ require_once BASE_DIR . 'core/modules/agent/lib/agent.php';
 require_once BASE_DIR . 'core/modules/agent/lib/agent-chat.php';
 require_once BASE_DIR . 'core/modules/agent/lib/agent-connector-chat-history.php';
 require_once BASE_DIR . 'core/modules/agent/lib/agent-connector-chat-reply.php';
+require_once BASE_DIR . 'core/modules/agent/lib/agent-connector-notify-operator.php';
 
 // Stands in for the model: reads the conversation the way the OpenAI connector does.
 function agent_connector_fixture_model(array $source, array $_config, array $context): array
@@ -216,5 +234,14 @@ $recent = array_column(agent_chat_recent_for(data_read('.agent_conversations', $
 chat_test_assert(in_array('Disk is fine.', $recent, true), 'the same user\'s recent conversations are remembered');
 chat_test_assert(!in_array('Ancient news', $recent, true) && !in_array('Not yours', $recent, true),
     'old conversations and other users\' conversations are not');
+
+// Escalation: the agent emails the operator in its own words.
+$result = agent_connector_notify_operator(agent_artifact('agent.tool-request', 1, ['tool' => 'notify_operator',
+    'arguments' => ['subject' => 'Visitor numbers', 'message' => "Luuk asks for <numbers>\nsince 2025."]]), [],
+    ['definition' => ['name' => 'Helper'], 'run' => ['agent_id' => 'helper']]);
+chat_test_assert(agent_artifact_data($result)['sent'] === true, 'the escalation reports it was sent');
+chat_test_assert($chat_test_emails[0]['recipient'] === 'ops@example.test' && $chat_test_emails[0]['subject'] === '[Nimbly] Helper: Visitor numbers',
+    'the escalation goes to the system alert address');
+chat_test_assert($chat_test_vars['agent_message'] === "Luuk asks for &lt;numbers&gt;<br />\nsince 2025.", 'the agent\'s message is escaped');
 
 echo "Agent chat tests passed.\n";
