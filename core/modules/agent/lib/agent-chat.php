@@ -427,6 +427,19 @@ function agent_chat_recent(string $agent_id, int $days = 14, int $limit = 60): a
     return array_slice($recent, -$limit);
 }
 
+/** Someone removes one of their own conversations (it also leaves the agents' memory). */
+function agent_chat_delete(string $uuid, string $owner): array
+{
+    $lock = agent_lock('chat-' . $uuid);
+    try {
+        agent_chat_conversation($uuid, $owner);
+        data_delete('.agent_conversations', $uuid);
+    } finally {
+        agent_unlock($lock);
+    }
+    return ['ok' => true];
+}
+
 function agent_chat_mark_read(string $uuid, string $owner): array
 {
     agent_chat_conversation($uuid, $owner);
@@ -449,7 +462,7 @@ function agent_chat_run_pending(): int
     return $count;
 }
 
-/** JSON endpoint: list | create | get | post | read. */
+/** JSON endpoint: list | create | get | post | read | delete | unread. */
 function agent_chat_sc($_params = null): void
 {
     load_libraries(['data', 'json', 'agent']);
@@ -469,6 +482,7 @@ function agent_chat_sc($_params = null): void
             'get' => agent_chat_view((string)($input['uuid'] ?? ''), $owner),
             'post' => agent_chat_post((string)($input['uuid'] ?? ''), $owner, (string)($input['text'] ?? '')),
             'read' => agent_chat_mark_read((string)($input['uuid'] ?? ''), $owner),
+            'delete' => agent_chat_delete((string)($input['uuid'] ?? ''), $owner),
             'unread' => ['unread' => array_sum(array_column(agent_chat_list($owner), 'unread'))],
             default => throw new InvalidArgumentException('Unknown operation'),
         };

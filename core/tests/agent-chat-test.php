@@ -73,6 +73,11 @@ function data_update($resource, $uuid, $changes): bool
     $GLOBALS['agent_test_data'][$resource][$uuid] = array_merge($GLOBALS['agent_test_data'][$resource][$uuid], $changes);
     return true;
 }
+function data_delete($resource, $uuid): bool
+{
+    unset($GLOBALS['agent_test_data'][$resource][$uuid]);
+    return true;
+}
 function data_read($resource, $selector = null)
 {
     $records = $GLOBALS['agent_test_data'][$resource] ?? [];
@@ -279,6 +284,12 @@ $chat_test_features = [];
 chat_test_expect_error(fn() => agent_chat_post($older, $owner, 'anyone?'), 'Nobody in this chat can answer', 'a message nobody can answer is refused');
 $chat_test_features = ['chat-helper', 'chat-coder', 'chat-silent'];
 agent_chat_run_pending();
+
+// Deleting a conversation: only your own.
+$trash = agent_chat_create($owner, ['helper' => 'Helper']);
+chat_test_expect_error(fn() => agent_chat_delete($trash, md5_uuid('someone-else')), 'Conversation not found', 'nobody deletes another person\'s chat');
+agent_chat_delete($trash, $owner);
+chat_test_assert(data_read('.agent_conversations', $trash) === null, 'your own chat can be deleted');
 
 // Unread.
 data_update('.agent_conversations', $uuid, ['read_at' => time() - 10]);

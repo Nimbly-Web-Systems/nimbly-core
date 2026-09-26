@@ -70,6 +70,14 @@ function agent_chat_widget(nimblybar_side) {
             this.poll();
             this.$nextTick(() => this.$refs.input.focus());
         },
+        async remove(item) {
+            if (!window.confirm(this.$el.closest("#agent-chat").dataset.confirmDelete)) return;
+            const response = await nb.api.post(url, { operation: "delete", uuid: item.uuid });
+            if (!response.success) return;
+            if (this.conversation?.uuid === item.uuid) this.conversation = null;
+            this.remember();
+            this.load_list();
+        },
         async open_conversation(uuid) {
             const response = await nb.api.get(url + "?operation=get&uuid=" + encodeURIComponent(uuid));
             this.history = false;
