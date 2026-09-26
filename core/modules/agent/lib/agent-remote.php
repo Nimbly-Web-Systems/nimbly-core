@@ -172,7 +172,7 @@ function agent_remote_take(array $update): bool
 /** JSON endpoint for a hub, called with an API token of a user here who has the `agent-remote` feature. */
 function agent_remote_sc($_params = null): void
 {
-    load_libraries(['api', 'data', 'json', 'agent', 'agent-chat']);
+    load_libraries(['api', 'access', 'username', 'data', 'json', 'agent', 'agent-chat']);
     if (!api_access('agent-remote')) {
         json_result(['message' => 'ACCESS_DENIED'], 403);
     }
@@ -186,6 +186,8 @@ function agent_remote_sc($_params = null): void
         };
     } catch (InvalidArgumentException $error) {
         json_result(['message' => $error->getMessage()], 422);
+    } catch (Throwable $error) {
+        json_result(['message' => agent_safe_error($error->getMessage())], 500);
     }
     json_result($result, 200);
 }
