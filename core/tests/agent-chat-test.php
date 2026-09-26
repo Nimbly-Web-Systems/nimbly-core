@@ -109,6 +109,7 @@ require_once BASE_DIR . 'core/modules/agent/lib/agent-connector-chat-reply.php';
 require_once BASE_DIR . 'core/modules/agent/lib/agent-connector-notify-operator.php';
 require_once BASE_DIR . 'core/modules/agent/lib/agent-remote.php';
 require_once BASE_DIR . 'core/modules/agent/lib/agent-connector-chat-post.php';
+require_once BASE_DIR . 'core/modules/agent/lib/agent-connector-chat-note.php';
 
 // Stands in for the model: reads the conversation the way the OpenAI connector does.
 function agent_connector_fixture_model(array $source, array $_config, array $context): array
@@ -486,6 +487,20 @@ agent_chat_post($notices[0]['uuid'], $owner, 'And now?');
 $late_run = end(data_read('.agent_conversations', $notices[0]['uuid'])['messages'])['runs']['coder'];
 data_update('.agent_runs', $late_run, ['scheduled_at' => time() - AGENT_REMOTE_TIMEOUT - 1]);
 chat_test_assert(agent_chat_view($notices[0]['uuid'], $owner)['working'][0]['status'] === 'failed', 'a turn that never comes back fails');
+$chat_test_env = [];
+
+// After its email went out, the agent's own chat line (if it wrote one) lands in the recipient's chat.
+$chat_test_env = ['NOTE_TO' => 'hermen@example.test'];
+$note_step = fn($note, $accepted, $shadow = false) => agent_connector_chat_note(agent_artifact('agent.artifact-set', 1, [
+    'decision' => agent_artifact('infra.decision', 1, ['subject' => 'Daily', 'chat_note' => $note]),
+    'delivery' => agent_artifact('delivery.receipt', 1, ['success' => true, 'deliveries' => ['a' => ['accepted' => $accepted] + ($shadow ? ['shadow' => true] : [])]]),
+]), ['note_from' => 'decision', 'delivery_from' => 'delivery', 'recipient_env' => 'NOTE_TO'], ['run' => ['agent_id' => 'helper']]);
+$posted_note = fn($result) => agent_artifact_data($result)['deliveries']['chat']['accepted'];
+chat_test_assert($posted_note($note_step('New report in your inbox: all quiet.', true)), 'the chat line is posted once the email went out');
+chat_test_assert(!$posted_note($note_step('Not sent.', false, true)), 'nothing is posted when the email was not really sent');
+chat_test_assert(!$posted_note($note_step('', true)), 'nothing is posted when the agent had nothing to say');
+$helper_chat = array_values(array_filter(agent_chat_list($owner), fn($chat) => $chat['title'] === 'Helper'));
+chat_test_assert(count($helper_chat) === 1 && $helper_chat[0]['last'] === 'New report in your inbox: all quiet.', 'the line shows in the chat with the agent');
 $chat_test_env = [];
 
 echo "Agent chat tests passed.\n";
