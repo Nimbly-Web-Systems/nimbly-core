@@ -31,7 +31,7 @@
                         <button type="button" class="flex min-w-0 flex-1 cursor-pointer items-start gap-2 px-3 py-1.5 text-left" @click="open_conversation(item.uuid)">
                             <span class="min-w-0 flex-1">
                                 <span class="block truncate font-medium" x-text="item.title"></span>
-                                <span class="block truncate text-xs text-base-content/60" x-text="item.last"></span>
+                                <span class="block truncate text-xs text-base-content/60" x-text="item.last.replaceAll('**', '')"></span>
                             </span>
                             <span x-show="item.unread" class="badge badge-error badge-xs mt-1.5"></span>
                         </button>
@@ -49,7 +49,7 @@
                 <div class="chat" :class="message.from === 'user' ? 'chat-end' : 'chat-start'">
                     <div x-show="message.from !== 'user'" class="chat-header text-xs text-base-content/60" x-text="name(message.from)"></div>
                     <div class="chat-bubble whitespace-pre-wrap break-words text-sm"
-                        :class="message.from === 'user' ? 'chat-bubble-neutral' : 'bg-base-200 text-base-content'" x-text="message.text"></div>
+                        :class="message.from === 'user' ? 'chat-bubble-neutral' : 'bg-base-200 text-base-content'" x-html="format(message.text)"></div>
                     <div x-show="message.link" class="chat-footer mt-1">
                         <a class="btn btn-sm btn-outline rounded-full" :href="nb.base_url + (message.link?.path || '')" x-text="message.link?.label"></a>
                     </div>

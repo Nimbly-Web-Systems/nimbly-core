@@ -28,6 +28,11 @@ function agent_chat_widget(nimblybar_side) {
             } catch (error) {}
         },
         name(agent_id) { return this.team[agent_id] || agent_id; },
+        // Agents mark names like **Add project** in bold; everything else stays plain text.
+        format(text) {
+            const escaped = String(text || "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+            return escaped.replace(/\*\*(\S(?:.*?\S)?)\*\*/g, "<strong>$1</strong>");
+        },
         toggle() {
             this.open = !this.open;
             this.remember();
