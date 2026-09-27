@@ -148,6 +148,8 @@ function agent_chat_widget(nimblybar_side) {
             if (response.success && this.conversation?.uuid === response.uuid) this.show(response);
         },
         show(view) {
+            // Nothing new: leave the messages as they are, so selected text stays selected.
+            if (JSON.stringify(this.conversation) === JSON.stringify(view)) return;
             const before = this.conversation?.uuid === view.uuid ? this.conversation.messages.length : -1;
             // A reply that arrived while you were here and asks to open a page: go there (the chat stays open).
             if (before >= 0) {
