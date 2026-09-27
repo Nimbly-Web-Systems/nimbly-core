@@ -44,7 +44,7 @@ require_once BASE_DIR . 'core/lib/maintenance.php';
 $schedule = schedule_all_tasks();
 
 $lock_file = sys_get_temp_dir() . '/nimbly-schedule-' . md5(BASE_DIR) . '.lock';
-$lock = fopen($lock_file, 'c');
+$lock = fopen($lock_file, 'ce'); // close-on-exec: detached children must not inherit the lock
 if (!$lock || !flock($lock, LOCK_EX | LOCK_NB)) {
     echo "Schedule already running.\n";
     exit(0);
