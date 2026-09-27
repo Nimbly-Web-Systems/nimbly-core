@@ -1,5 +1,5 @@
 <div class="mt-4 w-full rounded-md bg-neutral-50 px-3 py-2 shadow-md sm:px-4">
-    <div class="overflow-x-auto">
+    <div class="relative overflow-x-auto">
     <table class="min-w-full">
         <caption class="sr-only">[#text Jobs#]</caption>
         <thead>

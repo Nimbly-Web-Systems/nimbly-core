@@ -3,7 +3,7 @@
         <h3 class="text-base font-semibold text-neutral-800">[#_matrix.title#]</h3>
         <p class="mt-1 text-sm text-neutral-500">[#_matrix.description#]</p>
     </div>
-    <div class="overflow-x-auto rounded-2xl border border-neutral-200 bg-white shadow-md" x-data="{search:''}">
+    <div class="relative overflow-x-auto rounded-2xl border border-neutral-200 bg-white shadow-md" x-data="{search:''}">
         <div class="border-b border-neutral-200 p-3">
             <input type="search" placeholder="[#text Filter resources...#]" x-model="search"
                 class="w-full max-w-xs rounded border border-neutral-300 px-3 py-1.5 text-sm focus:outline-2 focus:outline-cnormal">
