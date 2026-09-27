@@ -16,6 +16,7 @@ function agent_chat_widget(nimblybar_side) {
         unread: 0,
         waiting: false,
         timer: null,
+        delay: 2000,
         phone: false,
         visible: null,
         fit: null,
@@ -38,6 +39,13 @@ function agent_chat_widget(nimblybar_side) {
                 this.fit();
             }
             this.lock_page();
+            // A closed chat starts slow; activity speeds it up.
+            this.delay = this.open ? 2000 : 64000;
+            document.addEventListener("visibilitychange", () => {
+                if (document.hidden) return clearTimeout(this.timer);
+                this.delay = 2000;
+                this.check();
+            });
             this.load_list().then(() => {
                 if (remembered.uuid) this.open_conversation(remembered.uuid);
             });
@@ -66,6 +74,7 @@ function agent_chat_widget(nimblybar_side) {
             this.remember();
             this.lock_page();
             if (this.open) {
+                this.delay = 2000;
                 this.fit?.();
                 // Someone (an agent) started a conversation: open it right away.
                 const waiting = this.conversations.find(item => item.unread);
@@ -80,19 +89,28 @@ function agent_chat_widget(nimblybar_side) {
             this.history = !this.history;
             if (this.history) this.load_list();
         },
-        // Every 3 s while a conversation is open or an agent is still answering; otherwise a light check every 30 s.
+        // Every 2 s after activity or while an agent is answering, doubling up to 64 s while nothing changes.
+        // A hidden browser tab does not check at all.
         poll() {
             clearTimeout(this.timer);
-            const active = this.open && this.conversation;
-            this.timer = setTimeout(async () => {
-                try { active ? await this.refresh() : await this.check_unread(); } finally { this.poll(); }
-            }, active || this.waiting ? 3000 : 30000);
+            if (document.hidden) return;
+            if (this.waiting) this.delay = 2000;
+            this.timer = setTimeout(() => {
+                this.delay = Math.min(this.delay * 2, 64000);
+                this.check();
+            }, this.delay);
+        },
+        async check() {
+            try { this.open && this.conversation ? await this.refresh() : await this.check_unread(); } finally { this.poll(); }
         },
         async check_unread() {
             const response = await nb.api.get(url + "?operation=unread");
             if (!response.success) return;
             this.waiting = response.waiting;
-            if (response.unread !== this.unread) await this.load_list();
+            if (response.unread !== this.unread) {
+                this.delay = 2000;
+                await this.load_list();
+            }
         },
         async load_list() {
             const response = await nb.api.get(url + "?operation=list");
@@ -106,6 +124,7 @@ function agent_chat_widget(nimblybar_side) {
         start() {
             this.conversation = null;
             this.history = false;
+            this.delay = 2000;
             this.remember();
             this.poll();
             this.$nextTick(() => this.$refs.input.focus());
@@ -144,6 +163,7 @@ function agent_chat_widget(nimblybar_side) {
             this.team = view.team;
             this.conversation = view;
             if (view.working.some(work => work.status === "working")) this.waiting = true;
+            if (before !== view.messages.length || working !== JSON.stringify(view.working)) this.delay = 2000;
             this.remember();
             this.poll();
             if (before !== view.messages.length && this.open) {
