@@ -1,5 +1,6 @@
 <div id="agent-chat" data-confirm-delete="[#text Delete this chat?#]" x-data="agent_chat_widget('[#get data.config.site.nimblybar.side default=left#]')" x-cloak
-    class="fixed bottom-20 z-50 max-md:z-[1040] md:bottom-4" :class="side === 'left' ? 'left-4' : 'right-4'">
+    class="fixed bottom-20 z-50 md:bottom-4" :class="[side === 'left' ? 'left-4' : 'right-4', open && 'max-md:z-[1040]']"
+    @keydown.escape.window="open && toggle()">
 
     <section x-show="open" x-transition.opacity role="dialog" aria-label="[#text Talk with Nimbly#]"
         class="absolute bottom-16 flex h-[36rem] max-h-[calc(100vh-8rem)] w-[25rem] max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-2xl border border-base-300 bg-base-100 shadow-xl max-md:fixed max-md:inset-x-0 max-md:bottom-auto max-md:top-0 max-md:h-dvh max-md:max-h-none max-md:w-auto max-md:max-w-none max-md:rounded-none max-md:border-0 max-md:shadow-none"

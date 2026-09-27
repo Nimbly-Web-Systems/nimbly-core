@@ -64,3 +64,46 @@ test.describe('mobile admin', () => {
     await expectNoHorizontalOverflow(page);
   });
 });
+
+test.describe('mobile team chat', () => {
+  test.use({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+
+  test.beforeEach(async ({ page }) => {
+    await login(page);
+  });
+
+  test('chat fills the screen, can always be closed and stays closed on the next page', async ({ page }) => {
+    await page.goto('/nb-admin/jobs');
+    const button = page.getByRole('button', { name: 'Talk with Nimbly' });
+    test.skip(await button.count() === 0, 'no chat agent is configured here');
+    const chat = page.getByRole('dialog', { name: 'Talk with Nimbly' });
+
+    await button.click();
+    await expect(chat).toBeVisible();
+    const close = chat.getByRole('button', { name: 'Close' });
+    const box = await close.boundingBox();
+    expect(box.x + box.width).toBeLessThanOrEqual(390);
+    await close.click();
+    await expect(chat).toBeHidden();
+
+    await button.click();
+    await page.keyboard.press('Escape');
+    await expect(chat).toBeHidden();
+
+    await button.click();
+    await page.reload();
+    await expect(chat).toBeHidden();
+    await expect(button).toBeVisible();
+  });
+
+  test('open nimblybar menus sit above the chat button', async ({ page }) => {
+    await page.goto('/nb-admin/');
+    const button = page.getByRole('button', { name: 'Talk with Nimbly' });
+    test.skip(await button.count() === 0, 'no chat agent is configured here');
+    await page.locator('#nb-bar button[title="Resources"]').click();
+    const box = await button.boundingBox();
+    const on_top = await page.evaluate(({ x, y }) => document.elementFromPoint(x, y)?.closest('#nb_mobile_resources_menu') !== null,
+      { x: box.x + box.width / 2, y: box.y + box.height / 2 });
+    expect(on_top).toBe(true);
+  });
+});

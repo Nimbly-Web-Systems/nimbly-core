@@ -5,7 +5,8 @@ function agent_chat_widget(nimblybar_side) {
     })();
     return {
         side: nimblybar_side === "right" ? "left" : "right",
-        open: Boolean(remembered.open),
+        // A phone starts every page with the chat closed, so a full-screen chat never traps anyone.
+        open: Boolean(remembered.open) && !window.matchMedia("(max-width: 767px)").matches,
         history: false,
         team: {},
         conversations: [],
@@ -17,6 +18,7 @@ function agent_chat_widget(nimblybar_side) {
         timer: null,
         phone: false,
         visible: null,
+        fit: null,
         get team_names() { return Object.values(this.team).join(", "); },
         init() {
             // On a phone the chat fills the part of the screen the keyboard leaves free.
@@ -25,13 +27,15 @@ function agent_chat_widget(nimblybar_side) {
             phone.addEventListener("change", (event) => { this.phone = event.matches; this.lock_page(); });
             const viewport = window.visualViewport;
             if (viewport) {
-                const fit = () => {
-                    this.visible = { top: viewport.offsetTop, height: viewport.height };
+                this.fit = () => {
+                    // Only follow the visible area while the keyboard takes part of the screen.
+                    const keyboard = window.innerHeight - viewport.height > 80;
+                    this.visible = keyboard ? { top: Math.max(0, viewport.offsetTop), height: viewport.height } : null;
                     if (this.open && this.phone) this.$nextTick(() => { this.$refs.messages.scrollTop = this.$refs.messages.scrollHeight; });
                 };
-                viewport.addEventListener("resize", fit);
-                viewport.addEventListener("scroll", fit);
-                fit();
+                viewport.addEventListener("resize", this.fit);
+                viewport.addEventListener("scroll", this.fit);
+                this.fit();
             }
             this.lock_page();
             this.load_list().then(() => {
@@ -49,6 +53,7 @@ function agent_chat_widget(nimblybar_side) {
         },
         lock_page() {
             document.documentElement.classList.toggle("overflow-hidden", this.open && this.phone);
+            document.body.classList.toggle("overflow-hidden", this.open && this.phone);
         },
         name(agent_id) { return this.team[agent_id] || agent_id; },
         // Agents mark names like **Add project** in bold; everything else stays plain text.
@@ -61,6 +66,7 @@ function agent_chat_widget(nimblybar_side) {
             this.remember();
             this.lock_page();
             if (this.open) {
+                this.fit?.();
                 // Someone (an agent) started a conversation: open it right away.
                 const waiting = this.conversations.find(item => item.unread);
                 if (!this.conversation && waiting) this.open_conversation(waiting.uuid);
