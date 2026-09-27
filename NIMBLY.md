@@ -2336,11 +2336,13 @@ host cannot reliably report that the host itself is unreachable.
 
 #### `agent:*`
 
-The Core agent module is a small, generic kernel. Actual agents live only in
-`ext/agents/<agent-id>/`, where `agent.json` defines their version 3 pipeline,
-tools, targets, authority, and configuration and a Markdown file defines their
-instructions. Core contains no agent persona, project target, recipient, or
-project policy.
+The Core agent module is a small, generic kernel. An agent is a folder
+`<agent-id>/` with an `agent.json` that defines its version 3 pipeline, tools,
+targets, authority, and configuration, and a Markdown file with its
+instructions. Agents every site has live in `core/modules/agent/agents/`
+(currently only `nimbly`); project agents live in `ext/agents/`. Core agents
+carry no project target, recipient, or project policy. See "Adding or
+customizing an agent" and "Team chat" below.
 
 `core/modules/agent/lib/agent.php` is the single kernel entry point. It owns
 definition validation, immutable artifacts, durable runs and steps, retries,
@@ -2481,6 +2483,88 @@ fields, configured targets, authority, and current evidence. When semantic
 validation rejects a model result, the runtime records a bounded, redacted
 `model_validation_failed` event containing the phase, error, and rejected
 structured output. Provider storage remains disabled.
+
+##### Adding or customizing an agent
+
+To add a project agent, create `ext/agents/<agent-id>/` (lowercase letters,
+digits and dashes) with:
+
+- `agent.json`: at least `id` (equal to the folder name), `name`, `version`
+  and `instructions`, plus `role` (one line; colleague agents see it in the
+  chat), `requires_env` (environment variables that must be set, such as
+  `OPENAI_API_KEY`; without them the agent stays out of the chat), `model`,
+  limits, `pricing`, `tools`, and one or both pipelines:
+  - `pipeline`: scheduled or event-driven runs through `agent:enqueue`. Add a
+    schedule entry (see the timezone example above) to run it daily.
+  - `chat_pipeline`: makes the agent a member of the team chat.
+- the instructions file named by `instructions` (and by any step's
+  `instructions`), for example `instructions.md` for the scheduled run and
+  `chat.md` for the chat.
+- optionally `ext/lib/agent-connector-<id>.php` for project-specific
+  connectors used by its steps or tools.
+
+Paths in `agent.json` are relative to the agent's folder. Use
+`core/modules/agent/agents/nimbly/agent.json` as the starting point for a
+chat agent and `ext/agents/infra-expert/` in nimbly-site as an example of an
+agent with both a daily pipeline and a chat pipeline.
+
+To customize an existing agent for one site, choose the lightest option:
+
+1. **Add site context.** `ext/agents/<agent-id>/project.md` is appended to
+   the agent's instructions under "About this site", for every pipeline
+   step. Use it for who runs the site, what it contains, and site-specific
+   rules. This works for Core agents too: `ext/agents/nimbly/project.md`
+   extends the Nimbly agent without copying it, so Core updates still arrive.
+2. **Switch it off** in the chat (see Team chat) or leave out its
+   `requires_env` variable.
+3. **Replace it.** An `ext/agents/<agent-id>/agent.json` overrides the Core
+   agent with the same id completely (definition and instructions); Core
+   changes to that agent then no longer apply. Only do this when the
+   definition itself must differ.
+
+##### Team chat
+
+Logged-in users get a team chat button (`[#agent-chat-widget#]` in the Core
+HTML layout) when at least one agent is available to them. A conversation
+belongs to one user and includes their whole team. A message goes to the
+agents named with `@<id>` or `@<name>`, otherwise to the agent most recently
+involved, otherwise to Nimbly; each addressed agent answers through one run of
+its `chat_pipeline`. Chat runs have their own
+worker, `agent:chat`, started every minute by the Core maintenance schedule,
+so a long daily run never delays a reply.
+
+An agent is in a user's team when all of these hold:
+
+- it has a `chat_pipeline`, and every `requires_env` variable is set;
+- the chat and that agent are switched on in Settings (`site.chat.enabled`
+  and `site.chat.<agent-id>` in `.config`; both default to on, the Settings
+  page shows switches for the chat and the Nimbly agent);
+- the user's role has the `chat-<agent-id>` feature, for example
+  `chat-nimbly` or `chat-infra-expert` (the admin role's `(all)` includes
+  them).
+
+A chat pipeline typically reads the conversation with the `chat-history`
+input connector, answers with a model step whose `output_schema` has at
+least `reply` (optionally `link_path`, `link_label`, and `open_now` to offer
+or open a page), and delivers with the `chat-reply` output connector. Give
+agents the `hand_over` tool (connector `chat-hand-over`) so they can bring a
+colleague agent into the conversation. The Nimbly agent's tools act with the
+asking user's own rights; `save_record` is governed and authorized per user.
+
+**Agents living on another site.** A hub site can include agents whose home is
+another Nimbly site, without copying them. On the hub, set in `.env`:
+
+```dotenv
+AGENT_REMOTES=infra-expert=https://home.example.com,other-agent=https://home.example.com
+AGENT_REMOTE_EMAIL=hub-user@example.com
+AGENT_REMOTE_PASSWORD=...
+```
+
+On the home site, create that user with a role holding `agent-remote` and
+`chat-<agent-id>` for each agent the hub may ask. Hub users still need
+`chat-<agent-id>` on the hub. Questions run read-only; the agent may act only
+when both the asking user's role on the hub and the hub user's role at home
+have `agent-act`. The hub calls the home; the home never calls the hub.
 
 ---
 
