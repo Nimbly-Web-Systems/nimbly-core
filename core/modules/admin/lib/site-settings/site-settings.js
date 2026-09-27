@@ -4,7 +4,7 @@ document.addEventListener("alpine:init", () => {
         if (!data.success) throw new Error(data.message || "Could not save settings");
     });
 
-    Alpine.data("site_settings", (name, description, direction, side, languages, catalog, rtl, features, chat) => {
+    Alpine.data("site_settings", (name, description, direction, side, languages, catalog, rtl, features, chat, agents) => {
         const codes = languages.map(language => language.code);
         // A plain-text name or description belongs to the default language. A plain-text
         // direction or side applies to every language; `choices` is its [ltr, rtl] default.
@@ -25,7 +25,7 @@ document.addEventListener("alpine:init", () => {
         };
         const start = codes[0] || "";
         return {
-            busy: false, languages, catalog, codes, site, features, new_language: "",
+            busy: false, languages, catalog, codes, site, features, agents, new_language: "",
             active: { name: start, description: start, direction: start, side: start },
             original_site: json(site), original_features: json(features),
 

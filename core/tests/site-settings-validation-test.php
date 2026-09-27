@@ -102,4 +102,8 @@ $chat_off = ['languages' => ['en', 'nl'], 'chat' => ['enabled' => false, 'nimbly
 site_settings_validation_assert(site_settings_validate_config('.config', 'site', $chat_off), 'Switching the team chat off was rejected.');
 $chat_bad = ['languages' => ['en', 'nl'], 'chat' => ['enabled' => true, 'nimbly' => 'no']];
 site_settings_validation_assert(!site_settings_validate_config('.config', 'site', $chat_bad), 'A non-boolean Nimbly agent setting was accepted.');
+$chat_agent_off = ['languages' => ['en', 'nl'], 'chat' => ['enabled' => true, 'nimbly' => true, 'infra-expert' => false]];
+site_settings_validation_assert(site_settings_validate_config('.config', 'site', $chat_agent_off), 'Switching one agent off was rejected.');
+$chat_bad_agent = ['languages' => ['en', 'nl'], 'chat' => ['enabled' => true, 'infra-expert' => 1]];
+site_settings_validation_assert(!site_settings_validate_config('.config', 'site', $chat_bad_agent), 'A non-boolean agent switch was accepted.');
 echo "Site settings validation tests passed.\n";

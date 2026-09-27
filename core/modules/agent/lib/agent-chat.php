@@ -16,18 +16,15 @@ function agent_chat_owner(): string
     return md5_uuid((string)username_get());
 }
 
-/** Agents with a chat pipeline that the current user may talk to, as id => display name. */
-function agent_chat_team(): array
+/** Agents that can take part in this site's chat, switched on or not, as id => display name. */
+function agent_chat_agents(): array
 {
-    load_libraries(['access', 'agent-remote']);
-    $team = [];
+    load_library('agent-remote');
+    $agents = [];
     $remote = agent_remote_homes();
     foreach (array_unique([...agent_ids(), ...array_keys($remote)]) as $agent_id) {
-        if (!agent_chat_switched_on($agent_id) || !access_by_feature('chat-' . $agent_id)) {
-            continue;
-        }
         if (isset($remote[$agent_id])) {
-            $team[$agent_id] = agent_chat_name($agent_id);
+            $agents[$agent_id] = agent_chat_name($agent_id);
             continue;
         }
         try {
@@ -36,10 +33,18 @@ function agent_chat_team(): array
             continue;
         }
         if (is_array($definition['chat_pipeline'] ?? null) && agent_chat_configured($definition)) {
-            $team[$agent_id] = (string)($definition['name'] ?? $agent_id);
+            $agents[$agent_id] = (string)($definition['name'] ?? $agent_id);
         }
     }
-    return $team;
+    return $agents;
+}
+
+/** Agents with a chat pipeline that the current user may talk to, as id => display name. */
+function agent_chat_team(): array
+{
+    load_library('access');
+    return array_filter(agent_chat_agents(), fn($agent_id) => agent_chat_switched_on($agent_id)
+        && access_by_feature('chat-' . $agent_id), ARRAY_FILTER_USE_KEY);
 }
 
 /** Site settings can turn the whole chat, or a single agent in it, off. Both are on by default. */

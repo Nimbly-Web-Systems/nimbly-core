@@ -2537,8 +2537,8 @@ An agent is in a user's team when all of these hold:
 
 - it has a `chat_pipeline`, and every `requires_env` variable is set;
 - the chat and that agent are switched on in Settings (`site.chat.enabled`
-  and `site.chat.<agent-id>` in `.config`; both default to on, the Settings
-  page shows switches for the chat and the Nimbly agent);
+  and `site.chat.<agent-id>` in `.config`; both default to on, and the
+  Settings page has a switch for the chat and for each agent);
 - the user's role has the `chat-<agent-id>` feature, for example
   `chat-nimbly` or `chat-infra-expert` (the admin role's `(all)` includes
   them).

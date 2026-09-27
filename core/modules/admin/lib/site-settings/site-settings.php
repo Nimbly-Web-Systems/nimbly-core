@@ -91,8 +91,13 @@ function site_settings_validate_config($resource, $uuid, &$record): bool
         }
         $record['direction'] = $direction;
         $record['nimblybar'] = array_merge(is_array($record['nimblybar'] ?? null) ? $record['nimblybar'] : [], ['side' => $side]);
-        foreach (['enabled', 'nimbly'] as $flag) {
-            if (array_key_exists('chat', $record) && (!is_array($record['chat']) || !is_bool($record['chat'][$flag] ?? true))) {
+        // `chat` holds `enabled` for the whole chat and one switch per agent id.
+        if (array_key_exists('chat', $record) && !is_array($record['chat'])) {
+            data_error_set('VALIDATION_FAILED', 'chat:object');
+            return false;
+        }
+        foreach ((array)($record['chat'] ?? []) as $flag => $on) {
+            if (preg_match('/^[a-z0-9][a-z0-9-]*$/', (string)$flag) !== 1 || !is_bool($on)) {
                 data_error_set('VALIDATION_FAILED', 'chat.' . $flag . ':boolean');
                 return false;
             }
@@ -222,7 +227,15 @@ function site_settings_sc($params)
     set_variable('_ss.side_json', htmlspecialchars(json_encode($site['nimblybar']['side'] ?? '', JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE), ENT_QUOTES, 'UTF-8'));
     set_variable('_ss.direction_json', htmlspecialchars(json_encode($site['direction'] ?? '', JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE), ENT_QUOTES, 'UTF-8'));
     $chat = is_array($site['chat'] ?? null) ? $site['chat'] : [];
-    set_variable('_ss.chat_json', htmlspecialchars(json_encode(['enabled' => ($chat['enabled'] ?? true) !== false, 'nimbly' => ($chat['nimbly'] ?? true) !== false]), ENT_QUOTES, 'UTF-8'));
+    load_libraries(['agent', 'agent-chat']);
+    $agents = agent_chat_agents();
+    $switches = ['enabled' => ($chat['enabled'] ?? true) !== false];
+    foreach ([...array_keys($chat), ...array_keys($agents)] as $flag) {
+        $switches[$flag] = ($chat[$flag] ?? true) !== false;
+    }
+    $agent_rows = array_map(fn($id, $name) => ['id' => (string)$id, 'name' => $name], array_keys($agents), $agents);
+    set_variable('_ss.chat_json', htmlspecialchars(json_encode($switches), ENT_QUOTES, 'UTF-8'));
+    set_variable('_ss.agents_json', htmlspecialchars(json_encode($agent_rows, JSON_UNESCAPED_UNICODE), ENT_QUOTES, 'UTF-8'));
     set_variable('_ss.rtl_json', htmlspecialchars(json_encode(site_settings_rtl_languages()), ENT_QUOTES, 'UTF-8'));
 
     $catalog = site_settings_language_catalog();
