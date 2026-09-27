@@ -15,8 +15,25 @@ function agent_chat_widget(nimblybar_side) {
         unread: 0,
         waiting: false,
         timer: null,
+        phone: false,
+        visible: null,
         get team_names() { return Object.values(this.team).join(", "); },
         init() {
+            // On a phone the chat fills the part of the screen the keyboard leaves free.
+            const phone = window.matchMedia("(max-width: 767px)");
+            this.phone = phone.matches;
+            phone.addEventListener("change", (event) => { this.phone = event.matches; this.lock_page(); });
+            const viewport = window.visualViewport;
+            if (viewport) {
+                const fit = () => {
+                    this.visible = { top: viewport.offsetTop, height: viewport.height };
+                    if (this.open && this.phone) this.$nextTick(() => { this.$refs.messages.scrollTop = this.$refs.messages.scrollHeight; });
+                };
+                viewport.addEventListener("resize", fit);
+                viewport.addEventListener("scroll", fit);
+                fit();
+            }
+            this.lock_page();
             this.load_list().then(() => {
                 if (remembered.uuid) this.open_conversation(remembered.uuid);
             });
@@ -27,6 +44,12 @@ function agent_chat_widget(nimblybar_side) {
                 sessionStorage.setItem("agent_chat", JSON.stringify({ open: this.open, uuid: this.conversation?.uuid || "" }));
             } catch (error) {}
         },
+        panel_style() {
+            return this.phone && this.visible ? `top: ${this.visible.top}px; height: ${this.visible.height}px` : "";
+        },
+        lock_page() {
+            document.documentElement.classList.toggle("overflow-hidden", this.open && this.phone);
+        },
         name(agent_id) { return this.team[agent_id] || agent_id; },
         // Agents mark names like **Add project** in bold; everything else stays plain text.
         format(text) {
@@ -36,12 +59,14 @@ function agent_chat_widget(nimblybar_side) {
         toggle() {
             this.open = !this.open;
             this.remember();
+            this.lock_page();
             if (this.open) {
                 // Someone (an agent) started a conversation: open it right away.
                 const waiting = this.conversations.find(item => item.unread);
                 if (!this.conversation && waiting) this.open_conversation(waiting.uuid);
                 else this.conversation ? this.refresh() : this.load_list();
-                this.$nextTick(() => this.$refs.input.focus());
+                // On a phone the keyboard waits until the input is tapped.
+                if (!this.phone) this.$nextTick(() => this.$refs.input.focus());
             }
             this.poll();
         },

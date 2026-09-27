@@ -1,9 +1,9 @@
 <div id="agent-chat" data-confirm-delete="[#text Delete this chat?#]" x-data="agent_chat_widget('[#get data.config.site.nimblybar.side default=left#]')" x-cloak
-    class="fixed bottom-20 z-50 md:bottom-4" :class="side === 'left' ? 'left-4' : 'right-4'">
+    class="fixed bottom-20 z-50 max-md:z-[1040] md:bottom-4" :class="side === 'left' ? 'left-4' : 'right-4'">
 
     <section x-show="open" x-transition.opacity role="dialog" aria-label="[#text Talk with Nimbly#]"
-        class="absolute bottom-16 flex h-[36rem] max-h-[calc(100vh-8rem)] w-[25rem] max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-2xl border border-base-300 bg-base-100 shadow-xl"
-        :class="side === 'left' ? 'left-0' : 'right-0'">
+        class="absolute bottom-16 flex h-[36rem] max-h-[calc(100vh-8rem)] w-[25rem] max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-2xl border border-base-300 bg-base-100 shadow-xl max-md:fixed max-md:inset-x-0 max-md:bottom-auto max-md:top-0 max-md:h-dvh max-md:max-h-none max-md:w-auto max-md:max-w-none max-md:rounded-none max-md:border-0 max-md:shadow-none"
+        :class="side === 'left' ? 'left-0' : 'right-0'" :style="panel_style()">
 
         <header class="flex h-14 shrink-0 items-center gap-1 px-3">
             <button type="button" x-show="history" class="btn btn-ghost btn-sm gap-1 px-2" @click="history = false" aria-label="[#text Back#]">
@@ -72,7 +72,7 @@
                 <textarea x-model="draft" x-ref="input" rows="1" maxlength="8000" :placeholder="'[#text Message#] ' + (team.nimbly || team_names)"
                     @keydown.enter="if (!$event.shiftKey) { $event.preventDefault(); send(); }"
                     @input="$el.style.height = 'auto'; $el.style.height = Math.min($el.scrollHeight, 160) + 'px'"
-                    class="max-h-40 min-h-0 flex-1 resize-none self-center bg-transparent py-1 text-sm leading-5 outline-none"></textarea>
+                    class="max-h-40 min-h-0 flex-1 resize-none self-center bg-transparent py-1 text-base leading-5 outline-none md:text-sm"></textarea>
                 <button type="button" class="btn btn-neutral btn-sm btn-circle" :disabled="busy || !draft.trim()" @click="send()" aria-label="[#text Send#]">
                     <svg xmlns="http://www.w3.org/2000/svg" class="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 19V5m-6 6l6-6 6 6"/></svg>
                 </button>
@@ -80,7 +80,7 @@
         </div>
     </section>
 
-    <button type="button" class="btn btn-circle btn-primary btn-lg relative shadow-lg" @click="toggle()" aria-label="[#text Talk with Nimbly#]" :aria-expanded="open">
+    <button type="button" class="btn btn-circle btn-primary btn-lg relative shadow-lg" :class="open && 'max-md:hidden'" @click="toggle()" aria-label="[#text Talk with Nimbly#]" :aria-expanded="open">
         <svg xmlns="http://www.w3.org/2000/svg" class="size-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M21 12c0 4.418-4.03 8-9 8a9.9 9.9 0 01-4-.83L3 20l1.4-3.72A7.6 7.6 0 013 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
         <span x-show="unread && !open" class="absolute right-0 top-0 flex size-3.5" aria-label="[#text New reply#]">
             <span class="absolute inline-flex size-full animate-ping rounded-full bg-error opacity-75"></span>
