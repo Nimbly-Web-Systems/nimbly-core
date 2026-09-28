@@ -51,15 +51,16 @@
   },
   "tools": {
     "contact_developer": {
-      "description": "Email the site's developer on behalf of the colleague, for what needs a developer: structural changes, bugs, or questions you cannot answer. Write what is asked and why; they can reply to the colleague directly.",
+      "description": "Email the people behind the site on behalf of the colleague, for what needs a human: structural changes, bugs, or questions you cannot answer. about=site for the site itself (content structure, features, design, bugs), about=hosting for the server, speed, email delivery, domain, certificates or backups. Write what is asked and why; they can reply to the colleague directly.",
       "risk": "read_only",
       "parameters": {
         "type": "object",
         "properties": {
+          "about": {"type": "string", "enum": ["site", "hosting"]},
           "subject": {"type": "string"},
           "message": {"type": "string"}
         },
-        "required": ["subject", "message"],
+        "required": ["about", "subject", "message"],
         "additionalProperties": false
       },
       "connector": "notify-operator"

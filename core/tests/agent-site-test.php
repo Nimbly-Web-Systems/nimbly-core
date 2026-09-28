@@ -68,7 +68,7 @@ function sanitize_html_fields(array $_meta, array $data): array
 {
     return array_map(fn($value) => is_string($value) ? strip_tags($value) : $value, $data);
 }
-function env($key, $default = '') { return ['SYSTEM_ALERT_EMAIL' => 'dev@test'][$key] ?? $default; }
+function env($key, $default = '') { return ['SYSTEM_ALERT_EMAIL' => 'dev@test'][$key] ?? $GLOBALS['site_test_env'][$key] ?? $default; }
 function data_lookup($_resource, $_uuid, $_field, $default) { return $default; }
 function set_variable($name, $value): void { $GLOBALS['site_test_vars'][$name] = $value; }
 function email(array $data): bool { $GLOBALS['site_test_emails'][] = $data; return true; }
@@ -165,6 +165,10 @@ agent_connector_notify_operator(agent_artifact('agent.tool-request', 1, ['argume
     $context + ['definition' => ['name' => 'Nimbly']]);
 site_test_assert($site_test_emails[0]['recipient'] === 'dev@test' && $site_test_emails[0]['reply_to'] === 'editor@example.test'
     && $site_test_vars['asked_by'] === 'editor@example.test', 'the developer gets the request and can reply to the colleague');
+$GLOBALS['site_test_env'] = ['DEVELOPER_EMAIL' => 'builder@test'];
+site_test_assert(agent_notify_operator_recipient('site') === 'builder@test' && agent_notify_operator_recipient('hosting') === 'dev@test',
+    'a site with its own developer sends site work to them and hosting to the operator');
+$GLOBALS['site_test_env'] = [];
 
 // Docs: the real Nimbly reference, a piece at a time.
 site_test_assert(count(agent_nimbly_docs('list', '')['outline']) > 10, 'the docs outline is available');

@@ -31,7 +31,7 @@ function agent_connector_notify_operator(array $source, array $_config, array $c
         'service' => env('MAIL_SERVICE', 'resend'),
         'from' => env('MAIL_FROM'),
         'from_name' => env('MAIL_FROM_NAME', 'Nimbly'),
-        'recipient' => system_alert_require_recipient(),
+        'recipient' => agent_notify_operator_recipient((string)($arguments['about'] ?? '')),
         'subject' => '[' . $site_name . '] ' . $agent_name . ': ' . mb_substr($subject, 0, 150),
         'tpl' => 'email-agent-notify-operator',
     ] + (filter_var($asked_by, FILTER_VALIDATE_EMAIL) ? ['reply_to' => $asked_by] : []));
@@ -39,4 +39,11 @@ function agent_connector_notify_operator(array $source, array $_config, array $c
         throw new AgentTransientException('The email could not be sent');
     }
     return agent_artifact('agent.tool-result', 1, ['sent' => true]);
+}
+
+// Work on the site itself can go to its own developer; hosting and everything else to the operator.
+function agent_notify_operator_recipient(string $about): string
+{
+    $developer = trim((string)env('DEVELOPER_EMAIL'));
+    return $about === 'site' && $developer !== '' ? $developer : system_alert_require_recipient();
 }
