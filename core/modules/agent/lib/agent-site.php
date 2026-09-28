@@ -158,8 +158,8 @@ function agent_site_map(array $asker): array
     ];
 }
 
-/** One record, or a short list of records (optionally matching a search). */
-function agent_site_records(array $asker, string $resource, string $uuid = '', string $search = ''): array
+/** One record, or a short list of records (optionally matching a search, with chosen fields and sort). */
+function agent_site_records(array $asker, string $resource, string $uuid = '', string $search = '', array $fields = [], string $sort = ''): array
 {
     if (!agent_site_resource_in_scope($resource) || !agent_site_can($asker, 'view-' . $resource) || !data_exists($resource, '.meta')) {
         return ['error' => 'You cannot see this resource, or it does not exist.'];
@@ -174,17 +174,24 @@ function agent_site_records(array $asker, string $resource, string $uuid = '', s
     if ($search !== '') {
         $records = array_filter($records, fn($record) => stripos(json_encode($record, JSON_UNESCAPED_UNICODE) ?: '', $search) !== false);
     }
+    $sort_field = ltrim($sort, '-');
+    if ($sort_field !== '') {
+        uasort($records, fn($a, $b) => ($sort[0] === '-' ? -1 : 1) * (($a[$sort_field] ?? '') <=> ($b[$sort_field] ?? '')));
+    }
     $list = [];
-    foreach (array_slice($records, 0, 40, true) as $key => $record) {
+    $limit = $fields ? 200 : 40;
+    foreach (array_slice($records, 0, $limit, true) as $key => $record) {
         $summary = ['uuid' => (string)($record['uuid'] ?? $key)];
-        foreach ($record as $field => $value) {
-            if ($field !== 'uuid' && $field[0] !== '_' && count($summary) < 4 && (is_scalar($value) || is_array($value))) {
+        foreach ($fields ?: array_keys($record) as $field) {
+            $value = $record[$field] ?? null;
+            if ($field !== 'uuid' && ($fields || ($field[0] !== '_' && count($summary) < 4)) && (is_scalar($value) || is_array($value))) {
                 $summary[$field] = mb_substr(is_array($value) ? (string)json_encode($value, JSON_UNESCAPED_UNICODE) : (string)$value, 0, 120);
             }
         }
         $list[] = $summary;
     }
-    return ['total' => count($records), 'records' => $list];
+    return array_filter(['total' => count($records), 'records' => $list,
+        'note' => count($records) > $limit ? 'Showing the first ' . $limit . '; narrow with search or sort.' : null], fn($value) => $value !== null);
 }
 
 function agent_site_trim(array $record): array

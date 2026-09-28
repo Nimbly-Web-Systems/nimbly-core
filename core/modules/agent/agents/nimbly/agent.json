@@ -124,16 +124,18 @@
       "config": {"operation": "site-map"}
     },
     "records": {
-      "description": "Read records of a resource: one record by uuid, or a list (optionally only those containing a search term). Leave uuid or search empty when not used.",
+      "description": "Read records of a resource: one record by uuid, or a list (optionally only those containing a search term). For a list, name the fields you need (from site_map; _created and _modified always exist) and sort by a field, with a leading - for newest or highest first; a list shows at most 40 records, or 200 when you name fields. Leave uuid, search, fields or sort empty when not used.",
       "risk": "read_only",
       "parameters": {
         "type": "object",
         "properties": {
           "resource": {"type": "string"},
           "uuid": {"type": "string"},
-          "search": {"type": "string"}
+          "search": {"type": "string"},
+          "fields": {"type": "array", "items": {"type": "string"}},
+          "sort": {"type": "string"}
         },
-        "required": ["resource", "uuid", "search"],
+        "required": ["resource", "uuid", "search", "fields", "sort"],
         "additionalProperties": false
       },
       "connector": "nimbly",

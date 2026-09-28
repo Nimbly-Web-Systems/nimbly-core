@@ -120,6 +120,9 @@ site_test_assert(isset(agent_site_records($asker, 'users')['error']), 'users are
 $list = agent_site_records($asker, 'articles');
 site_test_assert($list['total'] === 2 && $list['records'][0]['uuid'] === 'a1', 'records are listed');
 site_test_assert(agent_site_records($asker, 'articles', '', 'mos')['total'] === 1, 'records can be searched');
+$sorted = agent_site_records($asker, 'articles', '', '', ['status'], '-status');
+site_test_assert($sorted['records'] === [['uuid' => 'a1', 'status' => 'live'], ['uuid' => 'a2', 'status' => 'draft']],
+    'a list shows only the chosen fields, sorted');
 site_test_assert(agent_site_records($asker, 'articles', 'a1')['record']['title']['nl'] === 'Hallo mos'
     && agent_site_records($asker, 'articles', 'a1')['admin_page'] === '/nb-admin/articles/a1', 'one record is read whole');
 
