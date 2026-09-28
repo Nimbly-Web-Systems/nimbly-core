@@ -176,6 +176,9 @@ nb_bubble_editor.register = function (name, def) {
 
 const link_svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="size-4"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>';
 
+// Lucide "quote" (ISC)
+const quote_svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="size-4"><path d="M16 3a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2 1 1 0 0 1 1 1v1a2 2 0 0 1-2 2 1 1 0 0 0-1 1v2a1 1 0 0 0 1 1 6 6 0 0 0 6-6V5a2 2 0 0 0-2-2z"/><path d="M5 3a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2 1 1 0 0 1 1 1v1a2 2 0 0 1-2 2 1 1 0 0 0-1 1v2a1 1 0 0 0 1 1 6 6 0 0 0 6-6V5a2 2 0 0 0-2-2z"/></svg>';
+
 // Lucide "remove-formatting" (ISC)
 const clear_svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="size-4"><path d="M4 7V4h16v3"/><path d="M5 20h6"/><path d="M13 4 8 20"/><path d="m15 15 5 5"/><path d="m20 15-5 5"/></svg>';
 
@@ -186,7 +189,7 @@ const clear_svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" f
     ['h2', { kind: 'block', tag: 'h2', label: 'Heading 2', icon: 'H2' }],
     ['h3', { kind: 'block', tag: 'h3', label: 'Heading 3', icon: 'H3' }],
     ['h4', { kind: 'block', tag: 'h4', label: 'Heading 4', icon: 'H4' }],
-    ['quote', { kind: 'block', tag: 'blockquote', label: 'Quote', icon: '&ldquo;' }],
+    ['quote', { kind: 'block', tag: 'blockquote', label: 'Quote', icon: quote_svg }],
     ['orderedlist', { kind: 'list', command: 'insertOrderedList', label: 'Numbered list', icon: '1.' }],
     ['unorderedlist', { kind: 'list', command: 'insertUnorderedList', label: 'Bulleted list', icon: '&bull;' }],
     ['anchor', { kind: 'link', label: 'Link', icon: link_svg, shortcut: 'k' }],
