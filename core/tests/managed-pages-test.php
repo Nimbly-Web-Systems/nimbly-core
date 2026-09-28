@@ -135,6 +135,11 @@ $candidate = [
 ];
 managed_pages_test_assert(managed_pages_validate_record('pages', 'new-page', $candidate) === false, 'Code-route collision was accepted.');
 
+$untranslated = $GLOBALS['test_records']['pages']['page-1'];
+$untranslated['path']['de'] = '';
+managed_pages_test_assert(managed_pages_validate_record('pages', 'page-1', $untranslated) === true
+    && !isset($untranslated['path']['de']), 'Empty path for an untranslated language was rejected.');
+
 $GLOBALS['test_records']['.config']['managed_pages']['enabled_page_types'] = ['campaign'];
 managed_pages_test_assert(managed_pages_type_options() === ['campaign' => 'Campaign page'], 'Creation choices ignore enabled page types.');
 managed_pages_test_assert(managed_pages_default_creation_type() === 'campaign', 'First enabled page type was not selected as the creation default.');

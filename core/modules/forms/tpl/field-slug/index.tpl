@@ -6,7 +6,8 @@
              return _value && typeof _value === 'object' ? (_value[lang] || '') : _value;
          }).join(' ');
          const _prefix = [#_f.slug_language_prefix#] && lang && !no_prefix && (nb.languages.length > 1 || [#_f.slug_allow_unprefixed#] === false) ? `${lang}/` : '';
-         [#_f.model#] = _prefix + slugify(_parts);
+         const _slug = slugify(_parts);
+         [#_f.model#] = _slug ? _prefix + _slug : '';
      "
      class="[#_f.wrapper_class#] max-w-md">
     <input type="text"

@@ -275,6 +275,11 @@ function managed_pages_validate_record($resource, $uuid, &$record): bool
         }
     }
     foreach (($record['path'] ?? []) as $language => $raw_path) {
+        if (is_scalar($raw_path) && trim((string)$raw_path) === '') {
+            // no address in a language the page is not translated to
+            unset($record['path'][$language]);
+            continue;
+        }
         $path = managed_pages_normalize_path($raw_path);
         if ($path === null || $path !== trim((string)$raw_path, '/')
             || !managed_pages_path_fits_language($path, (string)$language)
