@@ -195,6 +195,36 @@ form [data-nb-edit][data-nb-edit-focused] {
   @apply bg-transparent border-transparent text-neutral-50/50;
 }
 
+/* form fields: the bar is part of the field box */
+.nb-field-bar.nb-field-bar-docked {
+  @apply sticky top-0 z-10 rounded-none rounded-t border border-b-0 border-neutral-300 bg-white px-2 pb-1 pt-3 shadow-none backdrop-blur-none;
+}
+
+.nb-field-bar-docked .nb-bubble-btn {
+  @apply bg-transparent border-transparent text-neutral-700;
+}
+
+.nb-field-bar-docked .nb-bubble-btn:hover {
+  @apply bg-neutral-100 text-neutral-900;
+}
+
+.nb-field-bar-docked .nb-bubble-btn[aria-pressed="true"] {
+  @apply bg-neutral-200 border-neutral-200 text-neutral-900;
+}
+
+form .nb-field-bar-docked + [data-nb-edit] {
+  @apply rounded-t-none border-t-neutral-200;
+}
+
+form .nb-field-bar-docked:has(+ [data-nb-edit-focused]),
+form .nb-field-bar-docked + [data-nb-edit][data-nb-edit-focused] {
+  border-color: var(--color-base-content);
+}
+
+form .nb-field-bar-docked + [data-nb-edit][data-nb-edit-focused] {
+  @apply border-t-neutral-200 shadow-none outline-none;
+}
+
 [data-nb-edit][data-nb-edit-empty] {
   @apply relative;
 }

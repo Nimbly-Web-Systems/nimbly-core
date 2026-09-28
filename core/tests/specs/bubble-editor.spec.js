@@ -351,16 +351,24 @@ test('media inserts at the caret of the focused field', async ({ page }) => {
   await expect(page.locator('[data-nb-edit]')).toBeFocused();
 });
 
-test('form fields get the bar without save', async ({ page }) => {
-  await editor_page(page, { buttons: 'bold,italic' });
+test('form fields get their own docked bar without save', async ({ page }) => {
+  const ed = await editor_page(page, { buttons: 'bold,italic' });
   await page.evaluate(() => {
     window.nb.field_bar = window.nb_field_bar; window.nb.edit = window.nb_edit;
-    const ed = document.querySelector('[data-nb-edit]');
-    nb_field_bar.attach(ed, { buttons: ['bold', 'italic'], save: false });
+    nb_field_bar.attach(document.querySelector('[data-nb-edit]'), { buttons: ['bold', 'italic'], save: true, docked: true });
   });
-  await page.locator('[data-nb-edit] p').click();
-  await expect(bar(page).locator('[data-nb-bubble-name]')).toHaveCount(2);
-  await expect(bar(page).locator('[data-nb-bar-save]')).toBeHidden();
+  const docked = page.locator('.nb-field-bar-docked');
+  await expect(docked).toBeVisible(); // part of the field, also before focus
+  expect(await page.evaluate(() => document.querySelector('[data-nb-edit]').previousElementSibling.classList.contains('nb-field-bar-docked'))).toBe(true);
+  await expect(docked.locator('[data-nb-bubble-name]')).toHaveCount(2);
+  await expect(docked.locator('[data-nb-bar-save]')).toBeHidden();
+  // used before the field has focus: works at the end of the field
+  await docked.getByRole('button', { name: 'Bold' }).click();
+  await expect(ed).toBeFocused();
+  await page.keyboard.type('X');
+  expect(await ed.innerHTML()).toBe('<p>Hello world<b>X</b></p>');
+  await page.evaluate(() => nb_field_bar.detach(document.querySelector('[data-nb-edit]')));
+  await expect(docked).toHaveCount(0);
 });
 
 test('bar docks above the field and pins to the top while scrolling a long field', async ({ page }) => {

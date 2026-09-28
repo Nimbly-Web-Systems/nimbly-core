@@ -98,7 +98,8 @@ nb_edit.init_editor = function (ed, as_form_field = false) {
         window.nb.field_bar.attach(ed, {
             buttons: ed._nb_plain ? [] : buttons,
             media: !ed._nb_plain && options.media === true,
-            save: !as_form_field
+            save: !as_form_field,
+            docked: as_form_field
         });
     }
 
