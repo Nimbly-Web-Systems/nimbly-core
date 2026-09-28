@@ -176,6 +176,9 @@ nb_bubble_editor.register = function (name, def) {
 
 const link_svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="size-4"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>';
 
+// Lucide "remove-formatting" (ISC)
+const clear_svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="size-4"><path d="M4 7V4h16v3"/><path d="M5 20h6"/><path d="M13 4 8 20"/><path d="m15 15 5 5"/><path d="m20 15-5 5"/></svg>';
+
 // Names match medium-editor's, so existing `buttons` settings keep working.
 [
     ['bold', { kind: 'command', command: 'bold', label: 'Bold', icon: '<b>B</b>', shortcut: 'b' }],
@@ -193,7 +196,7 @@ const link_svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fi
     ['superscript', { kind: 'command', command: 'superscript', label: 'Superscript', icon: 'x<sup>2</sup>' }],
     ['underline', { kind: 'command', command: 'underline', label: 'Underline', icon: '<u>U</u>', shortcut: 'u' }],
     ['pre', { kind: 'block', tag: 'pre', label: 'Preformatted', icon: '{ }' }],
-    ['removeFormat', { kind: 'command', command: 'removeFormat', label: 'Clear formatting', icon: 'T<sub>&times;</sub>' }]
+    ['removeFormat', { kind: 'command', command: 'removeFormat', label: 'Clear formatting', icon: clear_svg }]
 ].forEach(([name, def]) => { nb_bubble_editor.register(name, def); });
 
 // application buttons declared in the bubble-editor-buttons template
