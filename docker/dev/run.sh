@@ -10,5 +10,12 @@ mkdir -p /run/php
 
 apache2ctl -k start
 
+# Chat replies need the agent chat worker; start it every minute (it exits when already running).
+# Only this task: the full scheduler (jobs, e-mail, sync) stays a production concern.
+(while true; do
+    runuser -u www-data -- php /var/www/nimbly/core/cli/nimbly.php agent:chat
+    sleep 60
+done) &
+
 echo All done!
 tail -f /var/log/apache2/error.log
