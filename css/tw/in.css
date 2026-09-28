@@ -195,9 +195,26 @@ form [data-nb-edit][data-nb-edit-focused] {
   @apply bg-transparent border-transparent text-neutral-50/50;
 }
 
-/* form fields: the bar is part of the field box */
+/* form fields: bar and text share one box, focused like a daisyUI input */
+.nb-field-box {
+  @apply rounded border border-neutral-300 bg-white;
+}
+
+.nb-field-box:focus-within {
+  --input-color: var(--color-base-content);
+  border-color: var(--input-color);
+  outline: 2px solid var(--input-color);
+  outline-offset: 2px;
+  isolation: isolate;
+}
+
+/* the field label sits on the box's top border */
+.nb-field-box ~ label {
+  @apply z-20;
+}
+
 .nb-field-bar.nb-field-bar-docked {
-  @apply sticky top-0 z-10 rounded-none rounded-t border border-b-0 border-neutral-300 bg-white px-2 pb-1 pt-3 shadow-none backdrop-blur-none;
+  @apply sticky top-0 z-10 rounded-none rounded-t border-0 border-b border-neutral-200 bg-white px-2 pb-1 pt-3 shadow-none backdrop-blur-none;
 }
 
 .nb-field-bar-docked .nb-bubble-btn {
@@ -212,17 +229,9 @@ form [data-nb-edit][data-nb-edit-focused] {
   @apply bg-neutral-200 border-neutral-200 text-neutral-900;
 }
 
-form .nb-field-bar-docked + [data-nb-edit] {
-  @apply rounded-t-none border-t-neutral-200;
-}
-
-form .nb-field-bar-docked:has(+ [data-nb-edit-focused]),
-form .nb-field-bar-docked + [data-nb-edit][data-nb-edit-focused] {
-  border-color: var(--color-base-content);
-}
-
-form .nb-field-bar-docked + [data-nb-edit][data-nb-edit-focused] {
-  @apply border-t-neutral-200 shadow-none outline-none;
+form .nb-field-box [data-nb-edit],
+form .nb-field-box [data-nb-edit][data-nb-edit-focused] {
+  @apply rounded-none border-0 shadow-none outline-none transition-none;
 }
 
 [data-nb-edit][data-nb-edit-empty] {

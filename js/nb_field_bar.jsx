@@ -40,8 +40,13 @@ nb_field_bar.attach = function (ed, config) {
             el.classList.add('nb-field-bar-docked');
             el.classList.remove('hidden');
             el._nb_editor = ed;
-            ed.before(el);
+            // one field box around bar and text, styled (and focused) like a daisyUI input
+            const box = document.createElement('div');
+            box.className = 'nb-field-box';
+            ed.before(box);
+            box.append(el, ed);
             ed._nb_bar.el = el;
+            ed._nb_bar.box = box;
             nb_field_bar.render(ed, el);
         }
     }
@@ -61,8 +66,8 @@ nb_field_bar.detach = function (ed) {
     if (nb_field_bar.current === ed) {
         nb_field_bar.hide();
     }
-    if (ed._nb_bar.el) {
-        ed._nb_bar.el.remove();
+    if (ed._nb_bar.box) {
+        ed._nb_bar.box.replaceWith(ed);
     }
     delete ed._nb_bar;
 }
