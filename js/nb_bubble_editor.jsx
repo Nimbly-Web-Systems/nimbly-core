@@ -76,6 +76,10 @@ nb_bubble_editor.doc = {
         nb_bubble_editor.select(selected);
         nb_bubble_editor.changed();
     },
+    set_attribute: (el, name, value) => {
+        el.setAttribute(name, value);
+        nb_bubble_editor.changed();
+    },
     unwrap: (el) => {
         const first = el.firstChild;
         const last = el.lastChild;
@@ -170,7 +174,10 @@ nb_bubble_editor.kinds = {
                 }
                 return;
             }
-            if (ctx.range && ctx.range.collapsed) {
+            if (ctx.target) {
+                // editing an existing link: change its URL (Firefox's createLink would nest a new <a> inside it)
+                nb_bubble_editor.doc.set_attribute(ctx.target, 'href', url);
+            } else if (ctx.range && ctx.range.collapsed) {
                 const a = document.createElement('a');
                 a.href = url;
                 a.textContent = url;

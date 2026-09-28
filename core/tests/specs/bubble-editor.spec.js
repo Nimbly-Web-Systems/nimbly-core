@@ -208,7 +208,8 @@ function paste(page, data) {
     ed.innerHTML = '';
     const dt = new DataTransfer();
     Object.entries(data).forEach(([type, value]) => dt.setData(type, value));
-    ed.dispatchEvent(new ClipboardEvent('paste', { clipboardData: dt, bubbles: true, cancelable: true }));
+    // call the handler directly: browsers (Firefox) hide clipboard data in synthetic paste events
+    nb_bubble_editor.on_paste({ currentTarget: ed, clipboardData: dt, preventDefault() {} });
     return ed.innerHTML;
   }, data);
 }
@@ -297,7 +298,7 @@ test('buttons registered from script get the same toolbar treatment', async ({ p
   });
   await select_text(page, 'world');
   await button(page, 'Uppercase').click();
-  expect(await ed.innerHTML()).toBe('<p>Hello WORLD</p>');
+  expect((await ed.innerHTML()).replace('&nbsp;', ' ')).toBe('<p>Hello WORLD</p>'); // Firefox keeps the space as &nbsp;
 });
 
 test('optional buttons: strikethrough, superscript, pre and clear formatting', async ({ page }) => {
