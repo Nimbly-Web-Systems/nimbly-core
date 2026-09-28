@@ -398,7 +398,8 @@ nb_bubble_editor.get_toolbar = function () {
     const tb = document.createElement('div');
     tb.className = 'nb-bubble-toolbar hidden';
     tb.setAttribute('role', 'toolbar');
-    tb.innerHTML = '<div class="join" data-nb-bubble-buttons></div>'
+    tb.innerHTML = '<span class="nb-bubble-arrow" aria-hidden="true"></span>'
+        + '<div class="join" data-nb-bubble-buttons></div>'
         + '<form class="join hidden" data-nb-bubble-link>'
         + '<input type="text" class="input input-sm join-item nb-bubble-input" placeholder="https://" aria-label="Link">'
         + '<button type="submit" class="btn btn-sm btn-square join-item nb-bubble-btn" aria-label="Apply">&#10003;</button>'
@@ -503,13 +504,19 @@ nb_bubble_editor.position = function () {
     const w = tb.offsetWidth;
     const h = tb.offsetHeight;
     let top = rect.top - h - gap;
-    if (top < gap) {
+    const below = top < gap;
+    if (below) {
         top = rect.bottom + gap;
     }
-    let left = rect.left + rect.width / 2 - w / 2;
+    const center = rect.left + rect.width / 2;
+    let left = center - w / 2;
     left = Math.max(gap, Math.min(left, window.innerWidth - w - gap));
     tb.style.top = top + 'px';
     tb.style.left = left + 'px';
+    // arrow points at the middle of the selection, kept clear of the rounded corners
+    const arrow_x = Math.max(12, Math.min(center - left, w - 12));
+    tb.querySelector('.nb-bubble-arrow').style.left = arrow_x + 'px';
+    tb.classList.toggle('nb-bubble-below', below);
 }
 
 export default nb_bubble_editor;
