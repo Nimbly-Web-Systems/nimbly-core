@@ -159,6 +159,11 @@ nb_edit.toggle = function () {
     const all_editors = document.querySelectorAll("[data-nb-edit]");
     const form_editors = Array.from(document.querySelectorAll("form [data-nb-edit]"));
     nb_edit.enabled = !nb_edit.enabled;
+    // leaving edit mode: let the focused field blur first, so its toolbars close
+    const focused = document.activeElement;
+    if (!nb_edit.enabled && focused && focused.closest && focused.closest('[data-nb-edit]')) {
+        focused.blur();
+    }
     all_editors.forEach(ed => {
         if (form_editors.includes(ed)) {
             return;
@@ -177,6 +182,19 @@ nb_edit.toggle = function () {
             nb_edit.disable_img(eimg);
         }
     });
+    document.dispatchEvent(new CustomEvent('nb:edit-mode', { detail: { enabled: nb_edit.enabled } }));
+}
+
+nb_edit.set_editing = function (on) {
+    if (nb_edit.enabled !== on) {
+        nb_edit.toggle();
+    }
+}
+
+// the page has content that inline editing can change (not just admin form fields)
+nb_edit.has_page_content = function () {
+    return Array.from(document.querySelectorAll('[data-nb-edit]')).some((ed) => { return !ed.closest('form'); })
+        || document.querySelector('[data-nb-edit-img]') !== null;
 }
 
 nb_edit.is_editable = function (ed) {

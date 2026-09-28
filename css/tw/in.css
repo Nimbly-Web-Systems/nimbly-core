@@ -264,6 +264,29 @@ form .nb-field-box [data-nb-edit][data-nb-edit-focused] {
   padding: inherit;
 }
 
+/* page actions (core/tpl/page-actions): round buttons stacked above the chat button */
+.nb-page-actions {
+  @apply fixed bottom-20 z-40 flex w-12 flex-col items-center gap-3 md:bottom-4;
+}
+
+.nb-page-actions.hidden {
+  @apply hidden;
+}
+
+body:has(#agent-chat) .nb-page-actions {
+  bottom: calc(5rem + 3rem + 0.75rem);
+}
+
+@media (min-width: 768px) {
+  body:has(#agent-chat) .nb-page-actions {
+    bottom: calc(1rem + 3rem + 0.75rem);
+  }
+}
+
+.nb-page-action:not(.btn-primary) {
+  @apply bg-base-100 border-base-300 shadow-md;
+}
+
 /* editable images */
 
 [data-nb-edit-img-enabled="true"] {
