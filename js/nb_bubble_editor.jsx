@@ -186,10 +186,16 @@ nb_bubble_editor.update_empty = function (ed) {
     }
 }
 
-// typing into an empty editor produces a bare text node; keep content in <p>
+// Typing into an empty editor produces a bare text node; wrap it in <p>
+// (same guard as medium-editor: only when the editor has no child elements
+// and is not itself a block such as an inline-editable <h1>).
+nb_bubble_editor.block_tags = ['P', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'BLOCKQUOTE', 'PRE', 'UL', 'OL', 'LI',
+    'ADDRESS', 'ARTICLE', 'ASIDE', 'DD', 'DL', 'DT', 'FIGCAPTION', 'FIGURE', 'FOOTER', 'HEADER', 'MAIN', 'NAV',
+    'SECTION', 'TD', 'TH', 'TABLE', 'TBODY', 'THEAD', 'TFOOT', 'TR'];
+
 nb_bubble_editor.ensure_paragraph = function (ed) {
-    const first = ed.firstChild;
-    if (first && first.nodeType === Node.TEXT_NODE && first.textContent.trim() !== '') {
+    if (ed.children.length === 0 && ed.textContent.trim() !== ''
+        && !nb_bubble_editor.block_tags.includes(ed.tagName)) {
         document.execCommand('formatBlock', false, 'p');
     }
 }

@@ -3,9 +3,9 @@ import { readFile } from 'node:fs/promises';
 
 const root = new URL('../../', import.meta.url);
 
-async function editor_page(page, options = {}, html = '<p>Hello world</p>') {
+async function editor_page(page, options = {}, html = '<p>Hello world</p>', tag = 'div') {
   page.on('pageerror', (error) => { throw error; });
-  await page.setContent(`<form><div data-nb-edit="body" data-nb-edit-options='${JSON.stringify(options)}'>${html}</div></form>`);
+  await page.setContent(`<form><${tag} data-nb-edit="body" data-nb-edit-options='${JSON.stringify(options)}'>${html}</${tag}></form>`);
   for (const file of ['nb_bubble_editor.jsx', 'nb_edit.jsx']) {
     const script = await readFile(new URL('../js/' + file, root), 'utf8');
     await page.addScriptTag({ content: script.replace(/export default \w+;/, '') });
@@ -168,4 +168,20 @@ test('destroy removes listeners and editability', async ({ page }) => {
     ed.dispatchEvent(new Event('input'));
   });
   expect(await page.evaluate(() => window.changes.length)).toBe(0);
+});
+
+test('typing in a block host does not add a paragraph', async ({ page }) => {
+  const h1 = await editor_page(page, { buttons: 'bold' }, 'Title', 'h1');
+  await h1.click();
+  await page.keyboard.press('End');
+  await page.keyboard.type('!');
+  expect(await h1.innerHTML()).toBe('Title!');
+});
+
+test('typing in an existing heading keeps it a heading', async ({ page }) => {
+  const ed = await editor_page(page, { buttons: 'bold' }, 'Intro<h2>Heading</h2>');
+  await ed.locator('h2').click();
+  await page.keyboard.press('End');
+  await page.keyboard.type('!');
+  expect(await ed.innerHTML()).toBe('Intro<h2>Heading!</h2>');
 });
