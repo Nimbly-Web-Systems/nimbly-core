@@ -49,10 +49,7 @@ function nb_bar_init_edit_controls() {
     });
 
     document.querySelectorAll("[data-nb-edit-save]").forEach((button) => {
-      button.addEventListener("click", (e) => {
-        document.querySelectorAll("[data-nb-edit-save]").forEach((save_button) => {
-          save_button.setAttribute("disabled", true);
-        });
+      button.addEventListener("click", () => {
         nb.edit.save();
       });
     });
@@ -60,13 +57,7 @@ function nb_bar_init_edit_controls() {
 
   document.querySelectorAll("[data-nb-edit-insert-media]").forEach((button) => {
     button.addEventListener("click", () => {
-      if (nb.media_alpine) {
-        nb.media_alpine.filter();
-        nb.media_alpine.mode = "insert";
-        nb.media_alpine.reset_tab();
-      }
-      nb.edit.store_caret_pos();
-      nb.modal.open("nb-modal-insert-media");
+      nb.edit.open_insert_media();
     });
   });
 }

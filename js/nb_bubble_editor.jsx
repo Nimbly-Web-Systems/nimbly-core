@@ -152,7 +152,12 @@ nb_bubble_editor.kinds = {
         },
         apply: (ctx, value) => {
             const url = nb_bubble_editor.normalize_url(value);
-            if (url) {
+            if (url && ctx.range && ctx.range.collapsed) {
+                const a = document.createElement('a');
+                a.href = url;
+                a.textContent = url;
+                nb_bubble_editor.doc.insert_html(a.outerHTML);
+            } else if (url) {
                 nb_bubble_editor.doc.link(url);
             }
         },
@@ -523,7 +528,11 @@ nb_bubble_editor.normalize_url = function (url) {
 
 /* running buttons */
 
-nb_bubble_editor.exec = function (name) {
+// ed: the editor to act on when not triggered from the bubble (e.g. the field bar)
+nb_bubble_editor.exec = function (name, ed) {
+    if (ed) {
+        nb_bubble_editor.current = ed;
+    }
     const button = nb_bubble_editor.buttons[name];
     if (!button || !nb_bubble_editor.current) {
         return;
@@ -686,8 +695,10 @@ nb_bubble_editor.position = function () {
     const gap = 8;
     const w = tb.offsetWidth;
     const h = tb.offsetHeight;
+    // stay clear of the field bar docked above the field
+    const min_top = Math.max(gap, window.nb && window.nb.field_bar ? window.nb.field_bar.bottom() + gap : 0);
     let top = rect.top - h - gap;
-    const below = top < gap;
+    const below = top < min_top;
     if (below) {
         top = rect.bottom + gap;
     }

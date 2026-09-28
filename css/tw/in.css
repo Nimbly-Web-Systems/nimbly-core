@@ -153,20 +153,36 @@ form [data-nb-edit][data-nb-edit-focused] {
   @apply top-auto bottom-full border-t-0 border-b-[6px] border-b-cdarkest;
 }
 
-.nb-bubble-toolbar .nb-bubble-btn {
+.nb-bubble-toolbar .nb-bubble-btn,
+.nb-field-bar .nb-bubble-btn {
   @apply bg-cdarkest border-cdarkest text-neutral-50 font-normal;
 }
 
-.nb-bubble-toolbar .nb-bubble-btn:hover {
+.nb-bubble-toolbar .nb-bubble-btn:hover,
+.nb-field-bar .nb-bubble-btn:hover {
   @apply bg-cnormal text-clight;
 }
 
-.nb-bubble-toolbar .nb-bubble-btn[aria-pressed="true"] {
+.nb-bubble-toolbar .nb-bubble-btn[aria-pressed="true"],
+.nb-field-bar .nb-bubble-btn[aria-pressed="true"] {
   @apply bg-clight border-clight text-cdark;
 }
 
 .nb-bubble-toolbar .nb-bubble-input {
   @apply bg-cdarkest border-cdarkest text-neutral-50 w-64;
+}
+
+.nb-field-bar {
+  @apply fixed z-[1030] flex flex-wrap items-center gap-2 rounded-md p-1 shadow-lg;
+  @apply bg-cdarkest/95 backdrop-blur-sm;
+}
+
+.nb-field-bar .nb-field-bar-save {
+  @apply bg-clight border-clight text-cdark;
+}
+
+.nb-field-bar .nb-field-bar-save:disabled {
+  @apply bg-transparent border-transparent text-neutral-50/50;
 }
 
 [data-nb-edit][data-nb-edit-empty] {

@@ -118,6 +118,9 @@ function nb_build_form_edit_state(resource_id, record_id, config = {}) {
         if (el._nb_bubble) {
           nb.bubble_editor.destroy(el);
         }
+        if (el._nb_bar) {
+          nb.field_bar.detach(el);
+        }
 
         el.innerHTML = this.editor_html_for_display(value);
         nb.edit.init_editor(el, true);

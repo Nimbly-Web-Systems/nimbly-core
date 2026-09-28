@@ -94,6 +94,14 @@ nb_edit.init_editor = function (ed, as_form_field = false) {
     ed._nb_editor_options = options;
     ed._nb_mode = as_form_field ? 'form' : 'page';
 
+    if (window.nb.field_bar && window.nb.bubble_editor && window.nb.bubble_editor.enabled()) {
+        window.nb.field_bar.attach(ed, {
+            buttons: ed._nb_plain ? [] : buttons,
+            media: !ed._nb_plain && options.media === true,
+            save: !as_form_field
+        });
+    }
+
     if (as_form_field && ed._nb_plain) {
         ed.addEventListener('input', () => {
             ed.dispatchEvent(new CustomEvent('nb:editor-change', {
@@ -131,7 +139,7 @@ nb_edit.on_focus = function (e) {
 nb_edit.on_blur = function (e) {
     const nb_bar_toggle_btn = document.getElementById('nb-bar-toggler');
     const moving_to_insert_media = e.relatedTarget?.matches?.('[data-nb-edit-insert-media]');
-    const moving_to_toolbar = e.relatedTarget?.closest?.('.nb-bubble-toolbar');
+    const moving_to_toolbar = e.relatedTarget?.closest?.('.nb-bubble-toolbar, .nb-field-bar');
     if (!moving_to_insert_media && !moving_to_toolbar && e.relatedTarget != nb_bar_toggle_btn) {
         document.querySelectorAll('[data-nb-edit-insert-media]').forEach(button => {
             button.setAttribute('disabled', true);
@@ -413,8 +421,21 @@ nb_edit.make_links_target_blank = function (ed) {
     });
 };
 
+nb_edit.open_insert_media = function () {
+    if (nb.media_alpine) {
+        nb.media_alpine.filter();
+        nb.media_alpine.mode = 'insert';
+        nb.media_alpine.reset_tab();
+    }
+    nb_edit.store_caret_pos();
+    nb.modal.open('nb-modal-insert-media');
+}
+
 nb_edit.save = function () {
     nb_edit.inputs = 0;
+    document.querySelectorAll('[data-nb-edit-save]').forEach((btn) => {
+        btn.setAttribute('disabled', true);
+    });
 
     /* loop through editors checking if it has changes */
     this.editors.forEach(ed => {

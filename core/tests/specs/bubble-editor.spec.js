@@ -6,19 +6,25 @@ const root = new URL('../../', import.meta.url);
 // the real toolbar template, with shortcodes resolved the way the server would
 async function toolbar_template(declared = {}) {
   const tpl = await readFile(new URL('tpl/bubble-editor/index.tpl', root), 'utf8');
-  return tpl
+  // the few app.css rules the toolbars depend on
+  const css = '<style>.hidden{display:none!important}.nb-bubble-toolbar,.nb-field-bar{position:fixed}</style>';
+  return css + tpl
     .replace('[#bubble-editor-buttons#]', JSON.stringify(declared))
     .replace(/\[#text ([^#]+)#\]/g, '$1');
+}
+
+async function load_scripts(page) {
+  for (const file of ['nb_bubble_editor.jsx', 'nb_field_bar.jsx', 'nb_edit.jsx']) {
+    const script = await readFile(new URL('../js/' + file, root), 'utf8');
+    await page.addScriptTag({ content: script.replace(/export default \w+;/, '') });
+  }
 }
 
 async function editor_page(page, options = {}, html = '<p>Hello world</p>', tag = 'div', declared = {}) {
   page.on('pageerror', (error) => { throw error; });
   await page.setContent(`<form><${tag} data-nb-edit="body" data-nb-edit-options='${JSON.stringify(options)}'>${html}</${tag}></form>`
     + await toolbar_template(declared));
-  for (const file of ['nb_bubble_editor.jsx', 'nb_edit.jsx']) {
-    const script = await readFile(new URL('../js/' + file, root), 'utf8');
-    await page.addScriptTag({ content: script.replace(/export default \w+;/, '') });
-  }
+  await load_scripts(page);
   await page.evaluate(() => {
     window.nb = { text: { medium_editor_placeholder: 'Type here' }, bubble_editor: window.nb_bubble_editor };
     nb_bubble_editor.enabled = () => true;
@@ -267,4 +273,120 @@ test('paste_html cleans Word markup', async ({ page }) => {
     'text/plain': 'ignored',
   });
   expect(result).toBe('<p>Word <b>bold</b> text</p><p><a href="https://example.com">link</a></p>');
+});
+
+/* field bar */
+
+// inline page editing: fields outside a form, edit mode on, saves stubbed
+async function inline_page(page, fields, extra = '') {
+  page.on('pageerror', (error) => { throw error; });
+  await page.setContent(fields + extra + await toolbar_template());
+  await load_scripts(page);
+  await page.evaluate(() => {
+    window.nb = {
+      text: { medium_editor_placeholder: 'Type here' },
+      bubble_editor: window.nb_bubble_editor, field_bar: window.nb_field_bar, edit: window.nb_edit,
+    };
+    nb_bubble_editor.enabled = () => true;
+    window.saved = [];
+    nb_edit.save_resource = (ed) => { window.saved.push(ed.innerHTML); };
+    nb_edit.open_insert_media = () => { window.media_opened = nb_edit.active_editor.dataset.nbEdit; };
+    nb_edit.enabled = true;
+    document.querySelectorAll('[data-nb-edit]').forEach((ed) => nb_edit.init_editor(ed));
+  });
+}
+
+const bar = (page) => page.locator('.nb-field-bar');
+
+test('field bar shows configured buttons and save for inline editing', async ({ page }) => {
+  await inline_page(page, `<div data-nb-edit="pages.p1.body.en" data-nb-edit-options='{"buttons":"bold,h2,anchor"}'><p>Hello world</p></div>`);
+  await expect(bar(page)).toBeHidden();
+  await page.locator('[data-nb-edit] p').click();
+  await expect(bar(page)).toBeVisible();
+  await expect(bar(page).locator('[data-nb-bubble-name]')).toHaveCount(3);
+  await expect(bar(page).locator('[data-nb-bar-media]')).toBeHidden();
+  const save = bar(page).getByRole('button', { name: 'Save' });
+  await expect(save).toBeDisabled();
+  await page.keyboard.press('End');
+  await page.keyboard.type('!');
+  await expect(save).toBeEnabled();
+  await save.click();
+  expect(await page.evaluate(() => window.saved)).toEqual(['<p>Hello world!</p>']);
+  await expect(save).toBeDisabled();
+});
+
+test('bold from the bar applies to what is typed next', async ({ page }) => {
+  await inline_page(page, `<div data-nb-edit="pages.p1.body.en" data-nb-edit-options='{"buttons":"bold"}'><p>Hello</p></div>`);
+  await page.locator('[data-nb-edit] p').click();
+  await page.keyboard.press('End');
+  await bar(page).getByRole('button', { name: 'Bold' }).click();
+  await expect(bar(page).getByRole('button', { name: 'Bold' })).toHaveAttribute('aria-pressed', 'true');
+  await page.keyboard.type('X');
+  expect(await page.locator('[data-nb-edit]').innerHTML()).toBe('<p>Hello<b>X</b></p>');
+});
+
+test('ctrl+s saves inline edits', async ({ page }) => {
+  await inline_page(page, `<div data-nb-edit="pages.p1.body.en"><p>Hello</p></div>`);
+  await page.locator('[data-nb-edit] p').click();
+  await page.keyboard.type('X');
+  await page.keyboard.press('ControlOrMeta+s');
+  expect(await page.evaluate(() => window.saved.length)).toBe(1);
+});
+
+test('plain fields get a save-only bar', async ({ page }) => {
+  await inline_page(page, `<h1 data-nb-edit="pages.p1.title.en" data-nb-edit-options='{"plain":true}'>Title</h1>`);
+  await page.locator('h1').click();
+  await expect(bar(page)).toBeVisible();
+  await expect(bar(page).locator('[data-nb-bubble-name]')).toHaveCount(0);
+  await expect(bar(page).getByRole('button', { name: 'Save' })).toBeVisible();
+});
+
+test('media inserts at the caret of the focused field', async ({ page }) => {
+  await inline_page(page, `<div data-nb-edit="pages.p1.body.en" data-nb-edit-options='{"media":true}'><p>Hello</p></div>`,
+    '<div id="nb-modal-insert-media"></div>');
+  await page.locator('[data-nb-edit] p').click();
+  await bar(page).getByRole('button', { name: 'Media' }).click();
+  expect(await page.evaluate(() => window.media_opened)).toBe('pages.p1.body.en');
+  await expect(page.locator('[data-nb-edit]')).toBeFocused();
+});
+
+test('form fields get the bar without save', async ({ page }) => {
+  await editor_page(page, { buttons: 'bold,italic' });
+  await page.evaluate(() => {
+    window.nb.field_bar = window.nb_field_bar; window.nb.edit = window.nb_edit;
+    const ed = document.querySelector('[data-nb-edit]');
+    nb_field_bar.attach(ed, { buttons: ['bold', 'italic'], save: false });
+  });
+  await page.locator('[data-nb-edit] p').click();
+  await expect(bar(page).locator('[data-nb-bubble-name]')).toHaveCount(2);
+  await expect(bar(page).locator('[data-nb-bar-save]')).toBeHidden();
+});
+
+test('bar docks above the field and pins to the top while scrolling a long field', async ({ page }) => {
+  await page.setViewportSize({ width: 800, height: 600 });
+  await inline_page(page, `<div style="height:300px"></div><div data-nb-edit="pages.p1.body.en" data-nb-edit-options='{"buttons":"bold"}'>`
+    + '<p>Start</p>' + '<p>text</p>'.repeat(80) + '</div><div style="height:1200px"></div>');
+  await page.locator('[data-nb-edit] p').first().click();
+  const top = async () => page.evaluate(() => {
+    const b = document.querySelector('.nb-field-bar').getBoundingClientRect();
+    const e = document.querySelector('[data-nb-edit]').getBoundingClientRect();
+    return { bar_bottom: b.bottom, field_top: e.top, bar_top: b.top };
+  });
+  let r = await top();
+  expect(r.bar_bottom).toBeLessThanOrEqual(r.field_top);
+  await page.evaluate(() => window.scrollTo(0, 800));
+  await page.waitForTimeout(100);
+  r = await top();
+  expect(r.bar_top).toBe(6);
+  await page.evaluate(() => window.scrollTo(0, 5000));
+  await page.waitForTimeout(100);
+  await expect(bar(page)).toHaveCSS('visibility', 'hidden');
+});
+
+test('bar hides when focus leaves the field', async ({ page }) => {
+  await inline_page(page, `<div data-nb-edit="pages.p1.body.en"><p>Hello</p></div><input id="other">`);
+  await page.locator('[data-nb-edit] p').click();
+  await expect(bar(page)).toBeVisible();
+  await page.locator('#other').click();
+  await expect(bar(page)).toBeHidden();
 });
