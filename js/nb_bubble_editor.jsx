@@ -136,31 +136,32 @@ nb_bubble_editor.kinds = {
         run: () => { nb_bubble_editor.doc.insert_html(def.html); },
         is_active: () => false
     }),
-    // asks for a URL; on an existing link it removes the link instead
+    // asks for a URL; on an existing link it edits that link (the whole link, prefilled)
     link: (def) => ({
-        prompt: { placeholder: def.placeholder || 'https://' },
-        run: (ctx) => {
-            const link = nb_bubble_editor.closest(ctx, 'a');
-            if (!link) {
-                nb_bubble_editor.open_prompt(ctx.name);
-                return;
-            }
-            const range = document.createRange();
-            range.selectNodeContents(link);
-            nb_bubble_editor.select(range);
-            nb_bubble_editor.doc.unlink();
+        prompt: {
+            placeholder: def.placeholder || 'https://',
+            target: (ctx) => nb_bubble_editor.closest(ctx, 'a'),
+            initial: (target) => target ? (target.getAttribute('href') || '') : ''
         },
+        run: (ctx) => { nb_bubble_editor.open_prompt(ctx.name); },
         apply: (ctx, value) => {
             const url = nb_bubble_editor.normalize_url(value);
-            if (url && ctx.range && ctx.range.collapsed) {
+            if (!url) {
+                if (ctx.target) {
+                    nb_bubble_editor.doc.unlink(); // emptied the URL of an existing link
+                }
+                return;
+            }
+            if (ctx.range && ctx.range.collapsed) {
                 const a = document.createElement('a');
                 a.href = url;
                 a.textContent = url;
                 nb_bubble_editor.doc.insert_html(a.outerHTML);
-            } else if (url) {
+            } else {
                 nb_bubble_editor.doc.link(url);
             }
         },
+        remove: () => { nb_bubble_editor.doc.unlink(); },
         is_active: (ctx) => nb_bubble_editor.closest(ctx, 'a') !== null
     })
 };
@@ -277,8 +278,12 @@ nb_bubble_editor.listen = function () {
     }
     nb_bubble_editor.listening = true;
     document.addEventListener('selectionchange', () => {
-        requestAnimationFrame(nb_bubble_editor.update);
+        requestAnimationFrame(() => {
+            nb_bubble_editor.update();
+            nb_bubble_editor.update_preview();
+        });
     });
+    document.addEventListener('mouseover', nb_bubble_editor.on_mouseover);
     document.addEventListener('mousedown', (e) => {
         if (!nb_bubble_editor.in_toolbar(e.target)) {
             nb_bubble_editor.pointer_down = true;
@@ -289,6 +294,7 @@ nb_bubble_editor.listen = function () {
         requestAnimationFrame(nb_bubble_editor.update);
     });
     window.addEventListener('scroll', () => {
+        nb_bubble_editor.hide_preview();
         if (nb_bubble_editor.current) {
             nb_bubble_editor.position();
         }
@@ -548,22 +554,34 @@ nb_bubble_editor.exec = function (name, ed) {
 }
 
 // swap the buttons for a one-line input; used by buttons with a `prompt`
+// swap the buttons for a one-line input; used by buttons with a `prompt`.
+// prompt.target(ctx) may name an existing element to edit: the input starts
+// from prompt.initial(target) and the button's remove() is offered.
 nb_bubble_editor.open_prompt = function (name) {
     const button = nb_bubble_editor.buttons[name];
     const ctx = nb_bubble_editor.context(name);
     if (!button || !button.prompt || !ctx.range) {
         return;
     }
-    nb_bubble_editor.prompt = { name: name, range: ctx.range.cloneRange() };
+    const target = button.prompt.target ? button.prompt.target(ctx) : null;
+    let range = ctx.range.cloneRange();
+    if (target) {
+        range = document.createRange();
+        range.selectNodeContents(target);
+    }
+    nb_bubble_editor.hide_preview();
+    nb_bubble_editor.prompt = { name: name, range: range, target: target };
     const tb = nb_bubble_editor.get_toolbar();
     const input = tb.querySelector('[data-nb-bubble-prompt] input');
-    input.value = '';
+    input.value = button.prompt.initial ? button.prompt.initial(target) : '';
     input.placeholder = button.prompt.placeholder || '';
     input.setAttribute('aria-label', button.label);
+    tb.querySelector('[data-nb-bubble-remove]').classList.toggle('hidden', !(target && button.remove));
     nb_bubble_editor.show_prompt(true);
     tb.classList.remove('hidden');
     nb_bubble_editor.position();
     input.focus();
+    input.select();
 }
 
 nb_bubble_editor.show_prompt = function (show) {
@@ -572,8 +590,8 @@ nb_bubble_editor.show_prompt = function (show) {
     tb.querySelector('[data-nb-bubble-prompt]').classList.toggle('hidden', !show);
 }
 
-// value === null cancels
-nb_bubble_editor.close_prompt = function (value) {
+// value === null cancels; remove === true runs the button's remove() on the target
+nb_bubble_editor.close_prompt = function (value, remove) {
     const prompt = nb_bubble_editor.prompt;
     const ed = nb_bubble_editor.current;
     nb_bubble_editor.prompt = null;
@@ -584,10 +602,140 @@ nb_bubble_editor.close_prompt = function (value) {
     }
     ed.focus();
     nb_bubble_editor.select(prompt.range);
-    if (value !== null) {
-        nb_bubble_editor.buttons[prompt.name].apply(nb_bubble_editor.context(prompt.name), value);
+    const button = nb_bubble_editor.buttons[prompt.name];
+    const ctx = nb_bubble_editor.context(prompt.name);
+    ctx.target = prompt.target;
+    if (remove === true && button.remove) {
+        button.remove(ctx);
+    } else if (value !== null && value !== undefined) {
+        button.apply(ctx, value);
     }
     nb_bubble_editor.update();
+}
+
+/* link preview: hovering a link (or putting the caret in it) shows its URL */
+
+nb_bubble_editor.preview = { el: null, link: null, editor: null, timer: null, caret: false };
+
+nb_bubble_editor.get_preview = function () {
+    const pv = nb_bubble_editor.preview;
+    if (pv.el) {
+        return pv.el;
+    }
+    const tpl = document.getElementById('nb_bubble_link_preview');
+    if (!tpl) {
+        return null;
+    }
+    pv.el = tpl.content.firstElementChild.cloneNode(true);
+    pv.el.addEventListener('mousedown', (e) => {
+        const edit = e.target.closest('[data-nb-link-edit]');
+        const remove = e.target.closest('[data-nb-link-remove]');
+        if (!edit && !remove) {
+            return; // the URL itself opens normally
+        }
+        e.preventDefault();
+        const link = pv.link;
+        const ed = pv.editor;
+        nb_bubble_editor.hide_preview();
+        if (!link || !ed) {
+            return;
+        }
+        ed.focus();
+        const range = document.createRange();
+        range.selectNodeContents(link);
+        nb_bubble_editor.select(range);
+        nb_bubble_editor.current = ed;
+        if (edit) {
+            nb_bubble_editor.exec('anchor', ed);
+        } else {
+            nb_bubble_editor.doc.unlink();
+            nb_bubble_editor.update();
+        }
+    });
+    pv.el.addEventListener('mouseenter', () => { clearTimeout(pv.timer); });
+    document.body.appendChild(pv.el);
+    return pv.el;
+}
+
+nb_bubble_editor.link_in_editor = function (el) {
+    const link = el && el.closest ? el.closest('a') : null;
+    const ed = link && link.closest('[data-nb-edit]');
+    if (!ed || !ed._nb_bubble || !ed.isContentEditable) {
+        return null;
+    }
+    return { link: link, editor: ed };
+}
+
+nb_bubble_editor.on_mouseover = function (e) {
+    const pv = nb_bubble_editor.preview;
+    if (pv.el && pv.el.contains(e.target)) {
+        clearTimeout(pv.timer);
+        return;
+    }
+    const hit = nb_bubble_editor.link_in_editor(e.target);
+    if (hit && !nb_bubble_editor.prompt) {
+        nb_bubble_editor.show_preview(hit.link, hit.editor, false);
+    } else if (pv.link && !pv.caret) {
+        clearTimeout(pv.timer);
+        pv.timer = setTimeout(nb_bubble_editor.hide_preview, 300);
+    }
+}
+
+// caret (no selection) inside a link keeps its preview open
+nb_bubble_editor.update_preview = function () {
+    if (nb_bubble_editor.prompt) {
+        return;
+    }
+    const sel = window.getSelection();
+    const hit = sel && sel.rangeCount > 0 && sel.isCollapsed
+        ? nb_bubble_editor.link_in_editor(nb_bubble_editor.element_of(sel.anchorNode)) : null;
+    if (hit) {
+        nb_bubble_editor.show_preview(hit.link, hit.editor, true);
+    } else if (nb_bubble_editor.preview.caret) {
+        nb_bubble_editor.hide_preview();
+    }
+}
+
+nb_bubble_editor.show_preview = function (link, ed, caret) {
+    const el = nb_bubble_editor.get_preview();
+    if (!el) {
+        return;
+    }
+    const pv = nb_bubble_editor.preview;
+    clearTimeout(pv.timer);
+    pv.link = link;
+    pv.editor = ed;
+    pv.caret = caret;
+    const href = link.getAttribute('href') || '';
+    const url = el.querySelector('[data-nb-link-url]');
+    url.textContent = href;
+    url.setAttribute('href', href);
+    const can_edit = ed._nb_bubble.buttons.includes('anchor');
+    el.querySelectorAll('[data-nb-link-edit], [data-nb-link-remove]').forEach((btn) => {
+        btn.classList.toggle('hidden', !can_edit);
+    });
+    el.classList.remove('hidden');
+    const gap = 6;
+    const rect = link.getBoundingClientRect();
+    const bounds = nb_bubble_editor.content_bounds(8);
+    let top = rect.bottom + gap;
+    if (top + el.offsetHeight > window.innerHeight - 8) {
+        top = rect.top - el.offsetHeight - gap;
+    }
+    const left = Math.max(bounds.left, Math.min(rect.left, bounds.right - el.offsetWidth));
+    el.style.top = top + 'px';
+    el.style.left = left + 'px';
+}
+
+nb_bubble_editor.hide_preview = function () {
+    const pv = nb_bubble_editor.preview;
+    clearTimeout(pv.timer);
+    if (pv.el) {
+        pv.el.classList.add('hidden');
+    }
+    pv.link = null;
+    pv.editor = null;
+    pv.caret = false;
 }
 
 /* toolbar (markup: core/tpl/bubble-editor) */
@@ -607,6 +755,9 @@ nb_bubble_editor.get_toolbar = function () {
         if (btn) {
             e.preventDefault();
             nb_bubble_editor.exec(btn.dataset.nbBubbleName);
+        } else if (e.target.closest('[data-nb-bubble-remove]')) {
+            e.preventDefault();
+            nb_bubble_editor.close_prompt(null, true);
         } else if (e.target.closest('[data-nb-bubble-cancel]')) {
             e.preventDefault();
             nb_bubble_editor.close_prompt(null);

@@ -160,12 +160,14 @@ form [data-nb-edit][data-nb-edit-focused] {
 }
 
 .nb-bubble-toolbar .nb-bubble-btn,
-.nb-field-bar .nb-bubble-btn {
+.nb-field-bar .nb-bubble-btn,
+.nb-link-preview .nb-bubble-btn {
   @apply bg-cdarkest border-cdarkest text-neutral-50 font-normal;
 }
 
 .nb-bubble-toolbar .nb-bubble-btn:hover,
-.nb-field-bar .nb-bubble-btn:hover {
+.nb-field-bar .nb-bubble-btn:hover,
+.nb-link-preview .nb-bubble-btn:hover {
   @apply bg-cnormal text-clight;
 }
 
@@ -176,6 +178,24 @@ form [data-nb-edit][data-nb-edit-focused] {
 
 .nb-bubble-toolbar .nb-bubble-input {
   @apply bg-cdarkest border-cdarkest text-neutral-50 w-64;
+}
+
+/* no daisyUI focus ring inside the dark toolbar */
+.nb-bubble-toolbar .nb-bubble-input:focus,
+.nb-bubble-toolbar .nb-bubble-input:focus-within {
+  @apply border-cdarkest shadow-none outline-none;
+}
+
+.nb-link-preview {
+  @apply fixed z-[1000] flex max-w-sm items-center gap-1 rounded-md bg-cdarkest py-1 pl-3 pr-1 text-sm text-neutral-50 shadow-lg;
+}
+
+.nb-link-preview.hidden {
+  @apply hidden;
+}
+
+.nb-link-preview .nb-link-preview-url {
+  @apply mr-1 min-w-0 truncate text-neutral-50 underline-offset-2 hover:underline;
 }
 
 .nb-field-bar {

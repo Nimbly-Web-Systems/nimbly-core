@@ -116,8 +116,72 @@ test('link can be added via the toolbar form and removed again', async ({ page }
   await select_text(page, 'world');
   await expect(button(page, 'Link')).toHaveAttribute('aria-pressed', 'true');
   await button(page, 'Link').click();
+  await toolbar(page).getByRole('button', { name: 'Remove link' }).click();
   expect(await ed.innerHTML()).toBe('<p>Hello world</p>');
 });
+
+test('the link button edits an existing link, prefilled, for the whole link', async ({ page }) => {
+  const ed = await editor_page(page, { buttons: 'anchor' }, '<p>Hello <a href="https://a.com">big world</a></p>');
+  await select_text(page, 'world'); // only part of the link
+  await button(page, 'Link').click();
+  const input = toolbar(page).locator('input');
+  await expect(input).toHaveValue('https://a.com');
+  await expect(toolbar(page).getByRole('button', { name: 'Remove link' })).toBeVisible();
+  await input.fill('b.com');
+  await input.press('Enter');
+  expect(await ed.innerHTML()).toBe('<p>Hello <a href="https://b.com">big world</a></p>');
+});
+
+test('ctrl+k with the caret in a link edits it; an emptied URL removes it', async ({ page }) => {
+  const ed = await editor_page(page, { buttons: 'anchor' }, '<p>Hello <a href="https://a.com">world</a></p>');
+  await select_text(page, 'or');
+  await page.evaluate(() => getSelection().collapseToStart());
+  await page.keyboard.press('ControlOrMeta+k');
+  const input = toolbar(page).locator('input');
+  await expect(input).toHaveValue('https://a.com');
+  await input.fill('');
+  await input.press('Enter');
+  expect(await ed.innerHTML()).toBe('<p>Hello world</p>');
+});
+
+test('a new link has no remove button', async ({ page }) => {
+  await editor_page(page, { buttons: 'anchor' });
+  await select_text(page, 'world');
+  await button(page, 'Link').click();
+  await expect(toolbar(page).locator('input')).toHaveValue('');
+  await expect(toolbar(page).getByRole('button', { name: 'Remove link' })).toBeHidden();
+});
+
+const preview = (page) => page.locator('.nb-link-preview');
+
+test('hovering a link shows its URL with edit and remove', async ({ page }) => {
+  const ed = await editor_page(page, { buttons: 'anchor' }, '<p>Hello <a href="https://a.com/page">world</a> and more</p>');
+  await expect(preview(page)).toHaveCount(0);
+  await ed.locator('a').hover();
+  await expect(preview(page)).toBeVisible();
+  await expect(preview(page).locator('[data-nb-link-url]')).toHaveText('https://a.com/page');
+  await preview(page).getByRole('button', { name: 'Edit' }).click();
+  const input = toolbar(page).locator('input');
+  await expect(input).toHaveValue('https://a.com/page');
+  await input.fill('https://c.com');
+  await input.press('Enter');
+  expect(await ed.innerHTML()).toBe('<p>Hello <a href="https://c.com">world</a> and more</p>');
+  await ed.locator('a').hover();
+  await preview(page).getByRole('button', { name: 'Remove link' }).click();
+  expect(await ed.innerHTML()).toBe('<p>Hello world and more</p>');
+});
+
+test('the caret inside a link shows its URL; leaving the link hides it', async ({ page }) => {
+  await editor_page(page, { buttons: 'bold' }, '<p>Hello <a href="https://a.com">world</a> and more</p>');
+  await select_text(page, 'or');
+  await page.evaluate(() => getSelection().collapseToStart());
+  await expect(preview(page)).toBeVisible();
+  await expect(preview(page).getByRole('button', { name: 'Edit' })).toBeHidden(); // field has no link button
+  await select_text(page, 'more');
+  await page.evaluate(() => getSelection().collapseToStart());
+  await expect(preview(page)).toBeHidden();
+});
+
 
 test('escape closes the link form without linking', async ({ page }) => {
   const ed = await editor_page(page, { buttons: 'anchor' });
