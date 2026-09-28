@@ -542,7 +542,7 @@ nb_edit.save_resource = function (ed) {
     nb.api.put(api_url, data).then(d1 => {
         if (d1.success) {
             nb.notify(nb.text.saved);
-        } else if (d1.code = 404) {
+        } else if (d1.code === 404) {
             // create resource
             nb.api.post(api_url, data).then(d2 => {
                 if (d2.success) {
@@ -552,7 +552,7 @@ nb_edit.save_resource = function (ed) {
                 }
             })
         } else {
-            nb_notify(d1.message);
+            nb.notify(d1.message);
         }
     })
 }
