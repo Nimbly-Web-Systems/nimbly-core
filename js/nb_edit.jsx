@@ -140,7 +140,10 @@ nb_edit.on_blur = function (e) {
     const nb_bar_toggle_btn = document.getElementById('nb-bar-toggler');
     const moving_to_insert_media = e.relatedTarget?.matches?.('[data-nb-edit-insert-media]');
     const moving_to_toolbar = e.relatedTarget?.closest?.('.nb-bubble-toolbar, .nb-field-bar');
-    if (!moving_to_insert_media && !moving_to_toolbar && e.relatedTarget != nb_bar_toggle_btn) {
+    // keep the editor while picking media for it; the insert goes to its stored caret
+    const media_modal = document.getElementById('nb-modal-insert-media');
+    const picking_media = media_modal && !media_modal.classList.contains('hidden');
+    if (!moving_to_insert_media && !moving_to_toolbar && !picking_media && e.relatedTarget != nb_bar_toggle_btn) {
         document.querySelectorAll('[data-nb-edit-insert-media]').forEach(button => {
             button.setAttribute('disabled', true);
         });

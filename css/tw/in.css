@@ -183,6 +183,10 @@ form [data-nb-edit][data-nb-edit-focused] {
   @apply bg-cdarkest/95 backdrop-blur-sm;
 }
 
+.nb-field-bar.hidden {
+  @apply hidden;
+}
+
 .nb-field-bar .nb-field-bar-save {
   @apply bg-clight border-clight text-cdark;
 }

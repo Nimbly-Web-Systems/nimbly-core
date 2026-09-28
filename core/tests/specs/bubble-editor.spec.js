@@ -6,8 +6,8 @@ const root = new URL('../../', import.meta.url);
 // the real toolbar template, with shortcodes resolved the way the server would
 async function toolbar_template(declared = {}) {
   const tpl = await readFile(new URL('tpl/bubble-editor/index.tpl', root), 'utf8');
-  // the few app.css rules the toolbars depend on
-  const css = '<style>.hidden{display:none!important}.nb-bubble-toolbar,.nb-field-bar{position:fixed}</style>';
+  // the built app.css, so visibility and positioning are the real thing
+  const css = '<style>' + await readFile(new URL('../ext/static/app.css', root), 'utf8') + '</style>';
   return css + tpl
     .replace('[#bubble-editor-buttons#]', JSON.stringify(declared))
     .replace(/\[#text ([^#]+)#\]/g, '$1');
@@ -290,6 +290,7 @@ async function inline_page(page, fields, extra = '') {
     nb_bubble_editor.enabled = () => true;
     window.saved = [];
     nb_edit.save_resource = (ed) => { window.saved.push(ed.innerHTML); };
+    window.real_open_insert_media = nb_edit.open_insert_media;
     nb_edit.open_insert_media = () => { window.media_opened = nb_edit.active_editor.dataset.nbEdit; };
     nb_edit.enabled = true;
     document.querySelectorAll('[data-nb-edit]').forEach((ed) => nb_edit.init_editor(ed));
@@ -384,9 +385,25 @@ test('bar docks above the field and pins to the top while scrolling a long field
 });
 
 test('bar hides when focus leaves the field', async ({ page }) => {
-  await inline_page(page, `<div data-nb-edit="pages.p1.body.en"><p>Hello</p></div><input id="other">`);
+  await inline_page(page, `<div style="height:120px"></div><div data-nb-edit="pages.p1.body.en"><p>Hello</p></div><input id="other">`);
   await page.locator('[data-nb-edit] p').click();
   await expect(bar(page)).toBeVisible();
   await page.locator('#other').click();
   await expect(bar(page)).toBeHidden();
+});
+
+test('the field stays the insert target while picking media', async ({ page }) => {
+  await inline_page(page, `<div style="height:120px"></div><div data-nb-edit="pages.p1.body.en" data-nb-edit-options='{"media":true}'><p>Hello</p></div>`,
+    '<div id="nb-modal-insert-media" class="hidden"><button id="pick">Pick</button></div>');
+  await page.evaluate(() => {
+    window.nb.modal = { open: (id) => document.getElementById(id).classList.remove('hidden') };
+    nb_edit.open_insert_media = window.real_open_insert_media;
+  });
+  await page.locator('[data-nb-edit] p').click();
+  await page.keyboard.press('End');
+  await bar(page).getByRole('button', { name: 'Media' }).click();
+  await page.locator('#pick').click();
+  expect(await page.evaluate(() => nb_edit.active_editor && nb_edit.active_editor.dataset.nbEdit)).toBe('pages.p1.body.en');
+  await page.evaluate(() => { nb_edit.restore_caret_pos(); nb_edit.insert_html('<img src="/img/x/480w" alt="X">'); });
+  expect(await page.locator('[data-nb-edit]').innerHTML()).toBe('<p>Hello<img src="/img/x/480w" alt="X"></p>');
 });
