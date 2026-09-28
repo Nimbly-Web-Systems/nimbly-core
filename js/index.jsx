@@ -1,6 +1,7 @@
 import Alpine from 'alpinejs';
 import nb_api from './nb_api.jsx';
 import nb_edit from './nb_edit.jsx';
+import nb_bubble_editor from './nb_bubble_editor.jsx';
 import nb_upload from './nb_upload.jsx';
 import nb_forms from './nb_forms.jsx';
 import nb_media_library from './nb_media_library.jsx';
@@ -10,6 +11,7 @@ window.Alpine = Alpine;
 Alpine.store('form_language', { current: null });
 window.nb.api = nb_api;
 window.nb.edit = nb_edit;
+window.nb.bubble_editor = nb_bubble_editor;
 window.nb.upload = nb_upload;
 window.nb.forms = nb_forms;
 window.nb.media_library = nb_media_library;

@@ -56,6 +56,13 @@ nb_edit.init_editor = function (ed, as_form_field = false) {
 
     if (ed._nb_plain) {
         ed.setAttribute('contenteditable', true);
+    } else if (window.nb.bubble_editor && window.nb.bubble_editor.enabled()) {
+        window.nb.bubble_editor.init(ed, {
+            buttons: buttons,
+            placeholder: placeholder,
+            paste_html: options.paste_html === true,
+            as_form_field: as_form_field
+        });
     } else {
         const has_buttons = buttons.length > 0 && buttons[0] != '';
         var editor_options = has_buttons ? {
@@ -124,7 +131,8 @@ nb_edit.on_focus = function (e) {
 nb_edit.on_blur = function (e) {
     const nb_bar_toggle_btn = document.getElementById('nb-bar-toggler');
     const moving_to_insert_media = e.relatedTarget?.matches?.('[data-nb-edit-insert-media]');
-    if (!moving_to_insert_media && e.relatedTarget != nb_bar_toggle_btn) {
+    const moving_to_toolbar = e.relatedTarget?.closest?.('.nb-bubble-toolbar');
+    if (!moving_to_insert_media && !moving_to_toolbar && e.relatedTarget != nb_bar_toggle_btn) {
         document.querySelectorAll('[data-nb-edit-insert-media]').forEach(button => {
             button.setAttribute('disabled', true);
         });
@@ -167,7 +175,7 @@ nb_edit.is_editable = function (ed) {
 }
 
 nb_edit.enable_editor = function (ed) {
-    if (typeof ed._nb_medium_editor == 'undefined') {
+    if (typeof ed._nb_medium_editor == 'undefined' && typeof ed._nb_bubble == 'undefined') {
         nb_edit.init_editor(ed);
     } else {
         ed.setAttribute('contenteditable', true);

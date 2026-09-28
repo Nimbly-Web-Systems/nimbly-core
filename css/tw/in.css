@@ -120,7 +120,9 @@ form [data-nb-edit] {
   @apply outline-none outline-offset-0 min-h-[41px] transition-all duration-200 ease-linear;
 }
 
-form .medium-editor-element[data-medium-focused] {
+form .medium-editor-element[data-medium-focused],
+
+form [data-nb-edit][data-nb-edit-focused] {
   --input-color: var(--color-base-content);
   border-color: var(--input-color);
   box-shadow: 0 1px var(--input-color);
@@ -130,9 +132,42 @@ form .medium-editor-element[data-medium-focused] {
 }
 
 @supports (color: color-mix(in lab, red, red)) {
-  form .medium-editor-element[data-medium-focused] {
+  form .medium-editor-element[data-medium-focused],
+  form [data-nb-edit][data-nb-edit-focused] {
     box-shadow: 0 1px color-mix(in oklab, var(--input-color) calc(var(--depth) * 10%), #0000);
   }
+}
+
+/* bubble editor (js/nb_bubble_editor.jsx) */
+
+.nb-bubble-toolbar {
+  @apply fixed z-[1000] rounded-md shadow-lg;
+}
+
+.nb-bubble-toolbar .nb-bubble-btn {
+  @apply bg-cdarkest border-cdarkest text-neutral-50 font-normal;
+}
+
+.nb-bubble-toolbar .nb-bubble-btn:hover {
+  @apply bg-cnormal text-clight;
+}
+
+.nb-bubble-toolbar .nb-bubble-btn[aria-pressed="true"] {
+  @apply bg-clight border-clight text-cdark;
+}
+
+.nb-bubble-toolbar .nb-bubble-input {
+  @apply bg-cdarkest border-cdarkest text-neutral-50 w-64;
+}
+
+[data-nb-edit][data-nb-edit-empty] {
+  @apply relative;
+}
+
+[data-nb-edit][data-nb-edit-empty][contenteditable="true"]::after {
+  content: attr(data-placeholder);
+  @apply absolute left-0 top-0 italic text-neutral-300 pointer-events-none;
+  padding: inherit;
 }
 
 /* editable images */

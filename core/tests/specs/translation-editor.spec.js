@@ -3,7 +3,7 @@ import { readFile } from 'node:fs/promises';
 
 const root = new URL('../../', import.meta.url);
 
-async function translation_form(page, english = '') {
+async function translation_form(page, english = '', bubble = false) {
   page.on('pageerror', (error) => { throw error; });
   await page.setContent(`<form x-data="translation_form" :data-lang="lang">
     <button type="button" id="nl" @click="switch_language('nl')">NL</button>
@@ -16,10 +16,13 @@ async function translation_form(page, english = '') {
   await page.addScriptTag({ content: await readFile(new URL('../node_modules/medium-editor/dist/js/medium-editor.js', root), 'utf8') });
   const editor_script = await readFile(new URL('../js/nb_edit.jsx', root), 'utf8');
   await page.addScriptTag({ content: editor_script.replace('export default nb_edit;', '') });
+  const bubble_script = await readFile(new URL('../js/nb_bubble_editor.jsx', root), 'utf8');
+  await page.addScriptTag({ content: bubble_script.replace('export default nb_bubble_editor;', '') });
   await page.addScriptTag({ content: await readFile(new URL('modules/forms/lib/build-form/edit-form-state.js', root), 'utf8') });
-  await page.evaluate((english) => {
+  await page.evaluate(([english, bubble]) => {
+    nb_bubble_editor.enabled = () => bubble;
     window.nb = {
-      base_url: '', edit: window.nb_edit,
+      base_url: '', edit: window.nb_edit, bubble_editor: window.nb_bubble_editor,
       text: { medium_editor_placeholder: 'Body', record_updated: 'Saved' },
       notify: () => {},
       api: {
@@ -45,7 +48,7 @@ async function translation_form(page, english = '') {
         init() { this.init_edit_state(); },
       }));
     });
-  }, english);
+  }, [english, bubble]);
   await page.addScriptTag({ content: await readFile(new URL('../node_modules/alpinejs/dist/cdn.js', root), 'utf8') });
   await expect(page.locator('[data-nb-edit]')).toHaveText('Nederlandse inhoud');
   await page.locator('#en').click();
@@ -81,6 +84,19 @@ test('switching tabs during translation preserves edits and the selected languag
   await expect(page.locator('[data-nb-edit]')).toHaveText('English body');
   await page.locator('#nl').click();
   await expect(page.locator('[data-nb-edit]')).toHaveText('Gewijzigde inhoud');
+});
+
+test('bubble editor survives switching tabs and keeps edits per language', async ({ page }) => {
+  await translation_form(page, '<p>English body</p>', true);
+  await expect(page.locator('[data-nb-edit]')).toHaveText('English body');
+  await page.locator('#nl').click();
+  await page.locator('[data-nb-edit]').fill('Gewijzigde inhoud');
+  await page.locator('#en').click();
+  await expect(page.locator('[data-nb-edit]')).toHaveText('English body');
+  await page.locator('#nl').click();
+  await expect(page.locator('[data-nb-edit]')).toHaveText('Gewijzigde inhoud');
+  await expect(page.locator('[data-nb-edit]')).toHaveAttribute('contenteditable', 'true');
+  expect(await page.evaluate(() => !!document.querySelector('[data-nb-edit]')._nb_bubble)).toBe(true);
 });
 
 test('a translation error restores the buttons and preserves the source', async ({ page }) => {
