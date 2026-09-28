@@ -11,7 +11,7 @@ function detect_language_sc() {
     load_library('data');
     $allowed_lang = data_lookup('.config', 'site', 'languages', ['en']);
     //1. from url
-    $uri = $GLOBALS['SYSTEM']['request_uri'];
+    $uri = (string)($GLOBALS['SYSTEM']['request_uri'] ?? ''); // empty on the CLI (agent runs)
     foreach ($allowed_lang as $l) {
         
         if (stripos($uri, '/' . $l . '/') !== false) {
