@@ -153,6 +153,12 @@ form [data-nb-edit][data-nb-edit-focused] {
   @apply top-auto bottom-full border-t-0 border-b-[6px] border-b-cdarkest;
 }
 
+/* flat buttons: no daisyUI depth shadow */
+.nb-bubble-btn,
+.nb-field-bar-save {
+  box-shadow: none;
+}
+
 .nb-bubble-toolbar .nb-bubble-btn,
 .nb-field-bar .nb-bubble-btn {
   @apply bg-cdarkest border-cdarkest text-neutral-50 font-normal;
