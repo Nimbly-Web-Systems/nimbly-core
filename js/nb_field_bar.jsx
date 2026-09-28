@@ -312,11 +312,21 @@ nb_field_bar.position = function () {
         // pinned to the viewport top while the field continues below the bar, otherwise under the field
         top = rect.bottom - h - gap >= gap ? gap : rect.bottom + gap;
     }
-    bar.classList.toggle('nb-field-bar-pinned', top === gap);
+    const pinned = top === gap;
+    const bounds = window.nb.bubble_editor.content_bounds(gap);
+    const left = Math.max(bounds.left, rect.left);
+    // pinned bars stay below the page actions pill at the top of the screen
+    const pill = document.getElementById('nb-page-actions');
+    if (pinned && pill && !pill.classList.contains('hidden')) {
+        const p = pill.getBoundingClientRect();
+        if (left < p.right && left + bar.offsetWidth > p.left) {
+            top = p.bottom + gap;
+        }
+    }
+    bar.classList.toggle('nb-field-bar-pinned', pinned);
     bar.style.visibility = rect.bottom < 0 || rect.top > window.innerHeight ? 'hidden' : '';
     bar.style.top = top + 'px';
-    const bounds = window.nb.bubble_editor.content_bounds(gap);
-    bar.style.left = Math.max(bounds.left, rect.left) + 'px';
+    bar.style.left = left + 'px';
     bar.style.maxWidth = (bounds.right - bounds.left) + 'px';
 }
 

@@ -1,5 +1,5 @@
-// Page actions: round buttons for the current page (edit mode, page settings),
-// stacked above the chat button. Opt-in with the bubble editor until the switch-over.
+// Page actions: one pill at the top of the page with the controls for this page
+// (edit mode, page settings). Opt-in with the bubble editor until the switch-over.
 document.addEventListener('DOMContentLoaded', () => {
   const root = document.getElementById('nb-page-actions');
   if (!root || !window.nb.bubble_editor || !window.nb.bubble_editor.enabled()) {
@@ -20,10 +20,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const leave_dialog = document.getElementById('nb-modal-leave-edit');
 
   const show_state = (enabled) => {
-    const label = enabled ? edit.dataset.labelDone : edit.dataset.labelEdit;
     edit.setAttribute('aria-pressed', enabled ? 'true' : 'false');
-    edit.setAttribute('aria-label', label);
-    edit.dataset.tip = label;
+    edit.querySelector('[data-nb-page-edit-label]').textContent = enabled ? edit.dataset.labelDone : edit.dataset.labelEdit;
     edit.classList.toggle('btn-primary', enabled);
     edit.querySelector('[data-icon-edit]').classList.toggle('hidden', enabled);
     edit.querySelector('[data-icon-done]').classList.toggle('hidden', !enabled);
