@@ -96,6 +96,10 @@ nb_bubble_editor.changed = function () {
     }
 }
 
+// what the link tools treat as a link: anchors with a URL (apps may use <a> without href
+// for their own inline elements, e.g. jereis points of interest, with their own controls)
+nb_bubble_editor.link_selector = 'a[href]';
+
 /* button kinds */
 
 nb_bubble_editor.kinds = {
@@ -153,7 +157,7 @@ nb_bubble_editor.kinds = {
     link: (def) => ({
         prompt: {
             placeholder: def.placeholder || 'https://',
-            target: (ctx) => nb_bubble_editor.closest(ctx, 'a'),
+            target: (ctx) => nb_bubble_editor.closest(ctx, nb_bubble_editor.link_selector),
             initial: (target) => target ? (target.getAttribute('href') || '') : ''
         },
         run: (ctx) => { nb_bubble_editor.open_prompt(ctx.name); },
@@ -175,7 +179,7 @@ nb_bubble_editor.kinds = {
             }
         },
         remove: () => { nb_bubble_editor.doc.unlink(); },
-        is_active: (ctx) => nb_bubble_editor.closest(ctx, 'a') !== null
+        is_active: (ctx) => nb_bubble_editor.closest(ctx, nb_bubble_editor.link_selector) !== null
     })
 };
 
@@ -704,7 +708,7 @@ nb_bubble_editor.get_preview = function () {
 }
 
 nb_bubble_editor.link_in_editor = function (el) {
-    const link = el && el.closest ? el.closest('a') : null;
+    const link = el && el.closest ? el.closest(nb_bubble_editor.link_selector) : null;
     const ed = link && link.closest('[data-nb-edit]');
     if (!ed || !ed._nb_bubble || !ed.isContentEditable) {
         return null;

@@ -632,3 +632,12 @@ test('an app insert button fires its event from the field bar and stays out of t
   await page.evaluate(() => getSelection().collapseToStart());
   await expect(pin).toHaveAttribute('aria-pressed', 'true');
 });
+
+test('anchors without a URL (app elements) get no link preview and are not links', async ({ page }) => {
+  const ed = await editor_page(page, { buttons: 'anchor' }, '<p>Visit <a data-poi-link="p1">Paris</a> today</p>');
+  await ed.locator('a').hover();
+  await page.waitForTimeout(200);
+  await expect(preview(page)).toHaveCount(0);
+  await select_text(page, 'Paris');
+  await expect(button(page, 'Link')).toHaveAttribute('aria-pressed', 'false');
+});
