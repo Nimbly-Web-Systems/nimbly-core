@@ -256,3 +256,15 @@ test('underline is not active unless configured', async ({ page }) => {
   await page.keyboard.press('ControlOrMeta+u');
   expect(await ed.innerHTML()).toBe('<p>Hello world</p>');
 });
+
+test('paste_html cleans Word markup', async ({ page }) => {
+  await editor_page(page, { paste_html: true });
+  const result = await paste(page, {
+    'text/html': '<html xmlns:o="urn:schemas-microsoft-com:office:office"><head><style>p.MsoNormal{margin:0}</style></head><body lang="NL">'
+      + '<!--StartFragment--><p class="MsoNormal" align="center" style="mso-line-height:normal"><font face="Calibri"><span lang="NL" style="font-size:11pt">Word <b style="mso-bidi-font-weight:normal">bold</b> text</span></font><o:p></o:p></p>'
+      + '<p class="MsoNormal"><o:p>&nbsp;</o:p></p>'
+      + '<p class="MsoNormal"><a href="https://example.com" target="_blank" style="color:blue">link</a></p><!--EndFragment--></body></html>',
+    'text/plain': 'ignored',
+  });
+  expect(result).toBe('<p>Word <b>bold</b> text</p><p><a href="https://example.com">link</a></p>');
+});

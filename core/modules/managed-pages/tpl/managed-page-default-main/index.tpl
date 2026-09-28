@@ -3,7 +3,7 @@
         <h1 data-nb-edit="pages.[#get page.uuid#].title.[#get language#]"
             data-nb-edit-options='{"plain":true}'>[#get-html pages.[#get page.uuid#].title plain#]</h1>
         <div data-nb-edit="pages.[#get page.uuid#].body.[#get language#]"
-            data-nb-edit-options='{"buttons":"h2,h3,bold,italic,orderedlist,unorderedlist,quote,anchor","media":true}'>
+            data-nb-edit-options='{"buttons":"h2,h3,bold,italic,orderedlist,unorderedlist,quote,anchor,removeFormat","media":true}'>
             [#get-html pages.[#get page.uuid#].body#]
         </div>
     </article>

@@ -1,5 +1,5 @@
 var nb_edit = {
-    default_buttons: ['bold', 'italic'],
+    default_buttons: ['bold', 'italic', 'removeFormat'],
     enabled: false,
     editors: [],
     inputs: 0,

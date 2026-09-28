@@ -407,7 +407,7 @@ nb_bubble_editor.clean_html = function (html) {
     }
     comments.forEach((c) => { c.remove(); });
 
-    root.querySelectorAll('span, b[id^="docs-internal-guid"]').forEach((el) => {
+    root.querySelectorAll('span, font, b[id^="docs-internal-guid"]').forEach((el) => {
         const style = el.getAttribute('style') || '';
         let replacement = null;
         if (el.tagName === 'SPAN' && /font-weight:\s*(bold|[6-9]00)/i.test(style)) {
@@ -422,8 +422,21 @@ nb_bubble_editor.clean_html = function (html) {
             el.replaceWith(...el.childNodes);
         }
     });
+    // keep only attributes content needs; drops Word/Docs class, style, lang, align, ...
+    const keep = { A: ['href'], IMG: ['src', 'alt', 'width', 'height'], TD: ['colspan', 'rowspan'], TH: ['colspan', 'rowspan'] };
     root.querySelectorAll('*').forEach((el) => {
-        ['class', 'style', 'dir', 'id'].forEach((attr) => { el.removeAttribute(attr); });
+        const allowed = keep[el.tagName] || [];
+        Array.from(el.attributes).forEach((attr) => {
+            if (!allowed.includes(attr.name)) {
+                el.removeAttribute(attr.name);
+            }
+        });
+    });
+    // Word spaces paragraphs with empty ones (<p>&nbsp;</p>)
+    root.querySelectorAll('p').forEach((p) => {
+        if (p.textContent.replace(/\u00a0/g, ' ').trim() === '' && !p.querySelector('img, iframe, video')) {
+            p.remove();
+        }
     });
     const div = document.createElement('div');
     div.append(root);
