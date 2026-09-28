@@ -229,3 +229,30 @@ test('buttons registered from script get the same toolbar treatment', async ({ p
   await button(page, 'Uppercase').click();
   expect(await ed.innerHTML()).toBe('<p>Hello WORLD</p>');
 });
+
+test('optional buttons: strikethrough, superscript, pre and clear formatting', async ({ page }) => {
+  const ed = await editor_page(page, { buttons: 'strikethrough,superscript,pre,removeFormat' }, '<p>Hello <b>world</b></p>');
+  await select_text(page, 'Hello');
+  await button(page, 'Strikethrough').click();
+  expect(await ed.innerHTML()).toBe('<p><s>Hello</s> <b>world</b></p>');
+  await expect(button(page, 'Strikethrough')).toHaveAttribute('aria-pressed', 'true');
+  await button(page, 'Strikethrough').click();
+  expect(await ed.innerHTML()).toBe('<p>Hello <b>world</b></p>');
+  await button(page, 'Strikethrough').click();
+  await button(page, 'Clear formatting').click();
+  expect(await ed.innerHTML()).toBe('<p>Hello <b>world</b></p>');
+  await select_text(page, 'world');
+  await button(page, 'Superscript').click();
+  expect(await ed.innerHTML()).toBe('<p>Hello <b><sup>world</sup></b></p>');
+  await button(page, 'Preformatted').click();
+  expect(await ed.innerHTML()).toBe('<pre>Hello <b><sup>world</sup></b></pre>');
+  await button(page, 'Preformatted').click();
+  expect(await ed.innerHTML()).toBe('<p>Hello <b><sup>world</sup></b></p>');
+});
+
+test('underline is not active unless configured', async ({ page }) => {
+  const ed = await editor_page(page, {});
+  await select_text(page, 'world');
+  await page.keyboard.press('ControlOrMeta+u');
+  expect(await ed.innerHTML()).toBe('<p>Hello world</p>');
+});

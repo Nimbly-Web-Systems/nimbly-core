@@ -27,7 +27,28 @@ var nb_bubble_editor = {
 // reimplemented (e.g. with Range/DOM code) without touching anything else.
 // execCommand is kept for now because it gives native undo/redo.
 nb_bubble_editor.doc = {
-    inline: (command) => { document.execCommand(command); },
+    inline: (command) => {
+        document.execCommand(command);
+        // Chrome writes the obsolete <strike>; store <s>
+        const ed = nb_bubble_editor.current;
+        if (command === 'strikeThrough' && ed && ed.querySelector('strike')) {
+            const sel = window.getSelection();
+            const r = sel.rangeCount > 0 ? sel.getRangeAt(0) : null;
+            const bounds = r ? [r.startContainer, r.startOffset, r.endContainer, r.endOffset] : null;
+            ed.querySelectorAll('strike').forEach((el) => {
+                const s = document.createElement('s');
+                s.append(...el.childNodes);
+                el.replaceWith(s);
+            });
+            if (bounds) {
+                const range = document.createRange();
+                range.setStart(bounds[0], bounds[1]);
+                range.setEnd(bounds[2], bounds[3]);
+                nb_bubble_editor.select(range);
+            }
+            nb_bubble_editor.changed();
+        }
+    },
     inline_active: (command) => document.queryCommandState(command),
     block: (tag) => { document.execCommand('formatBlock', false, '<' + tag + '>'); },
     current_block: () => document.queryCommandValue('formatBlock').toLowerCase(),
@@ -160,7 +181,14 @@ const link_svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fi
     ['quote', { kind: 'block', tag: 'blockquote', label: 'Quote', icon: '&ldquo;' }],
     ['orderedlist', { kind: 'list', command: 'insertOrderedList', label: 'Numbered list', icon: '1.' }],
     ['unorderedlist', { kind: 'list', command: 'insertUnorderedList', label: 'Bulleted list', icon: '&bull;' }],
-    ['anchor', { kind: 'link', label: 'Link', icon: link_svg, shortcut: 'k' }]
+    ['anchor', { kind: 'link', label: 'Link', icon: link_svg, shortcut: 'k' }],
+    // available, but in no default set: fields opt in via their `buttons`
+    ['strikethrough', { kind: 'command', command: 'strikeThrough', label: 'Strikethrough', icon: '<s>S</s>' }],
+    ['subscript', { kind: 'command', command: 'subscript', label: 'Subscript', icon: 'x<sub>2</sub>' }],
+    ['superscript', { kind: 'command', command: 'superscript', label: 'Superscript', icon: 'x<sup>2</sup>' }],
+    ['underline', { kind: 'command', command: 'underline', label: 'Underline', icon: '<u>U</u>', shortcut: 'u' }],
+    ['pre', { kind: 'block', tag: 'pre', label: 'Preformatted', icon: '{ }' }],
+    ['removeFormat', { kind: 'command', command: 'removeFormat', label: 'Clear formatting', icon: 'T<sub>&times;</sub>' }]
 ].forEach(([name, def]) => { nb_bubble_editor.register(name, def); });
 
 // application buttons declared in the bubble-editor-buttons template
