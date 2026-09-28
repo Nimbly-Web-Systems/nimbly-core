@@ -168,7 +168,7 @@ const alpine_media_insert = function () {
       const editor_options = nb.edit.active_editor._nb_editor_options;
 
       let media_sizes = ["100vw"];
-      if ("media_sizes" in editor_options) {
+      if (editor_options.media_sizes) {
         const sl = editor_options.media_sizes.split(",");
         for (let s of sl) {
           const rule = s.split("-");
