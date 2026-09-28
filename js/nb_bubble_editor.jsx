@@ -8,7 +8,8 @@
 // picks which ones it shows. Each button carries its own behaviour:
 //   { label, icon, shortcut?, insert?, run(ctx), is_active(ctx)?, prompt?, apply(ctx, value)? }
 // `insert: true` puts a button in the field bar's insert group (next to Media)
-// instead of with the formatting buttons and the bubble.
+// instead of with the formatting buttons and the bubble; add `bubble: true`
+// when it also acts on selected text, to show it in the bubble as well.
 // Most buttons are built from a kind (command, block, list, wrap, insert,
 // event, link). Applications add buttons declaratively in the `bubble-editor-buttons`
 // template (JSON, see core/tpl/bubble-editor-buttons) or from script with
@@ -265,7 +266,8 @@ nb_bubble_editor.init = function (ed, options) {
         buttons: options.buttons.filter((name) => { return nb_bubble_editor.buttons[name]; }),
         // the bubble formats a selection; insert-at-caret buttons live in the field bar only
         bubble_buttons: options.buttons.filter((name) => {
-            return nb_bubble_editor.buttons[name] && !nb_bubble_editor.buttons[name].insert;
+            const button = nb_bubble_editor.buttons[name];
+            return button && (!button.insert || button.bubble === true);
         }),
         paste_html: options.paste_html === true,
         as_form_field: options.as_form_field === true,

@@ -641,3 +641,17 @@ test('anchors without a URL (app elements) get no link preview and are not links
   await select_text(page, 'Paris');
   await expect(button(page, 'Link')).toHaveAttribute('aria-pressed', 'false');
 });
+
+test('an insert button with bubble: true also shows in the bubble for selected text', async ({ page }) => {
+  await editor_page(page, { buttons: 'bold,pin' }, '<p>Hello world</p>', 'div', {
+    pin: { kind: 'event', event: 'nb:insert-pin', insert: true, bubble: true, label: 'Pin', icon: '<i>P</i>' },
+  });
+  await page.evaluate(() => {
+    window.pins = [];
+    document.addEventListener('nb:insert-pin', (e) => window.pins.push(e.detail.range.toString()));
+  });
+  await select_text(page, 'world');
+  await expect(toolbar(page).locator('[data-nb-bubble-name]')).toHaveCount(2);
+  await button(page, 'Pin').click();
+  expect(await page.evaluate(() => window.pins)).toEqual(['world']);
+});
