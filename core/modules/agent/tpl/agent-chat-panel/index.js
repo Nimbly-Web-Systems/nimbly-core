@@ -76,8 +76,8 @@ function agent_chat_widget(nimblybar_side) {
             if (this.open) {
                 this.delay = 2000;
                 this.fit?.();
-                // Someone (an agent) started a conversation: open it right away.
-                const waiting = this.conversations.find(item => item.unread);
+                // Someone (an agent) started a conversation, or is still writing it: open it right away.
+                const waiting = this.conversations.find(item => item.unread || item.waiting);
                 if (!this.conversation && waiting) this.open_conversation(waiting.uuid);
                 else this.conversation ? this.refresh() : this.load_list();
                 // On a phone the keyboard waits until the input is tapped.
