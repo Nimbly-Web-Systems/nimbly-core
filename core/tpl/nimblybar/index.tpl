@@ -159,6 +159,7 @@
 
 [#feature-cond view-.files tpl=media-modal-cond#]
 [#feature-cond edit-.config tpl=modal-settings#]
+[#bubble-editor#]
 
 <script>
     [#include file=[#base-path#]core/tpl/nimblybar/index.js#]

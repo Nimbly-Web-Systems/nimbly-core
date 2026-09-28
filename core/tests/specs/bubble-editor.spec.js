@@ -3,9 +3,18 @@ import { readFile } from 'node:fs/promises';
 
 const root = new URL('../../', import.meta.url);
 
-async function editor_page(page, options = {}, html = '<p>Hello world</p>', tag = 'div') {
+// the real toolbar template, with shortcodes resolved the way the server would
+async function toolbar_template(declared = {}) {
+  const tpl = await readFile(new URL('tpl/bubble-editor/index.tpl', root), 'utf8');
+  return tpl
+    .replace('[#bubble-editor-buttons#]', JSON.stringify(declared))
+    .replace(/\[#text ([^#]+)#\]/g, '$1');
+}
+
+async function editor_page(page, options = {}, html = '<p>Hello world</p>', tag = 'div', declared = {}) {
   page.on('pageerror', (error) => { throw error; });
-  await page.setContent(`<form><${tag} data-nb-edit="body" data-nb-edit-options='${JSON.stringify(options)}'>${html}</${tag}></form>`);
+  await page.setContent(`<form><${tag} data-nb-edit="body" data-nb-edit-options='${JSON.stringify(options)}'>${html}</${tag}></form>`
+    + await toolbar_template(declared));
   for (const file of ['nb_bubble_editor.jsx', 'nb_edit.jsx']) {
     const script = await readFile(new URL('../js/' + file, root), 'utf8');
     await page.addScriptTag({ content: script.replace(/export default \w+;/, '') });
@@ -184,4 +193,39 @@ test('typing in an existing heading keeps it a heading', async ({ page }) => {
   await page.keyboard.press('End');
   await page.keyboard.type('!');
   expect(await ed.innerHTML()).toBe('Intro<h2>Heading!</h2>');
+});
+
+test('application buttons declared in the template wrap, format and insert', async ({ page }) => {
+  const ed = await editor_page(page, { buttons: 'bold,highlight,h5,divider' }, '<p>Hello world</p>', 'div', {
+    highlight: { kind: 'wrap', tag: 'mark', class: 'bg-yellow-200', label: 'Highlight', icon: 'M' },
+    h5: { kind: 'block', tag: 'h5', label: 'Heading 5', icon: 'H5' },
+    divider: { kind: 'insert', html: '<hr>', label: 'Divider', icon: '—' },
+  });
+  await select_text(page, 'world');
+  await expect(toolbar(page).locator('[data-nb-bubble-name]')).toHaveCount(4);
+  await button(page, 'Highlight').click();
+  expect(await ed.innerHTML()).toBe('<p>Hello <mark class="bg-yellow-200">world</mark></p>');
+  await select_text(page, 'world');
+  await expect(button(page, 'Highlight')).toHaveAttribute('aria-pressed', 'true');
+  await button(page, 'Highlight').click();
+  expect(await ed.innerHTML()).toBe('<p>Hello world</p>');
+  await select_text(page, 'Hello');
+  await button(page, 'Heading 5').click();
+  expect(await ed.innerHTML()).toBe('<h5>Hello world</h5>');
+});
+
+test('buttons registered from script get the same toolbar treatment', async ({ page }) => {
+  const ed = await editor_page(page, { buttons: 'upper' });
+  await page.evaluate(() => {
+    nb_bubble_editor.register('upper', {
+      label: 'Uppercase', icon: 'AA',
+      run: (ctx) => nb_bubble_editor.doc.insert_html(ctx.range.toString().toUpperCase()),
+    });
+    const ed = document.querySelector('[data-nb-edit]');
+    nb_bubble_editor.destroy(ed);
+    nb_bubble_editor.init(ed, { buttons: ['upper'], placeholder: '' });
+  });
+  await select_text(page, 'world');
+  await button(page, 'Uppercase').click();
+  expect(await ed.innerHTML()).toBe('<p>Hello WORLD</p>');
 });

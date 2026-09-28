@@ -3,29 +3,180 @@
 // built (?bubble_editor=1 / ?bubble_editor=0); nb_edit.init_editor() uses it
 // instead of MediumEditor when enabled. No imports: specs load this file with
 // its export stripped.
+//
+// Buttons are registered by name; a field's `buttons` option (resource .meta)
+// picks which ones it shows. Each button carries its own behaviour:
+//   { label, icon, shortcut?, run(ctx), is_active(ctx)?, prompt?, apply(ctx, value)? }
+// Most buttons are built from a kind (command, block, list, wrap, insert,
+// link). Applications add buttons declaratively in the `bubble-editor-buttons`
+// template (JSON, see core/tpl/bubble-editor-buttons) or from script with
+// nb.bubble_editor.register(name, definition).
 
 var nb_bubble_editor = {
+    buttons: {},
     toolbar: null,
     current: null,
-    saved_range: null,
+    prompt: null,
     pointer_down: false
 };
 
+/* document editing adapter */
+
+// The only place that calls document.execCommand / queryCommand*. Buttons,
+// paste and typing go through these functions, so any of them can later be
+// reimplemented (e.g. with Range/DOM code) without touching anything else.
+// execCommand is kept for now because it gives native undo/redo.
+nb_bubble_editor.doc = {
+    inline: (command) => { document.execCommand(command); },
+    inline_active: (command) => document.queryCommandState(command),
+    block: (tag) => { document.execCommand('formatBlock', false, '<' + tag + '>'); },
+    current_block: () => document.queryCommandValue('formatBlock').toLowerCase(),
+    list: (command) => { document.execCommand(command); },
+    list_active: (command) => document.queryCommandState(command),
+    insert_html: (html) => { document.execCommand('insertHTML', false, html); },
+    link: (url) => { document.execCommand('createLink', false, url); },
+    unlink: () => { document.execCommand('unlink'); },
+    paragraph_separator: (tag) => { document.execCommand('defaultParagraphSeparator', false, tag); },
+    // Chrome's insertHTML drops inline wrappers such as <mark>/<span>, so
+    // wrapping is plain DOM work (not part of native undo)
+    wrap: (tag, class_name) => {
+        const range = window.getSelection().getRangeAt(0);
+        const el = document.createElement(tag);
+        if (class_name) {
+            el.className = class_name;
+        }
+        el.append(range.extractContents());
+        range.insertNode(el);
+        const selected = document.createRange();
+        selected.selectNodeContents(el);
+        nb_bubble_editor.select(selected);
+        nb_bubble_editor.changed();
+    },
+    unwrap: (el) => {
+        const first = el.firstChild;
+        const last = el.lastChild;
+        el.replaceWith(...el.childNodes);
+        if (first) {
+            const selected = document.createRange();
+            selected.setStartBefore(first);
+            selected.setEndAfter(last);
+            nb_bubble_editor.select(selected);
+        }
+        nb_bubble_editor.changed();
+    }
+};
+
+// let the editor's input handling know about a change made outside the browser's editing commands
+nb_bubble_editor.changed = function () {
+    if (nb_bubble_editor.current) {
+        nb_bubble_editor.current.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+}
+
+/* button kinds */
+
+nb_bubble_editor.kinds = {
+    // native formatting command, e.g. bold, italic, strikethrough
+    command: (def) => ({
+        run: () => { nb_bubble_editor.doc.inline(def.command); },
+        is_active: () => nb_bubble_editor.doc.inline_active(def.command)
+    }),
+    // block format; clicking it again turns the block back into a paragraph
+    block: (def) => ({
+        run: (ctx) => {
+            const tag = nb_bubble_editor.block_active(def.tag) ? 'p' : def.tag;
+            nb_bubble_editor.doc.block(tag);
+        },
+        is_active: () => nb_bubble_editor.block_active(def.tag)
+    }),
+    list: (def) => ({
+        run: (ctx) => {
+            nb_bubble_editor.doc.list(def.command);
+            nb_bubble_editor.unwrap_list(ctx.editor);
+        },
+        is_active: () => nb_bubble_editor.doc.list_active(def.command)
+    }),
+    // wrap the selection in an inline element (e.g. <mark>, <span class="...">)
+    wrap: (def) => {
+        const selector = def.tag + (def.class ? '.' + def.class.trim().split(/\s+/).join('.') : '');
+        return {
+            run: (ctx) => {
+                const el = nb_bubble_editor.closest(ctx, selector);
+                if (el) {
+                    nb_bubble_editor.doc.unwrap(el);
+                } else {
+                    nb_bubble_editor.doc.wrap(def.tag, def.class);
+                }
+            },
+            is_active: (ctx) => nb_bubble_editor.closest(ctx, selector) !== null
+        };
+    },
+    insert: (def) => ({
+        run: () => { nb_bubble_editor.doc.insert_html(def.html); },
+        is_active: () => false
+    }),
+    // asks for a URL; on an existing link it removes the link instead
+    link: (def) => ({
+        prompt: { placeholder: def.placeholder || 'https://' },
+        run: (ctx) => {
+            const link = nb_bubble_editor.closest(ctx, 'a');
+            if (!link) {
+                nb_bubble_editor.open_prompt(ctx.name);
+                return;
+            }
+            const range = document.createRange();
+            range.selectNodeContents(link);
+            nb_bubble_editor.select(range);
+            nb_bubble_editor.doc.unlink();
+        },
+        apply: (ctx, value) => {
+            const url = nb_bubble_editor.normalize_url(value);
+            if (url) {
+                nb_bubble_editor.doc.link(url);
+            }
+        },
+        is_active: (ctx) => nb_bubble_editor.closest(ctx, 'a') !== null
+    })
+};
+
+nb_bubble_editor.register = function (name, def) {
+    const kind = def.kind ? nb_bubble_editor.kinds[def.kind] : null;
+    if (def.kind && !kind) {
+        console.warn('nb_bubble_editor: unknown button kind', def.kind, name);
+        return;
+    }
+    nb_bubble_editor.buttons[name] = Object.assign({ label: name, icon: name }, kind ? kind(def) : {}, def);
+}
+
 const link_svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="size-4"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>';
 
-// Keys are medium-editor's button names, so existing `buttons` settings in
-// resource .meta files keep working unchanged.
-nb_bubble_editor.button_registry = {
-    bold: { type: 'toggle', label: 'Bold', icon: '<b>B</b>', command: 'bold', shortcut: 'b' },
-    italic: { type: 'toggle', label: 'Italic', icon: '<i class="font-serif">I</i>', command: 'italic', shortcut: 'i' },
-    h2: { type: 'block', label: 'Heading 2', icon: 'H2', tag: 'h2' },
-    h3: { type: 'block', label: 'Heading 3', icon: 'H3', tag: 'h3' },
-    h4: { type: 'block', label: 'Heading 4', icon: 'H4', tag: 'h4' },
-    quote: { type: 'block', label: 'Quote', icon: '&ldquo;', tag: 'blockquote' },
-    orderedlist: { type: 'list', label: 'Numbered list', icon: '1.', command: 'insertOrderedList' },
-    unorderedlist: { type: 'list', label: 'Bulleted list', icon: '&bull;', command: 'insertUnorderedList' },
-    anchor: { type: 'form', label: 'Link', icon: link_svg, shortcut: 'k' }
-};
+// Names match medium-editor's, so existing `buttons` settings keep working.
+[
+    ['bold', { kind: 'command', command: 'bold', label: 'Bold', icon: '<b>B</b>', shortcut: 'b' }],
+    ['italic', { kind: 'command', command: 'italic', label: 'Italic', icon: '<i class="font-serif">I</i>', shortcut: 'i' }],
+    ['h2', { kind: 'block', tag: 'h2', label: 'Heading 2', icon: 'H2' }],
+    ['h3', { kind: 'block', tag: 'h3', label: 'Heading 3', icon: 'H3' }],
+    ['h4', { kind: 'block', tag: 'h4', label: 'Heading 4', icon: 'H4' }],
+    ['quote', { kind: 'block', tag: 'blockquote', label: 'Quote', icon: '&ldquo;' }],
+    ['orderedlist', { kind: 'list', command: 'insertOrderedList', label: 'Numbered list', icon: '1.' }],
+    ['unorderedlist', { kind: 'list', command: 'insertUnorderedList', label: 'Bulleted list', icon: '&bull;' }],
+    ['anchor', { kind: 'link', label: 'Link', icon: link_svg, shortcut: 'k' }]
+].forEach(([name, def]) => { nb_bubble_editor.register(name, def); });
+
+// application buttons declared in the bubble-editor-buttons template
+nb_bubble_editor.load_declared_buttons = function () {
+    const el = document.getElementById('nb_bubble_buttons');
+    if (!el || el._nb_loaded) {
+        return;
+    }
+    el._nb_loaded = true;
+    try {
+        const declared = JSON.parse(el.textContent.trim() || '{}');
+        Object.entries(declared).forEach(([name, def]) => { nb_bubble_editor.register(name, def); });
+    } catch (e) {
+        console.warn('nb_bubble_editor: invalid bubble-editor-buttons JSON', e);
+    }
+}
 
 nb_bubble_editor.enabled = function () {
     try {
@@ -42,9 +193,9 @@ nb_bubble_editor.enabled = function () {
 }
 
 nb_bubble_editor.init = function (ed, options) {
-    const registry = nb_bubble_editor.button_registry;
+    nb_bubble_editor.load_declared_buttons();
     ed._nb_bubble = {
-        buttons: options.buttons.filter((name) => { return registry[name]; }),
+        buttons: options.buttons.filter((name) => { return nb_bubble_editor.buttons[name]; }),
         paste_html: options.paste_html === true,
         as_form_field: options.as_form_field === true,
         handlers: {
@@ -90,7 +241,7 @@ nb_bubble_editor.listen = function () {
         requestAnimationFrame(nb_bubble_editor.update);
     });
     document.addEventListener('mousedown', (e) => {
-        if (!nb_bubble_editor.toolbar || !nb_bubble_editor.toolbar.contains(e.target)) {
+        if (!nb_bubble_editor.in_toolbar(e.target)) {
             nb_bubble_editor.pointer_down = true;
         }
     });
@@ -115,7 +266,7 @@ nb_bubble_editor.listen = function () {
 nb_bubble_editor.on_focus = function (e) {
     const ed = e.currentTarget;
     ed.setAttribute('data-nb-edit-focused', true);
-    document.execCommand('defaultParagraphSeparator', false, 'p');
+    nb_bubble_editor.doc.paragraph_separator('p');
 }
 
 nb_bubble_editor.on_blur = function (e) {
@@ -143,8 +294,8 @@ nb_bubble_editor.on_keydown = function (e) {
         return;
     }
     const key = e.key.toLowerCase();
-    const name = Object.keys(nb_bubble_editor.button_registry).find((n) => {
-        return nb_bubble_editor.button_registry[n].shortcut === key;
+    const name = Object.keys(nb_bubble_editor.buttons).find((n) => {
+        return nb_bubble_editor.buttons[n].shortcut === key;
     });
     if (!name) {
         return;
@@ -168,7 +319,7 @@ nb_bubble_editor.on_paste = function (e) {
         nb_bubble_editor.clean_html(html)
         : nb_bubble_editor.plain_to_html(data.getData('text/plain'));
     if (out) {
-        document.execCommand('insertHTML', false, out);
+        nb_bubble_editor.doc.insert_html(out);
     }
 }
 
@@ -196,7 +347,7 @@ nb_bubble_editor.block_tags = ['P', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'BLOCKQU
 nb_bubble_editor.ensure_paragraph = function (ed) {
     if (ed.children.length === 0 && ed.textContent.trim() !== ''
         && !nb_bubble_editor.block_tags.includes(ed.tagName)) {
-        document.execCommand('formatBlock', false, 'p');
+        nb_bubble_editor.doc.block('p');
     }
 }
 
@@ -257,13 +408,22 @@ nb_bubble_editor.in_toolbar = function (el) {
     return !!(el && nb_bubble_editor.toolbar && nb_bubble_editor.toolbar.contains(el));
 }
 
+nb_bubble_editor.element_of = function (node) {
+    return node && (node.nodeType === Node.ELEMENT_NODE ? node : node.parentElement);
+}
+
+nb_bubble_editor.select = function (range) {
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+}
+
 nb_bubble_editor.editor_for_selection = function () {
     const sel = window.getSelection();
     if (!sel || sel.rangeCount === 0) {
         return null;
     }
-    const node = sel.anchorNode;
-    const el = node && (node.nodeType === Node.ELEMENT_NODE ? node : node.parentElement);
+    const el = nb_bubble_editor.element_of(sel.anchorNode);
     const ed = el && el.closest('[data-nb-edit]');
     if (!ed || !ed._nb_bubble || !ed.isContentEditable || !ed.contains(sel.focusNode)) {
         return null;
@@ -271,65 +431,35 @@ nb_bubble_editor.editor_for_selection = function () {
     return ed;
 }
 
-nb_bubble_editor.selected_link = function () {
+// what a button's run/is_active/apply receive
+nb_bubble_editor.context = function (name) {
     const sel = window.getSelection();
-    if (!sel || sel.rangeCount === 0 || !nb_bubble_editor.current) {
-        return null;
-    }
-    const node = sel.anchorNode;
-    const el = node && (node.nodeType === Node.ELEMENT_NODE ? node : node.parentElement);
-    const link = el && el.closest('a');
-    return link && nb_bubble_editor.current.contains(link) ? link : null;
+    const range = sel && sel.rangeCount > 0 ? sel.getRangeAt(0) : null;
+    return {
+        name: name,
+        editor: nb_bubble_editor.current,
+        range: range,
+        element: range ? nb_bubble_editor.element_of(range.startContainer) : null
+    };
 }
 
-/* commands */
-
-nb_bubble_editor.is_active = function (name) {
-    const entry = nb_bubble_editor.button_registry[name];
-    if (entry.type === 'block') {
-        return document.queryCommandValue('formatBlock').toLowerCase() === entry.tag;
-    }
-    if (entry.type === 'form') {
-        return nb_bubble_editor.selected_link() !== null;
-    }
-    return document.queryCommandState(entry.command);
+// nearest ancestor of the selection matching selector, inside the editor
+nb_bubble_editor.closest = function (ctx, selector) {
+    const el = ctx.element && ctx.element.closest(selector);
+    return el && ctx.editor && ctx.editor.contains(el) && el !== ctx.editor ? el : null;
 }
 
-nb_bubble_editor.exec = function (name) {
-    const entry = nb_bubble_editor.button_registry[name];
-    if (entry.type === 'block') {
-        const tag = nb_bubble_editor.is_active(name) ? 'p' : entry.tag;
-        document.execCommand('formatBlock', false, '<' + tag + '>');
-    } else if (entry.type === 'list') {
-        document.execCommand(entry.command);
-        nb_bubble_editor.unwrap_list();
-    } else if (entry.type === 'form') {
-        const link = nb_bubble_editor.selected_link();
-        if (link) {
-            const range = document.createRange();
-            range.selectNodeContents(link);
-            const sel = window.getSelection();
-            sel.removeAllRanges();
-            sel.addRange(range);
-            document.execCommand('unlink');
-        } else {
-            nb_bubble_editor.open_link_form();
-            return;
-        }
-    } else {
-        document.execCommand(entry.command);
-    }
-    nb_bubble_editor.update();
+nb_bubble_editor.block_active = function (tag) {
+    return nb_bubble_editor.doc.current_block() === tag;
 }
 
 // Chrome nests a new list inside the <p> it came from
-nb_bubble_editor.unwrap_list = function () {
+nb_bubble_editor.unwrap_list = function (ed) {
     const sel = window.getSelection();
-    const node = sel && sel.anchorNode;
-    const el = node && (node.nodeType === Node.ELEMENT_NODE ? node : node.parentElement);
+    const el = nb_bubble_editor.element_of(sel && sel.anchorNode);
     const list = el && el.closest('ul, ol');
     const p = list && list.parentElement;
-    if (!p || p.tagName !== 'P' || !nb_bubble_editor.current || !nb_bubble_editor.current.contains(p)) {
+    if (!p || p.tagName !== 'P' || !ed || !ed.contains(p)) {
         return;
     }
     const r = sel.getRangeAt(0);
@@ -338,73 +468,83 @@ nb_bubble_editor.unwrap_list = function () {
     const range = document.createRange();
     range.setStart(bounds[0], bounds[1]);
     range.setEnd(bounds[2], bounds[3]);
-    sel.removeAllRanges();
-    sel.addRange(range);
-    nb_bubble_editor.current.dispatchEvent(new Event('input', { bubbles: true }));
+    nb_bubble_editor.select(range);
+    nb_bubble_editor.changed();
 }
 
 nb_bubble_editor.normalize_url = function (url) {
-    url = url.trim();
+    url = (url || '').trim();
     if (url && !/^([a-z][a-z0-9+.-]*:|\/|#|\?)/i.test(url) && /^[^\s\/]+\.[a-z]{2,}(\/|$)/i.test(url)) {
         return 'https://' + url;
     }
     return url;
 }
 
-nb_bubble_editor.open_link_form = function () {
-    const sel = window.getSelection();
-    if (!sel || sel.rangeCount === 0) {
+/* running buttons */
+
+nb_bubble_editor.exec = function (name) {
+    const button = nb_bubble_editor.buttons[name];
+    if (!button || !nb_bubble_editor.current) {
         return;
     }
-    nb_bubble_editor.saved_range = sel.getRangeAt(0).cloneRange();
+    button.run(nb_bubble_editor.context(name));
+    nb_bubble_editor.update();
+}
+
+// swap the buttons for a one-line input; used by buttons with a `prompt`
+nb_bubble_editor.open_prompt = function (name) {
+    const button = nb_bubble_editor.buttons[name];
+    const ctx = nb_bubble_editor.context(name);
+    if (!button || !button.prompt || !ctx.range) {
+        return;
+    }
+    nb_bubble_editor.prompt = { name: name, range: ctx.range.cloneRange() };
     const tb = nb_bubble_editor.get_toolbar();
-    tb.querySelector('[data-nb-bubble-buttons]').classList.add('hidden');
-    tb.querySelector('[data-nb-bubble-link]').classList.remove('hidden');
-    tb.classList.remove('hidden');
-    const input = tb.querySelector('[data-nb-bubble-link] input');
+    const input = tb.querySelector('[data-nb-bubble-prompt] input');
     input.value = '';
+    input.placeholder = button.prompt.placeholder || '';
+    input.setAttribute('aria-label', button.label);
+    nb_bubble_editor.show_prompt(true);
+    tb.classList.remove('hidden');
     nb_bubble_editor.position();
     input.focus();
 }
 
-nb_bubble_editor.close_link_form = function (url) {
-    const range = nb_bubble_editor.saved_range;
-    const ed = nb_bubble_editor.current;
-    nb_bubble_editor.saved_range = null;
+nb_bubble_editor.show_prompt = function (show) {
     const tb = nb_bubble_editor.get_toolbar();
-    tb.querySelector('[data-nb-bubble-link]').classList.add('hidden');
-    tb.querySelector('[data-nb-bubble-buttons]').classList.remove('hidden');
-    if (!range || !ed) {
+    tb.querySelector('[data-nb-bubble-buttons]').classList.toggle('hidden', show);
+    tb.querySelector('[data-nb-bubble-prompt]').classList.toggle('hidden', !show);
+}
+
+// value === null cancels
+nb_bubble_editor.close_prompt = function (value) {
+    const prompt = nb_bubble_editor.prompt;
+    const ed = nb_bubble_editor.current;
+    nb_bubble_editor.prompt = null;
+    nb_bubble_editor.show_prompt(false);
+    if (!prompt || !ed) {
         nb_bubble_editor.hide();
         return;
     }
     ed.focus();
-    const sel = window.getSelection();
-    sel.removeAllRanges();
-    sel.addRange(range);
-    url = nb_bubble_editor.normalize_url(url || '');
-    if (url) {
-        document.execCommand('createLink', false, url);
+    nb_bubble_editor.select(prompt.range);
+    if (value !== null) {
+        nb_bubble_editor.buttons[prompt.name].apply(nb_bubble_editor.context(prompt.name), value);
     }
     nb_bubble_editor.update();
 }
 
-/* toolbar */
+/* toolbar (markup: core/tpl/bubble-editor) */
 
 nb_bubble_editor.get_toolbar = function () {
     if (nb_bubble_editor.toolbar) {
         return nb_bubble_editor.toolbar;
     }
-    const tb = document.createElement('div');
-    tb.className = 'nb-bubble-toolbar hidden';
-    tb.setAttribute('role', 'toolbar');
-    tb.innerHTML = '<span class="nb-bubble-arrow" aria-hidden="true"></span>'
-        + '<div class="join" data-nb-bubble-buttons></div>'
-        + '<form class="join hidden" data-nb-bubble-link>'
-        + '<input type="text" class="input input-sm join-item nb-bubble-input" placeholder="https://" aria-label="Link">'
-        + '<button type="submit" class="btn btn-sm btn-square join-item nb-bubble-btn" aria-label="Apply">&#10003;</button>'
-        + '<button type="button" class="btn btn-sm btn-square join-item nb-bubble-btn" aria-label="Cancel" data-nb-bubble-cancel>&times;</button>'
-        + '</form>';
+    const tpl = document.getElementById('nb_bubble_toolbar');
+    if (!tpl) {
+        return null;
+    }
+    const tb = tpl.content.firstElementChild.cloneNode(true);
     // mousedown + preventDefault keeps focus (and the selection) in the editor
     tb.addEventListener('mousedown', (e) => {
         const btn = e.target.closest('[data-nb-bubble-name]');
@@ -413,25 +553,25 @@ nb_bubble_editor.get_toolbar = function () {
             nb_bubble_editor.exec(btn.dataset.nbBubbleName);
         } else if (e.target.closest('[data-nb-bubble-cancel]')) {
             e.preventDefault();
-            nb_bubble_editor.close_link_form('');
+            nb_bubble_editor.close_prompt(null);
         }
     });
-    const form = tb.querySelector('[data-nb-bubble-link]');
+    const form = tb.querySelector('[data-nb-bubble-prompt]');
+    const input = form.querySelector('input');
     form.addEventListener('submit', (e) => {
         e.preventDefault();
-        nb_bubble_editor.close_link_form(form.querySelector('input').value);
+        nb_bubble_editor.close_prompt(input.value);
     });
-    form.querySelector('input').addEventListener('keydown', (e) => {
+    input.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
             e.preventDefault();
-            nb_bubble_editor.close_link_form('');
+            nb_bubble_editor.close_prompt(null);
         }
     });
-    form.querySelector('input').addEventListener('blur', (e) => {
-        if (nb_bubble_editor.saved_range && !nb_bubble_editor.in_toolbar(e.relatedTarget)) {
-            nb_bubble_editor.saved_range = null;
-            form.classList.add('hidden');
-            tb.querySelector('[data-nb-bubble-buttons]').classList.remove('hidden');
+    input.addEventListener('blur', (e) => {
+        if (nb_bubble_editor.prompt && !nb_bubble_editor.in_toolbar(e.relatedTarget)) {
+            nb_bubble_editor.prompt = null;
+            nb_bubble_editor.show_prompt(false);
             nb_bubble_editor.hide();
         }
     });
@@ -441,41 +581,42 @@ nb_bubble_editor.get_toolbar = function () {
 }
 
 nb_bubble_editor.render_buttons = function (ed) {
-    const container = nb_bubble_editor.get_toolbar().querySelector('[data-nb-bubble-buttons]');
+    const tb = nb_bubble_editor.get_toolbar();
+    const container = tb.querySelector('[data-nb-bubble-buttons]');
+    const button_tpl = document.getElementById('nb_bubble_button');
     container.innerHTML = '';
     ed._nb_bubble.buttons.forEach((name) => {
-        const entry = nb_bubble_editor.button_registry[name];
-        const btn = document.createElement('button');
-        btn.type = 'button';
-        btn.className = 'btn btn-sm btn-square join-item nb-bubble-btn';
+        const button = nb_bubble_editor.buttons[name];
+        const btn = button_tpl.content.firstElementChild.cloneNode(true);
         btn.dataset.nbBubbleName = name;
-        btn.setAttribute('aria-label', entry.label);
-        btn.setAttribute('title', entry.label);
-        btn.setAttribute('aria-pressed', 'false');
-        btn.innerHTML = entry.icon;
+        btn.setAttribute('aria-label', button.label);
+        btn.setAttribute('title', button.label);
+        btn.innerHTML = button.icon;
         container.appendChild(btn);
     });
 }
 
 nb_bubble_editor.update = function () {
-    if (nb_bubble_editor.saved_range) {
-        return; // link form is open
+    if (nb_bubble_editor.prompt) {
+        return;
     }
     const ed = nb_bubble_editor.editor_for_selection();
     const sel = window.getSelection();
-    if (!ed || sel.isCollapsed || nb_bubble_editor.pointer_down || ed._nb_bubble.buttons.length === 0) {
+    const tb = ed ? nb_bubble_editor.get_toolbar() : nb_bubble_editor.toolbar;
+    if (!tb || !ed || sel.isCollapsed || nb_bubble_editor.pointer_down || ed._nb_bubble.buttons.length === 0) {
         if (!nb_bubble_editor.in_toolbar(document.activeElement)) {
             nb_bubble_editor.hide();
         }
         return;
     }
-    const tb = nb_bubble_editor.get_toolbar();
     if (nb_bubble_editor.current !== ed || tb.classList.contains('hidden')) {
         nb_bubble_editor.render_buttons(ed);
     }
     nb_bubble_editor.current = ed;
     tb.querySelectorAll('[data-nb-bubble-name]').forEach((btn) => {
-        const active = nb_bubble_editor.is_active(btn.dataset.nbBubbleName);
+        const name = btn.dataset.nbBubbleName;
+        const button = nb_bubble_editor.buttons[name];
+        const active = button.is_active ? button.is_active(nb_bubble_editor.context(name)) : false;
         btn.setAttribute('aria-pressed', active ? 'true' : 'false');
     });
     tb.classList.remove('hidden');
@@ -491,8 +632,9 @@ nb_bubble_editor.hide = function () {
 
 nb_bubble_editor.position = function () {
     const tb = nb_bubble_editor.toolbar;
-    const range = nb_bubble_editor.saved_range
-        || (window.getSelection().rangeCount > 0 ? window.getSelection().getRangeAt(0) : null);
+    const sel = window.getSelection();
+    const range = nb_bubble_editor.prompt ? nb_bubble_editor.prompt.range
+        : (sel.rangeCount > 0 ? sel.getRangeAt(0) : null);
     if (!tb || !range) {
         return;
     }
