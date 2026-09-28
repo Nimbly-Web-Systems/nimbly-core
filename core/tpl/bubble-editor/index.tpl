@@ -20,6 +20,23 @@
 <template id="nb_bubble_button">
     <button type="button" class="btn btn-sm btn-square join-item nb-bubble-btn" aria-pressed="false"></button>
 </template>
+<template id="nb_bubble_labels">
+    <span data-name="bold">[#text Bold#]</span>
+    <span data-name="italic">[#text Italic#]</span>
+    <span data-name="h2">[#text Heading 2#]</span>
+    <span data-name="h3">[#text Heading 3#]</span>
+    <span data-name="h4">[#text Heading 4#]</span>
+    <span data-name="quote">[#text Quote#]</span>
+    <span data-name="orderedlist">[#text Numbered list#]</span>
+    <span data-name="unorderedlist">[#text Bulleted list#]</span>
+    <span data-name="anchor">[#text Link#]</span>
+    <span data-name="strikethrough">[#text Strikethrough#]</span>
+    <span data-name="subscript">[#text Subscript#]</span>
+    <span data-name="superscript">[#text Superscript#]</span>
+    <span data-name="underline">[#text Underline#]</span>
+    <span data-name="pre">[#text Preformatted#]</span>
+    <span data-name="removeFormat">[#text Clear formatting#]</span>
+</template>
 <script type="application/json" id="nb_bubble_buttons">[#bubble-editor-buttons#]</script>
 <template id="nb_field_bar">
     <div class="nb-field-bar hidden" role="toolbar" aria-label="[#text Editor#]">

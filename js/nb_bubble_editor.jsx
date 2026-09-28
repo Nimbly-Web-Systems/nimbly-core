@@ -203,13 +203,23 @@ const clear_svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" f
     ['removeFormat', { kind: 'command', command: 'removeFormat', label: 'Clear formatting', icon: clear_svg }]
 ].forEach(([name, def]) => { nb_bubble_editor.register(name, def); });
 
-// application buttons declared in the bubble-editor-buttons template
+// translated labels and application buttons, from the bubble-editor templates
 nb_bubble_editor.load_declared_buttons = function () {
     const el = document.getElementById('nb_bubble_buttons');
     if (!el || el._nb_loaded) {
         return;
     }
     el._nb_loaded = true;
+    // translated labels of the built-in buttons
+    const labels = document.getElementById('nb_bubble_labels');
+    if (labels) {
+        labels.content.querySelectorAll('[data-name]').forEach((span) => {
+            const button = nb_bubble_editor.buttons[span.dataset.name];
+            if (button && span.textContent.trim() !== '') {
+                button.label = span.textContent.trim();
+            }
+        });
+    }
     try {
         const declared = JSON.parse(el.textContent.trim() || '{}');
         Object.entries(declared).forEach(([name, def]) => { nb_bubble_editor.register(name, def); });
@@ -279,6 +289,7 @@ nb_bubble_editor.listen = function () {
     nb_bubble_editor.listening = true;
     document.addEventListener('selectionchange', () => {
         requestAnimationFrame(() => {
+            nb_bubble_editor.remember_range();
             nb_bubble_editor.update();
             nb_bubble_editor.update_preview();
         });
@@ -461,6 +472,23 @@ nb_bubble_editor.clean_html = function (html) {
 }
 
 /* selection helpers */
+
+// the last selection inside each editor, so keyboard use of a toolbar can return to it
+nb_bubble_editor.remember_range = function () {
+    const ed = nb_bubble_editor.editor_for_selection();
+    if (ed) {
+        ed._nb_bubble.range = window.getSelection().getRangeAt(0).cloneRange();
+    }
+}
+
+// focus ed again with its last selection (after a toolbar button was used from the keyboard)
+nb_bubble_editor.refocus = function (ed) {
+    ed.focus();
+    const range = ed._nb_bubble && ed._nb_bubble.range;
+    if (range && ed.contains(range.startContainer) && ed.contains(range.endContainer)) {
+        nb_bubble_editor.select(range);
+    }
+}
 
 nb_bubble_editor.in_toolbar = function (el) {
     return !!(el && nb_bubble_editor.toolbar && nb_bubble_editor.toolbar.contains(el));
@@ -750,18 +778,34 @@ nb_bubble_editor.get_toolbar = function () {
     }
     const tb = tpl.content.firstElementChild.cloneNode(true);
     // mousedown + preventDefault keeps focus (and the selection) in the editor
-    tb.addEventListener('mousedown', (e) => {
-        const btn = e.target.closest('[data-nb-bubble-name]');
+    const act = (target) => {
+        const btn = target.closest('[data-nb-bubble-name]');
         if (btn) {
-            e.preventDefault();
             nb_bubble_editor.exec(btn.dataset.nbBubbleName);
-        } else if (e.target.closest('[data-nb-bubble-remove]')) {
-            e.preventDefault();
+        } else if (target.closest('[data-nb-bubble-remove]')) {
             nb_bubble_editor.close_prompt(null, true);
-        } else if (e.target.closest('[data-nb-bubble-cancel]')) {
-            e.preventDefault();
+        } else if (target.closest('[data-nb-bubble-cancel]')) {
             nb_bubble_editor.close_prompt(null);
+        } else {
+            return false;
         }
+        return true;
+    };
+    tb.addEventListener('mousedown', (e) => {
+        if (e.target.closest('button[type=button]')) {
+            e.preventDefault();
+            act(e.target);
+        }
+    });
+    // keyboard (Enter/Space on a focused button): back to the editor's selection first
+    tb.addEventListener('click', (e) => {
+        if (e.detail !== 0 || !e.target.closest('button[type=button]')) {
+            return;
+        }
+        if (e.target.closest('[data-nb-bubble-name]') && nb_bubble_editor.current) {
+            nb_bubble_editor.refocus(nb_bubble_editor.current);
+        }
+        act(e.target);
     });
     const form = tb.querySelector('[data-nb-bubble-prompt]');
     const input = form.querySelector('input');

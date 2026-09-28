@@ -353,6 +353,7 @@ async function inline_page(page, fields, extra = '') {
     };
     nb_bubble_editor.enabled = () => true;
     window.saved = [];
+    window.real_save_resource = nb_edit.save_resource;
     nb_edit.save_resource = (ed) => { window.saved.push(ed.innerHTML); };
     window.real_open_insert_media = nb_edit.open_insert_media;
     nb_edit.open_insert_media = () => { window.media_opened = nb_edit.active_editor.dataset.nbEdit; };
@@ -542,4 +543,68 @@ test('the bubble stays clear of a Nimbly bar docked on the left', async ({ page 
   await expect(toolbar(page)).toBeVisible();
   const left = await toolbar(page).evaluate((el) => el.getBoundingClientRect().left);
   expect(left).toBeGreaterThanOrEqual(248);
+});
+
+/* keyboard access */
+
+test('alt+f10 moves to the bar, enter applies a button to the selection, escape returns', async ({ page }) => {
+  await inline_page(page, `<div style="height:120px"></div><div data-nb-edit="pages.p1.body.en" data-nb-edit-options='{"buttons":"bold,italic"}'><p>Hello world</p></div>`);
+  const ed = page.locator('[data-nb-edit]');
+  await select_text(page, 'world');
+  await page.keyboard.press('Alt+F10');
+  await expect(bar(page).getByRole('button', { name: 'Bold' })).toBeFocused();
+  await page.keyboard.press('Enter');
+  expect(await ed.innerHTML()).toBe('<p>Hello <b>world</b></p>');
+  await expect(bar(page)).toBeVisible();
+  await page.keyboard.press('Alt+F10');
+  await page.keyboard.press('Tab');
+  await expect(bar(page).getByRole('button', { name: 'Italic' })).toBeFocused();
+  await page.keyboard.press('Space');
+  expect(await ed.innerHTML()).toBe('<p>Hello <b><i>world</i></b></p>');
+  await page.keyboard.press('Alt+F10');
+  await page.keyboard.press('Escape');
+  await expect(ed).toBeFocused();
+});
+
+test('keyboard focus leaving the floating bar hides it', async ({ page }) => {
+  await inline_page(page, `<div style="height:120px"></div><div data-nb-edit="pages.p1.body.en" data-nb-edit-options='{"buttons":"bold"}'><p>Hello</p></div><input id="other">`);
+  await page.locator('[data-nb-edit] p').click();
+  await page.keyboard.press('Alt+F10');
+  await page.evaluate(() => document.getElementById('other').focus());
+  await expect(bar(page)).toBeHidden();
+});
+
+test('button labels come from the template, so they can be translated', async ({ page }) => {
+  page.on('pageerror', (error) => { throw error; });
+  const tpl = (await toolbar_template()).replace('<span data-name="bold">Bold</span>', '<span data-name="bold">Vet</span>');
+  await page.setContent(`<form><div data-nb-edit="body" data-nb-edit-options='{"buttons":"bold"}'><p>Hallo wereld</p></div></form>` + tpl);
+  await load_scripts(page);
+  await page.evaluate(() => {
+    window.nb = { text: { medium_editor_placeholder: '' }, bubble_editor: window.nb_bubble_editor };
+    nb_bubble_editor.enabled = () => true;
+    nb_edit.init_editor(document.querySelector('[data-nb-edit]'), true);
+  });
+  await select_text(page, 'wereld');
+  await expect(button(page, 'Vet')).toBeVisible();
+});
+
+/* saving inline edits */
+
+test('a failed save reports the error and only creates the record when it does not exist', async ({ page }) => {
+  await inline_page(page, `<div data-nb-edit="pages.p1.body.en"><p>Hello</p></div>`);
+  const run = (put_result) => page.evaluate(async (put_result) => {
+    const calls = [];
+    window.nb.base_url = '';
+    window.nb.text.saved = 'Saved';
+    window.nb.notify = (m) => calls.push('notify:' + m);
+    window.nb.api = {
+      put: async () => { calls.push('put'); return put_result; },
+      post: async () => { calls.push('post'); return { success: true }; },
+    };
+    window.real_save_resource(document.querySelector('[data-nb-edit]'));
+    await new Promise((r) => setTimeout(r, 50));
+    return calls;
+  }, put_result);
+  expect(await run({ success: false, code: 422, message: 'INVALID_DATA' })).toEqual(['put', 'notify:INVALID_DATA']);
+  expect(await run({ success: false, code: 404, message: 'RESOURCE_NOT FOUND' })).toEqual(['put', 'post', 'notify:Saved']);
 });

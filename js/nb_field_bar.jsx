@@ -112,6 +112,18 @@ nb_field_bar.on_blur = function (e) {
 
 nb_field_bar.on_keydown = function (e) {
     const ed = e.currentTarget;
+    // Alt+F10: move to the field's toolbar (common editor convention)
+    if (e.altKey && e.key === 'F10') {
+        const bar = nb_field_bar.bar_for(ed);
+        const first = bar && Array.from(bar.querySelectorAll('button')).find((b) => {
+            return !b.disabled && b.getClientRects().length > 0;
+        });
+        if (first) {
+            e.preventDefault();
+            first.focus();
+        }
+        return;
+    }
     if ((e.metaKey || e.ctrlKey) && !e.altKey && !e.shiftKey && e.key.toLowerCase() === 's' && ed._nb_bar.save) {
         e.preventDefault();
         window.nb.edit.save();
@@ -125,6 +137,17 @@ nb_field_bar.create_bar = function () {
     }
     const bar = tpl.content.firstElementChild.cloneNode(true);
     // mousedown + preventDefault keeps focus (and the caret) in the field
+    const act = (target, ed) => {
+        const format = target.closest('[data-nb-bubble-name]');
+        if (format) {
+            window.nb.bubble_editor.exec(format.dataset.nbBubbleName, ed);
+            nb_field_bar.update_states();
+        } else if (target.closest('[data-nb-bar-media]')) {
+            window.nb.edit.open_insert_media();
+        } else if (target.closest('[data-nb-bar-save]')) {
+            window.nb.edit.save();
+        }
+    };
     bar.addEventListener('mousedown', (e) => {
         const ed = bar._nb_editor || nb_field_bar.current;
         if (!ed || !e.target.closest('button')) {
@@ -132,15 +155,39 @@ nb_field_bar.create_bar = function () {
         }
         e.preventDefault();
         nb_field_bar.focus_editor(ed);
-        const format = e.target.closest('[data-nb-bubble-name]');
-        if (format) {
-            window.nb.bubble_editor.exec(format.dataset.nbBubbleName, ed);
-            nb_field_bar.update_states();
-        } else if (e.target.closest('[data-nb-bar-media]')) {
-            window.nb.edit.open_insert_media();
-        } else if (e.target.closest('[data-nb-bar-save]')) {
-            window.nb.edit.save();
+        act(e.target, ed);
+    });
+    // keyboard (Enter/Space on a focused button): back to the field's last selection first
+    bar.addEventListener('click', (e) => {
+        const ed = bar._nb_editor || nb_field_bar.current;
+        if (e.detail !== 0 || !ed || !e.target.closest('button')) {
+            return;
         }
+        if (ed._nb_bubble) {
+            window.nb.bubble_editor.refocus(ed);
+        } else {
+            ed.focus();
+        }
+        act(e.target, ed);
+    });
+    bar.addEventListener('keydown', (e) => {
+        const ed = bar._nb_editor || nb_field_bar.current;
+        if (e.key === 'Escape' && ed) {
+            e.preventDefault();
+            if (ed._nb_bubble) {
+                window.nb.bubble_editor.refocus(ed);
+            } else {
+                ed.focus();
+            }
+        }
+    });
+    // the floating bar goes away when keyboard focus leaves both bar and field
+    bar.addEventListener('focusout', (e) => {
+        const ed = nb_field_bar.current;
+        if (bar._nb_editor || !ed || nb_field_bar.in_bar(e.relatedTarget) || e.relatedTarget === ed) {
+            return;
+        }
+        nb_field_bar.hide();
     });
     return bar;
 }
