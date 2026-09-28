@@ -195,7 +195,7 @@ const alpine_media_insert = function () {
         img_aspect >= 1.0
           ? "nb_media_insert_img_landscape_tpl"
           : "nb_media_insert_img_portrait_tpl";
-      return nb.populate_template(tpl_name, {
+      const html = nb.populate_template(tpl_name, {
         uuid: this.file_info.uuid,
         width: this.file_info.width,
         height: this.file_info.height,
@@ -204,6 +204,16 @@ const alpine_media_insert = function () {
         srcset: srcset.join(", "),
         alt: this._html_escape(this.resolve_title()),
       });
+      if (this.file_info.width && this.file_info.height) {
+        return html;
+      }
+      // no stored dimensions: leave sizing to the image itself
+      const tpl = document.createElement("template");
+      tpl.innerHTML = html.trim();
+      tpl.content.querySelectorAll("img").forEach((img) => {
+        ["width", "height", "style"].forEach((attr) => img.removeAttribute(attr));
+      });
+      return tpl.innerHTML;
     },
     set_media() {
       if (this._file_info_changed()) {

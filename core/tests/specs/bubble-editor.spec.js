@@ -407,3 +407,52 @@ test('the field stays the insert target while picking media', async ({ page }) =
   await page.evaluate(() => { nb_edit.restore_caret_pos(); nb_edit.insert_html('<img src="/img/x/480w" alt="X">'); });
   expect(await page.locator('[data-nb-edit]').innerHTML()).toBe('<p>Hello<img src="/img/x/480w" alt="X"></p>');
 });
+
+/* inserting block content at the caret */
+
+async function insert_at(page, html_before, text, offset, insert) {
+  const ed = await editor_page(page, {}, html_before);
+  await page.evaluate(([text, offset, insert]) => {
+    const ed = document.querySelector('[data-nb-edit]');
+    const walker = document.createTreeWalker(ed, NodeFilter.SHOW_TEXT);
+    while (walker.nextNode()) {
+      if (walker.currentNode.textContent.includes(text)) {
+        ed.focus();
+        const r = document.createRange();
+        r.setStart(walker.currentNode, walker.currentNode.textContent.indexOf(text) + offset);
+        r.collapse(true);
+        getSelection().removeAllRanges();
+        getSelection().addRange(r);
+        break;
+      }
+    }
+    nb_edit.active_editor = ed;
+    nb_edit.insert_html(insert);
+  }, [text, offset, insert]);
+  return ed;
+}
+
+const figure = '<figure><img src="/img/x/480w" alt="X"></figure>';
+
+test('a figure inserted mid-paragraph splits the paragraph', async ({ page }) => {
+  const ed = await insert_at(page, '<p>Hello world</p>', 'Hello', 5, figure);
+  expect(await ed.innerHTML()).toBe('<p>Hello</p>' + figure + '<p> world</p>');
+  expect(await page.evaluate(() => window.changes.at(-1))).toBe(await ed.innerHTML());
+});
+
+test('a figure inserted at the end leaves an empty paragraph to keep typing in', async ({ page }) => {
+  const ed = await insert_at(page, '<p>Hello</p>', 'Hello', 5, figure);
+  expect(await ed.innerHTML()).toBe('<p>Hello</p>' + figure + '<p><br></p>');
+  await page.keyboard.type('Next');
+  expect(await ed.innerHTML()).toBe('<p>Hello</p>' + figure + '<p>Next</p>');
+});
+
+test('a figure inserted at the start replaces nothing and keeps the text after it', async ({ page }) => {
+  const ed = await insert_at(page, '<p>Hello</p>', 'Hello', 0, figure);
+  expect(await ed.innerHTML()).toBe(figure + '<p>Hello</p>');
+});
+
+test('splitting inside bold keeps the formatting on both sides', async ({ page }) => {
+  const ed = await insert_at(page, '<p><b>Hello world</b></p>', 'Hello', 5, figure);
+  expect(await ed.innerHTML()).toBe('<p><b>Hello</b></p>' + figure + '<p><b> world</b></p>');
+});

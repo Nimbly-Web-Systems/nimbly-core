@@ -74,7 +74,7 @@ window.nb.populate_template = function (tpl_id, data) {
         return '';
     }
     var result = tpl_el.innerHTML;
-    for (v in data) {
+    for (const v in data) {
         const re = new RegExp('\\{\\{' + v + '\\}\\}', 'g')
         result = result.replace(re, data[v]);
     }

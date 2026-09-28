@@ -350,31 +350,63 @@ nb_edit.create_range = function (n, start, stop) {
     return range;
 }
 
+// elements that cannot live inside a paragraph
+nb_edit.block_tags = ['FIGURE', 'DIV', 'VIDEO', 'TABLE', 'P', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6',
+    'UL', 'OL', 'BLOCKQUOTE', 'PRE', 'HR', 'SECTION', 'ASIDE'];
+// text blocks a block insert may split at the caret
+nb_edit.split_tags = 'p, h1, h2, h3, h4, h5, h6, blockquote, pre';
+
 nb_edit.insert_html = function (html) {
     if (!this.active_editor) {
         return;
     }
     const editor = this.active_editor;
-    var sel = window.getSelection();
-    var range = sel.getRangeAt(0);
+    const sel = window.getSelection();
+    let range = sel.getRangeAt(0);
     range.deleteContents();
-    var el = document.createElement('div');
-    el.innerHTML = html;
-    var frag = document.createDocumentFragment();
-    var lastNode = false;
-    while ((node = el.firstChild)) {
-        lastNode = frag.appendChild(node);
+    const el = document.createElement('div');
+    el.innerHTML = html.trim();
+    const nodes = Array.from(el.childNodes);
+    if (nodes.length === 0) {
+        return;
     }
-    range.insertNode(frag);
+    const is_block = nodes.some((n) => { return n.nodeType === Node.ELEMENT_NODE && nb_edit.block_tags.includes(n.tagName); });
+    const start = range.startContainer.nodeType === Node.ELEMENT_NODE ? range.startContainer : range.startContainer.parentElement;
+    const block = is_block ? start.closest(nb_edit.split_tags) : null;
 
-    // preserve selection
-    if (lastNode) {
+    let caret_node = null;
+    if (block && block !== editor && editor.contains(block)) {
+        // split the paragraph at the caret and put the block content between the halves
+        const tail_range = document.createRange();
+        tail_range.setStart(range.startContainer, range.startOffset);
+        tail_range.setEnd(block, block.childNodes.length);
+        const after = block.cloneNode(false);
+        after.append(tail_range.extractContents());
+        block.after(...nodes, after);
+        if (nb_edit.is_empty_block(block)) {
+            block.remove();
+        }
+        if (nb_edit.is_empty_block(after)) {
+            // somewhere to keep typing below the inserted block
+            const p = document.createElement('p');
+            p.append(document.createElement('br'));
+            after.replaceWith(p);
+            caret_node = p;
+        } else {
+            caret_node = after;
+        }
+        range = document.createRange();
+        range.setStart(caret_node, 0);
+    } else {
+        const frag = document.createDocumentFragment();
+        frag.append(...nodes);
+        range.insertNode(frag);
         range = range.cloneRange();
-        range.setStartAfter(lastNode);
-        range.collapse(true);
-        sel.removeAllRanges();
-        sel.addRange(range);
+        range.setStartAfter(nodes[nodes.length - 1]);
     }
+    range.collapse(true);
+    sel.removeAllRanges();
+    sel.addRange(range);
 
     if (editor._nb_mode === 'form') {
         editor.dispatchEvent(new CustomEvent('nb:editor-change', {
@@ -384,7 +416,14 @@ nb_edit.insert_html = function (html) {
     } else {
         this.on_input({ currentTarget: editor });
     }
+    if (editor._nb_bubble && window.nb.bubble_editor) {
+        window.nb.bubble_editor.update_empty(editor);
+    }
 };
+
+nb_edit.is_empty_block = function (el) {
+    return el.textContent.replace(/\u00a0/g, ' ').trim() === '' && !el.querySelector('img, video, iframe, figure, hr');
+}
 
 nb_edit.set_img = function (eimg, data) {
     const old_uuid = eimg.dataset.nbEditImgValue;
