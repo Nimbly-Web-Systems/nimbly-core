@@ -464,3 +464,18 @@ test('splitting inside bold keeps the formatting on both sides', async ({ page }
   const ed = await insert_at(page, '<p><b>Hello world</b></p>', 'Hello', 5, figure);
   expect(await ed.innerHTML()).toBe('<p><b>Hello</b></p>' + figure + '<p><b> world</b></p>');
 });
+
+test('the bubble stays clear of a Nimbly bar docked on the left', async ({ page }) => {
+  await editor_page(page, { buttons: 'h2,h3,bold,italic,orderedlist,unorderedlist,quote,anchor' }, '<p>Hi there</p>');
+  await page.evaluate(() => {
+    document.body.style.margin = '0';
+    const bar = document.createElement('nav');
+    bar.id = 'nb-bar';
+    bar.style.cssText = 'position:fixed;left:0;top:0;width:240px;height:100vh;';
+    document.body.prepend(bar);
+  });
+  await select_text(page, 'Hi');
+  await expect(toolbar(page)).toBeVisible();
+  const left = await toolbar(page).evaluate((el) => el.getBoundingClientRect().left);
+  expect(left).toBeGreaterThanOrEqual(248);
+});

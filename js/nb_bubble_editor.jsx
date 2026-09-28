@@ -686,6 +686,24 @@ nb_bubble_editor.hide = function () {
     nb_bubble_editor.current = null;
 }
 
+// horizontal room for floating toolbars: the viewport minus a vertical Nimbly bar docked left or right
+nb_bubble_editor.content_bounds = function (gap) {
+    let left = gap;
+    let right = window.innerWidth - gap;
+    const nb_bar = document.getElementById('nb-bar');
+    if (nb_bar) {
+        const r = nb_bar.getBoundingClientRect();
+        if (r.height > r.width && r.width > 0) {
+            if (r.left <= 0) {
+                left = Math.max(left, r.right + gap);
+            } else {
+                right = Math.min(right, r.left - gap);
+            }
+        }
+    }
+    return { left: left, right: right };
+}
+
 nb_bubble_editor.position = function () {
     const tb = nb_bubble_editor.toolbar;
     const sel = window.getSelection();
@@ -709,8 +727,9 @@ nb_bubble_editor.position = function () {
         top = rect.bottom + gap;
     }
     const center = rect.left + rect.width / 2;
+    const bounds = nb_bubble_editor.content_bounds(gap);
     let left = center - w / 2;
-    left = Math.max(gap, Math.min(left, window.innerWidth - w - gap));
+    left = Math.max(bounds.left, Math.min(left, bounds.right - w));
     tb.style.top = top + 'px';
     tb.style.left = left + 'px';
     // arrow points at the middle of the selection, kept clear of the rounded corners

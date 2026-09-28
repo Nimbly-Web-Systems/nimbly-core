@@ -251,8 +251,9 @@ nb_field_bar.position = function () {
     bar.classList.toggle('nb-field-bar-pinned', top === gap);
     bar.style.visibility = rect.bottom < 0 || rect.top > window.innerHeight ? 'hidden' : '';
     bar.style.top = top + 'px';
-    bar.style.left = Math.max(gap, rect.left) + 'px';
-    bar.style.maxWidth = (window.innerWidth - 2 * gap) + 'px';
+    const bounds = window.nb.bubble_editor.content_bounds(gap);
+    bar.style.left = Math.max(bounds.left, rect.left) + 'px';
+    bar.style.maxWidth = (bounds.right - bounds.left) + 'px';
 }
 
 // bottom edge of the active field's bar (the bubble keeps clear of it)
