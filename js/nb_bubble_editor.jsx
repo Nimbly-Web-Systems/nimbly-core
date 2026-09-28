@@ -6,9 +6,11 @@
 //
 // Buttons are registered by name; a field's `buttons` option (resource .meta)
 // picks which ones it shows. Each button carries its own behaviour:
-//   { label, icon, shortcut?, run(ctx), is_active(ctx)?, prompt?, apply(ctx, value)? }
+//   { label, icon, shortcut?, insert?, run(ctx), is_active(ctx)?, prompt?, apply(ctx, value)? }
+// `insert: true` puts a button in the field bar's insert group (next to Media)
+// instead of with the formatting buttons and the bubble.
 // Most buttons are built from a kind (command, block, list, wrap, insert,
-// link). Applications add buttons declaratively in the `bubble-editor-buttons`
+// event, link). Applications add buttons declaratively in the `bubble-editor-buttons`
 // template (JSON, see core/tpl/bubble-editor-buttons) or from script with
 // nb.bubble_editor.register(name, definition).
 
@@ -136,6 +138,17 @@ nb_bubble_editor.kinds = {
         run: () => { nb_bubble_editor.doc.insert_html(def.html); },
         is_active: () => false
     }),
+    // hands over to application code: fires def.event on the field (bubbling), e.g. to open a picker;
+    // def.active is an optional selector that marks the button active when the caret is inside a match
+    event: (def) => ({
+        run: (ctx) => {
+            ctx.editor.dispatchEvent(new CustomEvent(def.event, {
+                bubbles: true,
+                detail: { editor: ctx.editor, range: ctx.range }
+            }));
+        },
+        is_active: (ctx) => def.active ? nb_bubble_editor.closest(ctx, def.active) !== null : false
+    }),
     // asks for a URL; on an existing link it edits that link (the whole link, prefilled)
     link: (def) => ({
         prompt: {
@@ -246,6 +259,10 @@ nb_bubble_editor.init = function (ed, options) {
     nb_bubble_editor.load_declared_buttons();
     ed._nb_bubble = {
         buttons: options.buttons.filter((name) => { return nb_bubble_editor.buttons[name]; }),
+        // the bubble formats a selection; insert-at-caret buttons live in the field bar only
+        bubble_buttons: options.buttons.filter((name) => {
+            return nb_bubble_editor.buttons[name] && !nb_bubble_editor.buttons[name].insert;
+        }),
         paste_html: options.paste_html === true,
         as_form_field: options.as_form_field === true,
         handlers: {
@@ -578,6 +595,7 @@ nb_bubble_editor.exec = function (name, ed) {
         return;
     }
     button.run(nb_bubble_editor.context(name));
+    nb_bubble_editor.remember_range(); // the DOM changed: don't wait for selectionchange
     nb_bubble_editor.update();
 }
 
@@ -836,7 +854,7 @@ nb_bubble_editor.render_buttons = function (ed) {
     const container = tb.querySelector('[data-nb-bubble-buttons]');
     const button_tpl = document.getElementById('nb_bubble_button');
     container.innerHTML = '';
-    ed._nb_bubble.buttons.forEach((name) => {
+    ed._nb_bubble.bubble_buttons.forEach((name) => {
         const button = nb_bubble_editor.buttons[name];
         const btn = button_tpl.content.firstElementChild.cloneNode(true);
         btn.dataset.nbBubbleName = name;
@@ -854,7 +872,7 @@ nb_bubble_editor.update = function () {
     const ed = nb_bubble_editor.editor_for_selection();
     const sel = window.getSelection();
     const tb = ed ? nb_bubble_editor.get_toolbar() : nb_bubble_editor.toolbar;
-    if (!tb || !ed || sel.isCollapsed || nb_bubble_editor.pointer_down || ed._nb_bubble.buttons.length === 0) {
+    if (!tb || !ed || sel.isCollapsed || nb_bubble_editor.pointer_down || ed._nb_bubble.bubble_buttons.length === 0) {
         if (!nb_bubble_editor.in_toolbar(document.activeElement)) {
             nb_bubble_editor.hide();
         }

@@ -608,3 +608,27 @@ test('a failed save reports the error and only creates the record when it does n
   expect(await run({ success: false, code: 422, message: 'INVALID_DATA' })).toEqual(['put', 'notify:INVALID_DATA']);
   expect(await run({ success: false, code: 404, message: 'RESOURCE_NOT FOUND' })).toEqual(['put', 'post', 'notify:Saved']);
 });
+
+test('an app insert button fires its event from the field bar and stays out of the bubble', async ({ page }) => {
+  const ed = await editor_page(page, { buttons: 'bold,pin' }, '<p>Hello <a data-pin="p1">Paris</a> world</p>', 'div', {
+    pin: { kind: 'event', event: 'nb:insert-pin', insert: true, active: '[data-pin]', label: 'Pin', icon: '<i>P</i>' },
+  });
+  await page.evaluate(() => {
+    window.nb.field_bar = window.nb_field_bar; window.nb.edit = window.nb_edit;
+    nb_field_bar.attach(document.querySelector('[data-nb-edit]'), { buttons: ['bold', 'pin'], docked: true });
+    window.pins = [];
+    document.addEventListener('nb:insert-pin', (e) => window.pins.push(e.detail.editor.dataset.nbEdit + ':' + e.detail.range.collapsed));
+  });
+  const docked = page.locator('.nb-field-bar-docked');
+  const pin = docked.locator('[data-nb-bar-insert] [data-nb-bubble-name="pin"]');
+  await expect(pin).toHaveText('PPin'); // icon + label
+  await expect(docked.locator('[data-nb-bar-format] [data-nb-bubble-name]')).toHaveCount(1);
+  await select_text(page, 'world');
+  await expect(toolbar(page).locator('[data-nb-bubble-name]')).toHaveCount(1); // only bold in the bubble
+  await page.evaluate(() => getSelection().collapseToEnd());
+  await pin.click();
+  expect(await page.evaluate(() => window.pins)).toEqual(['body:true']);
+  await select_text(page, 'Paris');
+  await page.evaluate(() => getSelection().collapseToStart());
+  await expect(pin).toHaveAttribute('aria-pressed', 'true');
+});

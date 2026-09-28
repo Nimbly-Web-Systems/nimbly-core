@@ -238,11 +238,16 @@ nb_field_bar.hide = function () {
 
 nb_field_bar.render = function (ed, bar) {
     const config = ed._nb_bar;
+    const registry = window.nb.bubble_editor.buttons;
     const format = bar.querySelector('[data-nb-bar-format]');
+    const insert = bar.querySelector('[data-nb-bar-insert]');
     const button_tpl = document.getElementById('nb_bubble_button');
     format.innerHTML = '';
-    config.buttons.forEach((name) => {
-        const button = window.nb.bubble_editor.buttons[name];
+    insert.querySelectorAll('[data-nb-bubble-name]').forEach((btn) => { btn.remove(); });
+    const format_names = config.buttons.filter((name) => { return !registry[name].insert; });
+    const insert_names = config.buttons.filter((name) => { return registry[name].insert; });
+    format_names.forEach((name) => {
+        const button = registry[name];
         const btn = button_tpl.content.firstElementChild.cloneNode(true);
         btn.dataset.nbBubbleName = name;
         btn.setAttribute('aria-label', button.label);
@@ -250,8 +255,20 @@ nb_field_bar.render = function (ed, bar) {
         btn.innerHTML = button.icon;
         format.appendChild(btn);
     });
-    format.classList.toggle('hidden', config.buttons.length === 0);
-    bar.querySelector('[data-nb-bar-insert]').classList.toggle('hidden', !config.media);
+    // insert-at-caret buttons: icon and label, like Media
+    insert_names.forEach((name) => {
+        const button = registry[name];
+        const btn = button_tpl.content.firstElementChild.cloneNode(true);
+        btn.classList.remove('btn-square');
+        btn.classList.add('gap-1.5');
+        btn.dataset.nbBubbleName = name;
+        btn.innerHTML = button.icon;
+        btn.append(document.createTextNode(button.label));
+        insert.appendChild(btn);
+    });
+    format.classList.toggle('hidden', format_names.length === 0);
+    insert.querySelector('[data-nb-bar-media]').classList.toggle('hidden', !config.media);
+    insert.classList.toggle('hidden', !config.media && insert_names.length === 0);
     bar.querySelector('[data-nb-bar-save]').classList.toggle('hidden', !config.save);
 }
 
