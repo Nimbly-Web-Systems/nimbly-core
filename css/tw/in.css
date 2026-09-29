@@ -264,39 +264,69 @@ form .nb-field-box [data-nb-edit][data-nb-edit-focused] {
   padding: inherit;
 }
 
-/* page actions (core/tpl/page-actions): one pill with the page's controls, top of the screen */
+/* page actions (core/tpl/page-actions): one pill with the page's controls, docked in a corner */
 .nb-page-actions {
-  @apply fixed top-4 z-[1030] rounded-md shadow-md;
+  @apply fixed z-[1030] rounded-md shadow-md;
 }
 
 .nb-page-actions.hidden {
   @apply hidden;
 }
 
-.nb-page-action:not(.btn-primary) {
+.nb-page-action:not(.btn-primary),
+.nb-page-actions-grip {
   @apply bg-base-100 border-base-300;
 }
 
-.nb-page-action:not(.btn-primary):hover {
+.nb-page-action:not(.btn-primary):hover,
+.nb-page-actions-grip:hover {
   @apply bg-base-200;
 }
 
-/* the open chat panel keeps clear of the pill (both sit on the side opposite the Nimbly bar) */
+.nb-page-actions-grip {
+  @apply cursor-grab touch-none text-base-content/50;
+}
+
+.nb-page-actions-dragging {
+  @apply shadow-xl;
+}
+
+.nb-page-actions-dragging .nb-page-actions-grip {
+  @apply cursor-grabbing;
+}
+
+/* docked above the chat button: out of the way while the chat is open */
+body:has(#agent-chat > section:not([style*="none"])) .nb-page-actions[data-over-chat] {
+  @apply hidden;
+}
+
+/* docked at the top on the chat side: the open chat panel keeps clear of it */
 @media (min-width: 768px) {
-  body:has(#nb-page-actions:not(.hidden)) #agent-chat > section {
+  body:has(.nb-page-actions[data-above-chat-panel]:not(.hidden)) #agent-chat > section {
     max-height: calc(100vh - 9rem);
   }
 }
 
-/* tooltips: small and plain, below the pill, aligned to its outer edge so they stay on the page */
+/* tooltips: small and plain, towards the page (below at the top, above at the bottom, inward) */
 .nb-page-actions .tooltip[data-tip]::before {
   @apply text-xs font-normal;
-  inset: var(--tt-off) 0 auto auto;
-  transform: translateY(var(--tt-pos, -0.25rem));
+  transform: translateY(var(--tt-pos, 0));
 }
 
-.nb-page-actions.left-4 .tooltip[data-tip]::before {
+.nb-page-actions[data-corner="top-right"] .tooltip[data-tip]::before {
+  inset: var(--tt-off) 0 auto auto;
+}
+
+.nb-page-actions[data-corner="top-left"] .tooltip[data-tip]::before {
   inset: var(--tt-off) auto auto 0;
+}
+
+.nb-page-actions[data-corner="bottom-right"] .tooltip[data-tip]::before {
+  inset: auto 0 var(--tt-off) auto;
+}
+
+.nb-page-actions[data-corner="bottom-left"] .tooltip[data-tip]::before {
+  inset: auto auto var(--tt-off) 0;
 }
 
 .nb-page-actions .tooltip::after {
