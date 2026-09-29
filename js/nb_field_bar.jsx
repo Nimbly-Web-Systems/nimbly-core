@@ -120,6 +120,9 @@ nb_field_bar.on_keydown = function (e) {
         });
         if (first) {
             e.preventDefault();
+            if (ed._nb_bubble) {
+                window.nb.bubble_editor.remember_range(); // before focus leaves the field (Safari)
+            }
             first.focus();
         }
         return;
@@ -148,19 +151,22 @@ nb_field_bar.create_bar = function () {
             window.nb.edit.save();
         }
     };
+    let pointer = false; // the mouse handled this press; a click without it came from the keyboard
     bar.addEventListener('mousedown', (e) => {
         const ed = bar._nb_editor || nb_field_bar.current;
         if (!ed || !e.target.closest('button')) {
             return;
         }
         e.preventDefault();
+        pointer = true;
         nb_field_bar.focus_editor(ed);
         act(e.target, ed);
     });
     // keyboard (Enter/Space on a focused button): back to the field's last selection first
     bar.addEventListener('click', (e) => {
         const ed = bar._nb_editor || nb_field_bar.current;
-        if (e.detail !== 0 || !ed || !e.target.closest('button')) {
+        if (pointer || !ed || !e.target.closest('button')) {
+            pointer = false;
             return;
         }
         if (ed._nb_bubble) {

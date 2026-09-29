@@ -29,36 +29,20 @@ var nb_bubble_editor = {
 // reimplemented (e.g. with Range/DOM code) without touching anything else.
 // execCommand is kept for now because it gives native undo/redo.
 nb_bubble_editor.doc = {
-    inline: (command) => {
-        document.execCommand(command);
-        // Chrome writes the obsolete <strike>; store <s>
-        const ed = nb_bubble_editor.current;
-        if (command === 'strikeThrough' && ed && ed.querySelector('strike')) {
-            const sel = window.getSelection();
-            const r = sel.rangeCount > 0 ? sel.getRangeAt(0) : null;
-            const bounds = r ? [r.startContainer, r.startOffset, r.endContainer, r.endOffset] : null;
-            ed.querySelectorAll('strike').forEach((el) => {
-                const s = document.createElement('s');
-                s.append(...el.childNodes);
-                el.replaceWith(s);
-            });
-            if (bounds) {
-                const range = document.createRange();
-                range.setStart(bounds[0], bounds[1]);
-                range.setEnd(bounds[2], bounds[3]);
-                nb_bubble_editor.select(range);
-            }
-            nb_bubble_editor.changed();
-        }
+    // run a command, then undo browser quirks in what it wrote
+    exec: (command, value) => {
+        document.execCommand(command, false, value);
+        nb_bubble_editor.doc.tidy();
     },
+    inline: (command) => { nb_bubble_editor.doc.exec(command); },
     inline_active: (command) => document.queryCommandState(command),
-    block: (tag) => { document.execCommand('formatBlock', false, '<' + tag + '>'); },
+    block: (tag) => { nb_bubble_editor.doc.exec('formatBlock', '<' + tag + '>'); },
     current_block: () => document.queryCommandValue('formatBlock').toLowerCase(),
-    list: (command) => { document.execCommand(command); },
+    list: (command) => { nb_bubble_editor.doc.exec(command); },
     list_active: (command) => document.queryCommandState(command),
-    insert_html: (html) => { document.execCommand('insertHTML', false, html); },
-    link: (url) => { document.execCommand('createLink', false, url); },
-    unlink: () => { document.execCommand('unlink'); },
+    insert_html: (html) => { nb_bubble_editor.doc.exec('insertHTML', html); },
+    link: (url) => { nb_bubble_editor.doc.exec('createLink', url); },
+    unlink: () => { nb_bubble_editor.doc.exec('unlink'); },
     paragraph_separator: (tag) => { document.execCommand('defaultParagraphSeparator', false, tag); },
     // Chrome's insertHTML drops inline wrappers such as <mark>/<span>, so
     // wrapping is plain DOM work (not part of native undo)
@@ -92,6 +76,40 @@ nb_bubble_editor.doc = {
         nb_bubble_editor.changed();
     }
 };
+
+// Browser quirks in what editing commands write, fixed in place (keeping the selection):
+// Chrome writes the obsolete <strike> (store <s>); Safari copies computed styles into
+// the content as <span style="-webkit-..."> wrappers (unwrap them).
+nb_bubble_editor.doc.tidy = function () {
+    const ed = nb_bubble_editor.current;
+    if (!ed) {
+        return;
+    }
+    const strikes = Array.from(ed.querySelectorAll('strike'));
+    const style_spans = Array.from(ed.querySelectorAll('span[style]')).filter((span) => {
+        return span.attributes.length === 1 && span.style.length > 0
+            && Array.from(span.style).every((prop) => { return prop.startsWith('-webkit-'); });
+    });
+    if (strikes.length === 0 && style_spans.length === 0) {
+        return;
+    }
+    const sel = window.getSelection();
+    const r = sel.rangeCount > 0 ? sel.getRangeAt(0) : null;
+    const bounds = r ? [r.startContainer, r.startOffset, r.endContainer, r.endOffset] : null;
+    strikes.forEach((el) => {
+        const s = document.createElement('s');
+        s.append(...el.childNodes);
+        el.replaceWith(s);
+    });
+    style_spans.forEach((span) => { span.replaceWith(...span.childNodes); });
+    if (bounds && bounds[0].isConnected && bounds[2].isConnected) {
+        const range = document.createRange();
+        range.setStart(bounds[0], bounds[1]);
+        range.setEnd(bounds[2], bounds[3]);
+        nb_bubble_editor.select(range);
+    }
+    nb_bubble_editor.changed();
+}
 
 // let the editor's input handling know about a change made outside the browser's editing commands
 nb_bubble_editor.changed = function () {
@@ -341,6 +359,7 @@ nb_bubble_editor.on_focus = function (e) {
 }
 
 nb_bubble_editor.on_blur = function (e) {
+    nb_bubble_editor.remember_range(); // the selection as it was when focus left the field
     if (nb_bubble_editor.in_toolbar(e.relatedTarget)) {
         return;
     }
@@ -807,15 +826,18 @@ nb_bubble_editor.get_toolbar = function () {
         }
         return true;
     };
+    let pointer = false; // the mouse handled this press; a click without it came from the keyboard
     tb.addEventListener('mousedown', (e) => {
         if (e.target.closest('button[type=button]')) {
             e.preventDefault();
+            pointer = true;
             act(e.target);
         }
     });
     // keyboard (Enter/Space on a focused button): back to the editor's selection first
     tb.addEventListener('click', (e) => {
-        if (e.detail !== 0 || !e.target.closest('button[type=button]')) {
+        if (pointer || !e.target.closest('button[type=button]')) {
+            pointer = false;
             return;
         }
         if (e.target.closest('[data-nb-bubble-name]') && nb_bubble_editor.current) {
