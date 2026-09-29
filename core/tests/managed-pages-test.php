@@ -110,6 +110,18 @@ managed_pages_test_assert(!managed_pages_feature_enabled(), 'Disabled custom pag
 managed_pages_test_assert(managed_pages_default_creation_type() === null, 'Disabled custom pages still allowed page creation.');
 managed_pages_test_assert(managed_pages_run('nl/campaign') === false, 'Disabled custom pages still resolved through the router fallback.');
 $GLOBALS['test_records']['.config']['managed_pages']['enabled'] = true;
+// a site without a languages setting is 'en', like the rest of core: custom pages stay on
+$saved_site = $GLOBALS['test_records']['.config']['site'];
+$saved_areas = $GLOBALS['test_records']['.config']['managed_pages']['url_areas'] ?? null;
+unset($GLOBALS['test_records']['.config']['site']['languages']);
+$GLOBALS['test_records']['.config']['managed_pages']['url_areas'] = ['enabled' => [], 'include_site_languages' => true, 'allow_unprefixed' => true];
+managed_pages_test_assert(managed_pages_enabled() === true, 'Custom pages switched off on a site without a languages setting.');
+$GLOBALS['test_records']['.config']['site'] = $saved_site;
+if ($saved_areas === null) {
+    unset($GLOBALS['test_records']['.config']['managed_pages']['url_areas']);
+} else {
+    $GLOBALS['test_records']['.config']['managed_pages']['url_areas'] = $saved_areas;
+}
 
 $german_page = [
     'type' => 'default',

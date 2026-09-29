@@ -110,7 +110,8 @@ function managed_pages_url_config(): array
 {
     $config = managed_pages_url_areas();
     if (!empty($config['include_site_languages'])) {
-        $languages = data_lookup('.config', 'site', 'languages', []);
+        // same default as the rest of core: a site without languages is 'en'
+        $languages = data_lookup('.config', 'site', 'languages', ['en']);
         $enabled = is_array($config['enabled'] ?? null) ? $config['enabled'] : [];
         $config['enabled'] = array_values(array_unique(array_merge(
             $enabled,
