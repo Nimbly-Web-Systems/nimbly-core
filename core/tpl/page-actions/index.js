@@ -80,8 +80,8 @@ function nb_page_actions_dock(root) {
     }
     const w = root.offsetWidth;
     const h = root.offsetHeight;
-    const x = Math.max(0, Math.min(place.x * window.innerWidth, window.innerWidth - w));
-    const y = Math.max(0, Math.min(place.y * window.innerHeight, window.innerHeight - h));
+    const x = Math.max(a.left, Math.min(place.x * window.innerWidth, a.right - w));
+    const y = Math.max(0, Math.min(place.y * window.innerHeight, a.bottom - h));
     style.left = x + 'px';
     style.top = y + 'px';
     // tooltips open towards the page: the half of the screen the pill is in
@@ -137,11 +137,12 @@ function nb_page_actions_dock(root) {
     const rect = root.getBoundingClientRect();
     const dx = e.clientX - rect.left;
     const dy = e.clientY - rect.top;
+    const a = area(); // never under the Nimbly bar
     root.classList.add('nb-page-actions-dragging');
     const move = (ev) => {
       root.style.right = root.style.bottom = '';
-      root.style.left = Math.max(0, Math.min(ev.clientX - dx, window.innerWidth - rect.width)) + 'px';
-      root.style.top = Math.max(0, Math.min(ev.clientY - dy, window.innerHeight - rect.height)) + 'px';
+      root.style.left = Math.max(a.left, Math.min(ev.clientX - dx, a.right - rect.width)) + 'px';
+      root.style.top = Math.max(0, Math.min(ev.clientY - dy, a.bottom - rect.height)) + 'px';
     };
     const up = () => {
       grip.removeEventListener('pointermove', move);
