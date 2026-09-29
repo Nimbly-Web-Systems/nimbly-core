@@ -105,9 +105,15 @@ if ($command === 'agent:chat') {
     load_libraries(['agent-chat', 'agent-remote']);
     $until = time() + 3600;
     $started = time();
+    $env_file = BASE_DIR . '.env';
+    $env_changed = (int)@filemtime($env_file);
     do {
         // After a deploy, stop rather than mix old code in memory with new files; the scheduler starts a fresh worker.
+        // Likewise when .env changes (a key added), since settings are read once at startup.
         clearstatcache();
+        if ((int)@filemtime($env_file) !== $env_changed) {
+            exit(0);
+        }
         foreach (get_included_files() as $file) {
             if ((int)@filemtime($file) > $started) {
                 exit(0);
