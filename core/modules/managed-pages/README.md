@@ -16,7 +16,7 @@ Create `pages` and `.navigation` resources using the schemas required by the app
 Core always provides `default`, rendered by `managed-page-default`. A page-type definition uses the type ID as its key and provides `name`, `description`, and `template`. The admin field can use `options_library: managed-pages` and `options_function: managed_pages_type_options` to derive its choices from the merged configuration. Application definitions replace a Core definition when they use the same ID.
 
 Custom pages are disabled by default. Set `enabled` to `true` in
-`.config/managed_pages` (admins can use the switch on the Pages tab) to show Pages in the admin resource menu, allow page
+`.config/managed_pages` (admins use the switch in Admin > Settings) to show Pages in the admin resource menu, allow page
 creation, and enable the public router fallback. Disabling it preserves page
 records but stops their public addresses from resolving.
 
@@ -31,7 +31,7 @@ prefixes. Without the option, the declaration remains fixed. A resource schema
 may likewise set `"languages": "site"` to resolve its authoring languages from
 the site configuration; explicit language arrays retain their existing behavior.
 
-To keep the Pages overview, add and edit screens inside the admin tab bar, add `"admin_tab": "pages"` (and an `"admin_subtitle"` line, so the tab bar sits at the same height as on the other tabs) to the `pages` resource's `.meta`. Users with `manage-system` switch custom pages and navigation editing on or off, and choose the page types editors may use, in Admin > Settings. A switch only shows when there is something to switch on: a `pages` resource, or navigation slots. While a feature is off, its tab is hidden from everyone. The former `managed-pages-toggle` panel now renders nothing.
+Pages are a resource like any other: editors find them under Resources in the Nimbly bar. Users with `manage-system` switch custom pages and navigation editing on or off, and choose the page types editors may use, in Admin > Settings. A switch only shows when there is something to switch on: a `pages` resource, or navigation slots. The Navigation tab is hidden from everyone while navigation editing is off.
 
 Pages normally live under their language (`nl/zomer`). Set `"allow_unprefixed": true` in `url_areas` to let editors also publish a page without a prefix (`zomer`); the page keeps the language it was authored in, and the path must be unique across all languages and outside the `reserved` list. Without the option, single-language sites allow unprefixed pages and multi-language sites do not. The path field then offers a "Publish without a language prefix" choice on multi-language sites.
 
