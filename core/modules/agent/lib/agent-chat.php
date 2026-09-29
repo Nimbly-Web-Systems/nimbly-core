@@ -339,7 +339,10 @@ function agent_chat_now(string $timezone = '', ?int $now = null): string
     } catch (Throwable) {
         $zone = new DateTimeZone('UTC');
     }
-    return (new DateTimeImmutable('@' . ($now ?? time())))->setTimezone($zone)->format('l Y-m-d H:i') . ' (' . $zone->getName() . ')';
+    $now ??= time();
+    // the Unix time too: agents compute tool timestamps from it rather than converting dates by hand
+    return (new DateTimeImmutable('@' . $now))->setTimezone($zone)->format('l Y-m-d H:i')
+        . ' (' . $zone->getName() . '; Unix time ' . $now . ')';
 }
 
 function agent_chat_name(string $agent_id): string

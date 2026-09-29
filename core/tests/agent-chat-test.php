@@ -201,7 +201,7 @@ chat_test_assert(agent_chat_team() === [], 'a switched-off chat has nobody in it
 unset($GLOBALS['agent_test_site_config']);
 chat_test_assert(agent_chat_configured(['requires_env' => ['APP_ENV']]) && !agent_chat_configured(['requires_env' => ['NO_SUCH_KEY']]),
     'an agent joins the chat only where its settings are present');
-chat_test_assert(agent_chat_now('Europe/Amsterdam', strtotime('2026-09-26T12:00:00Z')) === 'Saturday 2026-09-26 14:00 (Europe/Amsterdam)',
+chat_test_assert(agent_chat_now('Europe/Amsterdam', strtotime('2026-09-26T12:00:00Z')) === 'Saturday 2026-09-26 14:00 (Europe/Amsterdam; Unix time ' . strtotime('2026-09-26T12:00:00Z') . ')',
     'agents know the weekday, date and time');
 $owner = agent_chat_owner();
 
