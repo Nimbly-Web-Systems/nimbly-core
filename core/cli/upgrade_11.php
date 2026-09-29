@@ -275,6 +275,14 @@ function upgrade_11_gitignore_rules(): array
             'untrack' => 'data/.state',
             'label' => 'scheduler run state (mutates every minute; tracking it causes recurring ext:sync rebase conflicts — see NIMBLY.md §19)',
         ],
+        [
+            'lines' => [
+                '/data/.agent_runs/*', '/data/.agent_events/*', '/data/.agent_actions/*', '/data/.agent_approvals/*',
+                '/data/.agent_state/*', '/data/.agent_steps/*', '/data/.agent_conversations/*',
+            ],
+            'untrack' => 'data/.agent_*',
+            'label' => 'agent chats and runs (per server, private; tracking them causes ext:sync conflicts)',
+        ],
     ];
 }
 
@@ -308,7 +316,7 @@ function upgrade_11_gitignore_state(): array
             'action' => 'none',
             'file' => $file,
             'missing' => [],
-            'message' => 'ext/.gitignore already ignores generated/runtime data (thumbnail cache, job queue, scheduler state).',
+            'message' => 'ext/.gitignore already ignores generated/runtime data (thumbnail cache, job queue, scheduler state, agent chats).',
         ];
     }
 
