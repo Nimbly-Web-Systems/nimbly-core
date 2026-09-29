@@ -3,7 +3,14 @@ import { readFile } from 'node:fs/promises';
 
 const root = new URL('../../', import.meta.url);
 
-async function translation_form(page, english = '', bubble = false) {
+async function load_editor(page) {
+  for (const file of ['nb_bubble_editor.jsx', 'nb_field_bar.jsx']) {
+    const script = await readFile(new URL('../js/' + file, root), 'utf8');
+    await page.addScriptTag({ content: script.replace(/export default \w+;/, '') });
+  }
+}
+
+async function translation_form(page, english = '') {
   page.on('pageerror', (error) => { throw error; });
   await page.setContent(`<form x-data="translation_form" :data-lang="lang">
     <button type="button" id="nl" @click="switch_language('nl')">NL</button>
@@ -13,17 +20,14 @@ async function translation_form(page, english = '', bubble = false) {
     <div data-nb-edit="body" data-nb-edit-i18n="true"></div>
     <button type="button" id="save-button" @click="save()" :disabled="busy">Save</button>
   </form>`);
-  await page.addScriptTag({ content: await readFile(new URL('../node_modules/medium-editor/dist/js/medium-editor.js', root), 'utf8') });
   const editor_script = await readFile(new URL('../js/nb_edit.jsx', root), 'utf8');
   await page.addScriptTag({ content: editor_script.replace('export default nb_edit;', '') });
-  const bubble_script = await readFile(new URL('../js/nb_bubble_editor.jsx', root), 'utf8');
-  await page.addScriptTag({ content: bubble_script.replace('export default nb_bubble_editor;', '') });
+  await load_editor(page);
   await page.addScriptTag({ content: await readFile(new URL('modules/forms/lib/build-form/edit-form-state.js', root), 'utf8') });
-  await page.evaluate(([english, bubble]) => {
-    nb_bubble_editor.enabled = () => bubble;
+  await page.evaluate((english) => {
     window.nb = {
-      base_url: '', edit: window.nb_edit, bubble_editor: window.nb_bubble_editor,
-      text: { medium_editor_placeholder: 'Body', record_updated: 'Saved' },
+      base_url: '', edit: window.nb_edit, bubble_editor: window.nb_bubble_editor, field_bar: window.nb_field_bar,
+      text: { editor_placeholder: 'Body', record_updated: 'Saved' },
       notify: () => {},
       api: {
         post: async (_url, payload) => {
@@ -48,7 +52,7 @@ async function translation_form(page, english = '', bubble = false) {
         init() { this.init_edit_state(); },
       }));
     });
-  }, [english, bubble]);
+  }, english);
   await page.addScriptTag({ content: await readFile(new URL('../node_modules/alpinejs/dist/cdn.js', root), 'utf8') });
   await expect(page.locator('[data-nb-edit]')).toHaveText('Nederlandse inhoud');
   await page.locator('#en').click();
@@ -86,8 +90,8 @@ test('switching tabs during translation preserves edits and the selected languag
   await expect(page.locator('[data-nb-edit]')).toHaveText('Gewijzigde inhoud');
 });
 
-test('bubble editor survives switching tabs and keeps edits per language', async ({ page }) => {
-  await translation_form(page, '<p>English body</p>', true);
+test('the editor survives switching tabs and keeps edits per language', async ({ page }) => {
+  await translation_form(page, '<p>English body</p>');
   await expect(page.locator('[data-nb-edit]')).toHaveText('English body');
   await page.locator('#nl').click();
   await page.locator('[data-nb-edit]').fill('Gewijzigde inhoud');
@@ -113,13 +117,14 @@ test('a translation error restores the buttons and preserves the source', async 
 
 test('media insertion updates a form editor at its caret', async ({ page }) => {
   await page.setContent('<form><div data-nb-edit="body"><p>Before after</p></div></form>');
-  await page.addScriptTag({ content: await readFile(new URL('../node_modules/medium-editor/dist/js/medium-editor.js', root), 'utf8') });
   const editor_script = await readFile(new URL('../js/nb_edit.jsx', root), 'utf8');
   await page.addScriptTag({ content: editor_script.replace('export default nb_edit;', '') });
+  await load_editor(page);
 
   const result = await page.evaluate(() => {
     window.nb = {
-      text: { medium_editor_placeholder: 'Body' },
+      text: { editor_placeholder: 'Body' },
+      bubble_editor: window.nb_bubble_editor, field_bar: window.nb_field_bar, edit: window.nb_edit,
     };
     const editor = document.querySelector('[data-nb-edit]');
     nb_edit.init_editor(editor, true);

@@ -3,8 +3,6 @@
 [#set nimblybar-mobile-app-enabled=#]
 [#set nimblybar-mobile-app=#]
 [#nimblybar-mobile-app#]
-[#set nbar-page-settings-in-edit=#]
-[#feature-cond edit-inline-content tpl=set-page-settings-in-edit#]
 
 <script>
     (function () {
@@ -64,7 +62,6 @@
     <div class="flex h-16 flex-col overflow-visible md:h-full md:overflow-hidden" :class="collapsed ? 'md:items-center md:pt-3' : 'md:items-stretch md:pt-3'">
         [#if nimblybar-mobile-app-enabled=(not-empty) tpl=menu-mobile-app#]
         [#feature-cond view-admin-dashboard tpl=menu-mobile-resources#]
-        [#feature-cond edit-inline-content tpl=menu-mobile-edit#]
         [#menu-mobile-profile#]
 
         <div class="flex h-16 shrink-0 items-center justify-between gap-1 px-2 md:h-8 md:gap-2 md:px-0" :class="collapsed ? 'md:w-8 md:justify-start' : 'md:justify-start'">
@@ -87,8 +84,6 @@
 
             [#feature-cond view-admin-dashboard tpl=btn-dashboard#]
             [#feature-cond view-admin-dashboard tpl=btn-mobile-resources#]
-            [#feature-cond edit-inline-content tpl=btn-mobile-edit#]
-            [#feature-cond edit-.config tpl=btn-page-settings#]
 
             <div x-show="!collapsed || is_mobile" class="relative md:ml-auto" @click.outside="account_open = false" id="nb-bar-account-menu">
                 <button id="nb_account_btn" type="button" @click="is_mobile ? toggle_mobile_panel('profile') : (account_open = !account_open, mobile_panel = null)"
@@ -136,7 +131,6 @@
 
         <ul x-cloak class="mt-2 hidden flex-1 flex-col gap-2 overflow-y-auto px-2 pb-2 md:mt-8 md:flex md:flex-none md:overflow-visible md:px-0 md:pb-0" x-show="!collapsed && !is_mobile" x-transition>
             [#feature-cond view-admin-dashboard tpl=menu-resources#]
-            [#feature-cond edit-inline-content tpl=menu-edit#]
             [#set menu-ext=#]
             [#menu-ext#]
         </ul>
@@ -159,6 +153,7 @@
 
 [#feature-cond view-.files tpl=media-modal-cond#]
 [#feature-cond edit-.config tpl=modal-settings#]
+[#feature-cond edit-inline-content tpl=edit-tools#]
 [#bubble-editor#]
 
 <script>

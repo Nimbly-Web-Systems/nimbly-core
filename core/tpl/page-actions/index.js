@@ -1,9 +1,8 @@
 // Page actions: one pill with the controls for this page (edit mode, page settings).
 // Drag it by its grip anywhere; dropped near a corner it docks there (remembered per browser).
-// Opt-in with the bubble editor until the switch-over.
 document.addEventListener('DOMContentLoaded', () => {
   const root = document.getElementById('nb-page-actions');
-  if (!root || !window.nb.bubble_editor || !window.nb.bubble_editor.enabled()) {
+  if (!root) {
     return;
   }
   const edit = root.querySelector('[data-nb-page-edit]');

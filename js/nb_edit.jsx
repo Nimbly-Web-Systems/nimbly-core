@@ -7,26 +7,7 @@ var nb_edit = {
 };
 
 nb_edit.init = function () {
-    if (typeof MediumEditor === "undefined") {
-        return;
-    }
-    const imgs = document.querySelectorAll("[data-nb-edit-img]");
-    const all_editors = document.querySelectorAll("[data-nb-edit]");
-    if (all_editors.length > 0 || imgs.length > 0) {
-        const edit_menu = document.getElementById('nb_edit_menu');
-        if (edit_menu) {
-            edit_menu.classList.remove('hidden');
-        }
-        const mobile_edit_button = document.getElementById('nb_mobile_edit_btn');
-        if (mobile_edit_button) {
-            mobile_edit_button.classList.remove('hidden');
-            mobile_edit_button.classList.add('flex');
-        }
-        const mobile_edit_menu = document.getElementById('nb_mobile_edit_menu');
-        if (mobile_edit_menu) {
-            mobile_edit_menu.classList.remove('hidden');
-        }
-    }
+    // admin form fields are editable right away; page content waits for edit mode (page actions pill)
     const form_editors = document.querySelectorAll("form [data-nb-edit]");
     form_editors.forEach(ed => {
         nb_edit.init_editor(ed, true);
@@ -38,11 +19,7 @@ nb_edit.init = function () {
 
 nb_edit.init_editor = function (ed, as_form_field = false) {
     if (nb_edit.editors.includes(ed)) {
-        if (ed._nb_plain) {
-            ed.setAttribute('contenteditable', true);
-        } else {
-            nb_edit.enable(ed);
-        }
+        ed.setAttribute('contenteditable', true);
         return;
     }
     const options = JSON.parse(ed.dataset.nbEditOptions || '{}');
@@ -51,57 +28,29 @@ nb_edit.init_editor = function (ed, as_form_field = false) {
         : nb_edit.default_buttons;
     const placeholder = options.placeholder ?
         options.placeholder
-        : nb.text.medium_editor_placeholder;
+        : nb.text.editor_placeholder;
     ed._nb_plain = typeof options.plain === "boolean" && options.plain === true;
 
     if (ed._nb_plain) {
         ed.setAttribute('contenteditable', true);
-    } else if (window.nb.bubble_editor && window.nb.bubble_editor.enabled()) {
+    } else {
         window.nb.bubble_editor.init(ed, {
             buttons: buttons,
             placeholder: placeholder,
             paste_html: options.paste_html === true,
             as_form_field: as_form_field
         });
-    } else {
-        const has_buttons = buttons.length > 0 && buttons[0] != '';
-        var editor_options = has_buttons ? {
-            toolbar: {
-                buttons: buttons
-            }
-        } : {
-            toolbar: false
-        }
-        editor_options['placeholder'] = {
-            text: placeholder
-        };
-        editor_options['imageDragging'] = typeof options.media === "boolean" && options.media === true;
-        if (typeof options.paste_html === "boolean" && options.paste_html === true) {
-            editor_options['paste'] = { cleanPastedHTML: true };
-        }
-        var editor = new MediumEditor(ed, editor_options);
-        ed._nb_medium_editor = editor;
-        if (as_form_field) {
-            editor.subscribe('editableInput', (_event, editable) => {
-                editable.dispatchEvent(new CustomEvent('nb:editor-change', {
-                    bubbles: true,
-                    detail: { value: editable.innerHTML.trim() }
-                }));
-            });
-        }
     }
 
     ed._nb_editor_options = options;
     ed._nb_mode = as_form_field ? 'form' : 'page';
 
-    if (window.nb.field_bar && window.nb.bubble_editor && window.nb.bubble_editor.enabled()) {
-        window.nb.field_bar.attach(ed, {
-            buttons: ed._nb_plain ? [] : buttons,
-            media: !ed._nb_plain && options.media === true,
-            save: !as_form_field,
-            docked: as_form_field
-        });
-    }
+    window.nb.field_bar.attach(ed, {
+        buttons: ed._nb_plain ? [] : buttons,
+        media: !ed._nb_plain && options.media === true,
+        save: !as_form_field,
+        docked: as_form_field
+    });
 
     if (as_form_field && ed._nb_plain) {
         ed.addEventListener('input', () => {
@@ -126,36 +75,21 @@ nb_edit.init_editor = function (ed, as_form_field = false) {
 }
 
 nb_edit.on_focus = function (e) {
-    const ed = e.currentTarget;
-    nb_edit.active_editor = ed;
-    document.querySelectorAll('[data-nb-edit-insert-media]').forEach(button => {
-        if (ed._nb_editor_options.media) {
-            button.removeAttribute('disabled');
-        } else {
-            button.setAttribute('disabled', true);
-        }
-    });
+    nb_edit.active_editor = e.currentTarget;
 }
 
 nb_edit.on_blur = function (e) {
     const nb_bar_toggle_btn = document.getElementById('nb-bar-toggler');
-    const moving_to_insert_media = e.relatedTarget?.matches?.('[data-nb-edit-insert-media]');
     const moving_to_toolbar = e.relatedTarget?.closest?.('.nb-bubble-toolbar, .nb-field-bar');
     // keep the editor while picking media for it; the insert goes to its stored caret
     const media_modal = document.getElementById('nb-modal-insert-media');
     const picking_media = media_modal && !media_modal.classList.contains('hidden');
-    if (!moving_to_insert_media && !moving_to_toolbar && !picking_media && e.relatedTarget != nb_bar_toggle_btn) {
-        document.querySelectorAll('[data-nb-edit-insert-media]').forEach(button => {
-            button.setAttribute('disabled', true);
-        });
+    if (!moving_to_toolbar && !picking_media && e.relatedTarget != nb_bar_toggle_btn) {
         nb_edit.active_editor = null;
     }
 }
 
 nb_edit.toggle = function () {
-    if (typeof MediumEditor === "undefined") {
-        return;
-    }
     const all_editors = document.querySelectorAll("[data-nb-edit]");
     const form_editors = Array.from(document.querySelectorAll("form [data-nb-edit]"));
     nb_edit.enabled = !nb_edit.enabled;
@@ -205,7 +139,7 @@ nb_edit.is_editable = function (ed) {
 }
 
 nb_edit.enable_editor = function (ed) {
-    if (typeof ed._nb_medium_editor == 'undefined' && typeof ed._nb_bubble == 'undefined') {
+    if (!nb_edit.editors.includes(ed)) {
         nb_edit.init_editor(ed);
     } else {
         ed.setAttribute('contenteditable', true);

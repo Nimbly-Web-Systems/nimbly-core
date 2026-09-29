@@ -26,8 +26,7 @@ async function editor_page(page, options = {}, html = '<p>Hello world</p>', tag 
     + await toolbar_template(declared));
   await load_scripts(page);
   await page.evaluate(() => {
-    window.nb = { text: { medium_editor_placeholder: 'Type here' }, bubble_editor: window.nb_bubble_editor };
-    nb_bubble_editor.enabled = () => true;
+    window.nb = { text: { editor_placeholder: 'Type here' }, bubble_editor: window.nb_bubble_editor, field_bar: window.nb_field_bar, edit: window.nb_edit };
     const ed = document.querySelector('[data-nb-edit]');
     window.changes = [];
     ed.addEventListener('nb:editor-change', (e) => { window.changes.push(e.detail.value); });
@@ -349,10 +348,9 @@ async function inline_page(page, fields, extra = '') {
   await load_scripts(page);
   await page.evaluate(() => {
     window.nb = {
-      text: { medium_editor_placeholder: 'Type here' },
+      text: { editor_placeholder: 'Type here' },
       bubble_editor: window.nb_bubble_editor, field_bar: window.nb_field_bar, edit: window.nb_edit,
     };
-    nb_bubble_editor.enabled = () => true;
     window.saved = [];
     window.real_save_resource = nb_edit.save_resource;
     nb_edit.save_resource = (ed) => { window.saved.push(ed.innerHTML); };
@@ -419,10 +417,6 @@ test('media inserts at the caret of the focused field', async ({ page }) => {
 
 test('form fields get their own docked bar without save', async ({ page }) => {
   const ed = await editor_page(page, { buttons: 'bold,italic' });
-  await page.evaluate(() => {
-    window.nb.field_bar = window.nb_field_bar; window.nb.edit = window.nb_edit;
-    nb_field_bar.attach(document.querySelector('[data-nb-edit]'), { buttons: ['bold', 'italic'], save: true, docked: true });
-  });
   const docked = page.locator('.nb-field-bar-docked');
   await expect(docked).toBeVisible(); // part of the field, also before focus
   expect(await page.evaluate(() => document.querySelector('[data-nb-edit]').previousElementSibling.classList.contains('nb-field-bar-docked'))).toBe(true);
@@ -581,8 +575,7 @@ test('button labels come from the template, so they can be translated', async ({
   await page.setContent(`<form><div data-nb-edit="body" data-nb-edit-options='{"buttons":"bold"}'><p>Hallo wereld</p></div></form>` + tpl);
   await load_scripts(page);
   await page.evaluate(() => {
-    window.nb = { text: { medium_editor_placeholder: '' }, bubble_editor: window.nb_bubble_editor };
-    nb_bubble_editor.enabled = () => true;
+    window.nb = { text: { editor_placeholder: '' }, bubble_editor: window.nb_bubble_editor, field_bar: window.nb_field_bar, edit: window.nb_edit };
     nb_edit.init_editor(document.querySelector('[data-nb-edit]'), true);
   });
   await select_text(page, 'wereld');
@@ -615,8 +608,6 @@ test('an app insert button fires its event from the field bar and stays out of t
     pin: { kind: 'event', event: 'nb:insert-pin', insert: true, active: '[data-pin]', label: 'Pin', icon: '<i>P</i>' },
   });
   await page.evaluate(() => {
-    window.nb.field_bar = window.nb_field_bar; window.nb.edit = window.nb_edit;
-    nb_field_bar.attach(document.querySelector('[data-nb-edit]'), { buttons: ['bold', 'pin'], docked: true });
     window.pins = [];
     document.addEventListener('nb:insert-pin', (e) => window.pins.push(e.detail.editor.dataset.nbEdit + ':' + e.detail.range.collapsed));
   });

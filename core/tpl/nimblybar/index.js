@@ -24,44 +24,6 @@ function nb_bar_set_page_layout(side, collapsed) {
   document.body.style.paddingBottom = mobile ? "4rem" : "";
 }
 
-function nb_bar_edit_menu(show = true) {
-  const el = document.getElementById("nb_edit_menu");
-  if (!el) {
-    return;
-  }
-  const event = new CustomEvent("nb:edit-menu", {
-    detail: { show: show },
-    bubbles: true,
-  });
-  el.dispatchEvent(event);
-}
-
-function nb_bar_init_edit_controls() {
-  if (document.getElementById("nb_edit_menu")) {
-    document.querySelectorAll("[data-nb-edit-toggle]").forEach((button) => {
-      button.addEventListener("click", (e) => {
-        nb.edit.toggle();
-        document.querySelectorAll("[data-nb-edit-toggle]").forEach((toggle_button) => {
-          toggle_button.classList.toggle("bg-clight/50", nb.edit.enabled);
-        });
-        nb_bar_edit_menu(nb.edit.enabled);
-      });
-    });
-
-    document.querySelectorAll("[data-nb-edit-save]").forEach((button) => {
-      button.addEventListener("click", () => {
-        nb.edit.save();
-      });
-    });
-  }
-
-  document.querySelectorAll("[data-nb-edit-insert-media]").forEach((button) => {
-    button.addEventListener("click", () => {
-      nb.edit.open_insert_media();
-    });
-  });
-}
-
 const alpine_nimblybar = function () {
   Alpine.data("nimblybar", (side, initial_collapsed) => ({
     side: side === "left" ? "left" : "right",
@@ -70,7 +32,6 @@ const alpine_nimblybar = function () {
     mobile_panel: null,
     account_open: false,
     resources_open: true,
-    edit_open: false,
     init() {
       this.is_mobile = nb_bar_is_mobile();
       nb_bar_set_page_layout(this.side, this.collapsed);
@@ -85,12 +46,6 @@ const alpine_nimblybar = function () {
       this.$watch("collapsed", (value) => {
         nb_bar_set_page_layout(this.side, value);
         nb.api.post(nb.base_url + "/api/v1/session", { nb_bar_slim: value });
-        if (!value) {
-          nb_bar_edit_menu(nb.edit && nb.edit.enabled);
-        }
-      });
-      this.$el.addEventListener("nb:edit-menu", (event) => {
-        this.edit_open = event.detail.show === true;
       });
     },
     toggle() {
@@ -360,8 +315,4 @@ document.addEventListener("alpine:init", () => {
   alpine_nimblybar();
   alpine_media_insert();
   alpine_modal_settings();
-});
-
-window.addEventListener("DOMContentLoaded", () => {
-  nb_bar_init_edit_controls();
 });

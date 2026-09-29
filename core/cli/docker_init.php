@@ -115,7 +115,6 @@ RUN npm run build
 # Stage 2: production app image
 FROM \${NIMBLY_BASE_IMAGE}
 COPY --from=builder /build/ext/ /var/www/nimbly/ext/
-COPY --from=builder /build/css/medium-editor.min.css /var/www/nimbly/css/medium-editor.min.css
 RUN chown -R www-data:www-data /var/www/nimbly/ext/
 DOCKERFILE;
 

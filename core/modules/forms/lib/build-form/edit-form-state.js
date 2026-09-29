@@ -111,10 +111,6 @@ function nb_build_form_edit_state(resource_id, record_id, config = {}) {
 
         const value = field_data[lang] || "";
 
-        if (el._nb_medium_editor) {
-          el._nb_medium_editor.destroy();
-          delete el._nb_medium_editor;
-        }
         if (el._nb_bubble) {
           nb.bubble_editor.destroy(el);
         }

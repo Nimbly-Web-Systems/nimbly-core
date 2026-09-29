@@ -1,8 +1,7 @@
-// In-house replacement for medium-editor: contenteditable + a floating
-// "bubble" toolbar on text selection. Opt-in per browser while it is being
-// built (?bubble_editor=1 / ?bubble_editor=0); nb_edit.init_editor() uses it
-// instead of MediumEditor when enabled. No imports: specs load this file with
-// its export stripped.
+// The rich text editor: contenteditable plus a floating "bubble" toolbar on
+// text selection (the field bar, nb_field_bar.jsx, holds the same buttons).
+// nb_edit.init_editor() sets it up for every rich text field. No imports:
+// specs load this file with its export stripped.
 //
 // Buttons are registered by name; a field's `buttons` option (resource .meta)
 // picks which ones it shows. Each button carries its own behaviour:
@@ -250,20 +249,6 @@ nb_bubble_editor.load_declared_buttons = function () {
         Object.entries(declared).forEach(([name, def]) => { nb_bubble_editor.register(name, def); });
     } catch (e) {
         console.warn('nb_bubble_editor: invalid bubble-editor-buttons JSON', e);
-    }
-}
-
-nb_bubble_editor.enabled = function () {
-    try {
-        const param = new URLSearchParams(window.location.search).get('bubble_editor');
-        if (param === '1') {
-            localStorage.setItem('nb_bubble_editor', '1');
-        } else if (param === '0') {
-            localStorage.removeItem('nb_bubble_editor');
-        }
-        return localStorage.getItem('nb_bubble_editor') === '1';
-    } catch (e) {
-        return false;
     }
 }
 

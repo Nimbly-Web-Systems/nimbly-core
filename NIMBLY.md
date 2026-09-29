@@ -778,7 +778,9 @@ The following variables influence the HTML shell when set before `[#html#]`:
 |---|---|
 | `page-title` | Sets the `<title>` tag and OG/Twitter title |
 | `body-classes` | Adds CSS classes to the `<body>` tag |
-| `page-settings-link` | Adds a shortcut link in the Nimbly admin bar pointing to the admin edit page for the current record. Use this on detail pages to allow quick admin access from the frontend. Example: `[#base-url#]/nb-admin/articles/[#record.uuid#]` |
+| `page-settings-link` | Points the page actions pill's settings button at the admin edit page for the current record, instead of the page settings modal. Use this on detail pages to allow quick admin access from the frontend. Example: `[#base-url#]/nb-admin/articles/[#record.uuid#]`. Its label becomes "Edit <resource>" (e.g. "Edit article"). |
+| `page-settings-label` | Overrides that label. |
+| `page-actions` | Set to `off` to hide the page actions pill on a page without page context. It never shows in the admin. |
 | `page-description` | Overrides the site-wide meta description for this page. Falls back to the site config description. |
 | `og-image` | Image for social sharing. Accepts a **UUID** (expanded to an absolute `/img/UUID/1200w` URL), a **relative path** (`img/og-card.png`), or an **absolute URL**. Falls back to the project default set in `ext/tpl/meta/index.tpl`. |
 | `og-type` | OG type for this page. Defaults to `website`. Use `article` for content detail pages. |
@@ -1104,7 +1106,7 @@ Defines the structure and behavior of a resource. All fields must be explicitly 
 |---|---|
 | `text` | Single-line text |
 | `textarea` | Multi-line plain text |
-| `html` | Rich text (medium-editor) |
+| `html` | Rich text (bubble editor and field bar, see Editor buttons) |
 | `slug` | URL-safe slug field computed from configured source fields |
 | `boolean` | True/false toggle |
 | `date` | Date picker |
@@ -1172,6 +1174,46 @@ Rich (full content, e.g. body):
 ```
 
 Never define an `html` field without choosing one of these. `media_sizes` is required when `media: true`.
+
+**Editor buttons.** `buttons` lists the formatting buttons of an `html` field, in order. Without `buttons` a field gets `bold,italic,removeFormat`. Built in:
+
+| Button | Does |
+|---|---|
+| `bold`, `italic` | Inline formatting (Ctrl/Cmd+B, Ctrl/Cmd+I) |
+| `h2`, `h3`, `h4`, `quote`, `pre` | Block format; again turns it back into a paragraph |
+| `orderedlist`, `unorderedlist` | Lists |
+| `anchor` | Link: add, edit (prefilled) or remove; Ctrl/Cmd+K |
+| `removeFormat` | Clear formatting |
+| `strikethrough`, `subscript`, `superscript`, `underline` | Optional, in no default set |
+
+The same buttons show in two places: the bubble toolbar on selected text, and the field bar. In admin forms the field bar is part of the field box; on inline editing it floats above the focused field and also holds Media (when `media: true`) and Save (Ctrl/Cmd+S). Alt+F10 moves keyboard focus to the field bar. Pasting keeps only plain text unless the field sets `"paste_html": true`, which keeps basic formatting and strips Word/Google Docs markup.
+
+**Custom editor buttons.** A project declares its own buttons as JSON in `ext/tpl/bubble-editor-buttons/index.tpl` (the template may use shortcodes, e.g. `[#text ...#]` for labels), then lists them in a field's `buttons` like the built-in ones:
+
+```json
+{
+    "highlight": { "kind": "wrap", "tag": "mark", "label": "[#text Highlight#]", "icon": "M" },
+    "h5": { "kind": "block", "tag": "h5", "label": "Heading 5", "icon": "H5" },
+    "poi": {
+        "kind": "event", "event": "nb:insert-point", "insert": true, "bubble": true,
+        "active": "[data-poi-link]", "label": "[#text Point of interest#]", "icon": "<svg ...></svg>"
+    }
+}
+```
+
+| Kind | Does |
+|---|---|
+| `command` | A formatting command (`"command": "bold"`) |
+| `block` | Block format (`"tag": "h5"`) |
+| `list` | List command |
+| `wrap` | Wraps the selection in an element (`"tag"`, optional `"class"`); again unwraps it |
+| `insert` | Inserts fixed HTML at the caret (`"html"`) |
+| `event` | Fires a DOM event on the field (`"event"`, bubbling, `detail: { editor, range }`) for the project's own code, e.g. to open a picker |
+| `link` | URL prompt, like `anchor` |
+
+Options: `"insert": true` puts a button next to Media in the field bar instead of with the formatting buttons; add `"bubble": true` when it also acts on selected text; `"active"` is a selector that marks the button active when the caret is inside a match. Links are `a[href]`: a project may use `<a>` without `href` for its own inline elements. Code can also register buttons with `nb.bubble_editor.register(name, { label, icon, run(ctx), is_active(ctx) })`.
+
+A project's editing tools (the modal and script behind an `event` button) go in `ext/tpl/edit-extras/index.tpl`, which renders for users who can edit inline, on site and admin pages.
 
 **Slug fields:**
 
@@ -3053,7 +3095,7 @@ For multi-language content, `[#get-html#]` resolves i18n field objects automatic
 
 ### Step 4 — Enable inline editing
 
-Add `[#html#]` to the route and ensure the user module is active (auto-loaded). Logged-in admins will then see the inline editor on `[#get-html#]` fields.
+Add `[#html#]` to the route and ensure the user module is active (auto-loaded). Logged-in editors (`edit-inline-content`) then get the page actions pill: **Edit** switches inline editing on and off (asking to save or discard unsaved changes), and the settings button opens page settings or the record's admin page (`page-settings-link`). The pill can be dragged anywhere and docks in a corner when dropped near one. While editing, the focused field shows its field bar with Save.
 
 ### Inline editing attributes
 
