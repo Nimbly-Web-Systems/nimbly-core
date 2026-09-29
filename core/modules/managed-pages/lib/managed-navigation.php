@@ -37,6 +37,33 @@ function managed_navigation_revision(?array $document): string
  * Normalize a navigation tree. Returns null on the first problem and sets
  * $error to "<item id>:<reason>" so the editor can point at the offending row.
  */
+/**
+ * An internal link as stored: a site path (`info`), optionally with a section
+ * (`info#team`), or the home page as `/` (`/#agenda`). Null when invalid,
+ * including an empty value.
+ */
+function managed_navigation_internal_path($value): ?string
+{
+    if (!is_scalar($value)) {
+        return null;
+    }
+    $value = trim((string)$value);
+    $fragment = '';
+    $hash = strpos($value, '#');
+    if ($hash !== false) {
+        $fragment = substr($value, $hash + 1);
+        $value = substr($value, 0, $hash);
+        if (!preg_match('/^[A-Za-z][A-Za-z0-9_-]*$/', $fragment)) {
+            return null;
+        }
+    }
+    if ($value === '/') {
+        return '/' . ($fragment === '' ? '' : '#' . $fragment);
+    }
+    $path = managed_pages_normalize_path($value);
+    return $path === null ? null : $path . ($fragment === '' ? '' : '#' . $fragment);
+}
+
 function managed_navigation_check_items(array $items, int $max_depth, ?string &$error = null, int $depth = 1): ?array
 {
     if ($items === []) {
@@ -66,7 +93,7 @@ function managed_navigation_check_items(array $items, int $max_depth, ?string &$
         }
         $value = trim((string)($item['target']['value'] ?? $item['target']['id'] ?? $item['target']['path'] ?? ''));
         if ($kind === 'internal_url') {
-            $value = managed_pages_normalize_path($value);
+            $value = managed_navigation_internal_path($value);
         } elseif ($kind === 'external_url') {
             $scheme = strtolower((string)parse_url($value, PHP_URL_SCHEME));
             $value = filter_var($value, FILTER_VALIDATE_URL) && in_array($scheme, ['http', 'https'], true) ? $value : null;
@@ -167,7 +194,8 @@ function managed_navigation_resolve_items(array $items, string $language, string
         if ($kind === 'page') {
             $url = managed_pages_url((string)$value, $language, true);
         } elseif ($kind === 'internal_url') {
-            $url = managed_pages_normalize_path($value);
+            $path = managed_navigation_internal_path($value);
+            $url = $path === null ? null : ltrim($path, '/');
         } elseif ($kind === 'external_url' && filter_var($value, FILTER_VALIDATE_URL)) {
             $url = $value;
         }

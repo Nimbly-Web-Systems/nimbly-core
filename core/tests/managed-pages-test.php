@@ -195,6 +195,17 @@ $nested = [[
         'id' => 'child', 'label' => 'Child', 'target' => ['kind' => 'internal_url', 'value' => 'nl/child'], 'children' => [],
     ]],
 ]];
+foreach (['/' => '/', '/#agenda' => '/#agenda', 'nl/child#team' => 'nl/child#team', '/nl/child/' => 'nl/child'] as $input => $stored) {
+    managed_pages_test_assert(managed_navigation_internal_path($input) === $stored, "Internal link {$input} was not stored as {$stored}.");
+}
+foreach (['', '#agenda', '/#', 'nl/child#bad section', 'nl/child?x=1'] as $input) {
+    managed_pages_test_assert(managed_navigation_internal_path($input) === null, "Invalid internal link '{$input}' was accepted.");
+}
+$sections = managed_navigation_resolve_items([
+    ['id' => 'home', 'label' => 'Home', 'target' => ['kind' => 'internal_url', 'value' => '/'], 'children' => []],
+    ['id' => 'agenda', 'label' => 'Agenda', 'target' => ['kind' => 'internal_url', 'value' => '/#agenda'], 'children' => []],
+], 'nl', 'nl/campaign');
+managed_pages_test_assert(array_column($sections, 'url') === ['', '#agenda'], 'Home and section links did not resolve relative to the site root.');
 managed_pages_test_assert(managed_navigation_validate_items($nested, 2) !== null, 'Allowed navigation depth was rejected.');
 managed_pages_test_assert(managed_navigation_validate_items($nested, 1) === null, 'Excess navigation depth was accepted.');
 $public_tree = managed_navigation_load('main', 'nl');
