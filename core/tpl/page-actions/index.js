@@ -19,12 +19,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const leave_dialog = document.getElementById('nb-modal-leave-edit');
 
+  // Edit is a toggle: same label, shown as on while editing
   const show_state = (enabled) => {
     edit.setAttribute('aria-pressed', enabled ? 'true' : 'false');
-    edit.querySelector('[data-nb-page-edit-label]').textContent = enabled ? edit.dataset.labelDone : edit.dataset.labelEdit;
     edit.classList.toggle('btn-primary', enabled);
-    edit.querySelector('[data-icon-edit]').classList.toggle('hidden', enabled);
-    edit.querySelector('[data-icon-done]').classList.toggle('hidden', !enabled);
   };
 
   edit.addEventListener('click', () => {

@@ -277,6 +277,10 @@ form .nb-field-box [data-nb-edit][data-nb-edit-focused] {
   @apply bg-base-100 border-base-300;
 }
 
+.nb-page-action:not(.btn-primary):hover {
+  @apply bg-base-200;
+}
+
 /* small, plain tooltips (daisyUI's inherit the button's bold label) */
 .nb-page-actions .tooltip::before {
   @apply text-xs font-normal;
