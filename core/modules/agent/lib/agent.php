@@ -815,8 +815,16 @@ function agent_execute_tool(string $run_uuid, array $tools, array $call, array $
     } catch (Throwable $error) {
         if ($tool['risk'] === 'governed') {
             agent_store_action($identity, $run_uuid, $name, $arguments, 'uncertain', [], agent_safe_error($error->getMessage()));
+            throw $error;
         }
-        throw $error;
+        // A read-only check that fails is still an answer: the agent sees why, and can
+        // correct its request or say what it couldn't check, instead of the run ending.
+        $result = ['status' => 'failed', 'error' => agent_safe_error($error->getMessage())];
+        agent_append_event($run_uuid, 'tool_failed', [
+            'tool_key' => $identity, 'tool' => $name,
+            'duration_ms' => (int)round((microtime(true) - $started) * 1000), 'result' => $result,
+        ]);
+        return $result;
     }
     if ($tool['risk'] === 'governed') {
         agent_store_action($identity, $run_uuid, $name, $arguments,

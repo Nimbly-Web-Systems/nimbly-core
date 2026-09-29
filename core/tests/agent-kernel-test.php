@@ -166,6 +166,24 @@ agent_test_assert(count(array_filter(data_read('.agent_events'), fn($event) =>
     $event['type'] === 'tool_completed' && $event['payload']['tool'] === 'inspect')) === 3,
     'earlier observations remain in history');
 
+// A failing read-only check comes back to the agent as a result with its reason.
+function agent_connector_fixture_refuse(array $_source, array $_config, array $_context): array
+{
+    $GLOBALS['refused_calls']++;
+    throw new RuntimeException('Incident cursor is in the future');
+}
+$refused_calls = 0;
+$tools['refuse'] = ['risk' => 'read_only', 'connector' => 'fixture-refuse', 'parameters' => $tools['inspect']['parameters']];
+$refused = agent_execute_tool($run_uuid, $tools, ['name' => 'refuse', 'call_id' => 'refused', 'arguments' => '{"server":"fixture"}'], $context);
+agent_test_assert(($refused['status'] ?? '') === 'failed' && str_contains($refused['error'] ?? '', 'cursor is in the future'),
+    'a failing read-only check returns its reason instead of ending the run');
+agent_test_assert(count(array_filter(data_read('.agent_events'), fn($event) =>
+    $event['type'] === 'tool_failed' && $event['payload']['tool'] === 'refuse')) === 1
+    && agent_latest_tool_results($run_uuid, 'refuse') === [],
+    'the failure is logged apart from successful observations');
+agent_execute_tool($run_uuid, $tools, ['name' => 'refuse', 'call_id' => 'refused', 'arguments' => '{"server":"fixture"}'], $context);
+agent_test_assert($refused_calls === 2, 'a failed check is tried again, not replayed');
+
 function agent_connector_fixture_authorize(array $source, array $_config, array $_context): array
 {
     $GLOBALS['authorization_calls']++;
