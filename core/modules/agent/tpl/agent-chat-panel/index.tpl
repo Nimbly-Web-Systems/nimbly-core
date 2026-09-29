@@ -2,11 +2,11 @@
     class="fixed bottom-20 z-50 md:bottom-4" :class="[side === 'left' ? 'left-4' : 'right-4', open && 'max-md:z-[1040]']"
     @keydown.escape.window="open && toggle()">
 
-    <section x-show="open" x-transition.opacity role="dialog" aria-label="[#text Talk with Nimbly#]"
-        class="absolute bottom-16 flex h-[36rem] max-h-[calc(100vh-8rem)] w-[25rem] max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-2xl border border-base-300 bg-base-100 shadow-xl max-md:fixed max-md:inset-x-0 max-md:bottom-auto max-md:top-0 max-md:h-dvh max-md:max-h-none max-md:w-auto max-md:max-w-none max-md:rounded-none max-md:border-0 max-md:shadow-none"
+    <div x-show="open" x-transition.opacity role="dialog" aria-label="[#text Talk with Nimbly#]"
+        class="nb-chat-panel absolute bottom-16 flex h-[36rem] max-h-[calc(100vh-8rem)] w-[25rem] max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-2xl border border-base-300 bg-base-100 shadow-xl max-md:fixed max-md:inset-x-0 max-md:bottom-auto max-md:top-0 max-md:h-dvh max-md:max-h-none max-md:w-auto max-md:max-w-none max-md:rounded-none max-md:border-0 max-md:shadow-none"
         :class="side === 'left' ? 'left-0' : 'right-0'" :style="panel_style()">
 
-        <header class="flex h-14 shrink-0 items-center gap-1 px-3">
+        <div class="flex h-14 shrink-0 items-center gap-1 px-3">
             <button type="button" x-show="history" class="btn btn-ghost btn-sm gap-1 px-2" @click="history = false" aria-label="[#text Back#]">
                 <svg xmlns="http://www.w3.org/2000/svg" class="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
                 <span class="text-sm font-semibold">[#text Chat history#]</span>
@@ -17,7 +17,7 @@
             <button type="button" class="btn btn-ghost btn-sm btn-circle" :class="history && 'ml-auto'" @click="toggle()" aria-label="[#text Close#]">
                 <svg xmlns="http://www.w3.org/2000/svg" class="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
             </button>
-        </header>
+        </div>
 
         <ul x-show="history" class="menu w-full flex-1 flex-nowrap overflow-y-auto overflow-x-hidden px-2 py-1">
             <li>
@@ -79,7 +79,7 @@
                 </button>
             </div>
         </div>
-    </section>
+    </div>
 
     <button type="button" class="btn btn-circle btn-primary btn-lg relative shadow-lg" :class="open && 'max-md:hidden'" @click="toggle()" aria-label="[#text Talk with Nimbly#]" :aria-expanded="open">
         <svg xmlns="http://www.w3.org/2000/svg" class="size-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M21 12c0 4.418-4.03 8-9 8a9.9 9.9 0 01-4-.83L3 20l1.4-3.72A7.6 7.6 0 013 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>

@@ -229,13 +229,13 @@ form .nb-field-box [data-nb-edit][data-nb-edit-focused] {
 }
 
 /* docked above the chat button: out of the way while the chat is open */
-body:has(#agent-chat > section:not([style*="none"])) .nb-page-actions[data-over-chat] {
+body:has(.nb-chat-panel:not([style*="none"])) .nb-page-actions[data-over-chat] {
   @apply hidden;
 }
 
 /* docked at the top on the chat side: the open chat panel keeps clear of it */
 @media (min-width: 768px) {
-  body:has(.nb-page-actions[data-above-chat-panel]:not(.hidden)) #agent-chat > section {
+  body:has(.nb-page-actions[data-above-chat-panel]:not(.hidden)) .nb-chat-panel {
     max-height: calc(100vh - 9rem);
   }
 }
