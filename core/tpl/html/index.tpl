@@ -36,7 +36,7 @@
         </footer>
     </div>
     [#agent-chat-widget#]
-    [#feature-cond edit-inline-content,edit-.config tpl=page-actions#]
+    [#page-actions-cond#]
     [#scripts#]
 </body>
 
