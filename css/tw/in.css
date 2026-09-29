@@ -1,7 +1,5 @@
 @config "../../tailwind.config.js";
 @import "tailwindcss";
-/* classes only chosen inside template expressions, which the scanner can't see */
-@source inline("tooltip-left tooltip-right");
 
 @layer base {
   .prose *:first-child {
@@ -290,9 +288,19 @@ form .nb-field-box [data-nb-edit][data-nb-edit-focused] {
   }
 }
 
-/* small, plain tooltips (daisyUI's inherit the button's bold label) */
-.nb-page-actions .tooltip::before {
+/* tooltips: small and plain, below the pill, aligned to its outer edge so they stay on the page */
+.nb-page-actions .tooltip[data-tip]::before {
   @apply text-xs font-normal;
+  inset: var(--tt-off) 0 auto auto;
+  transform: translateY(var(--tt-pos, -0.25rem));
+}
+
+.nb-page-actions.left-4 .tooltip[data-tip]::before {
+  inset: var(--tt-off) auto auto 0;
+}
+
+.nb-page-actions .tooltip::after {
+  display: none;
 }
 
 /* editable images */
