@@ -817,6 +817,8 @@ nb_bubble_editor.get_toolbar = function () {
         const btn = target.closest('[data-nb-bubble-name]');
         if (btn) {
             nb_bubble_editor.exec(btn.dataset.nbBubbleName);
+        } else if (target.closest('[data-nb-bubble-apply]')) {
+            nb_bubble_editor.close_prompt(tb.querySelector('[data-nb-bubble-prompt] input').value);
         } else if (target.closest('[data-nb-bubble-remove]')) {
             nb_bubble_editor.close_prompt(null, true);
         } else if (target.closest('[data-nb-bubble-cancel]')) {
@@ -845,14 +847,13 @@ nb_bubble_editor.get_toolbar = function () {
         }
         act(e.target);
     });
-    const form = tb.querySelector('[data-nb-bubble-prompt]');
-    const input = form.querySelector('input');
-    form.addEventListener('submit', (e) => {
-        e.preventDefault();
-        nb_bubble_editor.close_prompt(input.value);
-    });
+    // not a <form>: the toolbar must not look like one to the page's own code
+    const input = tb.querySelector('[data-nb-bubble-prompt] input');
     input.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            nb_bubble_editor.close_prompt(input.value);
+        } else if (e.key === 'Escape') {
             e.preventDefault();
             nb_bubble_editor.close_prompt(null);
         }

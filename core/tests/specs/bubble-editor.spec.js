@@ -647,3 +647,13 @@ test('an insert button with bubble: true also shows in the bubble for selected t
   await button(page, 'Pin').click();
   expect(await page.evaluate(() => window.pins)).toEqual(['world']);
 });
+
+test('the link field is not a form (page code looking for forms must not find it); the check applies', async ({ page }) => {
+  const ed = await editor_page(page, { buttons: 'anchor' });
+  await select_text(page, 'world');
+  await button(page, 'Link').click();
+  expect(await page.locator('.nb-bubble-toolbar form').count()).toBe(0);
+  await toolbar(page).locator('input').fill('example.com');
+  await toolbar(page).getByRole('button', { name: 'Apply' }).click();
+  expect(await ed.innerHTML()).toBe('<p>Hello <a href="https://example.com">world</a></p>');
+});
