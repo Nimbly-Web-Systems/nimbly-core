@@ -25,6 +25,10 @@
             document.body.style.paddingLeft = !mobile && side === "left" ? offset : "";
             document.body.style.paddingRight = !mobile && side === "right" ? offset : "";
             document.body.style.paddingBottom = mobile ? "4rem" : "";
+            // Fixed-position site elements (overlay menus) can stay clear of the bar with these.
+            document.documentElement.style.setProperty("--nb-bar-left", document.body.style.paddingLeft || "0px");
+            document.documentElement.style.setProperty("--nb-bar-right", document.body.style.paddingRight || "0px");
+            document.documentElement.style.setProperty("--nb-bar-bottom", document.body.style.paddingBottom || "0px");
             return true;
         }
         if (!set_page_layout()) {
