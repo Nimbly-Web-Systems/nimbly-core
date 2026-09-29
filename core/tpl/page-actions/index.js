@@ -1,5 +1,5 @@
 // Page actions: one pill with the controls for this page (edit mode, page settings).
-// Drag it by its grip; it docks in the nearest corner (remembered per browser).
+// Drag it by its grip anywhere; dropped near a corner it docks there (remembered per browser).
 // Opt-in with the bubble editor until the switch-over.
 document.addEventListener('DOMContentLoaded', () => {
   const root = document.getElementById('nb-page-actions');
@@ -20,64 +20,112 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 });
 
-/* docking */
+/* placement: free anywhere, or docked in a corner when dropped near one */
 
 function nb_page_actions_dock(root) {
   const corners = ['top-left', 'top-right', 'bottom-left', 'bottom-right'];
-  const storage_key = 'nb_page_actions_corner';
+  const storage_key = 'nb_page_actions_place';
   const gap = 16;
-  let corner = root.dataset.corner;
+  const snap = 80; // px from a corner of the content area
+  // { corner } when docked, { x, y } (fractions of the window) when placed freely
+  let place = { corner: root.dataset.corner };
   try {
-    const saved = localStorage.getItem(storage_key);
-    if (corners.includes(saved)) {
-      corner = saved;
+    const saved = JSON.parse(localStorage.getItem(storage_key) || 'null');
+    if (saved && (corners.includes(saved.corner) || (typeof saved.x === 'number' && typeof saved.y === 'number'))) {
+      place = saved;
     }
   } catch (e) {
     // no storage: default corner
   }
 
-  const chat_button = () => document.querySelector('#agent-chat > button');
-
-  // left/right/top/bottom offsets for a corner, clear of the Nimbly bar and the chat button
-  const place = () => {
-    const [v, h] = corner.split('-');
+  // the area not covered by the Nimbly bar (body padding) and the chat button's side
+  const area = () => {
     const body = getComputedStyle(document.body);
-    const style = root.style;
-    style.left = style.right = style.top = style.bottom = '';
-    if (h === 'left') {
-      style.left = (parseFloat(body.paddingLeft) || 0) + gap + 'px';
-    } else {
-      style.right = (parseFloat(body.paddingRight) || 0) + gap + 'px';
-    }
-    const chat = chat_button();
+    const chat = document.querySelector('#agent-chat > button');
     const chat_rect = chat ? chat.getBoundingClientRect() : null;
-    const chat_side = chat_rect && chat_rect.width > 0 ? (chat_rect.left + chat_rect.width / 2 < window.innerWidth / 2 ? 'left' : 'right') : null;
-    if (v === 'top') {
-      style.top = gap + 'px';
-    } else if (chat_side === h) {
-      style.bottom = window.innerHeight - chat_rect.top + 12 + 'px'; // just above the chat button
-    } else {
-      style.bottom = (parseFloat(body.paddingBottom) || 0) + gap + 'px';
-    }
-    root.dataset.corner = corner;
-    root.toggleAttribute('data-over-chat', v === 'bottom' && chat_side === h);
-    root.toggleAttribute('data-above-chat-panel', v === 'top' && chat_side === h);
+    return {
+      left: parseFloat(body.paddingLeft) || 0,
+      right: window.innerWidth - (parseFloat(body.paddingRight) || 0),
+      bottom: window.innerHeight - (parseFloat(body.paddingBottom) || 0),
+      chat_rect: chat_rect && chat_rect.width > 0 ? chat_rect : null,
+      chat_side: chat_rect && chat_rect.width > 0
+        ? (chat_rect.left + chat_rect.width / 2 < window.innerWidth / 2 ? 'left' : 'right') : null
+    };
   };
 
-  const dock = (next) => {
-    corner = next;
+  const apply = () => {
+    const a = area();
+    const style = root.style;
+    style.left = style.right = style.top = style.bottom = '';
+    root.removeAttribute('data-over-chat');
+    root.removeAttribute('data-above-chat-panel');
+    if (place.corner) {
+      const [v, h] = place.corner.split('-');
+      if (h === 'left') {
+        style.left = a.left + gap + 'px';
+      } else {
+        style.right = window.innerWidth - a.right + gap + 'px';
+      }
+      if (v === 'top') {
+        style.top = gap + 'px';
+      } else if (a.chat_side === h) {
+        style.bottom = window.innerHeight - a.chat_rect.top + 12 + 'px'; // just above the chat button
+      } else {
+        style.bottom = window.innerHeight - a.bottom + gap + 'px';
+      }
+      root.dataset.corner = place.corner;
+      root.toggleAttribute('data-over-chat', v === 'bottom' && a.chat_side === h);
+      root.toggleAttribute('data-above-chat-panel', v === 'top' && a.chat_side === h);
+      return;
+    }
+    const w = root.offsetWidth;
+    const h = root.offsetHeight;
+    const x = Math.max(0, Math.min(place.x * window.innerWidth, window.innerWidth - w));
+    const y = Math.max(0, Math.min(place.y * window.innerHeight, window.innerHeight - h));
+    style.left = x + 'px';
+    style.top = y + 'px';
+    // tooltips open towards the page: the half of the screen the pill is in
+    root.dataset.corner = (y + h / 2 < window.innerHeight / 2 ? 'top' : 'bottom') + '-'
+      + (x + w / 2 < window.innerWidth / 2 ? 'left' : 'right');
+  };
+
+  const save = (next) => {
+    place = next;
     try {
-      localStorage.setItem(storage_key, corner);
+      localStorage.setItem(storage_key, JSON.stringify(place));
     } catch (e) {
       // not remembered
     }
-    place();
+    apply();
   };
 
-  place();
-  window.addEventListener('resize', place);
+  // dropped: dock when near a corner, otherwise stay put
+  const drop = () => {
+    const a = area();
+    const r = root.getBoundingClientRect();
+    const near_left = r.left - a.left < snap;
+    const near_right = a.right - r.right < snap;
+    const near_top = r.top < snap;
+    const bottom_edge = (side) => (a.chat_side === side ? a.chat_rect.top : a.bottom);
+    const near_bottom_left = bottom_edge('left') - r.bottom < snap;
+    const near_bottom_right = bottom_edge('right') - r.bottom < snap;
+    let corner = null;
+    if (near_top && near_left) {
+      corner = 'top-left';
+    } else if (near_top && near_right) {
+      corner = 'top-right';
+    } else if (near_bottom_left && near_left) {
+      corner = 'bottom-left';
+    } else if (near_bottom_right && near_right) {
+      corner = 'bottom-right';
+    }
+    save(corner ? { corner: corner } : { x: r.left / window.innerWidth, y: r.top / window.innerHeight });
+  };
+
+  apply();
+  window.addEventListener('resize', apply);
   // the Nimbly bar changes the body padding when it collapses or switches to mobile
-  new MutationObserver(place).observe(document.body, { attributes: true, attributeFilter: ['style', 'class'] });
+  new MutationObserver(apply).observe(document.body, { attributes: true, attributeFilter: ['style', 'class'] });
 
   const grip = root.querySelector('[data-nb-page-actions-grip]');
   if (!grip) {
@@ -100,10 +148,7 @@ function nb_page_actions_dock(root) {
       grip.removeEventListener('pointerup', up);
       grip.removeEventListener('pointercancel', up);
       root.classList.remove('nb-page-actions-dragging');
-      const r = root.getBoundingClientRect();
-      const cx = r.left + r.width / 2;
-      const cy = r.top + r.height / 2;
-      dock((cy < window.innerHeight / 2 ? 'top' : 'bottom') + '-' + (cx < window.innerWidth / 2 ? 'left' : 'right'));
+      drop();
     };
     grip.addEventListener('pointermove', move);
     grip.addEventListener('pointerup', up);
@@ -111,13 +156,13 @@ function nb_page_actions_dock(root) {
   });
   // keyboard: arrow keys move the pill to another corner
   grip.addEventListener('keydown', (e) => {
-    const [v, h] = corner.split('-');
+    const [v, h] = (place.corner || root.dataset.corner).split('-');
     const next = {
       ArrowUp: 'top-' + h, ArrowDown: 'bottom-' + h, ArrowLeft: v + '-left', ArrowRight: v + '-right'
     }[e.key];
     if (next) {
       e.preventDefault();
-      dock(next);
+      save({ corner: next });
     }
   });
 }

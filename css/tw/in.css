@@ -278,13 +278,14 @@ form .nb-field-box [data-nb-edit][data-nb-edit-focused] {
   @apply bg-base-100 border-base-300;
 }
 
-.nb-page-action:not(.btn-primary):hover,
-.nb-page-actions-grip:hover {
+.nb-page-action:not(.btn-primary):hover {
   @apply bg-base-200;
 }
 
-.nb-page-actions-grip {
-  @apply cursor-grab touch-none text-base-content/50;
+/* a drag handle: only the cursor changes */
+.nb-page-actions-grip,
+.nb-page-actions-grip:hover {
+  @apply cursor-grab touch-none bg-base-100 text-base-content/50;
 }
 
 .nb-page-actions-dragging {
