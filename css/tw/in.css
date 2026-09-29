@@ -1,5 +1,7 @@
 @config "../../tailwind.config.js";
 @import "tailwindcss";
+/* classes only chosen inside template expressions, which the scanner can't see */
+@source inline("tooltip-left tooltip-right");
 
 @layer base {
   .prose *:first-child {
@@ -279,6 +281,13 @@ form .nb-field-box [data-nb-edit][data-nb-edit-focused] {
 
 .nb-page-action:not(.btn-primary):hover {
   @apply bg-base-200;
+}
+
+/* the open chat panel keeps clear of the pill (both sit on the side opposite the Nimbly bar) */
+@media (min-width: 768px) {
+  body:has(#nb-page-actions:not(.hidden)) #agent-chat > section {
+    max-height: calc(100vh - 9rem);
+  }
 }
 
 /* small, plain tooltips (daisyUI's inherit the button's bold label) */
