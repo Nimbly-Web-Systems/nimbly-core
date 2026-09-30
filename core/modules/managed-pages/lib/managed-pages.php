@@ -498,6 +498,10 @@ function managed_pages_run(string $uri): bool
     $GLOBALS['SYSTEM']['uri'] = $uri;
     $GLOBALS['SYSTEM']['uri_key'] = preg_replace('/[^ \w]+/', '_', $uri);
     $GLOBALS['SYSTEM']['uri_path'] = dirname($template);
+    // Page settings, as a route's main template has them; init loads them again once the page renders.
+    $settings = data_read('.config', $GLOBALS['SYSTEM']['uri_key']) ?: [];
+    set_variable('page_settings', $settings);
+    set_variable_dot('page_settings', $settings);
     foreach (['header', 'footer'] as $region) {
         $region_template = find_uri($language, $region . '.tpl');
         if ($region_template !== false) {
