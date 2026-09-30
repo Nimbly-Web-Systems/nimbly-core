@@ -2,8 +2,8 @@
 
 /**
  * The site as the Nimbly agent sees it: resources, records and admin pages, always through
- * the rights of the colleague who asked. Structure (resource definitions, templates, routes,
- * users and roles) is out of scope; that is work for a developer.
+ * the rights of the colleague who asked. Everything under the site's data is in scope; code
+ * (templates, routes, libraries) is work for a developer.
  */
 
 /** The person a chat turn answers, with the features their roles give them right now. */
@@ -79,25 +79,20 @@ function agent_site_stats(array $asker, string $from, string $to): array
     ], 'note' => 'Visitors are unique per day, so visitor_days over a period counts a returning visitor once per day.'];
 }
 
-/** Resources the agent may read and write for anyone: the site's records, never its structure. */
+/** Every resource under the site's data may be read and written, always through the asker's own rights. */
 function agent_site_resource_in_scope(string $resource): bool
 {
-    if (in_array($resource, ['users', 'roles'], true) || preg_match('/^\.?[a-z0-9][a-z0-9_-]*$/', $resource) !== 1) {
-        return false;
-    }
-    if (in_array($resource, ['pages', '.navigation'], true)) {
-        return agent_site_managed_pages();
-    }
-    return $resource === '.content' || $resource[0] !== '.';
+    return preg_match('/^\.?[a-z0-9][a-z0-9_-]*$/', $resource) === 1;
 }
 
 function agent_site_resources(array $asker): array
 {
     $resources = array_keys(data_resources_list());
-    if (agent_site_managed_pages()) {
-        $resources[] = '.navigation';
+    foreach (@scandir((string)($GLOBALS['SYSTEM']['data_base'] ?? '')) ?: [] as $resource) {
+        if ($resource[0] === '.' && is_dir(data_path($resource))) {
+            $resources[] = $resource;
+        }
     }
-    $resources[] = '.content';
     return array_values(array_filter(array_unique($resources), fn($resource) => agent_site_resource_in_scope($resource)
         && data_exists($resource, '.meta') && agent_site_can($asker, 'view-' . $resource)));
 }
@@ -167,10 +162,10 @@ function agent_site_records(array $asker, string $resource, string $uuid = '', s
     if ($uuid !== '') {
         $record = data_read($resource, $uuid);
         return is_array($record)
-            ? ['record' => agent_site_trim($record), 'admin_page' => '/nb-admin/' . $resource . '/' . $uuid]
+            ? ['record' => agent_site_trim(agent_site_hide_secrets($resource, $record)), 'admin_page' => '/nb-admin/' . $resource . '/' . $uuid]
             : ['error' => 'No such record.'];
     }
-    $records = data_read($resource) ?: [];
+    $records = array_map(fn($record) => agent_site_hide_secrets($resource, (array)$record), data_read($resource) ?: []);
     if ($search !== '') {
         $records = array_filter($records, fn($record) => stripos(json_encode($record, JSON_UNESCAPED_UNICODE) ?: '', $search) !== false);
     }
@@ -192,6 +187,21 @@ function agent_site_records(array $asker, string $resource, string $uuid = '', s
     }
     return array_filter(['total' => count($records), 'records' => $list,
         'note' => count($records) > $limit ? 'Showing the first ' . $limit . '; narrow with search or sort.' : null], fn($value) => $value !== null);
+}
+
+/** Password hashes and their salts never reach the model. */
+function agent_site_hide_secrets(string $resource, array $record): array
+{
+    $meta = data_meta($resource) ?: [];
+    foreach (['encrypt', 'encrypt2way'] as $key) {
+        foreach (array_filter(explode(',', (string)($meta[$key] ?? ''))) as $field) {
+            unset($record[trim($field)]);
+        }
+    }
+    if (!empty($meta['encrypt'])) {
+        unset($record['salt']);
+    }
+    return $record;
 }
 
 function agent_site_trim(array $record): array
@@ -241,6 +251,10 @@ function agent_site_write(array $asker, string $action, string $resource, string
     $meta = data_meta($resource) ?: [];
     $fields = array_filter($fields, fn($field) => is_string($field) && $field !== 'uuid' && $field[0] !== '_', ARRAY_FILTER_USE_KEY);
     $current = $action === 'update' ? (data_read($resource, $uuid) ?: []) : [];
+    if ($resource === '.navigation' && !isset($fields['revision'])) {
+        // The agent sends the whole menu it just read; the editor's revision check needs that version.
+        $fields['revision'] = (string)($current['_revision'] ?? '');
+    }
     foreach ($fields as $name => $value) {
         if (!empty($meta['fields'][$name]['i18n']) && is_array($value) && is_array($current[$name] ?? null)) {
             $fields[$name] = array_merge($current[$name], $value);

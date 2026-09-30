@@ -13,7 +13,8 @@ $site_test_data = [
     'pages' => ['.meta' => ['fields' => ['title' => ['type' => 'text', 'i18n' => true]]]],
     '.navigation' => ['.meta' => ['fields' => []]],
     '.content' => ['.meta' => ['fields' => ['text' => ['type' => 'html']]]],
-    'users' => ['.meta' => ['fields' => []]],
+    'users' => ['.meta' => ['encrypt' => 'password', 'fields' => []],
+        'u1' => ['uuid' => 'u1', 'email' => 'editor@example.test', 'password' => 'hash', 'salt' => 'salt']],
     '.agent_conversations' => ['c1' => ['messages' => [
         ['from' => 'user', 'text' => 'hi', 'runs' => ['nimbly' => 'run-1'], 'asker' => 'editor@example.test'],
     ]]],
@@ -29,6 +30,7 @@ function data_read($resource, $uuid = null)
     unset($records['.meta']);
     return $uuid === null ? $records : ($records[$uuid] ?? null);
 }
+function data_path($resource) { return $GLOBALS['SYSTEM']['data_base'] . '/' . $resource; }
 function data_meta($resource) { return $GLOBALS['site_test_data'][$resource]['.meta'] ?? null; }
 function data_list($resource) { return array_keys(data_read($resource)); }
 function data_resources_list(): array
@@ -88,15 +90,16 @@ require_once BASE_DIR . 'core/modules/agent/lib/agent-site.php';
 require_once BASE_DIR . 'core/modules/agent/lib/agent-connector-nimbly.php';
 require_once BASE_DIR . 'core/lib/docs.php';
 
-// Scope: records yes, structure and people no; pages and navigation only with custom pages on.
-foreach (['articles' => true, '.content' => true, 'users' => false, 'roles' => false, '.config' => false,
-    '.agent_runs' => false, 'pages' => false, '.navigation' => false, '../etc' => false] as $resource => $expected) {
+// Scope: everything under the site's data, never a path outside it.
+foreach (['articles' => true, '.content' => true, 'users' => true, '.config' => true, '.navigation' => true,
+    'pages' => true, '../etc' => false, '' => false] as $resource => $expected) {
     site_test_assert(agent_site_resource_in_scope($resource) === $expected, 'scope of ' . $resource);
 }
-$site_test_data['.config']['managed_pages']['enabled'] = true;
-site_test_assert(agent_site_resource_in_scope('pages') && agent_site_resource_in_scope('.navigation'),
-    'pages and navigation are in scope when custom pages are on');
-$site_test_data['.config']['managed_pages']['enabled'] = false;
+$GLOBALS['SYSTEM']['data_base'] = sys_get_temp_dir() . '/agent-site-test-' . getmypid();
+foreach (array_keys($site_test_data) as $resource) {
+    @mkdir($GLOBALS['SYSTEM']['data_base'] . '/' . $resource, 0777, true);
+}
+register_shutdown_function(fn() => exec('rm -rf ' . escapeshellarg($GLOBALS['SYSTEM']['data_base'])));
 
 // The asker is found from the run, with the features of their roles.
 $context = ['run_uuid' => 'run-1', 'run' => ['event_context' => ['conversation' => 'c1']]];
@@ -116,7 +119,11 @@ site_test_assert(!isset($map['admin_pages']['/nb-admin/settings']), 'admin pages
 
 // Records.
 site_test_assert(isset(agent_site_records($asker, 'projects')['error']), 'records outside the asker\'s rights stay hidden');
-site_test_assert(isset(agent_site_records($asker, 'users')['error']), 'users are never readable');
+site_test_assert(isset(agent_site_records($asker, 'users')['error']), 'users need the view right');
+$admin = ['username' => 'a', 'features' => ['(all)' => true]];
+$user = agent_site_records($admin, 'users', 'u1')['record'];
+site_test_assert($user['email'] === 'editor@example.test' && !isset($user['password']) && !isset($user['salt']),
+    'password hashes and salts never reach the model');
 $list = agent_site_records($asker, 'articles');
 site_test_assert($list['total'] === 2 && $list['records'][0]['uuid'] === 'a1', 'records are listed');
 site_test_assert(agent_site_records($asker, 'articles', '', 'mos')['total'] === 1, 'records can be searched');
@@ -131,8 +138,16 @@ $writer = ['username' => 'w', 'features' => ['view-articles' => true, 'create-ar
 site_test_assert(agent_site_write($asker, 'create', 'articles', '', ['title' => ['en' => 'x']])['status'] === 'blocked',
     'an editor without the create right cannot create');
 site_test_assert(agent_site_write($writer, 'delete', 'articles', 'a2', [])['status'] === 'blocked', 'deleting needs the delete right');
-site_test_assert(agent_site_write(['username' => 'a', 'features' => ['(all)' => true]], 'update', 'users', 'u1', [])['status'] === 'blocked',
-    'users stay out of reach, even for admins');
+site_test_assert(agent_site_write($admin, 'update', 'users', 'u1', [])['status'] === 'blocked',
+    'resources with protected values are changed in the admin');
+$site_test_data['.navigation']['main-en'] = ['uuid' => 'main-en', 'items' => [], 'revision' => 'old', '_revision' => 'current'];
+agent_site_write($admin, 'update', '.navigation', 'main-en', ['items' => [['id' => 'a']]]);
+site_test_assert($site_test_data['.navigation']['main-en']['revision'] === 'current',
+    'a menu save carries the version the agent just read, not the one stored by the last editor save');
+$site_test_data['.config']['bovenruimte'] = ['uuid' => 'bovenruimte', 'page_title' => 'Old'];
+$site_test_data['.config']['.meta'] = ['fields' => false];
+site_test_assert(agent_site_write($admin, 'update', '.config', 'bovenruimte', ['page_title' => 'Groepen'])['status'] === 'done'
+    && $site_test_data['.config']['bovenruimte']['page_title'] === 'Groepen', 'page settings can be changed');
 $saved = agent_site_write($writer, 'update', 'articles', 'a1', ['title' => ['nl' => 'Hallo wereld'], '_created_by' => 'x', 'uuid' => 'zz']);
 site_test_assert($saved['status'] === 'done' && $site_test_data['articles']['a1']['title'] === ['en' => 'Hello moss', 'nl' => 'Hallo wereld'],
     'a translation is added without losing the other languages');
