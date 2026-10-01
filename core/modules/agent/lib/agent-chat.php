@@ -232,7 +232,7 @@ function agent_chat_follow_up(string $agent_id, string $uuid, string $text): arr
     if (preg_match('/^[a-f0-9]{16}$/', $uuid) !== 1) {
         throw new InvalidArgumentException('Conversation not found');
     }
-    load_libraries(['data', 'permissions', 'util']);
+    load_libraries(['data', 'access', 'permissions', 'util']);
     $lock = agent_lock('chat-' . $uuid);
     try {
         $conversation = data_read('.agent_conversations', $uuid);
