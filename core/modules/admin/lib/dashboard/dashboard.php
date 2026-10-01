@@ -64,6 +64,7 @@ function dashboard_sc($params)
     $body = dashboard_attention_section();
     $body .= dashboard_site_status_section($can_pull_ext, $can_pull_core);
     $body .= dashboard_stats_section();
+    $body .= dashboard_budget_section();
     $body .= dashboard_data_section();
     $body .= dashboard_manage_section();
     set_variable('_dash.body', $body);
@@ -163,6 +164,40 @@ function dashboard_stats_section(): string
     set_variable('_dash.stats_has_data', $hours ? 'true' : 'false');
     set_variable('_dash.stats_hours', $hours);
     return run_buffered(dirname(__FILE__) . '/stats-band.tpl');
+}
+
+/** Hour budget from Nimbly HQ, shown when NIMBLY_HQ_URL, NIMBLY_PROJECT and NIMBLY_BUDGET_KEY are set and HQ enables it. */
+function dashboard_budget_section(): string
+{
+    $budget = dashboard_budget();
+    if (empty($budget['enabled'])) {
+        return '';
+    }
+    set_variable('_dash.budget', $budget);
+    return run_buffered(dirname(__FILE__) . '/budget-band.tpl');
+}
+
+/** Reads the budget from HQ at most once an hour; a failed read is cached too, so a slow HQ never slows the dashboard twice. */
+function dashboard_budget(): array
+{
+    load_libraries(['env', 'curl']);
+    $hq = rtrim((string)env('NIMBLY_HQ_URL'), '/');
+    $project = (string)env('NIMBLY_PROJECT');
+    $key = (string)env('NIMBLY_BUDGET_KEY');
+    if ($hq === '' || $project === '' || $key === '') {
+        return [];
+    }
+    $cache = $GLOBALS['SYSTEM']['file_base'] . 'ext/data/.tmp/cache/budget.json';
+    if (is_file($cache) && filemtime($cache) > time() - 3600) {
+        return json_decode((string)file_get_contents($cache), true) ?: [];
+    }
+    $ch = _curl_init($hq . '/api/v1/client-budget?project=' . rawurlencode($project), ['Authorization: Bearer ' . $key]);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 3);
+    $budget = curl_result(_curl_exec($ch)) ?: [];
+    $budget = array_intersect_key($budget, array_flip(['enabled', 'bought', 'used', 'left', 'by_category']));
+    @mkdir(dirname($cache), 0755, true);
+    @file_put_contents($cache, json_encode($budget));
+    return $budget;
 }
 
 /** Hourly counts keyed "YYYY-MM-DDTHH" (UTC); days without hours count at noon. */
