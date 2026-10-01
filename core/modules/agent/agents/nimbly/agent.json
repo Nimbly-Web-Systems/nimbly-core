@@ -63,7 +63,7 @@
       "config": {"operation": "site-changes"}
     },
     "contact_developer": {
-      "description": "Email the people behind the site on behalf of the colleague, for what needs a human: structural changes, bugs, or questions you cannot answer. about=site for the site itself (content structure, features, design, bugs), about=hosting for the server, speed, email delivery, domain, certificates or backups. Write what is asked and why; they can reply to the colleague directly.",
+      "description": "Email the people behind the site on behalf of the user, for what needs a human: structural changes, bugs, or questions you cannot answer. about=site for the site itself (content structure, features, design, bugs), about=hosting for the server, speed, email delivery, domain, certificates or backups. Write what is asked and why; they can reply to the user directly.",
       "risk": "read_only",
       "parameters": {
         "type": "object",
@@ -78,7 +78,7 @@
       "connector": "notify-operator"
     },
     "save_record": {
-      "description": "Create, update or delete one record, with the colleague's rights. fields_json is a JSON object of field values (empty object for delete). For a translated field send only the languages you change, e.g. {\"title\": {\"nl\": \"...\"}}. Leave uuid empty to create with a new one.",
+      "description": "Create, update or delete one record, with the user's rights. fields_json is a JSON object of field values (empty object for delete). For a translated field send only the languages you change, e.g. {\"title\": {\"nl\": \"...\"}}. Leave uuid empty to create with a new one.",
       "risk": "governed",
       "parameters": {
         "type": "object",
@@ -125,7 +125,7 @@
       "config": {"operation": "docs"}
     },
     "site_map": {
-      "description": "What this site holds for the colleague you are talking to: its languages, the resources they may see with their fields and what they may do there, and the admin pages they can open.",
+      "description": "What this site holds for the user you are talking to: its languages, the resources they may see with their fields and what they may do there, and the admin pages they can open.",
       "risk": "read_only",
       "parameters": {
         "type": "object",
