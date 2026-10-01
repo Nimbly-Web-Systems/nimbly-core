@@ -208,8 +208,10 @@ $changes = agent_site_changes($reader);
 site_test_assert($changes['days'] === 7 && preg_match('/^[a-f0-9]{40}$/', $changes['core']['deployed']['hash'] ?? '') === 1
     && !empty($changes['core']['deployed']['date']) && !empty($changes['core']['deployed']['subject']),
     'the default window includes deployed Core hash, date and subject');
-site_test_assert($changes['core']['deployed']['hash'] === agent_site_git(BASE_DIR, ['rev-parse', 'HEAD'])
-    && isset($changes['ext']['deployed']['hash']), 'history describes the checked-out Core and separate Ext');
+site_test_assert($changes['core']['deployed']['hash'] === agent_site_git(BASE_DIR, ['rev-parse', 'HEAD']),
+    'history describes the checked-out Core');
+site_test_assert(file_exists(BASE_DIR . 'ext/.git') ? isset($changes['ext']['deployed']['hash'])
+    : isset($changes['ext']['error']), 'Ext history is reported only when its separate Git metadata exists');
 foreach ([1, 90] as $days) {
     site_test_assert(agent_site_changes($reader, $days)['days'] === $days, 'window endpoint ' . $days);
 }
