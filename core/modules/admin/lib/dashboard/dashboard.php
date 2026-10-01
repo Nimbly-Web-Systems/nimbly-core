@@ -166,35 +166,42 @@ function dashboard_stats_section(): string
     return run_buffered(dirname(__FILE__) . '/stats-band.tpl');
 }
 
-/** Hour budget from Nimbly HQ, shown when NIMBLY_HQ_URL, NIMBLY_PROJECT and NIMBLY_BUDGET_KEY are set and HQ enables it. */
+/** Hour budget from Nimbly HQ (NIMBLY_HQ_URL, NIMBLY_HQ_EMAIL, NIMBLY_HQ_PASSWORD); admins see it before HQ shows it to the client. */
 function dashboard_budget_section(): string
 {
     $budget = dashboard_budget();
-    if (empty($budget['enabled'])) {
+    if (!isset($budget['bought']) || (empty($budget['enabled']) && !access_by_role('admin'))) {
         return '';
     }
     set_variable('_dash.budget', $budget);
+    set_variable('_dash.budget_hidden', empty($budget['enabled']) ? 'true' : 'false');
     return run_buffered(dirname(__FILE__) . '/budget-band.tpl');
 }
 
-/** Reads the budget from HQ at most once an hour; a failed read is cached too, so a slow HQ never slows the dashboard twice. */
+/** Reads the budget from HQ's API at most once an hour; a failed read is cached too, so a slow HQ never slows the dashboard twice. */
 function dashboard_budget(): array
 {
     load_libraries(['env', 'curl']);
     $hq = rtrim((string)env('NIMBLY_HQ_URL'), '/');
-    $project = (string)env('NIMBLY_PROJECT');
-    $key = (string)env('NIMBLY_BUDGET_KEY');
-    if ($hq === '' || $project === '' || $key === '') {
+    $email = (string)env('NIMBLY_HQ_EMAIL');
+    $password = (string)env('NIMBLY_HQ_PASSWORD');
+    if ($hq === '' || $email === '' || $password === '') {
         return [];
     }
     $cache = $GLOBALS['SYSTEM']['file_base'] . 'ext/data/.tmp/cache/budget.json';
     if (is_file($cache) && filemtime($cache) > time() - 3600) {
         return json_decode((string)file_get_contents($cache), true) ?: [];
     }
-    $ch = _curl_init($hq . '/api/v1/client-budget?project=' . rawurlencode($project), ['Authorization: Bearer ' . $key]);
-    curl_setopt($ch, CURLOPT_TIMEOUT, 3);
-    $budget = curl_result(_curl_exec($ch)) ?: [];
-    $budget = array_intersect_key($budget, array_flip(['enabled', 'bought', 'used', 'left', 'by_category']));
+    $budget = [];
+    $ch = _curl_init($hq . '/api/v1/auth/token', ['Content-Type: application/json']);
+    curl_setopt_array($ch, [CURLOPT_TIMEOUT => 3, CURLOPT_POST => true,
+        CURLOPT_POSTFIELDS => json_encode(['email' => $email, 'password' => $password])]);
+    $token = (string)(curl_result(_curl_exec($ch))['token'] ?? '');
+    if ($token !== '') {
+        $ch = _curl_init($hq . '/api/v1/client-budget', ['Authorization: Bearer ' . $token]);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 3);
+        $budget = array_intersect_key(curl_result(_curl_exec($ch)) ?: [], array_flip(['enabled', 'bought', 'used', 'left', 'by_category']));
+    }
     @mkdir(dirname($cache), 0755, true);
     @file_put_contents($cache, json_encode($budget));
     return $budget;

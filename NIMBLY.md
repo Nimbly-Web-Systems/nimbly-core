@@ -3198,6 +3198,8 @@ deletion returns HTTP 403 and names the required
 
 ### Authentication
 
+> **Use this for all external API access.** Any site, script or service that reads or writes through the API signs in as a Nimbly user with API access and gets a token here. Don't invent shared secrets, per-record keys or other parallel auth. Give the calling party its own user, with a role holding only the feature it needs. In a custom endpoint, check that feature with `api_access('<feature>')` (core/modules/api/lib/api.php), then scope the data to the signed-in user (`$_SESSION['username']`).
+
 Obtain a Bearer token by posting credentials:
 
 ```bash
