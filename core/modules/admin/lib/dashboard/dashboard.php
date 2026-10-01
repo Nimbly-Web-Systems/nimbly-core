@@ -166,19 +166,22 @@ function dashboard_stats_section(): string
     return run_buffered(dirname(__FILE__) . '/stats-band.tpl');
 }
 
-/** Hour budget from Nimbly HQ (NIMBLY_HQ_URL, NIMBLY_HQ_EMAIL, NIMBLY_HQ_PASSWORD, NIMBLY_PROJECT); admins see it before HQ shows it to the client. */
+/** Hour budget from Nimbly HQ (NIMBLY_HQ_URL, NIMBLY_HQ_EMAIL, NIMBLY_HQ_PASSWORD, NIMBLY_PROJECT); admins always see it and decide whether to share it with the client's editors. */
 function dashboard_budget_section(): string
 {
     $budget = dashboard_budget();
     $current = $budget['current'] ?? null;
-    if (!is_array($current) || (empty($budget['enabled']) && !access_by_role('admin'))) {
+    $shared = !empty((data_exists('.config', 'budget') ? data_read('.config', 'budget') : [])['share']);
+    $admin = access_by_role('admin');
+    if (!is_array($current) || (!$shared && !$admin)) {
         return '';
     }
     foreach (['since', 'available', 'used', 'left'] as $key) {
         set_variable('_dash.budget_' . $key, $current[$key] ?? '');
     }
     set_variable('_dash.budget_bar_max', max((float)$current['available'], (float)$current['used'], 0.01));
-    set_variable('_dash.budget_hidden', empty($budget['enabled']) ? 'true' : 'false');
+    set_variable('_dash.budget_shared', $shared ? 'true' : 'false');
+    set_variable('_dash.budget_can_share', $admin ? 'true' : 'false');
     $labels = ['content' => 'Content', 'design' => 'Design', 'development' => 'Development',
         'maintenance' => 'Technical maintenance', 'support' => 'Support', 'documentation' => 'Documentation', 'communication' => 'Communication'];
     $rows = '';
@@ -219,7 +222,7 @@ function dashboard_budget(): array
     if ($token !== '') {
         $ch = _curl_init($hq . '/api/v1/client-budget?project=' . rawurlencode($project), ['Authorization: Bearer ' . $token]);
         curl_setopt($ch, CURLOPT_TIMEOUT, 3);
-        $budget = array_intersect_key(curl_result(_curl_exec($ch)) ?: [], array_flip(['enabled', 'current', 'history']));
+        $budget = array_intersect_key(curl_result(_curl_exec($ch)) ?: [], array_flip(['current', 'history']));
     }
     @mkdir(dirname($cache), 0755, true);
     @file_put_contents($cache, json_encode($budget));
