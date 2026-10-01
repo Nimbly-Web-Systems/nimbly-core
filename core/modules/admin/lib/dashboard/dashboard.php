@@ -180,7 +180,7 @@ function dashboard_budget_section(): string
     set_variable('_dash.budget_bar_max', max((float)$current['available'], (float)$current['used'], 0.01));
     set_variable('_dash.budget_hidden', empty($budget['enabled']) ? 'true' : 'false');
     $labels = ['content' => 'Content', 'design' => 'Design', 'development' => 'Development',
-        'maintenance' => 'Technical maintenance', 'documentation' => 'Documentation', 'communication' => 'Communication'];
+        'maintenance' => 'Technical maintenance', 'support' => 'Support', 'documentation' => 'Documentation', 'communication' => 'Communication'];
     $rows = '';
     foreach ((array)($current['by_category'] ?? []) as $category => $hours) {
         set_variable('_dash.budget_category', t($labels[$category] ?? (string)$category), true);
