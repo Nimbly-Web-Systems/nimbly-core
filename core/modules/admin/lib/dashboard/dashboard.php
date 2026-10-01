@@ -64,7 +64,7 @@ function dashboard_sc($params)
     $body = dashboard_attention_section();
     $body .= dashboard_site_status_section($can_pull_ext, $can_pull_core);
     $body .= dashboard_stats_section();
-    $body .= dashboard_budget_section();
+    $body .= dashboard_app_bands();
     $body .= dashboard_data_section();
     $body .= dashboard_manage_section();
     set_variable('_dash.body', $body);
@@ -166,67 +166,16 @@ function dashboard_stats_section(): string
     return run_buffered(dirname(__FILE__) . '/stats-band.tpl');
 }
 
-/** Hour budget from Nimbly HQ (NIMBLY_HQ_URL, NIMBLY_HQ_EMAIL, NIMBLY_HQ_PASSWORD, NIMBLY_PROJECT); admins always see it and decide whether to share it with the client's editors. */
-function dashboard_budget_section(): string
+/** Bands an application adds to the dashboard: every ext/tpl/dashboard-band.tpl and ext/modules/<name>/tpl/dashboard-band.tpl, in name order. */
+function dashboard_app_bands(): string
 {
-    $budget = dashboard_budget();
-    $current = $budget['current'] ?? null;
-    $shared = !empty((data_exists('.config', 'budget') ? data_read('.config', 'budget') : [])['share']);
-    $admin = access_by_role('admin');
-    if (!is_array($current) || (!$shared && !$admin)) {
-        return '';
+    $base = $GLOBALS['SYSTEM']['file_base'] . 'ext/';
+    $files = array_merge(glob($base . 'tpl/dashboard-band.tpl') ?: [], glob($base . 'modules/*/tpl/dashboard-band.tpl') ?: []);
+    $html = '';
+    foreach ($files as $file) {
+        $html .= run_buffered($file);
     }
-    foreach (['since', 'available', 'used', 'left'] as $key) {
-        set_variable('_dash.budget_' . $key, $current[$key] ?? '');
-    }
-    set_variable('_dash.budget_bar_max', max((float)$current['available'], (float)$current['used'], 0.01));
-    set_variable('_dash.budget_shared', $shared ? 'true' : 'false');
-    set_variable('_dash.budget_can_share', $admin ? 'true' : 'false');
-    $labels = ['content' => 'Content', 'design' => 'Design', 'development' => 'Development',
-        'maintenance' => 'Technical maintenance', 'support' => 'Support', 'documentation' => 'Documentation', 'communication' => 'Communication'];
-    $rows = '';
-    foreach ((array)($current['by_category'] ?? []) as $category => $hours) {
-        set_variable('_dash.budget_category', t($labels[$category] ?? (string)$category), true);
-        set_variable('_dash.budget_category_hours', $hours, true);
-        $rows .= run_buffered(dirname(__FILE__, 3) . '/uri/nb-admin/budget-band-category.tpl');
-    }
-    set_variable('_dash.budget_categories', $rows);
-    $history = $budget['history'] ?? null;
-    set_variable('_dash.budget_has_history', is_array($history) ? 'true' : 'false');
-    foreach (['since', 'available', 'used'] as $key) {
-        set_variable('_dash.budget_history_' . $key, is_array($history) ? ($history[$key] ?? '') : '');
-    }
-    return run_buffered(dirname(__FILE__) . '/budget-band.tpl');
-}
-
-/** Reads the budget from HQ's API at most once an hour; a failed read is cached too, so a slow HQ never slows the dashboard twice. */
-function dashboard_budget(): array
-{
-    load_libraries(['env', 'curl']);
-    $hq = rtrim((string)env('NIMBLY_HQ_URL'), '/');
-    $email = (string)env('NIMBLY_HQ_EMAIL');
-    $password = (string)env('NIMBLY_HQ_PASSWORD');
-    $project = (string)env('NIMBLY_PROJECT');
-    if ($hq === '' || $email === '' || $password === '' || $project === '') {
-        return [];
-    }
-    $cache = $GLOBALS['SYSTEM']['file_base'] . 'ext/data/.tmp/cache/budget-agreement.json';
-    if (is_file($cache) && filemtime($cache) > time() - 3600) {
-        return json_decode((string)file_get_contents($cache), true) ?: [];
-    }
-    $budget = [];
-    $ch = _curl_init($hq . '/api/v1/auth/token', ['Content-Type: application/json']);
-    curl_setopt_array($ch, [CURLOPT_TIMEOUT => 3, CURLOPT_POST => true,
-        CURLOPT_POSTFIELDS => json_encode(['email' => $email, 'password' => $password])]);
-    $token = (string)(curl_result(_curl_exec($ch))['token'] ?? '');
-    if ($token !== '') {
-        $ch = _curl_init($hq . '/api/v1/client-budget?project=' . rawurlencode($project), ['Authorization: Bearer ' . $token]);
-        curl_setopt($ch, CURLOPT_TIMEOUT, 3);
-        $budget = array_intersect_key(curl_result(_curl_exec($ch)) ?: [], array_flip(['current', 'history']));
-    }
-    @mkdir(dirname($cache), 0755, true);
-    @file_put_contents($cache, json_encode($budget));
-    return $budget;
+    return $html;
 }
 
 /** Hourly counts keyed "YYYY-MM-DDTHH" (UTC); days without hours count at noon. */

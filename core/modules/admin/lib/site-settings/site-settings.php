@@ -103,13 +103,6 @@ function site_settings_validate_config($resource, $uuid, &$record): bool
             }
         }
     }
-    if ($uuid === 'budget') {
-        load_library('access');
-    }
-    if ($uuid === 'budget' && (!access_by_role('admin') || (array_key_exists('share', $record) && !is_bool($record['share'])))) {
-        data_error_set('VALIDATION_FAILED', 'budget.share:boolean');
-        return false;
-    }
     if ($uuid === 'managed_pages') {
         $existing = data_exists('.config', 'managed_pages') ? data_read('.config', 'managed_pages') : [];
         $changed = site_settings_managed_pages_changed_keys(is_array($existing) ? $existing : [], $record);
