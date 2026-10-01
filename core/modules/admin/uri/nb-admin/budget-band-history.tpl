@@ -1,0 +1,1 @@
+<p class="mt-3 text-xs text-neutral-500">[#text Earlier#] ([#text since#] [#fmt var=_dash.budget_history_since type=date fmt=medium#]): [#fmt var=_dash.budget_history_available hours#] [#text available#], [#fmt var=_dash.budget_history_used hours#] [#text spent#]</p>

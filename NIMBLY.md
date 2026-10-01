@@ -601,13 +601,14 @@ Formats a variable for output.
 [#fmt val=item.body type=html#]            → strips all tags
 [#fmt val=item.body type=plain#]           → strips tags and decodes entities
 [#fmt val=item.size type=bytes#]           → human-readable bytes
+[#fmt val=item.hours type=hours#]          → 3h 30m, 6m, 37h (whole minutes)
 [#fmt val=item.created type=ago#]          → "3 days ago"
 [#fmt val=[#data-count users#] type=number round=-2 round_mode=floor#]
 [#fmt val=item.invoice type=file#]         → file download markup
 [#fmt val=item.order type=pad length=4#]   → zero-padded number
 ```
 
-Types: `text`, `plain`, `html`, `date`, `ago`, `json`, `bytes`, `number`, `boolean`, `image`, `file`, `pad`
+Types: `text`, `plain`, `html`, `date`, `ago`, `json`, `bytes`, `hours`, `number`, `boolean`, `image`, `file`, `pad`
 
 #### `[#count varname#]`
 Outputs the number of items in an array variable.

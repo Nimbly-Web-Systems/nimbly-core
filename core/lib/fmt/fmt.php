@@ -49,6 +49,9 @@ function fmt_sc($params)
         case 'bytes':
             $result = fmt_bytes($val, 1);
             break;
+        case 'hours':
+            $result = fmt_hours((float)$val);
+            break;
         case 'number':
             $decimals = intval(get_param_value($params, 'decimals', 0));
             $round = get_param_value($params, 'round');
@@ -181,4 +184,17 @@ function fmt_bytes($bytes, $decimals = 2)
     $size = array('B', 'kB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB');
     $factor = floor((strlen($bytes) - 1) / 3);
     return sprintf("%.{$decimals}f", $bytes / pow(1024, $factor)) . @$size[$factor];
+}
+
+/** Hours as "3h 30m", "6m" or "37h", rounded to whole minutes. */
+function fmt_hours(float $hours): string
+{
+    $minutes = (int)round(abs($hours) * 60);
+    $sign = $hours < 0 && $minutes > 0 ? '-' : '';
+    $h = intdiv($minutes, 60);
+    $m = $minutes % 60;
+    if ($h === 0 && $m > 0) {
+        return $sign . $m . 'm';
+    }
+    return $sign . $h . 'h' . ($m > 0 ? ' ' . $m . 'm' : '');
 }

@@ -166,15 +166,33 @@ function dashboard_stats_section(): string
     return run_buffered(dirname(__FILE__) . '/stats-band.tpl');
 }
 
-/** Hour budget from Nimbly HQ (NIMBLY_HQ_URL, NIMBLY_HQ_EMAIL, NIMBLY_HQ_PASSWORD); admins see it before HQ shows it to the client. */
+/** Hour budget from Nimbly HQ (NIMBLY_HQ_URL, NIMBLY_HQ_EMAIL, NIMBLY_HQ_PASSWORD, NIMBLY_PROJECT); admins see it before HQ shows it to the client. */
 function dashboard_budget_section(): string
 {
     $budget = dashboard_budget();
-    if (!isset($budget['bought']) || (empty($budget['enabled']) && !access_by_role('admin'))) {
+    $current = $budget['current'] ?? null;
+    if (!is_array($current) || (empty($budget['enabled']) && !access_by_role('admin'))) {
         return '';
     }
-    set_variable('_dash.budget', $budget);
+    foreach (['since', 'available', 'used', 'left'] as $key) {
+        set_variable('_dash.budget_' . $key, $current[$key] ?? '');
+    }
+    set_variable('_dash.budget_bar_max', max((float)$current['available'], (float)$current['used'], 0.01));
     set_variable('_dash.budget_hidden', empty($budget['enabled']) ? 'true' : 'false');
+    $labels = ['content' => 'Content', 'design' => 'Design', 'development' => 'Development',
+        'maintenance' => 'Technical maintenance', 'documentation' => 'Documentation', 'communication' => 'Communication'];
+    $rows = '';
+    foreach ((array)($current['by_category'] ?? []) as $category => $hours) {
+        set_variable('_dash.budget_category', t($labels[$category] ?? (string)$category), true);
+        set_variable('_dash.budget_category_hours', $hours, true);
+        $rows .= run_buffered(dirname(__FILE__, 3) . '/uri/nb-admin/budget-band-category.tpl');
+    }
+    set_variable('_dash.budget_categories', $rows);
+    $history = $budget['history'] ?? null;
+    set_variable('_dash.budget_has_history', is_array($history) ? 'true' : 'false');
+    foreach (['since', 'available', 'used'] as $key) {
+        set_variable('_dash.budget_history_' . $key, is_array($history) ? ($history[$key] ?? '') : '');
+    }
     return run_buffered(dirname(__FILE__) . '/budget-band.tpl');
 }
 
@@ -185,10 +203,11 @@ function dashboard_budget(): array
     $hq = rtrim((string)env('NIMBLY_HQ_URL'), '/');
     $email = (string)env('NIMBLY_HQ_EMAIL');
     $password = (string)env('NIMBLY_HQ_PASSWORD');
-    if ($hq === '' || $email === '' || $password === '') {
+    $project = (string)env('NIMBLY_PROJECT');
+    if ($hq === '' || $email === '' || $password === '' || $project === '') {
         return [];
     }
-    $cache = $GLOBALS['SYSTEM']['file_base'] . 'ext/data/.tmp/cache/budget.json';
+    $cache = $GLOBALS['SYSTEM']['file_base'] . 'ext/data/.tmp/cache/budget-agreement.json';
     if (is_file($cache) && filemtime($cache) > time() - 3600) {
         return json_decode((string)file_get_contents($cache), true) ?: [];
     }
@@ -198,9 +217,9 @@ function dashboard_budget(): array
         CURLOPT_POSTFIELDS => json_encode(['email' => $email, 'password' => $password])]);
     $token = (string)(curl_result(_curl_exec($ch))['token'] ?? '');
     if ($token !== '') {
-        $ch = _curl_init($hq . '/api/v1/client-budget', ['Authorization: Bearer ' . $token]);
+        $ch = _curl_init($hq . '/api/v1/client-budget?project=' . rawurlencode($project), ['Authorization: Bearer ' . $token]);
         curl_setopt($ch, CURLOPT_TIMEOUT, 3);
-        $budget = array_intersect_key(curl_result(_curl_exec($ch)) ?: [], array_flip(['enabled', 'bought', 'used', 'left', 'by_category']));
+        $budget = array_intersect_key(curl_result(_curl_exec($ch)) ?: [], array_flip(['enabled', 'current', 'history']));
     }
     @mkdir(dirname($cache), 0755, true);
     @file_put_contents($cache, json_encode($budget));
