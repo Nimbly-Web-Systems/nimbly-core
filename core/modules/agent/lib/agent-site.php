@@ -20,6 +20,56 @@ function agent_site_asker(array $context): array
     return ['username' => '', 'features' => []];
 }
 
+/** Deployed Git history only; it cannot establish that a reported problem is resolved. */
+function agent_site_changes(array $asker, mixed $days = 7): array
+{
+    if (!agent_site_can($asker, 'chat-nimbly')) {
+        return ['error' => 'This colleague may not consult site changes.'];
+    }
+    if (!is_int($days) || $days < 1 || $days > 90) {
+        return ['error' => 'Choose a whole number of days from 1 to 90.'];
+    }
+    $base = rtrim(agent_base_dir(), '/');
+    $result = ['days' => $days, 'note' => 'Commits describe deployed code, not proof of resolution. Verify the reported behavior.'];
+    foreach (['core' => $base, 'ext' => $base . '/ext'] as $name => $path) {
+        try {
+            if (!file_exists($path . '/.git')) {
+                throw new RuntimeException('Deployed Git metadata is unavailable.');
+            }
+            $head = agent_site_git($path, ['show', '-s', '--format=%H%x1f%cI%x1f%s', 'HEAD']);
+            $log = agent_site_git($path, ['log', 'HEAD', '--since=' . gmdate('c', time() - $days * 86400),
+                '-n', '81', '--format=%H%x1f%cI%x1f%s']);
+            $parse = function (string $line): array {
+                [$hash, $date, $subject] = explode("\x1f", $line, 3);
+                return ['hash' => $hash, 'date' => $date, 'subject' => $subject];
+            };
+            $commits = $log === '' ? [] : array_map($parse, explode("\n", $log));
+            $result[$name] = ['deployed' => $parse($head), 'commits' => array_slice($commits, 0, 80),
+                'truncated' => count($commits) > 80];
+        } catch (Throwable) {
+            $result[$name] = ['error' => 'Deployed Git history is unavailable.'];
+        }
+    }
+    return $result;
+}
+
+/** Fixed read-only Git arguments; no credentials, network or working-tree changes. */
+function agent_site_git(string $path, array $arguments): string
+{
+    $process = proc_open(['git', '-C', $path, ...$arguments],
+        [0 => ['pipe', 'r'], 1 => ['pipe', 'w'], 2 => ['file', '/dev/null', 'a']], $pipes);
+    if (!is_resource($process)) {
+        throw new RuntimeException('Git is unavailable.');
+    }
+    fclose($pipes[0]);
+    $output = stream_get_contents($pipes[1]);
+    fclose($pipes[1]);
+    if (proc_close($process) !== 0) {
+        throw new RuntimeException('Git lookup failed.');
+    }
+    return trim((string)$output);
+}
+
 function agent_site_can(array $asker, string $feature): bool
 {
     load_library('permissions');

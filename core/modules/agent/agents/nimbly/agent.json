@@ -50,6 +50,18 @@
     "delivery_from": "answer"
   },
   "tools": {
+    "site_changes": {
+      "description": "Read this deployed site's Core and Ext hashes, commit dates and subjects over the past 1 to 90 days (default 7). Commits alone do not prove that an issue is resolved; verify behavior before saying it is fixed.",
+      "risk": "read_only",
+      "parameters": {
+        "type": "object",
+        "properties": {"days": {"type": "integer", "description": "Days to look back, from 1 to 90; use 7 unless asked otherwise."}},
+        "required": ["days"],
+        "additionalProperties": false
+      },
+      "connector": "nimbly",
+      "config": {"operation": "site-changes"}
+    },
     "contact_developer": {
       "description": "Email the people behind the site on behalf of the colleague, for what needs a human: structural changes, bugs, or questions you cannot answer. about=site for the site itself (content structure, features, design, bugs), about=hosting for the server, speed, email delivery, domain, certificates or backups. Write what is asked and why; they can reply to the colleague directly.",
       "risk": "read_only",

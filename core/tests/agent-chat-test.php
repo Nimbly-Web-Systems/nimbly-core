@@ -368,6 +368,31 @@ chat_test_assert(in_array('Not yours', $agent_memory, true) && in_array('Disk is
 chat_test_assert(agent_chat_recent('silent') === [], 'conversations an agent is not part of are not its memory');
 
 // Escalation: the agent emails the operator in its own words.
+// Operator follow-ups retain ownership and use only the selected participant.
+$chat_test_user_features['hermen'] = ['chat-helper', 'chat-coder'];
+$follow = agent_chat_create($owner, ['helper' => 'Helper', 'coder' => 'Coder']);
+agent_chat_post($follow, $owner, '@Helper Please check');
+$before = data_read('.agent_conversations', $follow);
+chat_test_assert(agent_chat_follow_up('coder', $follow, 'Verified by the operator')['queued'] === false
+    && data_read('.agent_conversations', $follow) === $before, 'active turns defer without changing the conversation');
+agent_chat_run_pending();
+$queued = agent_chat_follow_up('coder', $follow, 'Verified by the operator');
+$stored = data_read('.agent_conversations', $follow);
+$occasion = end($stored['messages']);
+chat_test_assert($queued['queued'] && array_keys($occasion['runs']) === ['coder'] && $occasion['asker'] === 'hermen'
+    && $stored['owner_uuid'] === $owner, 'the selected agent replies with the owner rights and ownership unchanged');
+agent_chat_run_pending();
+$stored = data_read('.agent_conversations', $follow);
+chat_test_assert(end($stored['messages'])['from'] === 'coder', 'the follow-up answer is appended to the original conversation');
+chat_test_expect_error(fn() => agent_chat_follow_up('silent', $follow, 'hi'), 'does not take part', 'a nonparticipant cannot receive a follow-up');
+chat_test_expect_error(fn() => agent_chat_follow_up('helper', 'aaaaaaaaaaaaaaaa', 'hi'), 'Conversation not found', 'missing conversations are rejected');
+chat_test_expect_error(fn() => agent_chat_follow_up('helper', '../bad', 'hi'), 'Conversation not found', 'invalid conversation ids are rejected');
+$chat_test_user_features['hermen'] = [];
+chat_test_expect_error(fn() => agent_chat_follow_up('helper', $follow, 'hi'), 'owner may not', 'revoked chat permission is respected');
+$chat_test_user_features['hermen'] = ['chat-helper', 'chat-coder'];
+data_update('.agent_conversations', $follow, ['owner_uuid' => $other_owner]);
+chat_test_expect_error(fn() => agent_chat_follow_up('helper', $follow, 'hi'), 'owner may not', 'another user cannot provide the owner identity');
+
 $result = agent_connector_notify_operator(agent_artifact('agent.tool-request', 1, ['tool' => 'notify_operator',
     'arguments' => ['subject' => 'Visitor numbers', 'message' => "Luuk asks for <numbers>\nsince 2025."]]), [],
     ['definition' => ['name' => 'Helper'], 'run' => ['agent_id' => 'helper']]);
@@ -375,6 +400,9 @@ chat_test_assert(agent_artifact_data($result)['sent'] === true, 'the escalation 
 chat_test_assert($chat_test_emails[0]['recipient'] === 'ops@example.test' && $chat_test_emails[0]['subject'] === '[Nimbly] Helper: Visitor numbers',
     'the escalation goes to the system alert address');
 chat_test_assert($chat_test_vars['agent_message'] === "Luuk asks for &lt;numbers&gt;<br />\nsince 2025.", 'the agent\'s message is escaped');
+chat_test_assert($chat_test_vars['notification_heading'] === 'Review requested'
+    && $chat_test_vars['agent_id'] === 'helper' && $chat_test_vars['conversation_id'] === '',
+    'non-chat notifications request review and identify the agent');
 
 // Remote agents: Coder lives on another site (its home). This site (the hub) asks it through the
 // home's API as a user there, and pulls back what it said. Both sites run here, one at a time.
@@ -511,6 +539,11 @@ chat_test_assert($act_run() === true, 'without agent-act for the hub user at hom
 $chat_test_sites['home']['chat_test_features'][] = 'agent-act';
 agent_chat_post($act_chat, $owner, '@Coder go ahead');
 chat_test_assert($act_run() === false, 'with agent-act on both sides the agent may act');
+$chat_test_user_features[$chat_test_user][] = 'chat-coder';
+$remote_follow = agent_chat_follow_up('coder', $act_chat, 'Operator verified recovery; tell the colleague.');
+chat_test_assert($remote_follow['queued'] && $act_run() === false, 'remote follow-ups retain existing authority');
+chat_test_assert(str_contains(json_encode($chat_test_seen['coder']), 'Operator verified recovery'),
+    'the remote agent receives the operator context through the chat mechanism');
 $chat_test_user_features = [];
 $chat_test_env = [];
 

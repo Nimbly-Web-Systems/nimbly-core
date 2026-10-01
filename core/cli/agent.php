@@ -28,6 +28,29 @@ if (file_exists($env_file)) {
 load_library('agent');
 
 $command = $argv[1] ?? '';
+if ($command === 'agent:follow-up') {
+    $agent_id = trim((string)($argv[2] ?? ''));
+    $conversation = '';
+    $message = '';
+    foreach (array_slice($argv, 3) as $argument) {
+        if (str_starts_with($argument, '--conversation=')) {
+            $conversation = substr($argument, 15);
+        } elseif (str_starts_with($argument, '--message=')) {
+            $message = substr($argument, 10);
+        } else {
+            throw new InvalidArgumentException('Unknown follow-up option');
+        }
+    }
+    load_libraries(['agent-chat', 'permissions']);
+    try {
+        $result = agent_chat_follow_up($agent_id, $conversation, $message);
+    } catch (InvalidArgumentException $error) {
+        fwrite(STDERR, $error->getMessage() . "\n");
+        exit(64);
+    }
+    echo json_encode($result, JSON_UNESCAPED_SLASHES) . "\n";
+    exit($result['queued'] ? 0 : 75);
+}
 if ($command === 'agent:enqueue') {
     $agent_id = trim((string)($argv[2] ?? ''));
     $manual = '';

@@ -16,13 +16,18 @@ function agent_connector_notify_operator(array $source, array $_config, array $c
         $site_name = get_i18n_resolve($site_name, 'auto');
     }
     $agent_name = (string)($context['definition']['name'] ?? $context['run']['agent_id'] ?? 'Agent');
+    $agent_id = (string)($context['run']['agent_id'] ?? $context['definition']['id'] ?? '');
+    $conversation = (string)($context['run']['event_context']['conversation'] ?? '');
+    set_variable('notification_heading', $conversation !== '' ? 'Client request' : 'Review requested');
+    set_variable('agent_id', system_alert_html($agent_id));
+    set_variable('conversation_id', system_alert_html($conversation));
     set_variable('site_name', system_alert_html($site_name));
     set_variable('environment', system_alert_html(env('APP_ENV', 'unknown')));
     set_variable('agent_name', system_alert_html($agent_name));
     set_variable('agent_message', nl2br(system_alert_html(mb_substr($message, 0, 8000))));
     // From a chat: say who asked, and let the developer reply to them directly.
     $asked_by = '';
-    if (!empty($context['run']['event_context']['conversation'])) {
+    if ($conversation !== '') {
         load_library('agent-site');
         $asked_by = (string)agent_site_asker($context)['username'];
     }

@@ -177,9 +177,12 @@ require_once BASE_DIR . 'core/modules/agent/lib/agent-connector-notify-operator.
 $site_test_users['editor@example.test'] = $site_test_users['editor@example.test'] ?? [];
 agent_connector_notify_operator(agent_artifact('agent.tool-request', 1, ['arguments' => [
     'subject' => 'Remove test resources', 'message' => 'Please remove them.']]), [],
-    $context + ['definition' => ['name' => 'Nimbly']]);
+    $context + ['definition' => ['name' => 'Nimbly', 'id' => 'nimbly']]);
 site_test_assert($site_test_emails[0]['recipient'] === 'dev@test' && $site_test_emails[0]['reply_to'] === 'editor@example.test'
     && $site_test_vars['asked_by'] === 'editor@example.test', 'the developer gets the request and can reply to the colleague');
+site_test_assert($site_test_vars['notification_heading'] === 'Client request' && $site_test_vars['conversation_id'] === 'c1'
+    && $site_test_vars['agent_name'] === 'Nimbly' && $site_test_vars['agent_id'] === 'nimbly',
+    'chat escalations identify the conversation, agent and request');
 $GLOBALS['site_test_env'] = ['DEVELOPER_EMAIL' => 'builder@test'];
 site_test_assert(agent_notify_operator_recipient('site') === 'builder@test' && agent_notify_operator_recipient('hosting') === 'dev@test',
     'a site with its own developer sends site work to them and hosting to the operator');
@@ -198,5 +201,27 @@ site_test_assert(isset($definition['chat_pipeline']) && !isset($definition['pipe
 site_test_assert(isset(agent_site_stats(['username' => 'x', 'features' => []], '2026-09-01', '2026-09-02')['error']),
     'visitor statistics need the view-stats right');
 site_test_assert(isset($definition['tools']['visitor_stats']), 'Nimbly can look at visitor statistics');
+
+// Deployed history is local, bounded and read-only, with the chat colleague's rights.
+$reader = ['username' => 'reader', 'features' => ['chat-nimbly' => true]];
+$changes = agent_site_changes($reader);
+site_test_assert($changes['days'] === 7 && preg_match('/^[a-f0-9]{40}$/', $changes['core']['deployed']['hash'] ?? '') === 1
+    && !empty($changes['core']['deployed']['date']) && !empty($changes['core']['deployed']['subject']),
+    'the default window includes deployed Core hash, date and subject');
+site_test_assert($changes['core']['deployed']['hash'] === agent_site_git(BASE_DIR, ['rev-parse', 'HEAD'])
+    && isset($changes['ext']['deployed']['hash']), 'history describes the checked-out Core and separate Ext');
+foreach ([1, 90] as $days) {
+    site_test_assert(agent_site_changes($reader, $days)['days'] === $days, 'window endpoint ' . $days);
+}
+foreach ([0, 91, '7', 1.5] as $days) {
+    site_test_assert(isset(agent_site_changes($reader, $days)['error']), 'invalid windows are refused');
+}
+site_test_assert(isset(agent_site_changes(['username' => '', 'features' => []])['error']), 'unknown askers cannot read changes');
+site_test_assert(isset($definition['tools']['site_changes']) && $definition['tools']['site_changes']['risk'] === 'read_only',
+    'the read-only history tool is registered');
+try {
+    agent_site_git('/tmp/nimbly-no-such-repository', ['rev-parse', 'HEAD']);
+    site_test_assert(false, 'unavailable Git is reported');
+} catch (RuntimeException) {}
 
 echo "Agent site tests passed.\n";

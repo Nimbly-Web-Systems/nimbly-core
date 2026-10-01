@@ -76,7 +76,11 @@ function agent_remote_ask(string $uuid, array $conversation, string $agent_id, s
     ]);
     $messages = [];
     $asker = '';
-    foreach (agent_chat_visible((array)($conversation['messages'] ?? [])) as $message) {
+    foreach ((array)($conversation['messages'] ?? []) as $message) {
+        // Forward an operator occasion only when it is the message being answered.
+        if (($message['from'] ?? '') === 'occasion' && ($message['id'] ?? '') !== $message_id) {
+            continue;
+        }
         $messages[] = array_intersect_key($message, array_flip(['id', 'from', 'text', 'at']));
         $asker = (string)($message['asker'] ?? $asker);
     }

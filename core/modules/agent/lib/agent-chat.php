@@ -222,6 +222,57 @@ function agent_chat_addressees(array $conversation, array $team, string $text): 
     return in_array('nimbly', $participants, true) ? ['nimbly'] : array_slice($participants, 0, 1);
 }
 
+/** CLI operator context for an existing chat, with the original colleague's rights. */
+function agent_chat_follow_up(string $agent_id, string $uuid, string $text): array
+{
+    $text = trim($text);
+    if ($text === '' || mb_strlen($text) > AGENT_CHAT_MAX_TEXT) {
+        throw new InvalidArgumentException('Message is empty or too long');
+    }
+    if (preg_match('/^[a-f0-9]{16}$/', $uuid) !== 1) {
+        throw new InvalidArgumentException('Conversation not found');
+    }
+    load_libraries(['data', 'permissions', 'util']);
+    $lock = agent_lock('chat-' . $uuid);
+    try {
+        $conversation = data_read('.agent_conversations', $uuid);
+        if (!is_array($conversation)) {
+            throw new InvalidArgumentException('Conversation not found');
+        }
+        $team = agent_chat_team_of($conversation);
+        if (!isset($team[$agent_id]) || !agent_chat_takes_part($agent_id)) {
+            throw new InvalidArgumentException('That agent does not take part in this conversation');
+        }
+        $asker = '';
+        foreach (array_reverse((array)($conversation['messages'] ?? [])) as $message) {
+            $candidate = (string)($message['asker'] ?? '');
+            if ($candidate !== '' && hash_equals((string)$conversation['owner_uuid'], md5_uuid($candidate))) {
+                $asker = $candidate;
+                break;
+            }
+        }
+        if ($asker === '' || !permission_features_have(user_feature_map($asker), 'chat-' . $agent_id)) {
+            throw new InvalidArgumentException('The conversation owner may not talk to this agent');
+        }
+        foreach (array_keys($team) as $participant) {
+            if (agent_chat_pending_run($conversation, $participant) !== null) {
+                return ['queued' => false, 'reason' => 'An active turn is still pending; retry after it finishes.'];
+            }
+        }
+        $message_id = substr(md5(generate_uuid()), 0, 12);
+        $conversation['messages'][] = ['id' => $message_id, 'from' => 'occasion',
+            'text' => 'Operator follow-up: ' . $text, 'at' => time(), 'channel' => 'operator',
+            'asker' => $asker, 'runs' => []];
+        $last = array_key_last($conversation['messages']);
+        $run_uuid = agent_chat_start_turn($uuid, $conversation, $agent_id, $message_id, $team, ['conversation' => $uuid]);
+        $conversation['messages'][$last]['runs'][$agent_id] = $run_uuid;
+        data_update('.agent_conversations', $uuid, ['messages' => $conversation['messages'], 'updated_at' => time()]);
+        return ['queued' => true, 'conversation' => $uuid, 'agent' => $agent_id, 'run_uuid' => $run_uuid];
+    } finally {
+        agent_unlock($lock);
+    }
+}
+
 function agent_chat_post(string $uuid, string $owner, string $text, string $channel = 'web'): array
 {
     $text = trim($text);
