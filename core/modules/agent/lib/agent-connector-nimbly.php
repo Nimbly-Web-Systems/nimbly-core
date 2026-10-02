@@ -18,7 +18,8 @@ function agent_nimbly_tool(string $operation, array $arguments, array $context):
 {
     return match ($operation) {
         'docs' => agent_nimbly_docs((string)($arguments['action'] ?? ''), trim((string)($arguments['query'] ?? ''))),
-        'site-map' => agent_site_map(agent_site_asker($context)),
+        'code' => agent_site_code(agent_site_asker($context), (string)($arguments['action'] ?? ''), trim((string)($arguments['query'] ?? ''))),
+        'site-map' =>agent_site_map(agent_site_asker($context)),
         'site-changes' => agent_site_changes(agent_site_asker($context), $arguments['days'] ?? 7),
         'records' => agent_site_records(agent_site_asker($context), (string)($arguments['resource'] ?? ''),
             trim((string)($arguments['uuid'] ?? '')), trim((string)($arguments['search'] ?? '')),

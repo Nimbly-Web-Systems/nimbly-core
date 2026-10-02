@@ -221,6 +221,23 @@ foreach ([0, 91, '7', 1.5] as $days) {
 site_test_assert(isset(agent_site_changes(['username' => '', 'features' => []])['error']), 'unknown askers cannot read changes');
 site_test_assert(isset($definition['tools']['site_changes']) && $definition['tools']['site_changes']['risk'] === 'read_only',
     'the read-only history tool is registered');
+
+// Site code: read-only, and only the code folders under ext/.
+$code = agent_site_code($reader, 'list', '');
+site_test_assert(isset($code['files']) && array_filter($code['files'],
+    fn($path) => !preg_match('#^(uri|tpl|modules|lib)/#', $path)) === [], 'code lists only code folders');
+if ($code['files'] !== []) {
+    $first = $code['files'][0];
+    site_test_assert(isset(agent_site_code($reader, 'read', $first)['content']), 'a listed file can be read');
+    site_test_assert(isset(agent_site_code($reader, 'read', 'ext/' . $first)['content']), 'an ext/ prefix is accepted');
+}
+foreach (['../.env', 'composer.json', 'data/.config/site', 'lib/../../.env', '/etc/passwd', ''] as $path) {
+    site_test_assert(isset(agent_site_code($reader, 'read', $path)['error']), 'code outside the code folders is refused: ' . $path);
+}
+site_test_assert(isset(agent_site_code($reader, 'list', 'data')['error']), 'data is not listed as code');
+site_test_assert(isset(agent_site_code($reader, 'search', '')['error']), 'a search needs a term');
+site_test_assert(isset(agent_site_code(['username' => '', 'features' => []], 'list', '')['error']), 'unknown askers cannot read code');
+site_test_assert(($definition['tools']['site_code']['risk'] ?? '') === 'read_only', 'the read-only code tool is registered');
 try {
     agent_site_git('/tmp/nimbly-no-such-repository', ['rev-parse', 'HEAD']);
     site_test_assert(false, 'unavailable Git is reported');

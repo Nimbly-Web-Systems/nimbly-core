@@ -124,6 +124,21 @@
       "connector": "nimbly",
       "config": {"operation": "docs"}
     },
+    "site_code": {
+      "description": "Read this site's own code (routes, templates, modules, libraries under ext/) to understand how it works. action=list gives the files under a folder (query: uri, tpl, modules, lib or a subfolder; empty for all), action=search finds lines containing one term, action=read returns one file by its listed path.",
+      "risk": "read_only",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "action": {"type": "string", "enum": ["list", "search", "read"]},
+          "query": {"type": "string"}
+        },
+        "required": ["action", "query"],
+        "additionalProperties": false
+      },
+      "connector": "nimbly",
+      "config": {"operation": "code"}
+    },
     "site_map": {
       "description": "What this site holds for the user you are talking to: its languages, the resources they may see with their fields and what they may do there, and the admin pages they can open.",
       "risk": "read_only",

@@ -53,6 +53,95 @@ function agent_site_changes(array $asker, mixed $days = 7): array
     return $result;
 }
 
+/** This site's own code under ext/, read-only: a file list, a search, or one file. */
+function agent_site_code(array $asker, string $action, string $query): array
+{
+    if (!agent_site_can($asker, 'chat-nimbly')) {
+        return ['error' => 'This colleague may not consult site code.'];
+    }
+    $ext = rtrim(agent_base_dir(), '/') . '/ext/';
+    if ($action === 'read') {
+        $file = agent_site_code_path($ext, $query);
+        if ($file === null || !is_file($file) || !agent_site_code_readable($file)) {
+            return ['error' => 'No such file. List a folder (uri, tpl, modules, lib) to find it.'];
+        }
+        $text = (string)file_get_contents($file);
+        return mb_strlen($text) <= 14000 ? ['file' => $query, 'content' => $text]
+            : ['file' => $query, 'content' => mb_substr($text, 0, 14000), 'truncated' => 'File is long; search for the part you need.'];
+    }
+    if ($action !== 'list' && $action !== 'search') {
+        return ['error' => 'Choose list, search or read.'];
+    }
+    if ($action === 'search' && $query === '') {
+        return ['error' => 'Give a search term.'];
+    }
+    $folder = $action === 'list' ? $query : '';
+    $files = agent_site_code_files($ext, $folder);
+    if ($files === null) {
+        return ['error' => 'No such folder. Code lives in uri, tpl, modules and lib.'];
+    }
+    if ($action === 'list') {
+        return ['files' => array_slice($files, 0, 300), 'total' => count($files)];
+    }
+    $matches = [];
+    foreach ($files as $path) {
+        foreach (file($ext . $path, FILE_IGNORE_NEW_LINES) ?: [] as $number => $line) {
+            if (stripos($line, $query) !== false) {
+                $matches[] = $path . ':' . ($number + 1) . ': ' . mb_substr(trim($line), 0, 200);
+            }
+        }
+    }
+    return $matches === [] ? ['matches' => [], 'hint' => 'No match. Try a shorter term or a shortcode, route or function name.']
+        : ['matches' => array_slice($matches, 0, 40), 'total' => count($matches)];
+}
+
+/** The real path of an ext/ code file or folder, or null when it lies outside uri, tpl, modules or lib. */
+function agent_site_code_path(string $ext, string $path): ?string
+{
+    $real = realpath($ext . ltrim(preg_replace('#^/?ext/#', '', $path), '/'));
+    if ($real === false) {
+        return null;
+    }
+    foreach (['uri', 'tpl', 'modules', 'lib'] as $root) {
+        $base = realpath($ext . $root);
+        if ($base !== false && ($real === $base || str_starts_with($real, $base . '/'))) {
+            return $real;
+        }
+    }
+    return null;
+}
+
+function agent_site_code_readable(string $file): bool
+{
+    return !str_starts_with(basename($file), '.')
+        && in_array(strtolower(pathinfo($file, PATHINFO_EXTENSION)), ['tpl', 'inc', 'php', 'js', 'css', 'md', 'json'], true);
+}
+
+/** Code files under one folder, or under all code folders, relative to ext/. */
+function agent_site_code_files(string $ext, string $folder): ?array
+{
+    $ext_real = realpath($ext);
+    $roots = $folder === '' ? array_map(fn($root) => $ext . $root, ['uri', 'tpl', 'modules', 'lib']) : [$ext . $folder];
+    $files = [];
+    foreach ($roots as $root) {
+        $dir = agent_site_code_path($ext, substr($root, strlen($ext)));
+        if ($dir === null || !is_dir($dir)) {
+            if ($folder !== '') {
+                return null;
+            }
+            continue;
+        }
+        $iterator = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($dir, FilesystemIterator::SKIP_DOTS));
+        foreach ($iterator as $file) {
+            if ($file->isFile() && !str_contains($file->getPathname(), '/.') && agent_site_code_readable($file->getPathname())) {
+                $files[] = substr($file->getPathname(), strlen($ext_real) + 1);
+            }
+        }
+    }
+    sort($files);
+    return $files;
+}
+
 /** Fixed read-only Git arguments; no credentials, network or working-tree changes. */
 function agent_site_git(string $path, array $arguments): string
 {
