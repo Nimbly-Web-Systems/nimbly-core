@@ -579,7 +579,11 @@ nb_edit.upload_images = async function (editor, files, range, pasted_html = null
     editor.setAttribute('aria-busy', 'true');
     try {
         // All results retain input order; insert nothing if any upload fails.
-        const uploaded = await Promise.all(files.map(file => nb.upload.upload(file)));
+        const results = await Promise.allSettled(files.map(file => nb.upload.upload(file)));
+        if (results.some(result => result.status === 'rejected')) {
+            throw new Error(nb.text.image_upload_failed || 'Image upload failed. Please try again.');
+        }
+        const uploaded = results.map(result => result.value);
         if (uploaded.some(result => !result.success || !result.files?.uuid)) {
             throw new Error(nb.text.image_upload_failed || 'Image upload failed. Please try again.');
         }

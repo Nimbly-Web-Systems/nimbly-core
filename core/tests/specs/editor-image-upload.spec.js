@@ -33,9 +33,9 @@ async function setup(page, media = true, paste_html = false, mode = 'form') {
     window.getSelection().removeAllRanges();
     window.getSelection().addRange(range);
     window.requests = [];
-    window.fetch = (_url, options) => new Promise(resolve => {
+    window.fetch = (_url, options) => new Promise((resolve, reject) => {
       const file = options.body.get('file');
-      requests.push({ name: file.name, resolve: result => resolve({ json: async () => result }) });
+      requests.push({ name: file.name, reject, resolve: result => resolve({ json: async () => result }) });
     });
   }, { media, paste_html, mode });
 }
@@ -113,6 +113,17 @@ test('rich HTML embedded images upload once even with a clipboard file', async (
   await expect(page.locator('#editor img')).toHaveAttribute('alt', 'Existing description');
   await expect(page.locator('#editor b')).toHaveText('Caption');
   expect(await page.locator('#editor').innerHTML()).not.toContain('base64');
+});
+
+test('network failure keeps the batch pending until the remaining requests settle', async ({ page }) => {
+  await setup(page);
+  await send(page, 'paste', ['offline.png', 'pending.png']);
+  await page.evaluate(() => requests[0].reject(new Error('Network unavailable')));
+  expect(await page.evaluate(() => nb_edit.pending_uploads.size)).toBe(1);
+  await expect(page.locator('[data-nb-upload-placeholder]')).toHaveCount(1);
+  await complete(page, 1);
+  await expect(page.locator('[data-nb-upload-placeholder]')).toHaveCount(0);
+  expect(await page.locator('#editor').innerHTML()).toBe('<p>Before after</p>');
 });
 
 test('media-disabled fields reject image drop/paste and keep normal text paste', async ({ page }) => {
