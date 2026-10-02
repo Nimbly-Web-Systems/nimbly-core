@@ -64,4 +64,19 @@ data_field_assert(
 );
 data_field_assert(data_error_detail_get() === 'locations:max', 'group maximum failure detail was not recorded');
 
+$gallery_meta = ['fields' => ['img' => ['type' => 'gallery', 'max' => 12]]];
+data_field_assert(
+    _data_validate_field_definitions($gallery_meta, ['img' => array_fill(0, 12, 'media-uuid')]) === true,
+    'gallery at its image limit was rejected'
+);
+data_field_assert(
+    _data_validate_field_definitions($gallery_meta, ['img' => array_fill(0, 13, 'media-uuid')]) === false,
+    'gallery above its image limit was accepted'
+);
+data_field_assert(data_error_detail_get() === 'img:max', 'gallery maximum failure detail was not recorded');
+data_field_assert(
+    _data_validate_field_definitions($gallery_meta, ['img' => []]) === true,
+    'empty optional gallery was rejected'
+);
+
 echo "Data field validation tests passed.\n";

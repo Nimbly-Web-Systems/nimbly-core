@@ -1267,7 +1267,7 @@ function _data_validate_field_definitions($meta, $data_ls)
         if (!$has_value || (!isset($definition['min']) && !isset($definition['max']))) {
             continue;
         }
-        if (($definition['type'] ?? '') === 'group' && is_array($data_ls[$field])) {
+        if (in_array($definition['type'] ?? '', ['group', 'gallery'], true) && is_array($data_ls[$field])) {
             $value_count = count($data_ls[$field]);
             if (isset($definition['min']) && $value_count < (int)$definition['min']) {
                 $GLOBALS['SYSTEM']['data_error_detail'] = $field . ':min';
