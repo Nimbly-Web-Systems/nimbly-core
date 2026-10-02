@@ -14,7 +14,11 @@ window.nb = {
         editor_placeholder: "[#text Type here#]",
         saved: "[#text Saved#]",
         unsaved_changes: "[#text You have unsaved changed. Are you sure you want to leave this page and discard your changes?#]",
-        file_added: "[#text File uploaded#]"
+        file_added: "[#text File uploaded#]",
+        images_uploading: "[#text Images are uploading. Please wait before saving.#]",
+        image_upload_failed: "[#text Image upload failed. Please try again.#]",
+        image_upload_invalid: "[#text Please use image files within the upload size limit.#]",
+        image_upload_cancelled: "[#text Image uploaded. Reopen the editor to insert it from the media library.#]"
     }
 };
 </script>

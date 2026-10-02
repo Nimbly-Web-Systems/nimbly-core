@@ -284,6 +284,8 @@ nb_bubble_editor.init = function (ed, options) {
         handlers: {
             input: (e) => { nb_bubble_editor.on_input(e); },
             paste: (e) => { nb_bubble_editor.on_paste(e); },
+            dragover: (e) => { if (Array.from(e.dataTransfer?.types || []).includes('Files')) e.preventDefault(); },
+            drop: (e) => { nb_bubble_editor.on_drop(e); },
             keydown: (e) => { nb_bubble_editor.on_keydown(e); },
             focus: (e) => { nb_bubble_editor.on_focus(e); },
             blur: (e) => { nb_bubble_editor.on_blur(e); }
@@ -397,7 +399,7 @@ nb_bubble_editor.on_keydown = function (e) {
     }
 }
 
-nb_bubble_editor.on_paste = function (e) {
+nb_bubble_editor.on_paste = async function (e) {
     e.preventDefault();
     const data = e.clipboardData;
     if (!data) {
@@ -405,6 +407,37 @@ nb_bubble_editor.on_paste = function (e) {
     }
     const ed = e.currentTarget;
     const html = ed._nb_bubble.paste_html ? data.getData('text/html') : '';
+    const media = ed._nb_editor_options?.media === true;
+    if (html) {
+        const tpl = document.createElement('template');
+        tpl.innerHTML = nb_bubble_editor.clean_html(html);
+        const embedded = Array.from(tpl.content.querySelectorAll('img[src^="data:image/"]'));
+        if (embedded.length) {
+            if (!media) {
+                embedded.forEach(img => img.remove());
+                nb_bubble_editor.doc.insert_html(tpl.innerHTML);
+                return;
+            }
+            const range = nb_bubble_editor.insertion_range(ed);
+            try {
+                const files = embedded.map((img, i) => {
+                    const match = img.getAttribute('src').match(/^data:(image\/[\w.+-]+);base64,([a-zA-Z0-9+/=\s]+)$/);
+                    if (!match) throw new Error('Unsupported embedded image. Please upload an image file.');
+                    const bytes = Uint8Array.from(atob(match[2].replace(/\s/g, '')), ch => ch.charCodeAt(0));
+                    return new File([bytes], 'pasted-image-' + (i + 1) + '.' + match[1].split('/')[1], { type: match[1] });
+                });
+                return nb.edit.upload_images(ed, files, range, tpl);
+            } catch (error) {
+                nb.notify(error.message);
+                return;
+            }
+        }
+    }
+    const files = Array.from(data.files || []);
+    if (files.length) {
+        if (media) nb.edit.upload_images(ed, files, nb_bubble_editor.insertion_range(ed));
+        return;
+    }
     const out = html ?
         nb_bubble_editor.clean_html(html)
         : nb_bubble_editor.plain_to_html(data.getData('text/plain'));
@@ -412,6 +445,38 @@ nb_bubble_editor.on_paste = function (e) {
         nb_bubble_editor.doc.insert_html(out);
     }
 }
+
+nb_bubble_editor.insertion_range = function (ed, event = null) {
+    let range = null;
+    if (event && document.caretRangeFromPoint) {
+        range = document.caretRangeFromPoint(event.clientX, event.clientY);
+    } else if (event && document.caretPositionFromPoint) {
+        const caret = document.caretPositionFromPoint(event.clientX, event.clientY);
+        if (caret) {
+            range = document.createRange();
+            range.setStart(caret.offsetNode, caret.offset);
+            range.collapse(true);
+        }
+    }
+    const selection = window.getSelection();
+    if (!range && selection.rangeCount) range = selection.getRangeAt(0).cloneRange();
+    if (!range || !ed.contains(range.commonAncestorContainer)) {
+        range = document.createRange();
+        range.selectNodeContents(ed);
+        range.collapse(false);
+    }
+    return range;
+};
+
+nb_bubble_editor.on_drop = function (e) {
+    const files = Array.from(e.dataTransfer?.files || []);
+    if (!files.length) return; // Preserve text dragging and movement of existing images.
+    e.preventDefault();
+    const ed = e.currentTarget;
+    if (ed._nb_editor_options?.media === true) {
+        nb.edit.upload_images(ed, files, nb_bubble_editor.insertion_range(ed, e));
+    }
+};
 
 /* content helpers */
 

@@ -3,6 +3,7 @@ var nb_edit = {
     enabled: false,
     editors: [],
     inputs: 0,
+    pending_uploads: new Set(),
     active_editor: null
 };
 
@@ -33,6 +34,16 @@ nb_edit.init_editor = function (ed, as_form_field = false) {
 
     if (ed._nb_plain) {
         ed.setAttribute('contenteditable', true);
+        // Plain fields have no media support and must not receive native file drops.
+        ed.addEventListener('dragover', e => {
+            if (Array.from(e.dataTransfer?.types || []).includes('Files')) e.preventDefault();
+        });
+        ed.addEventListener('drop', e => {
+            if (e.dataTransfer?.files.length) e.preventDefault();
+        });
+        ed.addEventListener('paste', e => {
+            if (e.clipboardData?.files.length) e.preventDefault();
+        });
     } else {
         window.nb.bubble_editor.init(ed, {
             buttons: buttons,
@@ -309,13 +320,18 @@ nb_edit.block_tags = ['FIGURE', 'DIV', 'VIDEO', 'TABLE', 'P', 'H1', 'H2', 'H3', 
 // text blocks a block insert may split at the caret
 nb_edit.split_tags = 'p, h1, h2, h3, h4, h5, h6, blockquote, pre';
 
-nb_edit.insert_html = function (html) {
-    if (!this.active_editor) {
+nb_edit.insert_html = function (html, editor = this.active_editor, destination = null) {
+    if (!editor) {
         return;
     }
-    const editor = this.active_editor;
     const sel = window.getSelection();
-    let range = sel.getRangeAt(0);
+    let range = destination || (sel.rangeCount ? sel.getRangeAt(0) : null);
+    if (!range || !editor.contains(range.commonAncestorContainer)) {
+        return;
+    }
+    // Completing an asynchronous insertion must not steal another field's focus.
+    const restore_selection = destination && !editor.contains(document.activeElement);
+    const previous_range = restore_selection && sel.rangeCount ? sel.getRangeAt(0).cloneRange() : null;
     range.deleteContents();
     const el = document.createElement('div');
     el.innerHTML = html.trim();
@@ -358,8 +374,10 @@ nb_edit.insert_html = function (html) {
         range.setStartAfter(nodes[nodes.length - 1]);
     }
     range.collapse(true);
-    sel.removeAllRanges();
-    sel.addRange(range);
+    if (!restore_selection || previous_range) {
+        sel.removeAllRanges();
+        sel.addRange(previous_range || range);
+    }
 
     if (editor._nb_mode === 'form') {
         editor.dispatchEvent(new CustomEvent('nb:editor-change', {
@@ -427,6 +445,7 @@ nb_edit.open_insert_media = function () {
 }
 
 nb_edit.save = function () {
+    if (nb_edit.uploads_pending()) return;
     nb_edit.inputs = 0;
     document.querySelectorAll('[data-nb-edit-save]').forEach((btn) => {
         btn.setAttribute('disabled', true);
@@ -510,6 +529,10 @@ nb_edit.save_resource = function (ed) {
 }
 
 nb_edit.on_beforeunload = function (e) {
+    if (nb_edit.pending_uploads.size) {
+        e.returnValue = nb.text.unsaved_changes;
+        return e.returnValue;
+    }
     if (nb_edit.inputs < 1) {
         return undefined;
     }
@@ -528,6 +551,67 @@ nb_edit.on_beforeunload = function (e) {
     var msg = nb.text.unsaved_changes;
     e.returnValue = msg;
     return msg;
+};
+
+nb_edit.uploads_pending = function (scope = null) {
+    const pending = Array.from(nb_edit.pending_uploads).some(item => !scope || scope.contains(item.editor));
+    if (pending) nb.notify(nb.text.images_uploading || 'Images are uploading. Please wait before saving.');
+    return pending;
+};
+
+nb_edit.upload_images = async function (editor, files, range, pasted_html = null) {
+    if (editor._nb_editor_options?.media !== true || !files.length) return;
+    const max_size = nb.max_upload_size || Infinity;
+    if (files.some(file => !file.type.startsWith('image/') || file.size > max_size)) {
+        nb.notify(nb.text.image_upload_invalid || 'Please use image files within the upload size limit.');
+        return;
+    }
+    const marker = document.createElement('span');
+    marker.setAttribute('contenteditable', 'false');
+    marker.setAttribute('data-nb-upload-placeholder', '');
+    marker.setAttribute('role', 'status');
+    marker.textContent = nb.text.images_uploading || 'Uploading images…';
+    range = range.cloneRange();
+    range.collapse(true);
+    range.insertNode(marker);
+    const pending = { editor, marker };
+    nb_edit.pending_uploads.add(pending);
+    editor.setAttribute('aria-busy', 'true');
+    try {
+        // All results retain input order; insert nothing if any upload fails.
+        const uploaded = await Promise.all(files.map(file => nb.upload.upload(file)));
+        if (uploaded.some(result => !result.success || !result.files?.uuid)) {
+            throw new Error(nb.text.image_upload_failed || 'Image upload failed. Please try again.');
+        }
+        let html;
+        const options = editor._nb_editor_options;
+        if (pasted_html) {
+            const embedded = pasted_html.content.querySelectorAll('img[src^="data:image/"]');
+            embedded.forEach((img, index) => {
+                const replacement = document.createElement('template');
+                replacement.innerHTML = nb.upload.image_html(uploaded[index].files, options, img.alt);
+                img.replaceWith(replacement.content);
+            });
+            html = pasted_html.innerHTML;
+        } else {
+            html = uploaded.map(result => nb.upload.image_html(result.files, options)).join('');
+        }
+        if (!marker.isConnected || editor.contentEditable !== 'true') {
+            throw new Error(nb.text.image_upload_cancelled || 'Image uploaded. Reopen the editor to insert it from the media library.');
+        }
+        const destination = document.createRange();
+        destination.selectNode(marker);
+        nb_edit.insert_html(html, editor, destination);
+    } catch (error) {
+        nb.notify(error.message || nb.text.image_upload_failed || 'Image upload failed. Please try again.');
+    } finally {
+        marker.remove();
+        nb_edit.pending_uploads.delete(pending);
+        if (!Array.from(nb_edit.pending_uploads).some(item => item.editor === editor)) {
+            editor.removeAttribute('aria-busy');
+        }
+        nb.bubble_editor.update_empty(editor);
+    }
 };
 
 nb_edit.has_changes = function () {

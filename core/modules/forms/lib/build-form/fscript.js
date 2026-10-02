@@ -101,6 +101,7 @@ Alpine.data("[#_bf_js_name#]_form", (resource_id = "(empty)", record_id = "") =>
         });
     },
     submit(e) {
+        if (nb.edit.uploads_pending(e.target)) return;
         if (this.submitting || this.busy) {
           return;
         }

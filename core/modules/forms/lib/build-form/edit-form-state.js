@@ -35,6 +35,7 @@ function nb_build_form_edit_state(resource_id, record_id, config = {}) {
     },
 
     edit_submit(redirect_on_success = this.redirect_on_submit) {
+      if (nb.edit?.uploads_pending?.(this._edit_form)) return;
       this.busy = true;
       this.submitting = true;
       this.sync_editors(this.lang);

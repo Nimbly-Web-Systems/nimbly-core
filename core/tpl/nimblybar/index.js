@@ -108,71 +108,7 @@ const alpine_media_insert = function () {
       });
     },
     insert_img_html() {
-      const img_aspect = this.file_info.aspect;
-      const img_mode = "w";
-      const img_sizes = [
-        120, 180, 240, 320, 480, 640, 800, 960, 1120, 1280, 1440, 1600, 1760,
-        1920,
-      ];
-
-      const editor_options = nb.edit.active_editor._nb_editor_options;
-
-      let media_sizes = ["100vw"];
-      if (editor_options.media_sizes) {
-        const sl = editor_options.media_sizes.split(",");
-        for (let s of sl) {
-          const rule = s.split("-");
-          media_sizes.unshift(
-            "(min-width: " +
-              nb.tw_breakpoints[rule[0]] +
-              "px) " +
-              rule[1] +
-              "vw"
-          );
-        }
-      }
-
-      let src = nb.base_url + "/img/" + this.file_info.uuid + "/480" + img_mode;
-      let srcset = [];
-      for (let w of img_sizes) {
-        srcset.push(
-          nb.base_url +
-            "/img/" +
-            this.file_info.uuid +
-            "/" +
-            w +
-            img_mode +
-            " " +
-            w +
-            "w"
-        );
-        if (this.file_info.width < w) {
-          break;
-        }
-      }
-      const tpl_name =
-        img_aspect >= 1.0
-          ? "nb_media_insert_img_landscape_tpl"
-          : "nb_media_insert_img_portrait_tpl";
-      const html = nb.populate_template(tpl_name, {
-        uuid: this.file_info.uuid,
-        width: this.file_info.width,
-        height: this.file_info.height,
-        sizes: media_sizes.join(", "),
-        src: src,
-        srcset: srcset.join(", "),
-        alt: this._html_escape(this.resolve_title()),
-      });
-      if (this.file_info.width && this.file_info.height) {
-        return html;
-      }
-      // no stored dimensions: leave sizing to the image itself
-      const tpl = document.createElement("template");
-      tpl.innerHTML = html.trim();
-      tpl.content.querySelectorAll("img").forEach((img) => {
-        ["width", "height", "style"].forEach((attr) => img.removeAttribute(attr));
-      });
-      return tpl.innerHTML;
+      return nb.upload.image_html(this.file_info, nb.edit.active_editor._nb_editor_options, this.resolve_title());
     },
     set_media() {
       if (this._file_info_changed()) {
