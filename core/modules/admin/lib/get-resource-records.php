@@ -200,7 +200,7 @@ function _prep_record($record, $fields, $resource_maps = [])
                 $val = $map[$val] ?? $val;
             }
         }
-        if (is_array($val) && empty($v['i18n'])) {
+        if (is_array($val) && empty($v['i18n']) && ($v['type'] ?? '') !== 'gallery') {
             $val = implode(', ', array_filter(array_map(function($item) {
                 if (is_array($item)) {
                     return $item['date'] ?? $item['name'] ?? $item['title'] ?? '';

@@ -4,7 +4,8 @@ function load_library($_name) {}
 
 function fmt_sc($params)
 {
-    return (string)($params['val'] ?? '');
+    $GLOBALS['test_fmt_calls'][] = $params;
+    return is_array($params['val'] ?? null) ? json_encode($params['val']) : (string)($params['val'] ?? '');
 }
 
 function t($value)
@@ -42,6 +43,12 @@ admin_resource_records_assert($record['delivery_status'] === 'OK', 'select optio
 
 $unknown = _prep_record(['delivery_status' => 'unknown'], $fields);
 admin_resource_records_assert($unknown['delivery_status'] === 'unknown', 'unknown select values remain visible');
+
+// The gallery formatter needs the ordered UUID array, not a joined text value.
+$gallery = ['second-upload', 'first-upload'];
+_prep_record(['img' => $gallery], ['img' => ['type' => 'gallery']]);
+$gallery_call = end($GLOBALS['test_fmt_calls']);
+admin_resource_records_assert($gallery_call['val'] === $gallery, 'gallery formatting retains cover order and every image');
 
 $meta = [
     'fields' => [

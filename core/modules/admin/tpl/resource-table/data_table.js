@@ -219,6 +219,10 @@ document.addEventListener("alpine:init", () => {
       if (!this.search_regex) {
         return s;
       }
+      // Gallery summaries contain image URLs; highlighting must not rewrite attributes.
+      if (s.includes('data-nb-gallery-summary')) {
+        return s;
+      }
       if (!s.toLowerCase().includes(this.search_term)) {
         return s;
       }

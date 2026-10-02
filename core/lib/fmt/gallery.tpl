@@ -1,0 +1,1 @@
+<span data-nb-gallery-summary class="inline-flex items-center gap-2"><span class="inline-flex items-center justify-center bg-base-200 rounded" style="width:60px;height:40px;overflow:hidden">[#_gallery_cover#]</span><span class="text-sm text-neutral-500">[#_gallery_count#]</span></span>

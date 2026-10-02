@@ -85,6 +85,15 @@ function fmt_sc($params)
         case 'image':
             set_variable('_img_uuid', is_array($val) ? resolve_i18n($val, $lang) : $val, true);
             return run_buffered(dirname(__FILE__) . '/image.tpl');
+        case 'gallery':
+            load_library('data');
+            $images = is_array($val) ? array_values($val) : [];
+            $cover = $images[0] ?? '';
+            set_variable('_gallery_count', count($images), true);
+            set_variable('_gallery_cover', is_string($cover) && data_exists('.files', $cover)
+                ? fmt_sc(['type' => 'image', 'val' => $cover])
+                : '<span class="text-neutral-300" aria-hidden="true">&mdash;</span>', true);
+            return run_buffered(dirname(__FILE__) . '/gallery.tpl');
         case 'file':
             set_variable('_file_uuid', is_array($val) ? resolve_i18n($val, $lang) : $val, true);
             return run_buffered(dirname(__FILE__) . '/file.tpl');
