@@ -36,6 +36,16 @@ function render_field_context_options(): array
 require_once __DIR__ . '/../modules/forms/lib/render-field.php';
 
 render_field(['type' => 'slug', 'name' => 'Slug', 'source' => 'title'], 'title_slug');
+render_field(['type' => 'slug', 'source' => 'title', 'preserve_existing' => true], 'title_slug', 'legacy--url');
+render_field_context_assert(
+    $GLOBALS['rendered_field_contexts']['field-slug']['_f.slug_auto_generate'] === 'false',
+    'saved URLs must not regenerate from changed source titles'
+);
+render_field(['type' => 'slug', 'source' => 'title', 'preserve_existing' => true], 'title_slug', '');
+render_field_context_assert(
+    $GLOBALS['rendered_field_contexts']['field-slug']['_f.slug_auto_generate'] === 'true',
+    'missing slugs must still generate from the source title'
+);
 render_field(['type' => 'slug', 'name' => 'Path', 'source' => 'title', 'language_prefix' => true], 'path');
 $path_context = $GLOBALS['rendered_field_contexts']['field-slug'];
 render_field_context_assert(

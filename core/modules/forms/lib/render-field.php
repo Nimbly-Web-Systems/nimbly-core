@@ -222,6 +222,7 @@ function render_field(array $def, string $field = '', $value = null, string $sto
     }
     set_variable('_f.value', $field_value);
     set_variable('_f.model', $model);
+    set_variable('_f.slug_auto_generate', !empty($def['preserve_existing']) && !empty($field_value) ? 'false' : 'true');
     $x_init = '';
     if (!$is_edit_i18n) {
         if (!empty($def['multi'])) {

@@ -1227,6 +1227,10 @@ submit. The API does not invent missing slug fields on save; it stores the slug
 field value it receives. If code creates or imports records outside the admin
 form, it must also set the slug field value.
 
+Set `"preserve_existing": true` on the slug field to generate missing slugs while
+keeping saved URLs unchanged when the form opens or its source title changes.
+Editors can still change a saved slug explicitly.
+
 ```json
 "url_slug": {
   "name": "URL slug",

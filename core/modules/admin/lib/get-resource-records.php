@@ -168,7 +168,8 @@ function _build_resource_maps($fields)
         $display = $v['display_field'] ?? 'name';
         $map = [];
         foreach (data_read($resource) as $uuid => $rec) {
-            $map[$uuid] = $rec[$display] ?? $rec['name'] ?? $rec['title'] ?? $uuid;
+            $label = $rec[$display] ?? $rec['name'] ?? $rec['title'] ?? $uuid;
+            $map[$uuid] = is_array($label) ? resolve_i18n($label, detect_language_sc()) : $label;
         }
         $maps[$resource] = $map;
     }

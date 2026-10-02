@@ -1,6 +1,7 @@
 <div x-data="{ no_prefix: [#_f.slug_allow_unprefixed#] && [#_f.slug_language_prefix#] && !!([#_f.model#]) && !!lang && !([#_f.model#]).startsWith(lang + '/') }"
      [#_f.x_init#]
      x-effect="
+         if (![#_f.slug_auto_generate#]) return;
          const _parts = '[#_f.source#]'.split(',').map(f => {
              const _value = form_data[f.trim()] || '';
              return _value && typeof _value === 'object' ? (_value[lang] || '') : _value;

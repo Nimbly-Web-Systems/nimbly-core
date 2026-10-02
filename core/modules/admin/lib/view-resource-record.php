@@ -151,6 +151,14 @@ function view_resource_record_value(string $type, $value, array $field = []): st
         return '<span class="text-neutral-400 tracking-widest" aria-label="' . view_resource_record_text('Encrypted') . '">&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;</span>';
     }
 
+    if ($type === 'select') {
+        load_library('get-resource-records');
+        $field['max_length'] = 0;
+        $fields = ['value' => $field];
+        $formatted = _prep_record(['value' => $value], $fields, _build_resource_maps($fields));
+        return htmlspecialchars((string)$formatted['value'], ENT_QUOTES, 'UTF-8');
+    }
+
     if (is_array($value)) {
         if (view_resource_record_is_list($value)) {
             if ($type === 'gallery') {
