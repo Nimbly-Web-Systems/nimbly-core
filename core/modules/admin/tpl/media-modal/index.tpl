@@ -8,20 +8,16 @@
             class="pointer-events-auto relative flex w-full flex-col rounded-md bg-neutral-50
        bg-clip-padding text-current shadow-lg outline-none min-[0px]:h-full min-[0px]:rounded-none min-[0px]:border-0">
             <div
-                class="flex flex-shrink-0 items-center justify-between rounded-t-md border-b border-neutral-200 px-4 py-2 min-[0px]:rounded-none">
+                class="flex flex-shrink-0 flex-wrap items-center justify-between gap-x-6 gap-y-2 rounded-t-md border-b border-neutral-200 px-4 py-2 min-[0px]:rounded-none">
 
                 <!-- Modal title -->
-                <div>
-                    <h5 class="text-xl font-medium leading-normal text-neutral-800">
-                        [#text Insert media#]
-                    </h5>
-                    <h6 class="text-sm text-neutral-700">
-                        <span x-text="`${first} - ${last} of ${files.length}`"></span>
-                        [#text files#]
-                    </h6>
-
+                <h5 class="text-xl font-medium leading-normal text-neutral-800">
+                    [#text Insert media#]
+                </h5>
+                <div class="order-last w-full sm:order-none sm:w-auto sm:grow"
+                    x-show="mode !== 'embed' && mode !== 'select_embed'">
+                    [#media-toolbar#]
                 </div>
-                [#media-pagination#]
 
                 <!-- Close button -->
                 <button type="button"
@@ -91,7 +87,7 @@
                                 <div class="grow p-4 md:p-6 lg:p-8">
                                     [#media-grid#]
                                 </div>
-                                <div class="flex-none w-[300px] p-2 mx-auto sm:p-4 bg-neutral-200">
+                                <div class="flex-none w-[300px] p-2 mx-auto sm:p-4 bg-neutral-200 sm:sticky sm:top-0 sm:self-start sm:max-h-[calc(100vh-10rem)] sm:overflow-y-auto">
                                     [#media-side-panel#]
                                 </div>
                             </div>

@@ -42,14 +42,7 @@ var nb_forms = {
             return;
         }
         nb.media_alpine._load_file_info(file);
-        try {
-            const idx = nb.media_alpine.files.indexOf(file);
-            if (idx >= 0) {
-                nb.media_alpine.set_page(Math.floor(idx / nb.media_alpine.page_size));
-            }
-        } catch (e) {
-            // set_page has a known bug with its recursive fallback; silently ignore
-        }
+        nb.media_alpine.reveal(file);
     },
     select_media(field_name, field_ix = undefined, filter = []) {
         nb.media_alpine.mode = 'select';

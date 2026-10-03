@@ -1,9 +1,14 @@
 
 var nb_media_library = {
-    page_size: 20,
-    current_page: 0,
-    first: 0,
-    last: 0,
+    // number of files rendered per scroll step
+    page_size: 40,
+    shown: 0,
+    search: '',
+    type_filter: '',
+    unused_only: false,
+    unused_loading: false,
+    sort: 'newest',
+    _unused_all: null,
     _in_use_tolerance: new Date() - 4 * 60 * 60 * 1000, //now minus four hours
     file_info: null,
     upload_status: null,
@@ -55,23 +60,84 @@ var nb_media_library = {
                 return;
             }
             this.unfiltered = Object.values(files_meta_data[".files_meta"]);
-            this.files = [...this.unfiltered];
-            this.sort_files();
-            this.set_page(this.current_page);
+            this.apply_filters();
         });
 
     },
+    // restricts the library to the types a picker accepts; the user's own
+    // search and filters start clean and narrow down within that set
     filter(allowed_types) {
-        if (!allowed_types || allowed_types.length === 0) {
-            this.files = [...this.unfiltered];
-        } else {
-            this.files = this.unfiltered.filter((x) => {
-                const t = this._type(x);
-                return allowed_types.includes(t);
-            })
+        this.allowed_types = allowed_types || [];
+        this.search = '';
+        this.type_filter = '';
+        this.unused_only = false;
+        this.apply_filters();
+    },
+    type_available(t) {
+        if (this.allowed_types.length === 0) {
+            return true;
         }
+        return this.allowed_types.includes(t) || (t === 'img' && this.allowed_types.includes('svg'));
+    },
+    type_options() {
+        return ['img', 'vid', 'audio', 'doc'].filter((t) => this.type_available(t));
+    },
+    file_title(f) {
+        return this._resolve_i18n(this._normalize_i18n_field(f.title));
+    },
+    set_type_filter(t) {
+        this.type_filter = t;
+        this.apply_filters();
+    },
+    // keep: stay on the current images (after a delete or upload) instead of
+    // jumping back to the first batch
+    apply_filters(keep = false) {
+        const q = this.search.trim().toLowerCase();
+        this.files = this.unfiltered.filter((f) => {
+            const t = this._type(f);
+            if (this.allowed_types.length > 0 && !this.allowed_types.includes(t)) {
+                return false;
+            }
+            if (this.type_filter && (t === 'svg' ? 'img' : t) !== this.type_filter) {
+                return false;
+            }
+            if (this.unused_only && f.in_use !== false) {
+                return false;
+            }
+            return !q || this._search_text(f).includes(q);
+        });
         this.sort_files();
-        this.set_page(this.current_page);
+        this.shown = keep ? Math.max(this.shown, this.page_size) : this.page_size;
+        this.render_page();
+    },
+    _search_text(f) {
+        return [
+            f.name,
+            ...Object.values(this._normalize_i18n_field(f.title)),
+            ...Object.values(this._normalize_i18n_field(f.description)),
+        ].filter((v) => typeof v === 'string').join(' ').toLowerCase();
+    },
+    toggle_unused() {
+        this.unused_only = !this.unused_only;
+        if (!this.unused_only || this._unused_all) {
+            this.apply_filters();
+            return;
+        }
+        // one scan for the whole library, reused until the next upload
+        this.unused_loading = true;
+        nb.api.get(nb.base_url + "/api/v1/.files-unused").then((unused_files) => {
+            this.unused_loading = false;
+            if (!unused_files.success) {
+                this.unused_only = false;
+                return;
+            }
+            this._unused_all = unused_files['.files_unused'] || [];
+            this.unfiltered.forEach((f) => this._set_in_use(f, this._unused_all));
+            this.apply_filters();
+        });
+    },
+    _set_in_use(f, unused_ids) {
+        f.in_use = !unused_ids.includes(f.uuid) || ((1000 * f._created) > this._in_use_tolerance);
     },
     reset_tab() {
         if (this.mode === 'embed') {
@@ -79,12 +145,17 @@ var nb_media_library = {
         }
     },
     sort_files() {
+        if (this.sort === 'name') {
+            this.files.sort((a, b) => String(a.name).localeCompare(String(b.name), undefined, { numeric: true, sensitivity: 'base' }));
+            return;
+        }
+        const dir = this.sort === 'oldest' ? -1 : 1;
         this.files.sort((a, b) => {
             let d = b._created - a._created;
             if (d == 0) {
                 d = b._modified - a._modified;
             }
-            return d;
+            return dir * d;
         });
     },
     file_date(f) {
@@ -100,44 +171,48 @@ var nb_media_library = {
         result += d.getDate();
         return result;
     },
-    page_count() {
-        return Math.ceil(this.files.length / this.page_size);
-    },
-    // keep: stay on the current images (after a delete or upload) instead of
-    // blanking the grid for a page change
-    set_page(p, keep = false) {
-        if (this.files.length <= 0) {
-            this.page = [];
+    render_page() {
+        this.page = this.files.slice(0, this.shown);
+        // the in-use check scans site content; show the files first, badges follow
+        const fs = this.page.filter((f) => typeof f.in_use === 'undefined');
+        if (fs.length === 0) {
             return;
         }
-        const first = this.page_size * p;
-        if (first >= this.files.length && p > 0) {
-            this.set_page(p - 1, keep);
-            return;
-        }
-        if (!keep) {
-            this.clear_page();
-        }
-        this.current_page = p;
-        this.first = first + 1;
-        this.last = Math.min(this.files.length, first + this.page_size);
-        const fs = this.files.slice(first, first + this.page_size);
-        this.page = fs;
-        // the in-use check scans site content; show the page first, badges follow
         nb.api.get(nb.base_url + "/api/v1/.files-unused?_ids=" + fs.map(f => f.uuid).join()).then((unused_files) => {
             if (!unused_files.success) {
                 return;
             }
             const ufs = unused_files['.files_unused'] || [];
-            fs.forEach((f) => f.in_use = !ufs.includes(f.uuid) || ((1000 * f._created) > this._in_use_tolerance));
+            fs.forEach((f) => this._set_in_use(f, ufs));
         });
     },
-    clear_page() {
-        // empty the image src immediately so the new images lazy load on white bg (not on previous img)
-        var imgs = document.querySelectorAll('#nb-media-grid img');
-        imgs.forEach((img_el) => {
-            img_el.src = "";
-        });
+    load_more() {
+        if (this.shown >= this.files.length) {
+            return;
+        }
+        this.shown += this.page_size;
+        this.render_page();
+    },
+    // renders the next batch whenever the end of the grid scrolls into view
+    observe_grid_end(el) {
+        const observer = new IntersectionObserver((entries) => {
+            if (!entries[0].isIntersecting || this.shown >= this.files.length) {
+                return;
+            }
+            this.load_more();
+            // re-observe: fires again if the new batch still leaves the end in view
+            observer.unobserve(el);
+            this.$nextTick(() => observer.observe(el));
+        }, { rootMargin: '400px' });
+        observer.observe(el);
+    },
+    // makes sure a file further down the list is rendered
+    reveal(file) {
+        const ix = this.files.findIndex((f) => f.uuid === file.uuid);
+        if (ix >= this.shown) {
+            this.shown = Math.ceil((ix + 1) / this.page_size) * this.page_size;
+            this.render_page();
+        }
     },
     file_type(ix) {
         const f = typeof ix === 'undefined' ? this.file_info : this.page[ix];
@@ -333,9 +408,10 @@ var nb_media_library = {
             e.detail.files.size = e.detail.files.size || 0;
             this._load_file_info(e.detail.files);
             // re-uploading a file returns the existing record; keep one entry
-            this.files = this.files.filter((file) => file.uuid !== this.file_info.uuid);
-            this.files.unshift(this.file_info);
-            this.set_page(this.current_page, true);
+            this.unfiltered = this.unfiltered.filter((file) => file.uuid !== e.detail.files.uuid);
+            this.unfiltered.unshift(e.detail.files);
+            this._unused_all = null;
+            this.apply_filters(true);
         }
     },
     select_media(ix) {
@@ -363,14 +439,22 @@ var nb_media_library = {
             if (data.success) {
                 nb.notify(nb.text.file_deleted);
                 this.file_info = null;
-                this.files = this.files.filter((file) => {
+                this.unfiltered = this.unfiltered.filter((file) => {
                     return file.uuid !== uuid;
                 });
-                this.set_page(this.current_page, true);
+                this.apply_filters(true);
             } else {
                 nb.notify(data.message);
             }
         });
+    },
+    // the grid and search read the list records, file_info is a copy
+    sync_caption() {
+        const file = this.unfiltered.find((f) => f.uuid === this.file_info.uuid);
+        if (file) {
+            file.title = { ...this.file_info.title };
+            file.description = { ...this.file_info.description };
+        }
     },
     save_media() {
         return nb.api.put(nb.base_url + "/api/v1/.files_meta/" + this.file_info.uuid, {
@@ -379,6 +463,7 @@ var nb_media_library = {
         }).then((data) => {
             if (data.success) {
                 nb.notify(nb.text.saved);
+                this.sync_caption();
             }
             return data;
         })

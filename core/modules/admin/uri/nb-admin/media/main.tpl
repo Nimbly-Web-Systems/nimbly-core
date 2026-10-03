@@ -5,18 +5,14 @@
       <span aria-hidden="true">/</span>
       <span class="text-neutral-700">[#text Media Library#]</span>
     </nav>
-    <div class="flex justify-between flex-wrap md:flex-nowrap">
-    <div>
+    <div class="flex justify-between flex-wrap gap-2">
       <h1 class="text-2xl md:text-3xl font-semibold text-neutral-800 ">[#text Media Library#]</h1>
-      <h3 class="text-sm md:text-base pt-1 pb-2 text-neutral-700 font-medium">
-        <span x-text="`${first} - ${last} of ${files.length}`"></span>
-        [#text files#]
-      </h3>
+      <div>
+        [#feature-cond features="delete-.files" tpl=btn_delete_all#]
+      </div>
     </div>
-    [#media-pagination#]
-    <div>
-      [#feature-cond features="delete-.files" tpl=btn_delete_all#]
-    </div>
+    <div class="pt-4">
+      [#media-toolbar#]
     </div>
   </section>
 
@@ -26,15 +22,10 @@
       <div class="grow bg-neutral-100">
         [#media-grid#]
       </div>
-      <div class="flex-none w-[300px] p-2 mx-auto sm:p-4 bg-neutral-200 shadow">
+      <div class="flex-none w-[300px] p-2 mx-auto sm:p-4 bg-neutral-200 shadow sm:sticky sm:top-4 sm:self-start sm:max-h-[calc(100vh-2rem)] sm:overflow-y-auto">
         [#media-side-panel#]
       </div>
     </div>
 
-  </section>
-  <section class="flex items-center justify-center bg-neutral-100 pb-4">
-    <template x-if="last-first > 10">
-      [#media-pagination#]
-    </template>
   </section>
 </div>

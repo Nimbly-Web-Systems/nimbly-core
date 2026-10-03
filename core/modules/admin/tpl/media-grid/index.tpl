@@ -1,7 +1,7 @@
 <div id="nb-media-grid"
     class="grid grid-cols-2 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 md:gap-6 lg:gap-8">
     <template x-for="(file, index) in page" :key="file.uuid">
-        <div class="overflow-hidden cursor-pointer shadowaspect-square bg-neutral-50 text-neutral-500 relative
+        <div class="overflow-hidden cursor-pointer shadow aspect-square bg-neutral-50 text-neutral-500 relative
                 transition-all
                 hover:outline-clight/50 hover:rounded hover:outline hover:outline-4"
             :class="file_info && file_info.uuid==file.uuid? 'outline-clight/50 outline-4 outline rounded' : 'outline-none'"
@@ -39,7 +39,7 @@
             <!-- video -->
             <template x-if="file_type(index) === 'vid'">
                 <div class="relative w-full h-full">
-                    <video loading="lazy" width="300" height="300" class="flex items-center justify-center h-full">
+                    <video preload="metadata" width="300" height="300" class="flex items-center justify-center h-full">
                         <source :src="`[#base-url#]/video/${file.uuid}`" :type="`video/${vid_type(index)}`">
                     </video>
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
@@ -54,6 +54,12 @@
                 </div>
             </template>
 
+            <!-- title -->
+            <template x-if="['img', 'svg', 'vid'].includes(file_type(index)) && file_title(file)">
+                <div class="absolute inset-x-0 bottom-0 truncate bg-neutral-900/60 px-2 py-1 text-xs text-white"
+                    x-text="file_title(file)"></div>
+            </template>
+
             <!-- audio -->
             <template x-if="file_type(index) === 'audio'">
                 <div class="flex flex-col items-center justify-center h-full p-4">
@@ -63,7 +69,7 @@
                         <path stroke-linecap="round" stroke-linejoin="round"
                             d="m9 9 10.5-3m0 6.553v3.75a2.25 2.25 0 0 1-1.632 2.163l-1.32.377a1.803 1.803 0 1 1-.99-3.467l2.31-.66a2.25 2.25 0 0 0 1.632-2.163Zm0 0V2.25L9 5.25v10.303m0 0v3.75a2.25 2.25 0 0 1-1.632 2.163l-1.32.377a1.803 1.803 0 0 1-.99-3.467l2.31-.66A2.25 2.25 0 0 0 9 15.553Z" />
                     </svg>
-                    <div class="text-xs text-center text-neutral-500 mt-2" x-text="nb.media_library._resolve_i18n(file.title) || file.name">
+                    <div class="text-xs text-center text-neutral-500 mt-2" x-text="file_title(file) || file.name">
 
                     </div>
                 </div>
@@ -80,7 +86,7 @@
                     <div class="text-sm text-center text-neutral-600 -mt-8 bg-white uppercase font-bold"
                         x-text="doc_type(index)">
                     </div>
-                    <div class="text-xs text-center text-neutral-400 mt-4 " x-text="nb.media_library._resolve_i18n(file.title) || file.name">
+                    <div class="text-xs text-center text-neutral-400 mt-4 " x-text="file_title(file) || file.name">
 
                     </div>
                 </div>
@@ -88,3 +94,5 @@
         </div>
     </template>
 </div>
+<p class="py-10 text-center text-sm text-neutral-500" x-show="files.length === 0" x-cloak>[#text No files found#]</p>
+<div x-init="observe_grid_end($el)" aria-hidden="true"></div>

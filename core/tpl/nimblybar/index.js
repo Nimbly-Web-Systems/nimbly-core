@@ -116,6 +116,7 @@ const alpine_media_insert = function () {
           title: this.file_info.title,
           description: this.file_info.description,
         });
+        this.sync_caption();
       }
 
       nb.modal.close("nb-modal-insert-media");
@@ -127,6 +128,7 @@ const alpine_media_insert = function () {
           title: this.file_info.title,
           description: this.file_info.description,
         });
+        this.sync_caption();
       }
 
       if (!nb.edit.active_editor) {
