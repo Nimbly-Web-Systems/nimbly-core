@@ -23,19 +23,25 @@ function get_unused_files() {
         $file_ids = data_list('.files_meta');
     }
     $unused = array_fill_keys($file_ids, true);
-    files_mark_used($unused);
+    // media is referenced from content and templates only
+    foreach (['data', 'uri', 'tpl', 'modules'] as $root) {
+        $dir = $GLOBALS['SYSTEM']['file_base'] . 'ext/' . $root . '/';
+        if (is_dir($dir)) {
+            files_mark_used($unused, $dir);
+        }
+    }
     return array_map('strval', array_keys($unused));
 }
 
-// One pass over ext/: each file is read once and checked for every id still
+// One pass over $dir: each file is read once and checked for every id still
 // unaccounted for; ids found in use are removed from $remaining.
-function files_mark_used(&$remaining, $dir = null)
+function files_mark_used(&$remaining, $dir)
 {
     static $EXCLUDE = [
         '.tmp', '.files', '.files_meta', '.routes', '.i18n', '.changelog',
-        '.log-entries', 'roles', 'static', '.tailwind', '.sass-cache', '.git', 'lib'
+        '.log-entries', 'roles', 'static', '.tailwind', '.sass-cache', '.git', 'lib',
+        '.stats', '.index', 'vendor', 'node_modules'
     ];
-    $dir = $dir ?? $GLOBALS['SYSTEM']['file_base'] . 'ext/';
     if (in_array(trim(strtolower(basename($dir))), $EXCLUDE)) {
         return;
     }
