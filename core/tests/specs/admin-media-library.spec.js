@@ -121,13 +121,13 @@ test.describe('admin media library', () => {
 
   test('filters by where files are used', async ({ page }) => {
     await page.goto('/nb-admin/media');
-    const used_in = toolbar(page).getByLabel('Used in');
+    const used_in = toolbar(page).getByLabel('Location');
     // picked before the usage scan has answered
     await used_in.selectOption('(unused)');
     await expect(tiles(page)).toHaveCount(2);
 
     await expect(used_in.locator('option')).toHaveText(
-      ['Used in…', 'Not in use', 'Inventory items (95)', 'Site content (4)']);
+      ['All locations', 'Not in use', 'Inventory items (95)', 'Site content (4)']);
     await used_in.selectOption('(content)');
     await expect(tiles(page)).toHaveCount(4);
     await used_in.selectOption('inventory_items');
