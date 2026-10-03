@@ -6,7 +6,7 @@
                 d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
         </svg>
         <input type="text" class="min-w-0 grow" x-model="search" @input.debounce.150ms="apply_filters()"
-            @keydown.escape.stop="search = ''; apply_filters()" placeholder="[#text Search#]"
+            @keydown.escape="if (search) { $event.stopPropagation(); search = ''; apply_filters() }" placeholder="[#text Search#]"
             aria-label="[#text Search#]" />
         <button type="button" x-show="search" x-cloak class="text-neutral-500 hover:text-neutral-800"
             @click="search = ''; apply_filters()" aria-label="[#text Clear search#]">

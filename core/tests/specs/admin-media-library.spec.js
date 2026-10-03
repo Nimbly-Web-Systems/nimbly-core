@@ -162,6 +162,13 @@ test.describe('admin media library', () => {
     // item-090..099: six images, two videos, two documents
     await expect(modal.locator('#nb-media-grid > div')).toHaveCount(6);
 
+    await page.evaluate(() => nb.media_alpine.filter());
+    const modal_tiles = modal.locator('#nb-media-grid > div');
+    await expect(modal_tiles).toHaveCount(40);
+    await modal_tiles.last().scrollIntoViewIfNeeded();
+    await expect(modal_tiles).toHaveCount(80);
+
+    await modal.getByLabel('Search', { exact: true }).fill('item-09');
     await page.evaluate(() => nb.media_alpine.filter(['doc']));
     await expect(modal.getByLabel('Search', { exact: true })).toHaveValue('');
     await expect(modal.locator('#nb-media-toolbar')).toContainText('20');
