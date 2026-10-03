@@ -1,4 +1,5 @@
-<div id="nb-media-toolbar" class="flex flex-wrap items-center gap-2">
+<div id="nb-media-toolbar" class="flex flex-wrap items-center gap-2" @pointerenter.once="load_usage()"
+    @focusin.once="load_usage()">
     <label class="input input-bordered input-sm flex w-full items-center gap-2 bg-white sm:w-64">
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
             stroke="currentColor" class="h-4 w-4 shrink-0 text-neutral-500">
@@ -17,32 +18,24 @@
         </button>
     </label>
 
-    <div class="join" x-show="type_options().length > 1">
-        <button type="button" class="btn btn-sm join-item" :class="type_filter === '' ? 'btn-active' : ''"
-            @click="set_type_filter('')">[#text All#]</button>
-        <template x-if="type_available('img')">
-            <button type="button" class="btn btn-sm join-item" :class="type_filter === 'img' ? 'btn-active' : ''"
-                @click="set_type_filter('img')">[#text Images#]</button>
-        </template>
-        <template x-if="type_available('vid')">
-            <button type="button" class="btn btn-sm join-item" :class="type_filter === 'vid' ? 'btn-active' : ''"
-                @click="set_type_filter('vid')">[#text Video#]</button>
-        </template>
-        <template x-if="type_available('audio')">
-            <button type="button" class="btn btn-sm join-item" :class="type_filter === 'audio' ? 'btn-active' : ''"
-                @click="set_type_filter('audio')">[#text Audio#]</button>
-        </template>
-        <template x-if="type_available('doc')">
-            <button type="button" class="btn btn-sm join-item" :class="type_filter === 'doc' ? 'btn-active' : ''"
-                @click="set_type_filter('doc')">[#text Documents#]</button>
-        </template>
-    </div>
+    <select class="select select-bordered select-sm w-auto bg-white" x-model="type_filter" @change="apply_filters()"
+        x-show="type_options().length > 1" aria-label="[#text Type#]">
+        <option value="">[#text All types#]</option>
+        <template x-if="type_available('img')"><option value="img">[#text Images#]</option></template>
+        <template x-if="type_available('vid')"><option value="vid">[#text Video#]</option></template>
+        <template x-if="type_available('audio')"><option value="audio">[#text Audio#]</option></template>
+        <template x-if="type_available('doc')"><option value="doc">[#text Documents#]</option></template>
+    </select>
 
-    <button type="button" class="btn btn-sm" :class="unused_only ? 'btn-active' : ''" :disabled="unused_loading"
-        :aria-pressed="unused_only" @click="toggle_unused()">
-        <span class="loading loading-spinner loading-xs" x-show="unused_loading" x-cloak></span>
-        [#text Not in use#]
-    </button>
+    <select class="select select-bordered select-sm w-auto max-w-[14rem] bg-white" x-model="usage_filter"
+        @change="set_usage_filter()" aria-label="[#text Used in#]">
+        <option value="">[#text Used in…#]</option>
+        <option value="(unused)">[#text Not in use#]</option>
+        <template x-for="group in usage_groups" :key="group.key">
+            <option :value="group.key" x-text="`${group.name} (${group.count})`"></option>
+        </template>
+    </select>
+    <span class="loading loading-spinner loading-xs text-neutral-500" x-show="usage_loading" x-cloak></span>
 
     <select class="select select-bordered select-sm w-auto bg-white" x-model="sort" @change="apply_filters()"
         aria-label="[#text Sort#]">

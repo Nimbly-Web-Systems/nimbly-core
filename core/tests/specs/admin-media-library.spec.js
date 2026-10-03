@@ -45,6 +45,17 @@ async function mock_library(page) {
     const unused = ids ? UNUSED.filter(id => ids.split(',').includes(id)) : UNUSED;
     return route.fulfill({ json: { success: true, '.files_unused': unused, count: unused.length } });
   });
+  await page.route('**/api/v1/.files-usage', route => {
+    const used = {};
+    Object.keys(library()).filter(id => !UNUSED.includes(id)).forEach((id, i) => {
+      used[id] = i < 3 ? ['(content)'] : ['inventory_items'];
+    });
+    used.file020.push('(content)');
+    return route.fulfill({ json: { success: true, '.files_usage': { used, groups: [
+      { key: 'inventory_items', name: 'Inventory items', count: 95 },
+      { key: '(content)', name: 'Site content', count: 4 },
+    ] } } });
+  });
   await page.route('**/api/v1/.files/*', route => {
     deleted.push(route.request().url().split('/').pop());
     return route.fulfill({ json: { success: true } });
@@ -91,15 +102,15 @@ test.describe('admin media library', () => {
 
   test('filters by type and sorts', async ({ page }) => {
     await page.goto('/nb-admin/media');
-    await toolbar(page).getByRole('button', { name: 'Video' }).click();
+    await toolbar(page).getByLabel('Type').selectOption('vid');
     await expect(toolbar(page)).toContainText('20');
     await expect(tiles(page)).toHaveCount(20);
 
     // svg counts as an image
-    await toolbar(page).getByRole('button', { name: 'Images' }).click();
+    await toolbar(page).getByLabel('Type').selectOption('img');
     await expect(toolbar(page)).toContainText('60');
 
-    await toolbar(page).getByRole('button', { name: 'Documents' }).click();
+    await toolbar(page).getByLabel('Type').selectOption('doc');
     const names = () => page.locator('[x-data="media_library"]').evaluate(el => el._x_dataStack[0].files.map(f => f.name));
     expect((await names())[0]).toBe('item-095.pdf');
     await toolbar(page).getByLabel('Sort').selectOption('oldest');
@@ -108,11 +119,20 @@ test.describe('admin media library', () => {
     expect((await names()).slice(0, 2)).toEqual(['item-000.pdf', 'item-005.pdf']);
   });
 
-  test('shows only files that are not in use', async ({ page }) => {
+  test('filters by where files are used', async ({ page }) => {
     await page.goto('/nb-admin/media');
-    await toolbar(page).getByRole('button', { name: 'Not in use' }).click();
+    const used_in = toolbar(page).getByLabel('Used in');
+    // picked before the usage scan has answered
+    await used_in.selectOption('(unused)');
     await expect(tiles(page)).toHaveCount(2);
-    await toolbar(page).getByRole('button', { name: 'Not in use' }).click();
+
+    await expect(used_in.locator('option')).toHaveText(
+      ['Used in…', 'Not in use', 'Inventory items (95)', 'Site content (4)']);
+    await used_in.selectOption('(content)');
+    await expect(tiles(page)).toHaveCount(4);
+    await used_in.selectOption('inventory_items');
+    await expect(toolbar(page)).toContainText('95');
+    await used_in.selectOption('');
     await expect(tiles(page)).toHaveCount(40);
   });
 
@@ -156,7 +176,7 @@ test.describe('admin media library', () => {
       nb.modal.open('nb-modal-insert-media');
     });
     await expect(modal.locator('#nb-media-toolbar')).toContainText('60');
-    await expect(modal.getByRole('button', { name: 'Documents' })).toHaveCount(0);
+    await expect(modal.getByLabel('Type')).toBeHidden();
 
     await modal.getByLabel('Search', { exact: true }).fill('item-09');
     // item-090..099: six images, two videos, two documents

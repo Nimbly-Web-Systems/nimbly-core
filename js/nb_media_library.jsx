@@ -5,10 +5,12 @@ var nb_media_library = {
     shown: 0,
     search: '',
     type_filter: '',
-    unused_only: false,
-    unused_loading: false,
+    // '' = everything, '(unused)' or the key of a usage group
+    usage_filter: '',
+    usage_groups: [],
+    usage_loading: false,
+    _usage: null,
     sort: 'newest',
-    _unused_all: null,
     _in_use_tolerance: new Date() - 4 * 60 * 60 * 1000, //now minus four hours
     file_info: null,
     // small screens show the file details as a sheet over the grid
@@ -72,7 +74,7 @@ var nb_media_library = {
         this.allowed_types = allowed_types || [];
         this.search = '';
         this.type_filter = '';
-        this.unused_only = false;
+        this.usage_filter = '';
         this.apply_filters();
     },
     type_available(t) {
@@ -87,10 +89,6 @@ var nb_media_library = {
     file_title(f) {
         return this._resolve_i18n(this._normalize_i18n_field(f.title));
     },
-    set_type_filter(t) {
-        this.type_filter = t;
-        this.apply_filters();
-    },
     // keep: stay on the current images (after a delete or upload) instead of
     // jumping back to the first batch
     apply_filters(keep = false) {
@@ -103,7 +101,11 @@ var nb_media_library = {
             if (this.type_filter && (t === 'svg' ? 'img' : t) !== this.type_filter) {
                 return false;
             }
-            if (this.unused_only && f.in_use !== false) {
+            if (this.usage_filter === '(unused)' && f.in_use !== false) {
+                return false;
+            }
+            if (this.usage_filter && this.usage_filter !== '(unused)'
+                && !(this._usage?.[f.uuid] || []).includes(this.usage_filter)) {
                 return false;
             }
             return !q || this._search_text(f).includes(q);
@@ -119,24 +121,33 @@ var nb_media_library = {
             ...Object.values(this._normalize_i18n_field(f.description)),
         ].filter((v) => typeof v === 'string').join(' ').toLowerCase();
     },
-    toggle_unused() {
-        this.unused_only = !this.unused_only;
-        if (!this.unused_only || this._unused_all) {
-            this.apply_filters();
+    // where files are used: one scan of the site content for the whole
+    // library, started when the toolbar is first touched
+    load_usage() {
+        if (this._usage || this.usage_loading) {
             return;
         }
-        // one scan for the whole library, reused until the next upload
-        this.unused_loading = true;
-        nb.api.get(nb.base_url + "/api/v1/.files-unused").then((unused_files) => {
-            this.unused_loading = false;
-            if (!unused_files.success) {
-                this.unused_only = false;
+        this.usage_loading = true;
+        nb.api.get(nb.base_url + "/api/v1/.files-usage").then((data) => {
+            this.usage_loading = false;
+            if (!data.success) {
+                this.usage_filter = '';
                 return;
             }
-            this._unused_all = unused_files['.files_unused'] || [];
-            this.unfiltered.forEach((f) => this._set_in_use(f, this._unused_all));
+            this._usage = data['.files_usage'].used || {};
+            this.usage_groups = data['.files_usage'].groups || [];
+            this.unfiltered.forEach((f) => {
+                f.in_use = !!this._usage[f.uuid] || ((1000 * f._created) > this._in_use_tolerance);
+            });
             this.apply_filters();
         });
+    },
+    set_usage_filter() {
+        if (this._usage) {
+            this.apply_filters();
+        } else {
+            this.load_usage();
+        }
     },
     _set_in_use(f, unused_ids) {
         f.in_use = !unused_ids.includes(f.uuid) || ((1000 * f._created) > this._in_use_tolerance);
@@ -413,7 +424,6 @@ var nb_media_library = {
             // re-uploading a file returns the existing record; keep one entry
             this.unfiltered = this.unfiltered.filter((file) => file.uuid !== e.detail.files.uuid);
             this.unfiltered.unshift(e.detail.files);
-            this._unused_all = null;
             this.apply_filters(true);
         }
     },

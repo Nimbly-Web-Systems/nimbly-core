@@ -1033,7 +1033,7 @@ The inventory below is generated from `*_sc()` implementations in `core/lib` and
 |---|---|
 | Public core | `base-path`, `base-url`, `cfield`, `collect-script`, `count`, `data`, `data-count`, `data-join`, `data-last-update`, `data-sort`, `date`, `debug`, `detect-language`, `empty-img`, `env`, `fmt`, `get`, `get-first`, `get-html`, `http-header`, `if`, `include`, `is-url`, `last-update`, `log`, `logged-in`, `max-upload-size`, `module`, `nop`, `obfuscate`, `redirect`, `repeat`, `set`, `system-messages`, `text`, `unquote`, `uri-path`, `url`, `url-key` |
 | Public module | `access`, `api-allow`, `build-form`, `feature-cond`, `first-img-uuid`, `form-key`, `get-form-errors`, `get-img-html`, `get-user`, `honeypot-field`, `img-url`, `json2post`, `logout`, `post`, `role-cond`, `role-switch`, `sanitize`, `sticky`, `userfield`, `username`, `validate` |
-| Internal/admin | `api-session`, `api-token`, `disk-space-resource`, `exif`, `field-name`, `files`, `files-unused`, `find`, `get-resource-meta`, `get-resource-record`, `get-resource-records`, `get-system-log`, `get-user-resources`, `json`, `openai-complete`, `openai-translate`, `pages`, `render-field`, `resource-name`, `resources`, `sys-messages`, `thumbnail` |
+| Internal/admin | `api-session`, `api-token`, `disk-space-resource`, `exif`, `field-name`, `files`, `files-unused`, `files-usage`, `find`, `get-resource-meta`, `get-resource-record`, `get-resource-records`, `get-system-log`, `get-user-resources`, `json`, `openai-complete`, `openai-translate`, `pages`, `render-field`, `resource-name`, `resources`, `sys-messages`, `thumbnail` |
 
 ---
 
@@ -3167,7 +3167,7 @@ Users, Roles, and Media Library are **not** in the nimblybar's Resources sidebar
 
 Identity (name/description) and permissions are saved together from a single form (`core/modules/admin/lib/role-identity/`) via one PUT/POST to the generic `/api/v1/roles` endpoint — there is no separate role-permissions API. The client (`matrix-sync.js`) collapses a row's checked operations into `manage-<resource>` when every operation is checked, and builds the final comma-joined `features` string sent as a plain field alongside the role's name/description.
 
-`.files_meta` and `files_unused` are not resources with their own row in the matrix — they are internal, derived data. `permission_normalize_hidden_alias()` (`core/modules/user/lib/permissions.php`) aliases both to `.files`, so granting a role any operation on the **Files** row also covers file metadata lookups and the unused-file check the media picker relies on. Do not add separate matrix rows or permission tokens for them.
+`.files_meta`, `files_unused` and `files_usage` are not resources with their own row in the matrix — they are internal, derived data. `permission_normalize_hidden_alias()` (`core/modules/user/lib/permissions.php`) aliases them to `.files`, so granting a role any operation on the **Files** row also covers file metadata lookups, the unused-file check and the "Used in" filter the media picker relies on. Do not add separate matrix rows or permission tokens for them.
 
 ### Jobs and Site settings
 
