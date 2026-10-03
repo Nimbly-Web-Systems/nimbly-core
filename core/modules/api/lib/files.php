@@ -50,10 +50,10 @@ function files_post()
     }
     if (exif_imagetype($from) !== false) {
         list($width, $height, $type) = getimagesize($from);
-        // thumbnails apply EXIF rotation, so store the dimensions as displayed
+        // thumbnails rotate orientations 6 and 8, so store the dimensions as displayed
         if ($type === IMAGETYPE_JPEG && function_exists('exif_read_data')) {
             $exif = @exif_read_data($from);
-            if (in_array($exif['Orientation'] ?? 1, [5, 6, 7, 8], true)) {
+            if (in_array($exif['Orientation'] ?? 1, [6, 8], true)) {
                 [$width, $height] = [$height, $width];
             }
         }
