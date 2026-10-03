@@ -14,35 +14,78 @@ nb_upload.init_uploader = function(el) {
 }
 
 
-nb_upload.handle_change = function (e) {
-    const files = e.currentTarget.files || e.target.files || e.dataTransfer.files;
-    if (!files || files.length !== 1) {
+nb_upload.handle_change = async function (e) {
+    const input = e.currentTarget;
+    const files = Array.from(input.files || []);
+    if (!files.length || (files.length > 1 && !input.multiple)) {
         return;
     }
-    var file = files[0];
-    nb_upload.upload(file, e.currentTarget).catch(() => {});
+    const scope = input.dataset.nbUpload;
+    const quiet = files.length > 1;
+    const progress = files.map(() => 0);
+    let done = 0;
+    let next = 0;
+    const report = (total = files.length) => document.dispatchEvent(new CustomEvent('nb_upload_progress', {
+        detail: { scope, total, done, progress: progress.reduce((sum, p) => sum + p, 0) / files.length }
+    }));
+    // a few at a time; each finished file is announced through nb_upload_ready
+    const worker = async () => {
+        while (next < files.length) {
+            const i = next++;
+            const res = await nb_upload.upload(files[i], input, {
+                quiet,
+                on_progress: fraction => { progress[i] = fraction; report(); }
+            }).catch(() => ({ success: false }));
+            if (quiet && !res.success) {
+                nb.notify(files[i].name + ': ' + (res.message || nb.text.image_upload_failed || 'Upload failed'));
+            }
+            progress[i] = 1;
+            done++;
+            report();
+        }
+    };
+    report();
+    await Promise.all(files.slice(0, 3).map(worker));
+    input.value = ''; // allow choosing the same files again
+    report(0);
 };
 
-nb_upload.upload = function (file, elem) {
-    var data = new FormData();
-    data.append('file', file);
-    return fetch(nb_upload.api_url, {
-        method: "POST",
-        body: data
-    }).then(res => res.json()).then(res => {
-        if (res.success) {
-            nb.notify(nb.text.file_added);
-        } else {
-            nb.notify(res.message);
+// Resolves with the API result. opts: on_progress(fraction) while sending,
+// quiet to skip notices (the caller shows its own state), signal to abort.
+nb_upload.upload = function (file, elem, opts = {}) {
+    return new Promise((resolve, reject) => {
+        const data = new FormData();
+        data.append('file', file);
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', nb_upload.api_url);
+        if (opts.on_progress) {
+            xhr.upload.addEventListener('progress', e => {
+                if (e.lengthComputable) opts.on_progress(e.loaded / e.total);
+            });
         }
-        if (elem?.dataset.nbUpload) {
-            const event = new CustomEvent('nb_upload_ready', { scope: elem.dataset.nbUpload, detail: res});
-            document.dispatchEvent(event);
-        }
-        return res;
-    }).catch(error => {
-        nb.notify(nb.text.image_upload_failed || 'Image upload failed. Please try again.');
-        throw error;
+        xhr.addEventListener('load', () => {
+            let res;
+            try {
+                res = JSON.parse(xhr.responseText);
+            } catch (error) {
+                // proxies may answer with an HTML error page
+                res = { success: false, message: xhr.status === 413 ? 'UPLOAD_TOO_LARGE' : 'UPLOAD_FAILED' };
+            }
+            if (!opts.quiet) nb.notify(res.success ? nb.text.file_added : res.message);
+            if (elem?.dataset.nbUpload) {
+                const event = new CustomEvent('nb_upload_ready', { scope: elem.dataset.nbUpload, detail: res});
+                document.dispatchEvent(event);
+            }
+            resolve(res);
+        });
+        xhr.addEventListener('error', () => {
+            if (!opts.quiet) nb.notify(nb.text.image_upload_failed || 'Image upload failed. Please try again.');
+            reject(new Error('Network error'));
+        });
+        xhr.addEventListener('abort', () => reject(new DOMException('Upload cancelled', 'AbortError')));
+        if (opts.signal?.aborted) return reject(new DOMException('Upload cancelled', 'AbortError'));
+        opts.signal?.addEventListener('abort', () => xhr.abort());
+        xhr.send(data);
     });
 };
 

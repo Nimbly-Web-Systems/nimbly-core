@@ -35,7 +35,7 @@ function nb_build_form_edit_state(resource_id, record_id, config = {}) {
     },
 
     edit_submit(redirect_on_success = this.redirect_on_submit) {
-      if (nb.edit?.uploads_pending?.(this._edit_form)) return;
+      if (nb.edit?.defer_until_uploaded?.(this._edit_form, () => this.edit_submit(redirect_on_success))) return;
       this.busy = true;
       this.submitting = true;
       this.sync_editors(this.lang);
@@ -90,6 +90,10 @@ function nb_build_form_edit_state(resource_id, record_id, config = {}) {
     },
     switch_language(lang) {
       if (lang === this.lang) {
+        return;
+      }
+      // the editor content is replaced, which would orphan running uploads
+      if (nb.edit?.uploads_pending?.(this._edit_form)) {
         return;
       }
       this.sync_editors(this.lang);
@@ -160,7 +164,7 @@ function nb_build_form_edit_state(resource_id, record_id, config = {}) {
           return;
         }
 
-        this.form_data[field][lang] = this.editor_html_for_storage(el.innerHTML.trim());
+        this.form_data[field][lang] = this.editor_html_for_storage(nb.edit?.editor_html ? nb.edit.editor_html(el) : el.innerHTML.trim());
       });
     },
     get_editor_values() {

@@ -284,7 +284,9 @@ nb_bubble_editor.init = function (ed, options) {
         handlers: {
             input: (e) => { nb_bubble_editor.on_input(e); },
             paste: (e) => { nb_bubble_editor.on_paste(e); },
-            dragover: (e) => { if (Array.from(e.dataTransfer?.types || []).includes('Files')) e.preventDefault(); },
+            dragenter: (e) => { nb_bubble_editor.on_dragenter(e); },
+            dragover: (e) => { nb_bubble_editor.on_dragover(e); },
+            dragleave: (e) => { nb_bubble_editor.on_dragleave(e); },
             drop: (e) => { nb_bubble_editor.on_drop(e); },
             keydown: (e) => { nb_bubble_editor.on_keydown(e); },
             focus: (e) => { nb_bubble_editor.on_focus(e); },
@@ -375,7 +377,7 @@ nb_bubble_editor.on_input = function (e) {
     if (ed._nb_bubble.as_form_field) {
         ed.dispatchEvent(new CustomEvent('nb:editor-change', {
             bubbles: true,
-            detail: { value: ed.innerHTML.trim() }
+            detail: { value: nb.edit.editor_html(ed) }
         }));
     }
 }
@@ -468,11 +470,71 @@ nb_bubble_editor.insertion_range = function (ed, event = null) {
     return range;
 };
 
-nb_bubble_editor.on_drop = function (e) {
-    const files = Array.from(e.dataTransfer?.files || []);
-    if (!files.length) return; // Preserve text dragging and movement of existing images.
-    e.preventDefault();
+nb_bubble_editor.drags_files = function (e) {
+    return Array.from(e.dataTransfer?.types || []).includes('Files');
+};
+
+nb_bubble_editor.accepts_drop = function (ed) {
+    return ed.contentEditable === 'true' && ed._nb_editor_options?.media === true;
+};
+
+nb_bubble_editor.on_dragenter = function (e) {
     const ed = e.currentTarget;
+    if (!nb_bubble_editor.drags_files(e) || !nb_bubble_editor.accepts_drop(ed)) return;
+    // enter/leave also fire for every child element, so count the depth
+    ed._nb_drag_depth = (ed._nb_drag_depth || 0) + 1;
+    ed.setAttribute('data-nb-drop-label', nb.text.drop_images || 'Drop images to upload');
+    ed.setAttribute('data-nb-drop-active', '');
+};
+
+nb_bubble_editor.on_dragover = function (e) {
+    const ed = e.currentTarget;
+    if (!nb_bubble_editor.drags_files(e) || ed.contentEditable !== 'true') return;
+    e.preventDefault();
+    const accepts = nb_bubble_editor.accepts_drop(ed);
+    e.dataTransfer.dropEffect = accepts ? 'copy' : 'none';
+    if (accepts) nb_bubble_editor.show_drop_caret(ed, e);
+};
+
+nb_bubble_editor.on_dragleave = function (e) {
+    const ed = e.currentTarget;
+    if (!ed.hasAttribute('data-nb-drop-active')) return;
+    ed._nb_drag_depth = Math.max(0, (ed._nb_drag_depth || 1) - 1);
+    if (ed._nb_drag_depth === 0) nb_bubble_editor.end_drag(ed);
+};
+
+nb_bubble_editor.end_drag = function (ed) {
+    ed._nb_drag_depth = 0;
+    ed.removeAttribute('data-nb-drop-active');
+    nb_bubble_editor.drop_caret?.remove();
+    nb_bubble_editor.drop_caret = null;
+};
+
+// A thin line where the images will land.
+nb_bubble_editor.show_drop_caret = function (ed, e) {
+    const rect = nb_bubble_editor.insertion_range(ed, e).getClientRects()[0];
+    let caret = nb_bubble_editor.drop_caret;
+    if (!rect) {
+        caret?.remove();
+        nb_bubble_editor.drop_caret = null;
+        return;
+    }
+    if (!caret) {
+        caret = nb_bubble_editor.drop_caret = document.createElement('div');
+        caret.className = 'nb-drop-caret';
+        document.body.append(caret);
+    }
+    caret.style.left = rect.left + 'px';
+    caret.style.top = rect.top + 'px';
+    caret.style.height = Math.max(rect.height, 16) + 'px';
+};
+
+nb_bubble_editor.on_drop = function (e) {
+    const ed = e.currentTarget;
+    nb_bubble_editor.end_drag(ed);
+    const files = Array.from(e.dataTransfer?.files || []);
+    if (!files.length || ed.contentEditable !== 'true') return; // Preserve text dragging and movement of existing images.
+    e.preventDefault();
     if (ed._nb_editor_options?.media === true) {
         nb.edit.upload_images(ed, files, nb_bubble_editor.insertion_range(ed, e));
     }

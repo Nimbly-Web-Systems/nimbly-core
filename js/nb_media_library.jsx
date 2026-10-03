@@ -6,6 +6,7 @@ var nb_media_library = {
     last: 0,
     _in_use_tolerance: new Date() - 4 * 60 * 60 * 1000, //now minus four hours
     file_info: null,
+    upload_status: null,
     _original_title: null,
     _original_description: null,
     caption_lang: null,
@@ -327,6 +328,8 @@ var nb_media_library = {
         if (typeof e.detail !== "undefined" && e.detail.success) {
             e.detail.files.size = e.detail.files.size || 0;
             this._load_file_info(e.detail.files);
+            // re-uploading a file returns the existing record; keep one entry
+            this.files = this.files.filter((file) => file.uuid !== this.file_info.uuid);
             this.files.unshift(this.file_info);
             this.set_page(this.current_page);
         }

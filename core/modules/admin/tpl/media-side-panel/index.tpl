@@ -1,7 +1,18 @@
-<div class="border border-dashed border-neutral-400 relative bg-neutral-50 h-[80px] text-neutral-600">
+<div class="border border-dashed border-neutral-400 relative bg-neutral-50 h-[80px] text-neutral-600"
+    @nb_upload_progress.document="upload_status = $event.detail.total ? $event.detail : null">
 
     <input class="cursor-pointer relative block opacity-0 w-full h-full z-50" type="file" id="nb-edit-upload"
-        data-nb-upload="nb-insert-media" />
+        data-nb-upload="nb-insert-media" multiple />
+
+    <template x-if="upload_status">
+        <div class="absolute inset-0 z-[60] flex flex-col justify-center gap-2 bg-neutral-50 px-4" role="status">
+            <p class="text-sm tabular-nums"
+                x-text="'[#text Uploading#] ' + (upload_status.total > 1 ? upload_status.done + '/' + upload_status.total + ' · ' : '') + Math.round(upload_status.progress * 100) + '%'">
+            </p>
+            <progress class="progress progress-primary w-full" max="100"
+                :value="Math.round(upload_status.progress * 100)"></progress>
+        </div>
+    </template>
 
     <div class="top-0 right-0 left-0 bottom-0 absolute">
         <div class="flex flex-col items-center justify-center h-full">
@@ -10,7 +21,7 @@
                 <path stroke-linecap="round" stroke-linejoin="round"
                     d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
             </svg>
-            <p>[#text Click to upload file#]</p>
+            <p>[#text Click or drop to upload files#]</p>
             <p class="text-xs text-neutral-500">[#text Max file size:#] [#fmt [#max-upload-size#] bytes#]</p>
         </div>
     </div>
