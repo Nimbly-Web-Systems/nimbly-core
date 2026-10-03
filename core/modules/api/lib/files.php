@@ -49,7 +49,14 @@ function files_post()
         $meta = array_merge($meta, $exif_data);
     }
     if (exif_imagetype($from) !== false) {
-        list($width, $height) = getimagesize($from);
+        list($width, $height, $type) = getimagesize($from);
+        // thumbnails apply EXIF rotation, so store the dimensions as displayed
+        if ($type === IMAGETYPE_JPEG && function_exists('exif_read_data')) {
+            $exif = @exif_read_data($from);
+            if (in_array($exif['Orientation'] ?? 1, [5, 6, 7, 8], true)) {
+                [$width, $height] = [$height, $width];
+            }
+        }
         $meta['width'] = $width;
         $meta['height'] = $height;
         $meta['orientation'] = $width >= $height ? 'landscape' : 'portrait';
