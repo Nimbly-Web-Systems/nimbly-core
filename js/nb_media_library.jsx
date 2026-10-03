@@ -11,6 +11,8 @@ var nb_media_library = {
     _unused_all: null,
     _in_use_tolerance: new Date() - 4 * 60 * 60 * 1000, //now minus four hours
     file_info: null,
+    // small screens show the file details as a sheet over the grid
+    info_open: false,
     upload_status: null,
     _original_title: null,
     _original_description: null,
@@ -407,6 +409,7 @@ var nb_media_library = {
         if (typeof e.detail !== "undefined" && e.detail.success) {
             e.detail.files.size = e.detail.files.size || 0;
             this._load_file_info(e.detail.files);
+            this.info_open = true;
             // re-uploading a file returns the existing record; keep one entry
             this.unfiltered = this.unfiltered.filter((file) => file.uuid !== e.detail.files.uuid);
             this.unfiltered.unshift(e.detail.files);
@@ -416,6 +419,7 @@ var nb_media_library = {
     },
     select_media(ix) {
         this._load_file_info(this.page[ix]);
+        this.info_open = true;
     },
     _file_info_changed() {
         return JSON.stringify(this.file_info.title) !== this._original_title ||

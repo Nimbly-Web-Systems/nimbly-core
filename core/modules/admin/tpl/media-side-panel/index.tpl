@@ -27,10 +27,24 @@
     </div>
 </div>
 
-<div class="border border-neutral-200 rounded my-4 p-4 bg-neutral-100" id="nb_file_info"
+<!-- small screens: file details slide over the grid instead of sitting above it -->
+<div class="fixed inset-0 z-[1101] bg-neutral-900/40 sm:hidden" x-cloak x-show="file_info && info_open"
+    @click="info_open = false"></div>
+<div class="border border-neutral-200 rounded my-4 p-4 bg-neutral-100
+        max-sm:fixed max-sm:inset-x-0 max-sm:bottom-0 max-sm:z-[1102] max-sm:my-0 max-sm:max-h-[85vh] max-sm:overflow-y-auto max-sm:rounded-t-2xl max-sm:shadow-2xl"
+    :class="info_open ? '' : 'max-sm:hidden'" id="nb_file_info"
     @nb_upload_ready.document="handle_upload_ready" x-cloak x-show="file_info">
     <template x-if="file_info">
         <div>
+            <div class="mb-2 flex justify-end sm:hidden">
+                <button type="button" class="btn btn-sm btn-circle btn-ghost" @click="info_open = false"
+                    aria-label="[#text Close#]">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                        stroke="currentColor" class="h-5 w-5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
             <template x-if="file_type() === 'img'">
                 <figure class="h-[230px] w-[230px] mx-auto flex items-center justify-center bg-neutral-50 shadow-md">
                     <img :src="`[#base_url#]/img/${file_info.uuid}/230x230f`" :width="file_info.width"
@@ -84,7 +98,7 @@
             <a :href="`[#base-url#]/download/${file_info.uuid}`" :download="file_info.name" class="inline-block cursor-pointer rounded border border-neutral-400
           hover:border-cnormal px-1 pb-0.5 pt-1
           text-xs font-medium uppercase text-neutral-700 transition duration-150 ease-in-out
-           hover:bg-neutral-50 focus:bg-neutral-100 focus:outline-none focus:ring-0 active:bg-clight">Download</a>
+           hover:bg-neutral-50 focus:bg-neutral-100 focus:outline-none focus:ring-0 active:bg-clight">[#text Download#]</a>
 
             <button @click="confirm('[#text Delete permanently? Are you sure?#]') && delete_file(file_info.uuid)" class="inline-block cursor-pointer rounded border border-neutral-400
            hover:border-cnormal px-1 pb-0.5 pt-1
@@ -129,7 +143,7 @@
             </div>
 
             <button class="[#btn-class-primary#] my-4" @click="save_media"
-                x-show="typeof hide_save_button === 'undefined'">Save</button>
+                x-show="typeof hide_save_button === 'undefined'">[#text Save#]</button>
 
             <!-- document template picker -->
             <template x-if="file_type() === 'doc' && typeof hide_save_button !== 'undefined'">
@@ -141,13 +155,13 @@
                         <div class="flex flex-row items-center">
                             <input type="radio" id="link" name="link_type" value="link" checked
                                 x-model="embed_info.doc.insert_mode" />
-                            <label for="link" class="text-neutral-600 ml-2 pt-[1px]">Link</label>
+                            <label for="link" class="text-neutral-600 ml-2 pt-[1px]">[#text Link#]</label>
                         </div>
 
                         <div class="mt-2 flex flex-row items-center">
                             <input type="radio" id="download" name="link_type" value="download"
                                 x-model="embed_info.doc.insert_mode" />
-                            <label for="download" class="text-neutral-600 ml-2 pt-[1px]">Download</label>
+                            <label for="download" class="text-neutral-600 ml-2 pt-[1px]">[#text Download#]</label>
                         </div>
 
                     </fieldset>
