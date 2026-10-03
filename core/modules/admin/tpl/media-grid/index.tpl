@@ -1,7 +1,7 @@
 <div id="nb-media-grid"
     class="grid grid-cols-2 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 md:gap-6 lg:gap-8">
-    <template x-for="(file, index) in page">
-        <div :key="file.uuid" class="overflow-hidden cursor-pointer shadowaspect-square bg-neutral-50 text-neutral-500 relative
+    <template x-for="(file, index) in page" :key="file.uuid">
+        <div class="overflow-hidden cursor-pointer shadowaspect-square bg-neutral-50 text-neutral-500 relative
                 transition-all
                 hover:outline-clight/50 hover:rounded hover:outline hover:outline-4"
             :class="file_info && file_info.uuid==file.uuid? 'outline-clight/50 outline-4 outline rounded' : 'outline-none'"

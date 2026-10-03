@@ -22,35 +22,40 @@ function get_unused_files() {
     } else {
         $file_ids = data_list('.files_meta');
     }
-    $result = [];
-    foreach ($file_ids as $id) {
-        if (!file_in_use($id)) {
-            $result[] = $id;
-        }
-    }
-    return $result;
+    $unused = array_fill_keys($file_ids, true);
+    files_mark_used($unused);
+    return array_map('strval', array_keys($unused));
 }
 
-function file_in_use($search, $dir = null)
+// One pass over ext/: each file is read once and checked for every id still
+// unaccounted for; ids found in use are removed from $remaining.
+function files_mark_used(&$remaining, $dir = null)
 {
     static $EXCLUDE = [
         '.tmp', '.files', '.files_meta', '.routes', '.i18n', '.changelog',
         '.log-entries', 'roles', 'static', '.tailwind', '.sass-cache', '.git', 'lib'
     ];
     $dir = $dir ?? $GLOBALS['SYSTEM']['file_base'] . 'ext/';
-    $bdir = trim(strtolower(basename($dir)));
-    if (in_array($bdir, $EXCLUDE)) {
-        return false;
+    if (in_array(trim(strtolower(basename($dir))), $EXCLUDE)) {
+        return;
     }
-    $files = glob($dir . '{,.}[!.,!..]*',GLOB_MARK|GLOB_BRACE);
+    $files = glob($dir . '{,.}[!.,!..]*', GLOB_MARK | GLOB_BRACE) ?: [];
     foreach ($files as $file) {
+        if (empty($remaining)) {
+            return;
+        }
         if (is_dir($file)) {
-            if (file_in_use($search, $file)) {
-                return true;
+            files_mark_used($remaining, $file);
+            continue;
+        }
+        $content = @file_get_contents($file);
+        if ($content === false) {
+            continue;
+        }
+        foreach ($remaining as $id => $_) {
+            if (strpos($content, (string) $id) !== false) {
+                unset($remaining[$id]);
             }
-        } else if (strpos(file_get_contents($file), $search) !== false) {
-            return true;
         }
     }
-    return false;
 }

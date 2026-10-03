@@ -103,29 +103,33 @@ var nb_media_library = {
     page_count() {
         return Math.ceil(this.files.length / this.page_size);
     },
-    set_page(p) {
-        this.page = [];
+    // keep: stay on the current images (after a delete or upload) instead of
+    // blanking the grid for a page change
+    set_page(p, keep = false) {
         if (this.files.length <= 0) {
+            this.page = [];
             return;
         }
         const first = this.page_size * p;
-        if (first > this.files.length) {
-            set_page(p - 1);
+        if (first >= this.files.length && p > 0) {
+            this.set_page(p - 1, keep);
             return;
         }
-        this.clear_page();
+        if (!keep) {
+            this.clear_page();
+        }
         this.current_page = p;
         this.first = first + 1;
         this.last = Math.min(this.files.length, first + this.page_size);
-        var fs = this.files.slice(first, first + this.page_size);
+        const fs = this.files.slice(first, first + this.page_size);
+        this.page = fs;
+        // the in-use check scans site content; show the page first, badges follow
         nb.api.get(nb.base_url + "/api/v1/.files-unused?_ids=" + fs.map(f => f.uuid).join()).then((unused_files) => {
-            if (!unused_files.success || unused_files.count === 0) {
-                this.page = fs;
+            if (!unused_files.success) {
                 return;
             }
-            var ufs = unused_files['.files_unused'];
+            const ufs = unused_files['.files_unused'] || [];
             fs.forEach((f) => f.in_use = !ufs.includes(f.uuid) || ((1000 * f._created) > this._in_use_tolerance));
-            this.page = fs;
         });
     },
     clear_page() {
@@ -331,7 +335,7 @@ var nb_media_library = {
             // re-uploading a file returns the existing record; keep one entry
             this.files = this.files.filter((file) => file.uuid !== this.file_info.uuid);
             this.files.unshift(this.file_info);
-            this.set_page(this.current_page);
+            this.set_page(this.current_page, true);
         }
     },
     select_media(ix) {
@@ -362,7 +366,7 @@ var nb_media_library = {
                 this.files = this.files.filter((file) => {
                     return file.uuid !== uuid;
                 });
-                this.set_page(this.current_page);
+                this.set_page(this.current_page, true);
             } else {
                 nb.notify(data.message);
             }
