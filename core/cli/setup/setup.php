@@ -5,7 +5,8 @@
  *
  * Usage: php core/cli/nimbly.php system:setup [alias=oddone|base_path=/oddone] [app_env=stage]
  *
- * Safe to re-run — existing records and files are never overwritten.
+ * Safe to re-run — existing records and files are never overwritten, except
+ * directory guards still in the form written by earlier setup versions.
  */
 
 if (php_sapi_name() !== 'cli') {
@@ -15,6 +16,7 @@ if (php_sapi_name() !== 'cli') {
 if (!defined('BASE_DIR')) define('BASE_DIR', realpath(__DIR__ . '/../../..') . '/');
 define('SETUP_DIR', __DIR__ . '/');
 require_once BASE_DIR . 'core/cli/helpers/output.php';
+require_once BASE_DIR . 'core/cli/helpers/guards.php';
 
 // -----------------------------------------------------------------------
 // Bootstrap Nimbly minimally (no HTTP context)
@@ -366,8 +368,6 @@ if (!file_exists($user_ini_file)) {
 cli_section('Project files', true);
 
 $project_files_changed = false;
-$dirs_deny  = ['ext', 'core'];
-$dirs_allow = ['ext/data/.tmp/cache', 'ext/static', 'core/static'];
 $dirs_create = [
     'ext', 'ext/data', 'ext/static', 'ext/lib', 'ext/modules',
     'ext/tpl', 'ext/uri', 'ext/data/.tmp', 'ext/data/.tmp/cache',
@@ -394,22 +394,13 @@ if (!data_exists('.config', '.meta')) {
     nb_status("Created: .config resource (upsert)");
 }
 
-foreach ($dirs_deny as $dir) {
-    $dst = BASE_DIR . $dir . '/.htaccess';
-    if (!file_exists($dst)) {
-        copy(SETUP_DIR . 'deny.htaccess', $dst);
-        $project_files_changed = true;
-        nb_status("Created guard: $dir/.htaccess");
+foreach (setup_sync_guards(BASE_DIR, SETUP_DIR) as $guard) {
+    if ($guard['action'] === 'custom') {
+        echo "Warning: {$guard['dir']}/.htaccess differs from the setup template (left as-is).\n";
+        continue;
     }
-}
-
-foreach ($dirs_allow as $dir) {
-    $dst = BASE_DIR . $dir . '/.htaccess';
-    if (!file_exists($dst)) {
-        copy(SETUP_DIR . 'allow.htaccess', $dst);
-        $project_files_changed = true;
-        nb_status("Created guard: $dir/.htaccess");
-    }
+    $project_files_changed = true;
+    nb_status(ucfirst($guard['action']) . " guard: {$guard['dir']}/.htaccess");
 }
 
 // -----------------------------------------------------------------------

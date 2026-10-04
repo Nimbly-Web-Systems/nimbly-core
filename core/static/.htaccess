@@ -1,3 +1,6 @@
-<files *.*>
-    allow from all
-</files>
+Require all granted
+
+# also lift a parent guard that still uses the older "deny from all" form
+<Files *.*>
+    Allow from all
+</Files>
