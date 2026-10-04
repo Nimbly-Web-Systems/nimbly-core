@@ -19,8 +19,8 @@ function sticky_sc($params) {
     $default = get_param_value($params, "default", false);
     unset($params["default"]);
     $key = current($params);
-    load_library("get");
-    $value = filter_input(INPUT_POST, $key);
+    load_libraries(["get", "request-input"]);
+    $value = request_input_escape(filter_input(INPUT_POST, $key));
     if (empty($value)) {
         $value = get_variable("sticky." . $key);
     }

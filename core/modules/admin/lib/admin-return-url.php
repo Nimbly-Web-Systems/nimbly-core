@@ -22,5 +22,6 @@ function admin_return_url(): string
     if (str_starts_with($return_url, '//') || str_starts_with($return_url, '/\\')) {
         return '';
     }
-    return $return_url;
+    load_library('request-input');
+    return request_input_escape($return_url);
 }

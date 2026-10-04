@@ -42,6 +42,8 @@ fatal_alert_register();
 load_library('stats');
 stats_register();
 load_library('run');
+load_library('request-input');
+$SYSTEM['request_uri'] = request_input_escape($SYSTEM['request_uri']);
 run_uri($SYSTEM['request_uri']);
 
 /*

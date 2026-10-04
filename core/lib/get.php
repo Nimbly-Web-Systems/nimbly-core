@@ -94,12 +94,17 @@ function get_flat_lookup($key)
     if (isset($GLOBALS['SYSTEM']['variables'][$key])) {
         return $GLOBALS['SYSTEM']['variables'][$key];
     }
+    load_library('request-input');
     if (isset($_COOKIE[$key])) {
-        return $_COOKIE[$key];
+        $cookie = $_COOKIE[$key];
+        if (is_string($cookie)) {
+            $cookie = filter_var($cookie, FILTER_SANITIZE_SPECIAL_CHARS);
+        }
+        return request_input_escape($cookie);
     }
     $req_get = filter_input(INPUT_GET, $key, FILTER_SANITIZE_SPECIAL_CHARS);
     if (isset($req_get)) {
-        return $req_get;
+        return request_input_escape($req_get);
     }
     return null;
 }

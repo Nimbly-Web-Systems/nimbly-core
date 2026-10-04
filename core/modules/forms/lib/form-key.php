@@ -25,7 +25,8 @@ function form_key_get() {
      if (session_resume() && isset($_SESSION['key'])) {
         $key = $_SESSION['key'];
     } else if (isset($_COOKIE['key'])) {
-        $key = $_COOKIE['key'];
+        load_library('request-input');
+        $key = request_input_escape($_COOKIE['key']);
     } else {
         $key = md5(uniqid(rand(), true));
         setcookie('key', $key, time() + (30*86400), "/");
