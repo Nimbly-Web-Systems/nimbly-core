@@ -24,6 +24,7 @@ $templates = [
     'sticky' => '[#sticky field#]',
     'nested-sticky' => '[#wrap x=[#sticky field#]#]',
     'form-key' => '[#form-key#]',
+    'system-message' => '[#system-messages#]<[#get system_message#]>',
 ];
 header('Content-Type: text/plain');
 foreach ((array)$templates[$_GET['t']] as $template) {
@@ -82,6 +83,10 @@ try {
     request_input_assert(request_input_fetch($address, 'sticky', ['field' => $attack]) === $literal, 'sticky query fallback is literal');
     $form_key = request_input_fetch($address, 'form-key', [], 'key=' . rawurlencode($attack));
     request_input_assert(!str_contains($form_key, 'EXECUTED') && str_contains($form_key, $literal), 'form key cookie is literal');
+
+    // System messages come from the session only, never from the URL or a cookie.
+    request_input_assert(request_input_fetch($address, 'system-message', ['system_message' => 'hello']) === '<>', 'system message ignores the query string');
+    request_input_assert(request_input_fetch($address, 'system-message', [], 'system_message=hello') === '<>', 'system message ignores a cookie');
 
     require $root . 'core/lib/request-input.php';
     request_input_assert(request_input_escape(['a' => $attack, 'b' => 3]) === ['a' => $literal, 'b' => 3], 'arrays are escaped per value');

@@ -1,6 +1,12 @@
 <?php
 
 function system_messages_sc($params) {
+    // Messages only come from the session. Defining the variable keeps
+    // [#get system_message#] from falling back to a cookie or URL parameter.
+    load_library("set");
+    if (!isset($GLOBALS['SYSTEM']['variables']['system_message'])) {
+        set_variable("system_message", "");
+    }
     load_library("session");
     if (!session_exists()) {
         return;
