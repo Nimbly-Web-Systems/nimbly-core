@@ -131,6 +131,7 @@ function host_audit_default_config(): array
         'scheduler_log' => '/var/log/nimbly-scheduler.log',
         'apache_log_dir' => '/var/log/apache2',
         'php_fpm_log_glob' => '/var/log/php*-fpm.log',
+        'php_fpm_slow_log_glob' => '/var/log/php*-fpm-slow.log',
         'apache_sites_enabled' => '/etc/apache2/sites-enabled',
         'project_inventory' => '/var/www/nimbly-site/ext/data/projects',
         'project_alias_overrides' => [],
@@ -686,6 +687,7 @@ function host_audit_apache(array $context, array &$findings): array
             )
         )),
         'php_fpm_worker_limit' => host_audit_php_fpm_worker_limit($context, $findings),
+        'php_fpm_slow_requests' => host_audit_php_fpm_slow_requests($context),
         'projects' => $project_metrics,
     ];
 }
@@ -734,6 +736,54 @@ function host_audit_php_fpm_worker_limit(array $context, array &$findings): arra
         'pools' => $pools,
         'first_seen' => $first_seen === null ? null : gmdate('c', $first_seen),
         'last_seen' => $last_seen === null ? null : gmdate('c', $last_seen),
+    ];
+}
+
+/** The slow log is the only record of where a long-running PHP request was stuck. */
+function host_audit_php_fpm_slow_requests(array $context): array
+{
+    $pattern = (string)($context['config']['php_fpm_slow_log_glob'] ?? '');
+    $files = $pattern === '' ? [] : array_merge(glob($pattern) ?: [], glob($pattern . '.1') ?: []);
+    $groups = [];
+    $count = 0;
+    $entry = null;
+    $close = function () use (&$entry, &$groups, &$count, $context): void {
+        if ($entry !== null && $entry['timestamp'] >= $context['since']) {
+            $count++;
+            $key = $entry['script'] . '|' . ($entry['trace'][0] ?? '');
+            $groups[$key] ??= ['script' => $entry['script'], 'count' => 0,
+                'first_seen' => $entry['timestamp'], 'last_seen' => $entry['timestamp'], 'trace' => []];
+            $groups[$key]['count']++;
+            $groups[$key]['first_seen'] = min($groups[$key]['first_seen'], $entry['timestamp']);
+            if ($entry['timestamp'] >= $groups[$key]['last_seen']) {
+                $groups[$key]['last_seen'] = $entry['timestamp'];
+                $groups[$key]['trace'] = $entry['trace'];
+            }
+        }
+        $entry = null;
+    };
+    foreach (array_unique($files) as $file) {
+        host_audit_each_line($file, function (string $line) use (&$entry, $close): void {
+            if (preg_match('/^\[([^\]]+)\]\s+\[pool [^\]]+\] pid \d+/', $line, $match)) {
+                $close();
+                $timestamp = host_audit_local_timestamp($match[1]);
+                $entry = $timestamp === null ? null : ['timestamp' => $timestamp, 'script' => '', 'trace' => []];
+            } elseif ($entry !== null && preg_match('/^script_filename = (.+)$/', $line, $match)) {
+                $entry['script'] = substr($match[1], 0, 200);
+            } elseif ($entry !== null && count($entry['trace']) < 5
+                && preg_match('/^\[0x[0-9a-f]+\] (.+)$/', $line, $match)) {
+                $entry['trace'][] = substr($match[1], 0, 120);
+            }
+        });
+        $close();
+    }
+    usort($groups, fn(array $left, array $right): int => $right['last_seen'] <=> $left['last_seen']);
+    return [
+        'count' => $count,
+        'requests' => array_map(fn(array $group): array => [
+            'first_seen' => gmdate('c', $group['first_seen']),
+            'last_seen' => gmdate('c', $group['last_seen']),
+        ] + $group, array_slice($groups, 0, 5)),
     ];
 }
 

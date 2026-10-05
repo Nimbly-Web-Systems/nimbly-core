@@ -534,6 +534,27 @@ audit_assert(
     ($fpm_findings[0]['id'] ?? '') === 'php-fpm:worker-limit:www',
     'reports a reached PHP-FPM worker limit as a finding'
 );
+$slow_entry = fn(int $ago, string $call): string => "\n[" . $fpm_local($ago) . "]  [pool www] pid 4242\n"
+    . "script_filename = /var/www/site/index.php\n"
+    . "[0x00007f0000000010] {$call}() /var/www/site/core/lib/http.php:88\n"
+    . "[0x00007f0000000020] run() /var/www/site/index.php:12\n";
+file_put_contents(
+    $fixture . '/php8.4-fpm-slow.log',
+    $slow_entry(172800, 'curl_exec') . $slow_entry(7200, 'curl_exec') . $slow_entry(3600, 'curl_exec')
+    . $slow_entry(600, 'flock')
+);
+$slow = host_audit_php_fpm_slow_requests([
+    'since' => time() - 86400,
+    'config' => ['php_fpm_slow_log_glob' => $fixture . '/php*-fpm-slow.log'],
+]);
+audit_assert($slow['count'] === 3, 'counts slow PHP requests inside the audit window');
+audit_assert(
+    count($slow['requests']) === 2
+        && $slow['requests'][0]['trace'][0] === 'flock() /var/www/site/core/lib/http.php:88'
+        && $slow['requests'][1]['count'] === 2
+        && $slow['requests'][1]['script'] === '/var/www/site/index.php',
+    'groups slow PHP requests by script and the call they were stuck in'
+);
 audit_remove_fixture($fixture);
 
 echo "Host audit tests passed\n";
