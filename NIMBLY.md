@@ -574,14 +574,17 @@ value (e.g. when passing data into a reusable template component).
 Outputs a value. `[#get#]` is the unified value accessor in Nimbly 1.1.0.
 
 Resolution order:
-1. Flat variable lookup: session variables, system variables, cookies, then GET parameters
+1. Flat variable lookup: session variables, then system variables. The URL and cookies are read only when the template asks for them with `from` (see below)
 2. Dot-path lookup into nested system variables, using the longest matching variable prefix
 3. Data lookup fallback for `resource.uuid.field` paths
 4. Automatic i18n resolution when the result is an object keyed by configured language codes
 
+Request input is opt-in: `from=url` reads the query parameter with the same name, `from=cookie` a cookie, `from=url,cookie` (or `url|cookie`) both in the order given, and `from=(any)` the cookie and then the URL. A page variable with that name always wins. `[#if#]` accepts the same `from` for its conditions.
+
 ```
 [#get page-title#]
 [#get item.title default="Untitled"#]
+[#get q from=url#]
 [#get language#]
 [#get data.settings.theme#]
 [#get users.abc123.name empty="Unknown"#]

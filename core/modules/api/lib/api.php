@@ -61,7 +61,7 @@ function api_access($feature='api', $resource=false) {
 function api_public_access($feature) {
     $key = filter_input(INPUT_GET, 'key', FILTER_SANITIZE_SPECIAL_CHARS);
     if (empty($key)) {
-        $key = get_variable('key');
+        $key = get_variable('key', null, '(any)');
     }
     if (empty($key)) {
         return false;

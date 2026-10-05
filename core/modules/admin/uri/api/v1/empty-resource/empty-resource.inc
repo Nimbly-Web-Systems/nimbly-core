@@ -6,7 +6,7 @@ function empty_resource_sc()
 {
     $response['error'] = true;
     $response['count'] = 0;
-    $resource = get_variable('resource');
+    $resource = get_variable('resource', null, 'url');
     if (empty($resource) || !data_exists($resource)) {
         $response['msg'] = "unknown resource";
     } else {

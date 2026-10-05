@@ -52,7 +52,7 @@ if (isset($headers['If-Modified-Since']) && strtotime($headers['If-Modified-Sinc
 
 // prepare thumbnail creation
 $size = $parts[count($parts) - 1] ?? 240;
-$ratio_text = (string) get_variable('ratio', '');
+$ratio_text = (string) get_variable('ratio', '', 'url');
 $ratio = 0;
 if ($ratio_text !== '') {
 	$valid_ratio = strlen($ratio_text) <= 24
@@ -69,7 +69,7 @@ if ($ratio_text !== '') {
 		exit();
 	}
 }
-$format = strtolower((string) get_variable('format', ''));
+$format = strtolower((string) get_variable('format', '', 'url'));
 if ($format === 'jpeg') {
 	$format = 'jpg';
 }

@@ -29,7 +29,7 @@ function detect_language_sc() {
     
     //2. from user preference
     load_library('get');
-    $lang = get_variable('lang');
+    $lang = get_variable('lang', null, '(any)');
     if (!empty($lang) && strlen($lang) === 2 && in_array($lang, $allowed_lang)) {
         $result = $lang;
         return $result;

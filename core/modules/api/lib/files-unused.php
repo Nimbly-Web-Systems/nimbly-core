@@ -16,7 +16,7 @@ function files_unused_get()
 }
 
 function get_unused_files() {
-    $ids_from_url = get_variable('_ids');
+    $ids_from_url = get_variable('_ids', null, 'url');
     if (!empty($ids_from_url)) {
         $file_ids = explode(',', $ids_from_url);
     } else {

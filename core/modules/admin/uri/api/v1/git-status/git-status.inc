@@ -4,7 +4,7 @@ load_library('get');
 
 function git_status_sc() {
 
-    $dir = get_variable('dir', '');
+    $dir = get_variable('dir', '', 'url');
 
     $response['error'] = true;
     $response['dir'] = $dir;

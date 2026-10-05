@@ -7,7 +7,7 @@ function git_pull_sc() {
     $response['error'] = true;
     $response['status'] = "";
 
-    $dir = $GLOBALS['SYSTEM']['file_base'] . get_variable('dir', '');
+    $dir = $GLOBALS['SYSTEM']['file_base'] . get_variable('dir', '', 'url');
     if (@chdir($dir) !== true) {
         $response['status'] = "could not change directory to " . $dir;
         return json_encode($response);

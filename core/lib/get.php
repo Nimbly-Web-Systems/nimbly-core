@@ -2,7 +2,7 @@
 
 /**
  * Unified variable getter. Resolves in this order:
- *   1. Flat key lookup (session → system → cookie → GET)
+ *   1. Flat key lookup (session → system; cookie and URL only when `from` asks for them)
  *   2. If key has dots: progressive prefix lookup in system variables
  *      (longest flat prefix found → traverse remainder into nested array)
  *   3. If still not found and key is resource.uuid.field format: data_lookup fallback
@@ -13,10 +13,12 @@
  * @doc * [get resource.uuid.field]       looks up data record field (data_lookup fallback)
  * @doc * [get i18n-var]                  auto-resolves i18n arrays to current language
  * @doc * [get i18n-var lang=nl]          resolves to specific language
+ * @doc * [get varname from=url]          also reads the URL parameter `varname` when the page has no such variable
+ * @doc * [get varname from=cookie]       same for a cookie; `from=url,cookie` (or `url|cookie`) tries both in that order, `from=(any)` cookie then URL
  * @doc * [get varname echo]              echoes the value
  * @doc * [get varname json]              echoes json-encoded value
  */
-function get_sc($params, $default = null)
+function get_sc($params, $default = null, $from = null)
 {
     if (is_array($params)) {
         $key = current($params);
@@ -38,17 +40,19 @@ function get_sc($params, $default = null)
         }
     }
 
+    $sources = get_request_sources($from ?? (is_array($params) ? get_param_value($params, 'from') : null));
+
     if (strpos($key, '.') === false) {
-        $result = get_flat_lookup($key);
+        $result = get_flat_lookup($key, $sources);
         if ($result === null) {
             // Single-segment fallback: try dot2rs (e.g. [#get img001#] → current page .content field)
-            [$result, $found] = get_dot_resolve($key);
+            [$result, $found] = get_dot_resolve($key, $sources);
             if (!$found) {
                 $result = $default;
             }
         }
     } else {
-        [$result, $found] = get_dot_resolve($key);
+        [$result, $found] = get_dot_resolve($key, $sources);
         if (!$found) {
             $result = $default;
         }
@@ -83,10 +87,25 @@ function get_sc($params, $default = null)
 }
 
 /**
- * Flat variable lookup across all stores: session → system → cookie → GET.
- * Returns null when not found.
+ * Request sources named by a `from` value: `url`, `cookie`, both (`url,cookie`
+ * or `url|cookie`, tried in the order given) or `(any)` (cookie, then url).
  */
-function get_flat_lookup($key)
+function get_request_sources($from)
+{
+    if (!is_string($from) || $from === '') {
+        return [];
+    }
+    if ($from === '(any)') {
+        return ['cookie', 'url'];
+    }
+    return array_values(array_intersect(array_map('trim', preg_split('/[,|]/', $from)), ['url', 'cookie']));
+}
+
+/**
+ * Flat variable lookup: session → system, then the request sources the caller
+ * asked for (see get_request_sources). Returns null when not found.
+ */
+function get_flat_lookup($key, $sources = [])
 {
     if (isset($_SESSION['variables'][$key])) {
         return $_SESSION['variables'][$key];
@@ -94,17 +113,24 @@ function get_flat_lookup($key)
     if (isset($GLOBALS['SYSTEM']['variables'][$key])) {
         return $GLOBALS['SYSTEM']['variables'][$key];
     }
-    load_library('request-input');
-    if (isset($_COOKIE[$key])) {
-        $cookie = $_COOKIE[$key];
-        if (is_string($cookie)) {
-            $cookie = filter_var($cookie, FILTER_SANITIZE_SPECIAL_CHARS);
-        }
-        return request_input_escape($cookie);
+    if (empty($sources)) {
+        return null;
     }
-    $req_get = filter_input(INPUT_GET, $key, FILTER_SANITIZE_SPECIAL_CHARS);
-    if (isset($req_get)) {
-        return request_input_escape($req_get);
+    load_library('request-input');
+    foreach ($sources as $source) {
+        if ($source === 'cookie' && isset($_COOKIE[$key])) {
+            $cookie = $_COOKIE[$key];
+            if (is_string($cookie)) {
+                $cookie = filter_var($cookie, FILTER_SANITIZE_SPECIAL_CHARS);
+            }
+            return request_input_escape($cookie);
+        }
+        if ($source === 'url') {
+            $req_get = filter_input(INPUT_GET, $key, FILTER_SANITIZE_SPECIAL_CHARS);
+            if (isset($req_get)) {
+                return request_input_escape($req_get);
+            }
+        }
     }
     return null;
 }
@@ -114,7 +140,7 @@ function get_flat_lookup($key)
  * Uses progressive prefix: tries longest flat key first, then shorter prefixes
  * with array traversal for the remainder. Falls back to data_lookup for 3-segment keys.
  */
-function get_dot_resolve($key)
+function get_dot_resolve($key, $sources = [])
 {
     $parts = explode('.', $key);
     $n = count($parts);
@@ -124,8 +150,8 @@ function get_dot_resolve($key)
         $prefix = implode('.', array_slice($parts, 0, $len));
 
         if ($len === $n) {
-            // Exact match: use full 4-store lookup to preserve existing get behavior
-            $val = get_flat_lookup($prefix);
+            // Exact match: same lookup as a flat key
+            $val = get_flat_lookup($prefix, $sources);
             if ($val !== null) {
                 return [$val, true];
             }
@@ -197,7 +223,7 @@ function get_i18n_resolve(array $val, $lang = 'auto')
     return $val;
 }
 
-function get_variable($key, $default = null)
+function get_variable($key, $default = null, $from = null)
 {
-    return get_sc($key, $default);
+    return get_sc($key, $default, $from);
 }

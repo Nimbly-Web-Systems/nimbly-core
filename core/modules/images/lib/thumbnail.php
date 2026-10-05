@@ -163,7 +163,7 @@ function thumbnail_create($uuid, $size, $ratio = 0, $mode = 'h', $format = '')
     $thumb_img = imagecreatetruecolor($w, $h);
     $static_path = $GLOBALS['SYSTEM']['file_base'] . 'ext/static/_thumb_/' . $GLOBALS['SYSTEM']['request_uri'];
 
-    $query_ratio = get_variable('ratio');
+    $query_ratio = get_variable('ratio', null, 'url');
     if (!empty($query_ratio)) {
         $static_path .= '_r' . $query_ratio;
     }

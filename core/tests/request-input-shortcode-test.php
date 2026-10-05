@@ -16,11 +16,21 @@ load_library('run');
 function probe_sc($params) { return 'EXECUTED'; }
 function wrap_sc($params) { return '<' . ($params['x'] ?? '') . '>'; }
 $templates = [
-    'get' => '[#get q#]',
-    'nested-get' => '[#wrap x=[#get q#]#]',
+    'get' => '[#get q from=url#]',
+    'get-page-only' => '<[#get q#]|[#get c#]|[#get q default=none#]>',
+    'get-page-wins' => '[#get y from=(any)#]',
+    'get-cookie-only' => '<[#get q from=cookie#]>',
+    'get-url-first' => '[#get q from=url,cookie#]',
+    'get-cookie-first' => '[#get q from=cookie,url#]',
+    'get-pipe' => '[#get q from=url|cookie#]',
+    'get-any' => '[#get q from=(any)#]',
+    'if-page-only' => '[#if q=hello echo=yes echo_else=no#]',
+    'if-url' => '[#if q=hello from=url echo=yes echo_else=no#]',
+    'if-from-variable' => '[#if from=here echo=yes echo_else=no#]',
+    'nested-get' => '[#wrap x=[#get q from=url#]#]',
     'nested-set' => ['[#set x=[#get y#]#]', '[#get x#]'],
     'nested-template' => '[#wrap x=[#probe#]#]',
-    'cookie' => '[#get c#]',
+    'cookie' => '[#get c from=cookie#]',
     'sticky' => '[#sticky field#]',
     'nested-sticky' => '[#wrap x=[#sticky field#]#]',
     'form-key' => '[#form-key#]',
@@ -72,6 +82,21 @@ try {
     request_input_assert(request_input_fetch($address, 'get', ['q' => 'hello world [1]']) === 'hello world [1]', 'normal query value is unchanged');
     request_input_assert(request_input_fetch($address, 'nested-get', ['q' => 'hello']) === '<hello>', 'normal query value in a nested shortcode');
     request_input_assert(request_input_fetch($address, 'sticky', [], '', ['field' => 'you@example.test']) === 'you@example.test', 'normal posted value is unchanged');
+
+    // The URL and cookies are read only when the template asks for them.
+    request_input_assert(request_input_fetch($address, 'get-page-only', ['q' => 'hello'], 'c=hello') === '<||none>', 'get without from ignores the query string and cookies');
+    request_input_assert(request_input_fetch($address, 'get-page-wins', ['y' => 'url'], 'y=cookie') === 'from-variable', 'a page variable wins over request input');
+    request_input_assert(request_input_fetch($address, 'get-cookie-only', ['q' => 'url']) === '<>', 'from=cookie ignores the query string');
+    request_input_assert(request_input_fetch($address, 'get-url-first', ['q' => 'url'], 'q=cookie') === 'url', 'from=url,cookie tries the query string first');
+    request_input_assert(request_input_fetch($address, 'get-url-first', [], 'q=cookie') === 'cookie', 'from=url,cookie falls back to the cookie');
+    request_input_assert(request_input_fetch($address, 'get-cookie-first', ['q' => 'url'], 'q=cookie') === 'cookie', 'from=cookie,url tries the cookie first');
+    request_input_assert(request_input_fetch($address, 'get-pipe', ['q' => 'url'], 'q=cookie') === 'url', 'from=url|cookie works like url,cookie');
+    request_input_assert(request_input_fetch($address, 'get-any', ['q' => 'url'], 'q=cookie') === 'cookie', 'from=(any) tries the cookie first');
+    request_input_assert(request_input_fetch($address, 'get-any', ['q' => 'url']) === 'url', 'from=(any) falls back to the query string');
+    request_input_assert(request_input_fetch($address, 'if-page-only', ['q' => 'hello']) === 'no', 'if without from ignores the query string');
+    request_input_assert(request_input_fetch($address, 'if-url', ['q' => 'hello']) === 'yes', 'if with from=url reads the query string');
+    request_input_assert(request_input_fetch($address, 'if-url', ['q' => 'other']) === 'no', 'if with from=url compares the query value');
+    request_input_assert(request_input_fetch($address, 'if-from-variable', ['from' => 'here']) === 'no', 'a from value that names no source is an ordinary condition');
 
     // A shortcode in a request value comes back as literal text.
     request_input_assert(request_input_fetch($address, 'get', ['q' => $attack]) === $literal, 'query value is literal');

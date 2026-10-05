@@ -7,7 +7,7 @@
  * @doc Resolution order:
  * @doc   1. POST data (what the user just submitted)
  * @doc   2. A variable named `sticky.<fieldname>` set via set_variable()
- * @doc   3. A GET parameter or session/system variable with the same name
+ * @doc   3. A session/system variable, cookie or GET parameter with the same name
  * @doc   4. The `default` parameter, if provided
  * @doc Example: <input name="email" value="[#sticky email#]">
  * @doc          <input name="email" value="[#sticky email default=you@example.com#]">
@@ -25,7 +25,7 @@ function sticky_sc($params) {
         $value = get_variable("sticky." . $key);
     }
     if (empty($value)) {
-        $value = get_sc($key);
+        $value = get_sc($key, null, '(any)');
     }
     if (!isset($value)) {
         $value = $default;

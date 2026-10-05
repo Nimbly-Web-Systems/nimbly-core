@@ -5,6 +5,7 @@
  * @doc * action can be "tpl=nameoftemplate" to load a template, "echo=text to show" to display text or "redirect=somepage" to redirect to another page
  * @doc * condition compares a variable with a value, x=3, x=(empty), x=(not-empty)
  * @doc * `[if user=(empty) redirect=login]` redirects to login if variable user is empty
+ * @doc * `[if id=(empty) from=url redirect=overview]` also reads the variables from the URL (`from` works as in `[get]`)
  */
 function if_sc($params)
 {
@@ -12,6 +13,8 @@ function if_sc($params)
     $negate = false;
     $or = false;
     $action = array();
+    $from = null;
+    load_library("get");
     foreach ($params as $key => $value) {
         if ($key === "tpl" || $key === "tpl_else"
             || $key === "echo" || $key === "echo_else"
@@ -23,6 +26,8 @@ function if_sc($params)
             $or = true;
         } else if ($key === "and") {
             $or = false;
+        } else if ($key === "from" && get_request_sources($value)) {
+            $from = $value;
         } else {
             $condition[] = [$key => $value];
             if ($or) {
@@ -34,11 +39,10 @@ function if_sc($params)
         return;
     }
     $pass = !$or;
-    load_library("get");
 
     foreach ($condition as $kv) {
         //loop through and test all conditions
-        $b = if_condition(key($kv), current($kv), $negate);
+        $b = if_condition(key($kv), current($kv), $negate, $from);
         if ($or === true && $b) {
             $pass = true;
             break;
@@ -75,10 +79,10 @@ function if_action($action)
     }
 }
 
-function if_condition($key, $value, $negate = false)
+function if_condition($key, $value, $negate = false, $from = null)
 {
     $result = null;
-    $eval = get_sc($key);
+    $eval = get_sc($key, null, $from);
     if ($value === "(not-empty)") {
         $result = !empty($eval);
     } else if ($value === "(empty)") {
