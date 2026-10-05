@@ -130,6 +130,7 @@ function host_audit_default_config(): array
         'scheduler_config' => '/etc/nimbly/scheduler-projects.json',
         'scheduler_log' => '/var/log/nimbly-scheduler.log',
         'apache_log_dir' => '/var/log/apache2',
+        'php_fpm_log_glob' => '/var/log/php*-fpm.log',
         'apache_sites_enabled' => '/etc/apache2/sites-enabled',
         'project_inventory' => '/var/www/nimbly-site/ext/data/projects',
         'project_alias_overrides' => [],
@@ -684,7 +685,55 @@ function host_audit_apache(array $context, array &$findings): array
                 'apache:capacity-or-crash:'
             )
         )),
+        'php_fpm_worker_limit' => host_audit_php_fpm_worker_limit($context, $findings),
         'projects' => $project_metrics,
+    ];
+}
+
+/** Requests wait in Apache once every PHP-FPM worker is busy; only PHP-FPM's own log records that. */
+function host_audit_php_fpm_worker_limit(array $context, array &$findings): array
+{
+    $pattern = (string)($context['config']['php_fpm_log_glob'] ?? '');
+    $pools = [];
+    $count = 0;
+    $first_seen = null;
+    $last_seen = null;
+    $files = $pattern === '' ? [] : array_merge(glob($pattern) ?: [], glob($pattern . '.1') ?: []);
+    foreach (array_unique($files) as $file) {
+        host_audit_each_line($file, function (string $line) use (
+            $context,
+            &$findings,
+            &$pools,
+            &$count,
+            &$first_seen,
+            &$last_seen
+        ): void {
+            if (!preg_match('/^\[([^\]]+)\] WARNING: \[pool ([^\]]+)\] server reached pm\.max_children setting \((\d+)\)/', $line, $match)) {
+                return;
+            }
+            $timestamp = strtotime($match[1]);
+            if ($timestamp === false || $timestamp < $context['since']) {
+                return;
+            }
+            $count++;
+            $pools[$match[2]] = (int)$match[3];
+            $first_seen = min($first_seen ?? $timestamp, $timestamp);
+            $last_seen = max($last_seen ?? $timestamp, $timestamp);
+            $findings[] = host_audit_finding(
+                'php-fpm:worker-limit:' . host_audit_id($match[2]),
+                'critical',
+                'host',
+                'PHP-FPM worker limit reached',
+                "pool {$match[2]} reached pm.max_children ({$match[3]})",
+                $timestamp
+            );
+        });
+    }
+    return [
+        'count' => $count,
+        'pools' => $pools,
+        'first_seen' => $first_seen === null ? null : gmdate('c', $first_seen),
+        'last_seen' => $last_seen === null ? null : gmdate('c', $last_seen),
     ];
 }
 

@@ -510,6 +510,23 @@ audit_assert(
     ) === 'Koen',
     'attributes rotated project logs'
 );
+file_put_contents(
+    $fixture . '/php8.4-fpm.log',
+    '[' . date('d-M-Y H:i:s', time() - 172800) . "] WARNING: [pool www] server reached pm.max_children setting (5), consider raising it\n"
+    . '[' . date('d-M-Y H:i:s', time() - 3600) . "] WARNING: [pool www] server reached pm.max_children setting (5), consider raising it\n"
+    . '[' . date('d-M-Y H:i:s', time() - 1800) . "] NOTICE: error log file re-opened\n"
+);
+$fpm_findings = [];
+$fpm_limit = host_audit_php_fpm_worker_limit([
+    'since' => time() - 86400,
+    'config' => ['php_fpm_log_glob' => $fixture . '/php*-fpm.log'],
+], $fpm_findings);
+audit_assert($fpm_limit['count'] === 1, 'counts PHP-FPM worker limit events inside the audit window');
+audit_assert($fpm_limit['pools'] === ['www' => 5], 'reports the PHP-FPM pool and its worker limit');
+audit_assert(
+    ($fpm_findings[0]['id'] ?? '') === 'php-fpm:worker-limit:www',
+    'reports a reached PHP-FPM worker limit as a finding'
+);
 audit_remove_fixture($fixture);
 
 echo "Host audit tests passed\n";
