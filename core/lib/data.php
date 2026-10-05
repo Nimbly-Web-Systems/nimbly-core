@@ -112,6 +112,36 @@ function data_var($resource, $uuid = "", $op = "read")
 }
 
 /**
+ * Tells whether a resource name and record id stay inside the data directory
+ * when used as a path.
+ *
+ * A resource may name a subfolder ("a/b") but not climb ("..") or start at
+ * the root; an id is a single file name. Names starting with a dot (".meta",
+ * ".files") are valid here.
+ *
+ * @param string $resource Resource name
+ * @param string $uuid Record id (optional)
+ * @return bool True if both are safe path segments
+ */
+function data_path_valid($resource, $uuid = '')
+{
+    $resource = (string)$resource;
+    $uuid = (string)$uuid;
+
+    if (strpbrk($resource . $uuid, "\\\0") !== false) {
+        return false;
+    }
+    if (strpos($uuid, '/') !== false || $uuid === '.' || $uuid === '..') {
+        return false;
+    }
+    if (strpos($resource, '/') === 0) {
+        return false;
+    }
+
+    return !in_array('..', explode('/', $resource), true);
+}
+
+/**
  * Returns the filesystem path for a resource's data file.
  *
  * Depending on the resource's `.meta` settings, data files may be stored flat
@@ -124,6 +154,11 @@ function data_var($resource, $uuid = "", $op = "read")
  */
 function data_path($resource, $uuid = '')
 {
+    if (!data_path_valid($resource, $uuid)) {
+        // nothing can exist or be created below a regular file
+        return __FILE__ . '/invalid' . ((string)$uuid === '' ? '' : '/invalid');
+    }
+
     $base = $GLOBALS['SYSTEM']['data_base'] . '/' . $resource;
 
     if ((string)$uuid === '') {

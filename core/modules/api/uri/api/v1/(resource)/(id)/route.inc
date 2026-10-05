@@ -14,6 +14,9 @@ if (!data_exists($resource)) {
 }
 
 $uuid = $parts[3];
+if (strpos($uuid, '.') === 0) {
+    return;
+}
 $method = $_SERVER['REQUEST_METHOD'];
 $upsert = !empty(data_meta($resource)['upsert']);
 if ($method !== 'POST' && $method !== 'DELETE' && !($method === 'PUT' && $upsert) && !data_exists($resource, $uuid)) {

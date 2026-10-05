@@ -351,6 +351,14 @@ function resource_get($resource) { // get all
     return json_result([$resource => $result, 'count' => count($result)], 200, $modified);
 }
 
+/**
+ * A record id that arrives with a request: a single file name that does not
+ * start with a dot, so ".meta" and other internal files stay out of reach.
+ */
+function api_uuid_valid($uuid) {
+    return is_scalar($uuid) && (string)$uuid !== '' && ((string)$uuid)[0] !== '.' && data_path_valid('', $uuid);
+}
+
 function resource_post($resource) { // create new
     if (!empty($_FILES)) {
         load_library('api_import_resource');
@@ -363,6 +371,9 @@ function resource_post($resource) { // create new
     }
     $data = api_sanitize_html_fields($resource, $data);
     $uuid = $data['uuid'];
+    if (!api_uuid_valid($uuid)) {
+        return json_result(array('message' => 'INVALID_DATA'), 400);
+    }
     if (data_exists($resource, $uuid)) {
         return json_result(array('message' => 'RESOURCE_EXISTS'), 409);
     }
@@ -397,6 +408,9 @@ function resource_put($resource) { // update multiple
     $meta = data_meta($resource);
     foreach ($data as $pk => $updates) {
         if (is_array($updates)) {
+            if (!api_uuid_valid(empty($pk) ? ($updates['uuid'] ?? '') : $pk)) {
+                return json_result(array('message' => 'INVALID_DATA'), 400);
+            }
             $data[$pk] = api_escape_shortcodes($meta, sanitize_html_fields($meta, $updates));
         }
     }
