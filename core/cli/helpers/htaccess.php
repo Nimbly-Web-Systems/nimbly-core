@@ -58,7 +58,7 @@ function upgrade_11_htaccess_state($pepper, $base_path, $rewrite_base_path)
         && str_contains($htaccess_content, 'service-worker\.js');
     $has_default_language = (bool)preg_match('/^DefaultLanguage\s+/m', $htaccess_content);
     $unsets_etag = (bool)preg_match('/^\s*Header\s+unset\s+ETag\s*$/mi', $htaccess_content);
-    $blocks_hidden_files = str_contains($htaccess_content, 'RewriteRule ^\.(?!well-known/) - [F]');
+    $blocks_hidden_files = str_contains($htaccess_content, 'RewriteRule (^|/)\.(?!well-known/) - [F]');
     $existing_base = null;
     if (preg_match('/^RewriteBase\s+(.+)$/m', $htaccess_content, $m)) {
         $existing_base = trim($m[1]);

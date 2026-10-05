@@ -91,9 +91,10 @@ RewriteCond %{REQUEST_URI} !^/index\.php$
 RewriteCond %{REQUEST_URI} !^/install\.php$
 RewriteRule ^ - [F]
 
-# block hidden files and folders at the web root (.env, .git, ...) before PHP runs,
-# so scanners cost nothing; .well-known stays reachable for certificates
-RewriteRule ^\.(?!well-known/) - [F]
+# block hidden files and folders (.env, .git, ...) at any depth before PHP runs,
+# so scanners cost nothing; .well-known and the API's dot resources stay reachable
+RewriteCond %{REQUEST_URI} !/api/v1/\.
+RewriteRule (^|/)\.(?!well-known/) - [F]
 
 # rewrite: redirect anything that is not a file to index.php
 RewriteCond %{REQUEST_FILENAME} !-f
