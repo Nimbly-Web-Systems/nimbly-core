@@ -17,6 +17,7 @@ $GLOBALS['SYSTEM']['data_error'] = null;
  * @doc - sort: sorting instructions, e.g. `date|desc,title|asc`.
  * @doc - filter: filtering instructions, e.g. `published:1,status:new`.
  * @doc - search: search term to filter records by any matching field.
+ * @doc - fields: comma-separated fields to keep in the result, e.g. `title,intro`. Applied after sort, search and filter.
  * @doc
  * @doc (*): Mandatory. 
  * @doc
@@ -26,6 +27,7 @@ $GLOBALS['SYSTEM']['data_error'] = null;
  * @doc - `[#data users var=all_users#]` loads all users into the custom variable `all_users`.
  * @doc - `[#data projects sort=date|desc,title|asc#]` loads projects sorted by date descending, then title ascending.
  * @doc - `[#data blog-items filter=published:1#]` loads blog items whose boolean `published` field is enabled.
+ * @doc - `[#data blog-items filter=published:1 fields=title,intro#]` loads only the title and intro of published blog items.
  */
 function data_sc($params)
 {
@@ -60,12 +62,40 @@ function data_sc($params)
         $result = data_filter($result, $filter);
     }
 
+    $fields = get_param_value($params, "fields", false);
+    if ($fields !== false && $op === 'read' && is_array($result)) {
+        $result = data_select_fields($result, $fields, (string)$uuid !== '');
+    }
+
     $data_var = $var_id ?? data_var($resource, $uuid, $op);
     load_library('set');
     set_variable($data_var, $result);
     if ((string)$uuid !== '' && (string)$var_id !== '') {
         set_variable_dot($var_id, $result);
     }
+}
+
+/**
+ * Keeps only the listed fields of one record or of every record in a list.
+ *
+ * @param array $data A single record, or an associative array of UUID => record.
+ * @param string|array $fields Field names, as an array or comma-separated string.
+ * @param bool $single Whether $data is a single record.
+ * @return array The record(s) reduced to the listed fields that exist.
+ */
+function data_select_fields($data, $fields, $single = false)
+{
+    $keys = is_array($fields) ? $fields : explode(',', (string)$fields);
+    $keys = array_flip(array_filter(array_map('trim', $keys), fn($key) => $key !== ''));
+    if ($single) {
+        return array_intersect_key($data, $keys);
+    }
+    foreach ($data as $uuid => $record) {
+        if (is_array($record)) {
+            $data[$uuid] = array_intersect_key($record, $keys);
+        }
+    }
+    return $data;
 }
 
 /**
