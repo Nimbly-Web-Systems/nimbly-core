@@ -151,7 +151,7 @@ if (!window.nb_group_field) {
                             </label>
                         </template>
                         <template x-if="field_entry.field.type === 'number'">
-                            <input class="input input-bordered w-full" type="number"
+                            <input class="input input-bordered w-full" type="number" :step="field_entry.field.step || 'any'"
                                 x-model.number="entry[field_entry.key]" />
                         </template>
                         <template x-if="!['textarea', 'select', 'boolean', 'number'].includes(field_entry.field.type)">
