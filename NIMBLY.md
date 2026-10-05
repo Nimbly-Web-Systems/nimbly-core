@@ -971,6 +971,8 @@ Outputs a response Content-Type header. Use at the top of non-HTML routes.
 
 Types: `css`, `js`, `json`, `woff`, `csv`, `403`, `404`, `500`.
 
+A second parameter also sends long-lived cache headers (`Cache-Control: private`, `Expires`, `Last-Modified`) and answers `304` to a conditional request: `[#http-header css cached#]`.
+
 #### `[#system-messages#]`
 Renders any queued system messages (set server-side via the session). Use in the HTML template or layout to display flash messages.
 

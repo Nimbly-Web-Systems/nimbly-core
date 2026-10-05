@@ -1,10 +1,10 @@
 <?php
 
 /**
- * @doc `[#http-header (type)#]` outputs a http header, possible header types: css, js, json, woff, 403, 404, 500, csv
+ * @doc `[#http-header (type)#]` outputs a http header, possible header types: css, js, json, woff, 403, 404, 500, csv. A second parameter (`[#http-header css cached#]`) also sends long-lived cache headers
  */
 function http_header_sc($params) {
-    http_header_sent($type = current($params), $cached = end($params));
+    http_header_sent(current($params), count($params) > 1 ? end($params) : false);
 }
 
 function http_header_sent($type, $cached=false, $modified=0) {
