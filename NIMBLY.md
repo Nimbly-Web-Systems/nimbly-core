@@ -859,7 +859,7 @@ the filename and sends private, non-browser-cacheable PDF download headers.
 ### Utilities
 
 #### `[#include file=path#]`
-Includes a file server-side.
+Includes a file server-side. The path must resolve inside the project; anything else prints nothing.
 
 ```
 [#include file=[#base-path#]ext/tpl/head-scripts/index.tpl#]
