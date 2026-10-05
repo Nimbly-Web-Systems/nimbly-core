@@ -510,11 +510,14 @@ audit_assert(
     ) === 'Koen',
     'attributes rotated project logs'
 );
+$fpm_local = fn(int $ago): string => (new DateTime('@' . (time() - $ago)))
+    ->setTimezone(host_audit_local_timezone())
+    ->format('d-M-Y H:i:s');
 file_put_contents(
     $fixture . '/php8.4-fpm.log',
-    '[' . date('d-M-Y H:i:s', time() - 172800) . "] WARNING: [pool www] server reached pm.max_children setting (5), consider raising it\n"
-    . '[' . date('d-M-Y H:i:s', time() - 3600) . "] WARNING: [pool www] server reached pm.max_children setting (5), consider raising it\n"
-    . '[' . date('d-M-Y H:i:s', time() - 1800) . "] NOTICE: error log file re-opened\n"
+    '[' . $fpm_local(172800) . "] WARNING: [pool www] server reached pm.max_children setting (5), consider raising it\n"
+    . '[' . $fpm_local(3600) . "] WARNING: [pool www] server reached pm.max_children setting (5), consider raising it\n"
+    . '[' . $fpm_local(1800) . "] NOTICE: error log file re-opened\n"
 );
 $fpm_findings = [];
 $fpm_limit = host_audit_php_fpm_worker_limit([
@@ -523,6 +526,10 @@ $fpm_limit = host_audit_php_fpm_worker_limit([
 ], $fpm_findings);
 audit_assert($fpm_limit['count'] === 1, 'counts PHP-FPM worker limit events inside the audit window');
 audit_assert($fpm_limit['pools'] === ['www' => 5], 'reports the PHP-FPM pool and its worker limit');
+audit_assert(
+    abs(strtotime((string)$fpm_limit['last_seen']) - (time() - 3600)) < 5,
+    'reads PHP-FPM log times in the server time zone'
+);
 audit_assert(
     ($fpm_findings[0]['id'] ?? '') === 'php-fpm:worker-limit:www',
     'reports a reached PHP-FPM worker limit as a finding'

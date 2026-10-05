@@ -711,8 +711,8 @@ function host_audit_php_fpm_worker_limit(array $context, array &$findings): arra
             if (!preg_match('/^\[([^\]]+)\] WARNING: \[pool ([^\]]+)\] server reached pm\.max_children setting \((\d+)\)/', $line, $match)) {
                 return;
             }
-            $timestamp = strtotime($match[1]);
-            if ($timestamp === false || $timestamp < $context['since']) {
+            $timestamp = host_audit_local_timestamp($match[1]);
+            if ($timestamp === null || $timestamp < $context['since']) {
                 return;
             }
             $count++;
@@ -2380,8 +2380,32 @@ function host_audit_apache_error_timestamp(string $line): ?int
     if (!preg_match('/^\[([^\]]+)\]/', $line, $match)) {
         return null;
     }
-    $timestamp = strtotime($match[1]);
-    return $timestamp === false ? null : $timestamp;
+    return host_audit_local_timestamp($match[1]);
+}
+
+/** Apache and PHP-FPM write log times in the server's zone, which PHP's own setting need not match. */
+function host_audit_local_timezone(): DateTimeZone
+{
+    $name = trim((string)@file_get_contents('/etc/timezone'));
+    if ($name === '' && preg_match('#zoneinfo/(.+)$#', (string)@readlink('/etc/localtime'), $match)) {
+        $name = $match[1];
+    }
+    try {
+        return new DateTimeZone($name !== '' ? $name : date_default_timezone_get());
+    } catch (Throwable $e) {
+        return new DateTimeZone(date_default_timezone_get());
+    }
+}
+
+function host_audit_local_timestamp(string $value): ?int
+{
+    static $zone = null;
+    $zone ??= host_audit_local_timezone();
+    try {
+        return (new DateTime($value, $zone))->getTimestamp();
+    } catch (Throwable $e) {
+        return null;
+    }
 }
 
 function host_audit_project_environment(string $path): ?string
