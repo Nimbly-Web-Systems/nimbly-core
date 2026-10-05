@@ -137,7 +137,7 @@ function api_token_access($feature, $resource = false) {
  */
 function api_json_input($resource) {
     $meta = data_meta($resource);
-    $data = json_input();
+    $data = api_escape_shortcodes($meta, json_input());
     if (isset($meta['encrypt'])) {
         load_library('util');
         load_library('encrypt');
@@ -168,13 +168,38 @@ function api_json_input($resource) {
 }
 
 /**
+ * A stored value is parsed as template text when it is printed inside another
+ * shortcode, as in [#set page-title="[#get record.title#]"#]. Shortcode tags in
+ * submitted record values are therefore stored as HTML entities, so they still
+ * display as typed. One-way encrypted fields stay as typed: login hashes the
+ * password exactly as it was entered.
+ */
+function api_escape_shortcodes($meta, $data) {
+    if (!is_array($data)) {
+        return $data;
+    }
+    load_library('request-input');
+    $as_typed = isset($meta['encrypt']) ? explode(',', $meta['encrypt']) : [];
+    foreach ($data as $key => $value) {
+        if (in_array((string)$key, $as_typed, true)) {
+            continue;
+        }
+        $data[$key] = is_array($value) ? api_escape_shortcodes($meta, $value) : request_input_escape($value);
+    }
+    return $data;
+}
+
+/**
  * Runs the html-field attribute sanitizer over a single resource-shaped
  * record (as opposed to resource_put's bulk uuid-keyed map, which sanitizes
- * per-record itself since the shape differs).
+ * per-record itself since the shape differs). The sanitizer turns entities
+ * back into characters when it rewrites a field, so the shortcode tags are
+ * escaped again afterwards.
  */
 function api_sanitize_html_fields($resource, $data) {
     load_library('html-sanitize');
-    return sanitize_html_fields(data_meta($resource), $data);
+    $meta = data_meta($resource);
+    return api_escape_shortcodes($meta, sanitize_html_fields($meta, $data));
 }
 
 /***
@@ -372,7 +397,7 @@ function resource_put($resource) { // update multiple
     $meta = data_meta($resource);
     foreach ($data as $pk => $updates) {
         if (is_array($updates)) {
-            $data[$pk] = sanitize_html_fields($meta, $updates);
+            $data[$pk] = api_escape_shortcodes($meta, sanitize_html_fields($meta, $updates));
         }
     }
     $result = data_update($resource, null, $data);
