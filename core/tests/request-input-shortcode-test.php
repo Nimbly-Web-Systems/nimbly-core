@@ -15,6 +15,9 @@ require $root . 'core/lib/find.php';
 load_library('run');
 function probe_sc($params) { return 'EXECUTED'; }
 function wrap_sc($params) { return '<' . ($params['x'] ?? '') . '>'; }
+function dump_sc($params) { return json_encode($params); }
+function buffered_sc($params) { return rawurlencode(run_template_buffered('[#get q from=url#]')); }
+function phpread_sc($params) { load_library('get'); return strpos((string)get_variable('q', null, 'url'), NB_MARK_CHAR) === false ? 'clean' : 'marked'; }
 $templates = [
     'get' => '[#get q from=url#]',
     'get-page-only' => '<[#get q#]|[#get c#]|[#get q default=none#]>',
@@ -28,6 +31,16 @@ $templates = [
     'if-url' => '[#if q=hello from=url echo=yes echo_else=no#]',
     'if-from-variable' => '[#if from=here echo=yes echo_else=no#]',
     'nested-get' => '[#wrap x=[#get q from=url#]#]',
+    'nested-dump' => '[#dump x=[#get q from=url#]#]',
+    'nested-dump-cookie' => '[#dump x=[#get q from=cookie#]#]',
+    'nested-dump-positional' => '[#dump [#get q from=url#]#]',
+    'nested-dump-sticky' => '[#dump x=[#sticky field#]#]',
+    'nested-dump-two' => '[#dump x=[#get q from=url#] y=[#get y#] z=[#get q from=url#]#]',
+    'nested-then-plain' => '[#dump x=[#get q from=url#]#]|[#get q from=url#]|[#wrap x=[#get y#]#]',
+    'nested-set-flag' => ['[#set y=[#get q from=url#]#]', '[#get y#]'],
+    'nested-unclosed' => '[#dump x=[#get q from=url#]',
+    'nested-php-reader' => '[#wrap x=[#phpread#]#]',
+    'nested-buffered' => '[#wrap x=[#buffered#]#]',
     'nested-set' => ['[#set x=[#get y#]#]', '[#get x#]'],
     'nested-template' => '[#wrap x=[#probe#]#]',
     'cookie' => '[#get c from=cookie#]',
@@ -108,6 +121,20 @@ try {
     request_input_assert(request_input_fetch($address, 'sticky', ['field' => $attack]) === $literal, 'sticky query fallback is literal');
     $form_key = request_input_fetch($address, 'form-key', [], 'key=' . rawurlencode($attack));
     request_input_assert(!str_contains($form_key, 'EXECUTED') && str_contains($form_key, $literal), 'form key cookie is literal');
+
+    // A request value inside another shortcode call stays one parameter value.
+    $one = static fn(string $value): string => json_encode(['x' => $value]);
+    request_input_assert(request_input_fetch($address, 'nested-dump', ['q' => 'a tpl=evil overwrite']) === $one('a tpl=evil overwrite'), 'query value with spaces adds no parameters');
+    request_input_assert(request_input_fetch($address, 'nested-dump-cookie', [], 'q=' . rawurlencode('a tpl=evil')) === $one('a tpl=evil'), 'cookie value with spaces adds no parameters');
+    request_input_assert(request_input_fetch($address, 'nested-dump-positional', ['q' => 'tpl=evil']) === json_encode(['tpl=evil' => 'tpl=evil']), 'query value cannot name a parameter');
+    request_input_assert(request_input_fetch($address, 'nested-dump-sticky', [], '', ['field' => "a tpl=evil\tb\nc"]) === $one("a tpl=evil\tb\nc"), 'posted value with whitespace adds no parameters');
+    request_input_assert(request_input_fetch($address, 'nested-dump-sticky', [], '', ['field' => "a\x1F0tpl=evil"]) === $one('a0tpl=evil'), 'a marker sent by the client is dropped');
+    request_input_assert(request_input_fetch($address, 'nested-dump-two', ['q' => 'a b']) === json_encode(['x' => 'a b', 'y' => 'from-variable', 'z' => 'a b']), 'several nested values in one call');
+    request_input_assert(request_input_fetch($address, 'nested-then-plain', ['q' => 'a b']) === $one('a b') . '|a b|<from-variable>', 'values after the call are printed as typed');
+    request_input_assert(request_input_fetch($address, 'nested-set-flag', ['q' => 'changed overwrite']) === 'from-variable', 'query value cannot add a flag');
+    request_input_assert(request_input_fetch($address, 'nested-unclosed', ['q' => 'a b']) === '[#dump x=a b', 'an unclosed call prints the value as typed');
+    request_input_assert(request_input_fetch($address, 'nested-php-reader', ['q' => 'a b']) === '<clean>', 'PHP callers get the value as typed');
+    request_input_assert(request_input_fetch($address, 'nested-buffered', ['q' => 'a b']) === '<a%20b>', 'a template rendered into a string gets the value as typed');
 
     // System messages come from the session only, never from the URL or a cookie.
     request_input_assert(request_input_fetch($address, 'system-message', ['system_message' => 'hello']) === '<>', 'system message ignores the query string');

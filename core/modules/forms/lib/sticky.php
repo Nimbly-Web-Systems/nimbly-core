@@ -30,5 +30,5 @@ function sticky_sc($params) {
     if (!isset($value)) {
         $value = $default;
     }
-    return $value;
+    return request_input_mark($value);
 }

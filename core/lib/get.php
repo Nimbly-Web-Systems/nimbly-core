@@ -43,16 +43,16 @@ function get_sc($params, $default = null, $from = null)
     $sources = get_request_sources($from ?? (is_array($params) ? get_param_value($params, 'from') : null));
 
     if (strpos($key, '.') === false) {
-        $result = get_flat_lookup($key, $sources);
+        $result = get_flat_lookup($key, $sources, is_array($params));
         if ($result === null) {
             // Single-segment fallback: try dot2rs (e.g. [#get img001#] → current page .content field)
-            [$result, $found] = get_dot_resolve($key, $sources);
+            [$result, $found] = get_dot_resolve($key, $sources, is_array($params));
             if (!$found) {
                 $result = $default;
             }
         }
     } else {
-        [$result, $found] = get_dot_resolve($key, $sources);
+        [$result, $found] = get_dot_resolve($key, $sources, is_array($params));
         if (!$found) {
             $result = $default;
         }
@@ -104,8 +104,10 @@ function get_request_sources($from)
 /**
  * Flat variable lookup: session → system, then the request sources the caller
  * asked for (see get_request_sources). Returns null when not found.
+ * $inline: the value is printed by a shortcode in a template (not used by PHP),
+ * so a request value is marked when it lands inside another shortcode call.
  */
-function get_flat_lookup($key, $sources = [])
+function get_flat_lookup($key, $sources = [], $inline = false)
 {
     if (isset($_SESSION['variables'][$key])) {
         return $_SESSION['variables'][$key];
@@ -123,12 +125,14 @@ function get_flat_lookup($key, $sources = [])
             if (is_string($cookie)) {
                 $cookie = filter_var($cookie, FILTER_SANITIZE_SPECIAL_CHARS);
             }
-            return request_input_escape($cookie);
+            $cookie = request_input_escape($cookie);
+            return $inline ? request_input_mark($cookie) : $cookie;
         }
         if ($source === 'url') {
             $req_get = filter_input(INPUT_GET, $key, FILTER_SANITIZE_SPECIAL_CHARS);
             if (isset($req_get)) {
-                return request_input_escape($req_get);
+                $req_get = request_input_escape($req_get);
+                return $inline ? request_input_mark($req_get) : $req_get;
             }
         }
     }
@@ -140,7 +144,7 @@ function get_flat_lookup($key, $sources = [])
  * Uses progressive prefix: tries longest flat key first, then shorter prefixes
  * with array traversal for the remainder. Falls back to data_lookup for 3-segment keys.
  */
-function get_dot_resolve($key, $sources = [])
+function get_dot_resolve($key, $sources = [], $inline = false)
 {
     $parts = explode('.', $key);
     $n = count($parts);
@@ -151,7 +155,7 @@ function get_dot_resolve($key, $sources = [])
 
         if ($len === $n) {
             // Exact match: same lookup as a flat key
-            $val = get_flat_lookup($prefix, $sources);
+            $val = get_flat_lookup($prefix, $sources, $inline);
             if ($val !== null) {
                 return [$val, true];
             }

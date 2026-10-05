@@ -8,6 +8,11 @@ define('NB_BUFFER_SIZE', 0);
 define('NB_QUOT_CHAT', '"');
 define('NB_QUOTID', '%quot_');
 define('NB_ASSIGNMENT_CHAR', '=');
+// A request value printed inside a pending shortcode call carries these markers
+// instead of whitespace and `=`, so it stays one parameter value. See
+// request_input_mark() and _recover_marked_input().
+define('NB_MARK_CHAR', "\x1F");
+define('NB_MARKS', [' ' => "\x1F0", "\t" => "\x1F1", "\n" => "\x1F2", "\r" => "\x1F3", "\v" => "\x1F4", "\f" => "\x1F5", '=' => "\x1F6"]);
 
 global $SYSTEM;
 $SYSTEM['sc_stack'] = [];
@@ -110,7 +115,7 @@ function run_template($str) {
      * Just echo the string and done!
      */
     if ($sc_start === false) {
-        echo $str;
+        _echo_template_text($str);
         return;
     }
     $tail = substr($str, $sc_start + NB_TAG_LENGTH);
@@ -128,18 +133,18 @@ function run_template($str) {
 
         if ($str[$sc_start - 1] == NB_ESCAPE_CHAR) {
             $head[$sc_start - 1] = NB_TAG_OPEN;
-            echo $head;
+            _echo_template_text($head);
             $sc_start = strpos($tail, NB_TAG_OPEN);
             if ($sc_start !== false) { 
                 //process remaining shortcodes in str (if has any)
                 run_template($tail, $sc_start);
             } else {
                 //otherwise,just output the tail;
-                echo $tail; 
+                _echo_template_text($tail);
             }
             return;
         }
-        echo $head;
+        _echo_template_text($head);
     }
 
 
@@ -152,7 +157,7 @@ function run_template($str) {
          * it's also not a real sc. Just output it and done.
          */
         if ($sc_end === false) {
-            echo NB_TAG_OPEN . $tail;
+            echo NB_TAG_OPEN . _recover_marked_input($tail);
             return;
         }
 
@@ -165,10 +170,15 @@ function run_template($str) {
             break;
         }
         $sub_levels++;
+        // Until the closing tag of this call is printed, nested output lands
+        // inside the call. $SYSTEM['sc_pending'] counts the calls that are open.
+        $pending = $GLOBALS['SYSTEM']['sc_pending'] ?? 0;
+        $GLOBALS['SYSTEM']['sc_pending'] = $pending + 1;
         ob_start();
         run_template($tail);
         $tail = ob_get_contents();
         ob_end_clean();
+        $GLOBALS['SYSTEM']['sc_pending'] = $pending;
     } while ($sub_sc_start !== false && $sub_levels < 10);
 
 
@@ -190,6 +200,26 @@ function run_template($str) {
         }
     } //otherwise, continue processing with a recursive call.
     run_template($tail);
+}
+
+/**
+ * Echoes plain template text. Every closing tag in it ends one pending call.
+ */
+function _echo_template_text($text) {
+    if (!empty($GLOBALS['SYSTEM']['sc_pending'])) {
+        $GLOBALS['SYSTEM']['sc_pending'] = max(0, $GLOBALS['SYSTEM']['sc_pending'] - substr_count($text, NB_TAG_CLOSE));
+    }
+    echo $text;
+}
+
+/**
+ * Turns the markers of request_input_mark() back into the original characters.
+ */
+function _recover_marked_input($str) {
+    if (strpos($str, NB_MARK_CHAR) === false) {
+        return $str;
+    }
+    return strtr($str, array_flip(NB_MARKS));
 }
 
 /**
@@ -242,17 +272,18 @@ function run_single_sc($sc_call) {
      * 2. Get the sc's function id and function parameters
      */
     $call_parts = explode(" ", $call);
-    $function_id = $call_parts[0];
+    $function_id = _recover_marked_input($call_parts[0]);
     $params = [];
     for ($i = 1; $i < count($call_parts); $i++) { //get parameters (if any)
         $param = $call_parts[$i];
         _recover_quoted_strings($param, $quoted_parts); //recover quoted values
         $assignment_pos = strpos($param, NB_ASSIGNMENT_CHAR);
         if ($assignment_pos > 0) { //handle key-value pairs in syntax as: [sc key=value]
-            $param_id = substr($param, 0, $assignment_pos);
-            $param_value = substr($param, $assignment_pos + 1);
+            $param_id = _recover_marked_input(substr($param, 0, $assignment_pos));
+            $param_value = _recover_marked_input(substr($param, $assignment_pos + 1));
             $params[$param_id] = $param_value;
         } else { //handle single parameters like "param" in: [sc param]
+            $param = _recover_marked_input($param);
             $params[$param] = $param;
         }
     }
@@ -423,10 +454,14 @@ function run_library($function_id, $params = null) {
  * @param type $file the file to run
  */
 function run_buffered($file) {
+    // The caller uses the result as data, so it must not carry call markers.
+    $pending = $GLOBALS['SYSTEM']['sc_pending'] ?? 0;
+    $GLOBALS['SYSTEM']['sc_pending'] = 0;
     ob_start();
     run($file);
     $result = ob_get_contents();
     ob_end_clean();
+    $GLOBALS['SYSTEM']['sc_pending'] = $pending;
     return $result;
 }
 
@@ -434,9 +469,13 @@ function run_buffered($file) {
  * Runs a template string and returns its rendered output.
  */
 function run_template_buffered($template) {
+    // The caller uses the result as data, so it must not carry call markers.
+    $pending = $GLOBALS['SYSTEM']['sc_pending'] ?? 0;
+    $GLOBALS['SYSTEM']['sc_pending'] = 0;
     ob_start();
     run_template($template);
     $result = ob_get_contents();
     ob_end_clean();
+    $GLOBALS['SYSTEM']['sc_pending'] = $pending;
     return $result;
 }
