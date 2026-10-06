@@ -34,6 +34,9 @@ $cache_time = 315360000; //10 years
 header("Expires: " . gmdate("D, d M Y H:i:s", $t + $cache_time) . " GMT");
 header('Last-Modified: '. gmdate('D, d M Y H:i:s', $t).' GMT');
 header('Content-Length: '. filesize($file_path));
-header('Content-Type: ' . $file_meta['type']);
+load_library('download-headers');
+foreach (download_headers($file_meta['type'] ?? '', $file_meta['name'] ?? '') as $download_header) {
+    header($download_header);
+}
 readfile($file_path);
 exit();

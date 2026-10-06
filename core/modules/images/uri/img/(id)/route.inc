@@ -37,6 +37,7 @@ if (($meta['type'] ?? '') === 'image/svg+xml') {
 	header('Last-Modified: '. gmdate('D, d M Y H:i:s', $t).' GMT');
 	header('Content-Length: '. filesize($file));
 	header('Content-Type: image/svg+xml');
+	header("Content-Security-Policy: default-src 'none'; style-src 'unsafe-inline'");
 	readfile($file);
 	exit();
 }

@@ -43,6 +43,10 @@ AddType application/manifest+json .webmanifest
 
     FileETag None
 
+    # baseline response headers
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+
     # 480 weeks
     <FilesMatch ".(ico|pdf|webm|mp4|jpg|jpeg|png|gif|js|css|svg|webp|avif)$">
     Header set Cache-Control "max-age=290304000, public"
