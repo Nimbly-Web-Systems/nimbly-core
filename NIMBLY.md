@@ -1346,6 +1346,7 @@ the resource retains simple scalar coordinates:
 | `index` | Array of field names to index. Creates fast lookup paths for those fields. See §4 Indexes below. |
 | `upsert` | Boolean. When `true`, `data_update()` (and therefore `PUT /api/v1/{resource}/{uuid}`) creates a missing record instead of failing. Use only for key-value-style resources where "record may not exist yet" is the normal, expected state (e.g. core's `.config`, used for per-page settings) — not for regular content resources, where updating a non-existent record should stay an error. |
 | `self_edit` | `users` only. Comma-separated fields a user may save on their own record through `PUT /api/v1/users/{uuid}`. Default: `name`. Anyone who may edit users (`edit-users`, `manage-users`, admin) saves every field. |
+| `hidden` | Comma-separated fields the API never returns: not in a list, a single record, the answer to a create or update, or an export. They are still stored and saved as usual; read them in PHP with `data_read()`. Fields named in `encrypt` are always hidden. For `users`, `password`, `salt`, `api`, `password_reset_token` and `change_email_token` are hidden by core, whatever the `.meta` says. |
 | `sitemap` | Lazy sitemap declaration. `url` is a string or language-keyed URL template; optional `published` names a publication field and optional `each` names one array field to expand. Rendering exposes `record`, `language`, and `sitemap_item`. |
 
 ### Resource lifecycle events

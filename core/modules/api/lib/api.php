@@ -320,6 +320,36 @@ function api_check_csrf(&$data, string $resource = '') {
     return true;
 }
 
+/**
+ * Fields the API never returns: the .meta "hidden" list, one-way encrypted
+ * fields, and for users the values that sign a user in.
+ */
+function api_hidden_fields($resource) {
+    $meta = data_meta($resource);
+    $fields = ($meta['hidden'] ?? '') . ',' . ($meta['encrypt'] ?? '');
+    if ($resource === 'users') {
+        $fields .= ',password,salt,api,password_reset_token,change_email_token';
+    }
+    return array_filter(array_map('trim', explode(',', $fields)), 'strlen');
+}
+
+function api_hide_fields($resource, $record) {
+    if (!is_array($record)) {
+        return $record;
+    }
+    return array_diff_key($record, array_flip(api_hidden_fields($resource)));
+}
+
+function api_hide_fields_all($resource, $records) {
+    if (!is_array($records) || api_hidden_fields($resource) === []) {
+        return $records;
+    }
+    foreach ($records as $uuid => $record) {
+        $records[$uuid] = api_hide_fields($resource, $record);
+    }
+    return $records;
+}
+
 /***
  * Default implementations on resource get, post, put, delete:
  */
@@ -332,7 +362,7 @@ function resource_get($resource) { // get all
     }
     $modified = data_modified($resource);
     http_header_not_modified($modified);
-    $result = data_read($resource);
+    $result = api_hide_fields_all($resource, data_read($resource));
 
     $search = trim((string)filter_input(INPUT_GET, 'search', FILTER_SANITIZE_SPECIAL_CHARS));
     if ($search !== '') {
@@ -379,7 +409,7 @@ function resource_post($resource) { // create new
     }
     if (data_create($resource, $uuid, $data)) {
         return json_result(array(
-            $resource => array($uuid => $data),
+            $resource => array($uuid => api_hide_fields($resource, $data)),
             'count' => 1,
             'message' => 'RESOURCE_CREATED'),
         201);
@@ -418,7 +448,7 @@ function resource_put($resource) { // update multiple
 
     if (is_array($result)) {
         return json_result(array(
-            $resource => $result,
+            $resource => api_hide_fields_all($resource, $result),
             'count' => count($result),
             'message' => 'RESOURCE_UPDATED'
         ), 200);
@@ -444,7 +474,7 @@ function resource_delete($resource) { // delete all
 function resource_id_get($resource, $uuid) { // read one
     $modified = data_modified($resource, $uuid);
     http_header_not_modified($modified);
-    return json_result(array($resource => array($uuid => data_read($resource, $uuid)), 'count' => 1), 200, $modified);
+    return json_result(array($resource => array($uuid => api_hide_fields($resource, data_read($resource, $uuid))), 'count' => 1), 200, $modified);
 }
 
 function resource_id_post($resource, $uuid) { // create new with uuid
@@ -461,7 +491,7 @@ function resource_id_post($resource, $uuid) { // create new with uuid
     $result = data_create($resource, $uuid, $data);
     if ($result) {
         return json_result(array(
-            $resource => array($uuid => $result),
+            $resource => array($uuid => api_hide_fields($resource, $result)),
             'count' => 1,
             'message' => 'RESOURCE_CREATED'
         ), 201);
@@ -500,7 +530,7 @@ function resource_id_put($resource, $uuid) { // update one
     $result = data_update($resource, $uuid, $data);
     if (is_array($result)) {
         return json_result(array(
-            $resource => array($uuid => $result),
+            $resource => array($uuid => api_hide_fields($resource, $result)),
             'count' => 1,
             'message' => 'RESOURCE_UPDATED'
         ), 200);

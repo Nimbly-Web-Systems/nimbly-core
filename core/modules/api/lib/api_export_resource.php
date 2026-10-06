@@ -96,7 +96,7 @@ function api_export_resource($resource, $format = null)
         return json_result(['message' => 'INVALID_FORMAT'], 400);
     }
 
-    $records = data_read($resource);
+    $records = api_hide_fields_all($resource, data_read($resource));
 
     if ($format === 'json') {
         return api_export_resource_json($resource, $records);
