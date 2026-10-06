@@ -16,7 +16,7 @@ function get_first_sc($params) {
 
     clear_variable($var_id);
 
-    if (count($data) < 1) {
+    if (!is_array($data) || count($data) < 1) {
         return;
     }
     $item = current($data);
