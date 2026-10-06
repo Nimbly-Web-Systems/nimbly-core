@@ -472,11 +472,28 @@ function resource_id_post($resource, $uuid) { // create new with uuid
     return json_result(array('message' => 'RESOURCE_CREATE_FAILED'), 500);
 }
 
+/**
+ * Every user may save their own record. Without a wider right on users, that
+ * save keeps only the fields the users .meta lists in "self_edit" (default: name).
+ */
+function api_users_self_fields($uuid, $data) {
+    $features = explode(',', _api_access_str('put', 'users', $uuid));
+    array_shift($features); // the right to the own record
+    if (api_access(implode(',', $features), 'users')) {
+        return $data;
+    }
+    $fields = array_map('trim', explode(',', data_meta('users')['self_edit'] ?? 'name'));
+    return array_intersect_key($data, array_flip($fields));
+}
+
 function resource_id_put($resource, $uuid) { // update one
     $data = api_json_input($resource);
     $csrf_check = api_check_csrf($data, $resource);
     if ($csrf_check === false) { //can also be null, if no key is set
         return json_result(array('message' => 'INVALID_DATA'), 400);
+    }
+    if ($resource === 'users') {
+        $data = api_users_self_fields($uuid, $data);
     }
     $data = api_sanitize_html_fields($resource, $data);
     $data['uuid'] = $uuid;

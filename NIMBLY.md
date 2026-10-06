@@ -1345,6 +1345,7 @@ the resource retains simple scalar coordinates:
 | `splitdir` | Boolean. When `true`, records are stored in a two-level subdirectory tree by UUID prefix for filesystem performance at scale (> ~10,000 records). See §12 API — Scalability. |
 | `index` | Array of field names to index. Creates fast lookup paths for those fields. See §4 Indexes below. |
 | `upsert` | Boolean. When `true`, `data_update()` (and therefore `PUT /api/v1/{resource}/{uuid}`) creates a missing record instead of failing. Use only for key-value-style resources where "record may not exist yet" is the normal, expected state (e.g. core's `.config`, used for per-page settings) — not for regular content resources, where updating a non-existent record should stay an error. |
+| `self_edit` | `users` only. Comma-separated fields a user may save on their own record through `PUT /api/v1/users/{uuid}`. Default: `name`. Anyone who may edit users (`edit-users`, `manage-users`, admin) saves every field. |
 | `sitemap` | Lazy sitemap declaration. `url` is a string or language-keyed URL template; optional `published` names a publication field and optional `each` names one array field to expand. Rendering exposes `record`, `language`, and `sitemap_item`. |
 
 ### Resource lifecycle events
