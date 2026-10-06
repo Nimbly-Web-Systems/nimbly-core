@@ -43,12 +43,11 @@ $long = str_repeat('long-password-', 8);
 password_hash_test_assert(password_matches($long, encrypt($long, $salt)) === true, 'a password over 72 bytes does not match its own hash');
 password_hash_test_assert(password_matches($long, crypt($long, '$2a$07$' . $salt . '$')) === true, 'a password over 72 bytes no longer matches its old hash');
 
-// crypt() answers "*0" for a salt it cannot use; that is not a hash
-$bad_salt = 'ab_d' . substr($salt, 4);
-$not_a_hash = crypt('typed-password', '$2a$07$' . $bad_salt . '$');
-password_hash_test_assert($not_a_hash === '*0', 'the fixture for an unusable salt changed');
-foreach (['typed-password', 'anything', '*0', ''] as $typed) {
-    password_hash_test_assert(password_matches($typed, $not_a_hash) === false, 'a stored "*0" matched a password');
+// a stored value that is not a hash never matches
+foreach (['*0', '*1', 'plain-text', 'typed-password'] as $not_a_hash) {
+    foreach (['typed-password', 'anything', $not_a_hash, ''] as $typed) {
+        password_hash_test_assert(password_matches($typed, $not_a_hash) === false, 'a stored value that is not a hash matched a password');
+    }
 }
 password_hash_test_assert(password_matches('typed-password', '') === false, 'an empty stored password matched');
 password_hash_test_assert(password_matches('typed-password', null) === false, 'a missing stored password matched');
@@ -65,7 +64,7 @@ $user['password'] = $test_updates[0][2]['password'];
 password_hash_test_assert(password_is_outdated($user['password']) === false, 'the replaced hash is still an old one');
 password_hash_test_assert(user_password_check($user, 'typed-password') === true, 'login refused the password after the hash was replaced');
 password_hash_test_assert(count($test_updates) === 1, 'a current hash was replaced again');
-password_hash_test_assert(user_password_check(['uuid' => 'user-2', 'salt' => $bad_salt, 'password' => '*0'], 'anything') === false, 'login accepted a record without a real hash');
+password_hash_test_assert(user_password_check(['uuid' => 'user-2', 'salt' => $salt, 'password' => 'plain-text'], 'plain-text') === false, 'login accepted a stored value that is not a hash');
 
 // two-way: a value stored with the old key
 $iv = random_bytes(12);
