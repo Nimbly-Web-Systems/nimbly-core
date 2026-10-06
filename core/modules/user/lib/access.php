@@ -124,6 +124,22 @@ function persist_login_error() {
     return false;
 }
 
+/**
+ * Checks a typed password against the user's stored hash. A hash made with
+ * older settings is replaced once the password has matched.
+ */
+function user_password_check($user_data, $password) {
+    load_library('encrypt');
+    $stored = $user_data['password'] ?? '';
+    if (empty($user_data['uuid']) || password_matches($password, $stored) !== true) {
+        return false;
+    }
+    if (password_is_outdated($stored)) {
+        data_update('users', $user_data['uuid'], ['password' => encrypt($password, $user_data['salt'])]);
+    }
+    return true;
+}
+
 function persist_login($email, $password) {
     run_library('session');
     $user_data = find_user_by_email($email);
@@ -133,11 +149,7 @@ function persist_login($email, $password) {
     if (empty($user_data['salt']) || empty($user_data['password'])) {
         return persist_login_error();
     }
-    load_library('encrypt');
-    $pw_typed = encrypt($password, $user_data['salt']);
-    $pw_stored = $user_data['password'];
-    //hash_equals: time safe
-    if (hash_equals($pw_stored, $pw_typed) !== true) { 
+    if (user_password_check($user_data, $password) !== true) {
         //password fail
         return persist_login_error();
     } else if (_persist_user_roles($user_data['email'])) {

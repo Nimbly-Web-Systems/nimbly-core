@@ -33,10 +33,8 @@ function api_token_post() {
     }
 
     // 3. authenticate user
-    load_library('encrypt');
-    $pw_user = encrypt($data['password'], $user_data['salt']);
-    $pw_stored = $user_data['password'];
-    if (hash_equals($pw_stored, $pw_user) !== true) { //hash_equals: time safe 
+    load_library('access');
+    if (user_password_check($user_data, $data['password']) !== true) {
         return json_result(['message' => 'INVALID_CREDENTIALS'], 401);
     } 
     run_library('session');

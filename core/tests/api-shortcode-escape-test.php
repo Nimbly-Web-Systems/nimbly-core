@@ -70,7 +70,7 @@ api_shortcode_escape_assert($data['count'] === 3, 'a non-string value was change
 api_shortcode_escape_assert($data['name']['en'] === 'x &#91;#include secret#&#93;', 'a translated value kept a live shortcode');
 api_shortcode_escape_assert($data['name']['nl'] === 'gewoon', 'a translated value without tags was changed');
 api_shortcode_escape_assert(
-    $data['password'] === encrypt($password, $data['salt']),
+    password_verify($password, $data['password']),
     'the password was not hashed as typed, so login would fail'
 );
 // each encryption loop writes its own salt, so the two-way field gets its own record
