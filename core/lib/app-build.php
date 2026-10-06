@@ -11,11 +11,19 @@
  */
 function app_build_stale(): bool
 {
-    $base = $GLOBALS['SYSTEM']['file_base'];
+    return app_build_state() === 'stale';
+}
+
+/**
+ * `current`, `stale` or `unknown` for the project at $base (default: this one).
+ */
+function app_build_state(?string $base = null): string
+{
+    $base = $base ?? $GLOBALS['SYSTEM']['file_base'];
     $stamp = @file_get_contents($base . 'ext/static/app.core');
     $commit = trim((string)$stamp);
     if (!preg_match('/^[0-9a-f]{40}$/', $commit)) {
-        return false;
+        return 'unknown';
     }
     $paths = [
         'css', 'js', 'tailwind.config.js', 'package.json', 'package-lock.json',
@@ -28,5 +36,8 @@ function app_build_stale(): bool
         . implode(' ', array_map('escapeshellarg', $paths)) . ' 2>/dev/null';
     exec($command, $output, $status);
     // 1 = differences; anything above means the commit is unknown here.
-    return $status === 1;
+    if ($status === 0) {
+        return 'current';
+    }
+    return $status === 1 ? 'stale' : 'unknown';
 }
