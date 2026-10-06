@@ -43,8 +43,9 @@ AddType application/manifest+json .webmanifest
 
     FileETag None
 
-    # baseline response headers
-    Header always set X-Content-Type-Options "nosniff"
+    # baseline response headers; a response without a type (cached
+    # thumbnails) is left for the browser to detect
+    Header always set X-Content-Type-Options "nosniff" "expr=-n %{CONTENT_TYPE}"
     Header always set Referrer-Policy "strict-origin-when-cross-origin"
 
     # 480 weeks

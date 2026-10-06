@@ -57,7 +57,7 @@ download_headers_assert(
 
 $template = file_get_contents(dirname(__DIR__) . '/cli/setup/htaccess.tpl');
 foreach ([
-    'Header always set X-Content-Type-Options "nosniff"',
+    'Header always set X-Content-Type-Options "nosniff" "expr=-n %{CONTENT_TYPE}"',
     'Header always set Referrer-Policy "strict-origin-when-cross-origin"',
 ] as $line) {
     download_headers_assert(str_contains($template, $line), "setup template sends: {$line}");
