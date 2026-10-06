@@ -41,6 +41,19 @@ jobs:
           php core/tests/session-http-test.php
           php core/tests/host-audit-test.php
 
+      - name: Test request input, data access and passwords
+        run: |
+          php core/tests/setup-guards-test.php
+          php core/tests/request-input-shortcode-test.php
+          php core/tests/api-shortcode-escape-test.php
+          php core/tests/include-test.php
+          php core/tests/data-path-test.php
+          php core/tests/api-users-self-update-test.php
+          php core/tests/api-hidden-fields-test.php
+          php core/tests/password-hash-test.php
+          php core/tests/download-headers-test.php
+          php core/tests/http-header-test.php
+
   e2e:
     runs-on: ubuntu-latest
     env:
