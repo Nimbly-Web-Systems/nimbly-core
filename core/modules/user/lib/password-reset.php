@@ -22,12 +22,18 @@ function password_reset_request($email) {
 		return ['message' => $message, 'sent' => false];
 	}
 
-	// An outstanding link keeps working until it expires; after that a new one is issued.
+	// An outstanding link is mailed again and stays good for at least four more hours;
+	// an expired one is replaced.
 	$outstanding = !empty($user['password_reset_token']) && !password_reset_token_expired($user);
 	$reset_token = $outstanding ? $user['password_reset_token'] : generate_uuid();
+	$issued = time();
+	if ($outstanding) {
+		$slack = min(4, password_reset_hours()) * 3600;
+		$issued = max(password_reset_token_time($user), time() - password_reset_hours() * 3600 + $slack);
+	}
 	$updates = [
 		'password_reset_token' => $reset_token,
-		'password_reset_token_at' => $outstanding ? password_reset_token_time($user) : time(),
+		'password_reset_token_at' => $issued,
 	];
 	if (empty($user['password']) || empty($user['salt'])) {
 		$updates['salt'] = generate_salt();
@@ -72,11 +78,15 @@ function password_reset_token_time($user)
 	return (int)($user['password_reset_token_at'] ?? $user['_modified'] ?? 0);
 }
 
-function password_reset_token_expired($user)
+function password_reset_hours()
 {
 	load_library('env');
-	$hours = (int)env('PASSWORD_RESET_HOURS', 24);
-	return time() - password_reset_token_time($user) > $hours * 3600;
+	return max(1, (int)env('PASSWORD_RESET_HOURS', 24));
+}
+
+function password_reset_token_expired($user)
+{
+	return time() - password_reset_token_time($user) > password_reset_hours() * 3600;
 }
 
 function password_reset_complete($user_uuid, $reset_token, $password)

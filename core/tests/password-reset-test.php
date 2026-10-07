@@ -128,7 +128,14 @@ $test_users['kept'] = ['uuid' => 'kept', 'email' => 'kept@example.com', 'name' =
     'password_reset_token' => 'kept-token', 'password_reset_token_at' => time() - 3600];
 password_reset_request('kept@example.com');
 assert_reset($test_users['kept']['password_reset_token'] === 'kept-token'
-    && $test_users['kept']['password_reset_token_at'] <= time() - 3600, 'a repeated request does not extend an outstanding link');
+    && $test_users['kept']['password_reset_token_at'] <= time() - 3600, 'a repeated request extended a link that had hours left');
+
+$test_users['late'] = ['uuid' => 'late', 'email' => 'late@example.com', 'name' => 'Late', 'password' => 'hash', 'salt' => 'salt',
+    'password_reset_token' => 'late-token', 'password_reset_token_at' => time() - 24 * 3600 + 5];
+password_reset_request('late@example.com');
+$left = $test_users['late']['password_reset_token_at'] + 24 * 3600 - time();
+assert_reset($test_users['late']['password_reset_token'] === 'late-token', 'a link about to expire was replaced instead of mailed again');
+assert_reset($left >= 4 * 3600 - 2 && $left <= 4 * 3600, 'a link about to expire did not get four more hours on a new request');
 
 password_reset_job(['payload' => ['email' => 'someone@example.com', 'name' => 'Someone', 'reset_url' => 'https://example.com/reset']]);
 assert_reset(($email_test_cfg['subject'] ?? '') === 'Reset your JE reis password', 'i18n site name subject');
