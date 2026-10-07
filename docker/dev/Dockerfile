@@ -5,11 +5,8 @@ RUN userdel -r ubuntu || true
 # Install required software and modules
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get -y update && \
-    apt-get -y install \
+    apt-get -y install --no-install-recommends \
         apache2 \
-        composer \
-        nodejs \
-        npm \
         php-cli \
         php-curl \
         php-fpm \
