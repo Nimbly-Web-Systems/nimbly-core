@@ -1,11 +1,11 @@
 <?php
 
 $base = sys_get_temp_dir() . '/nimbly-job-lock-test-' . bin2hex(random_bytes(6)) . '/';
-mkdir($base, 0700);
+mkdir($base . 'ext/data/.state', 0700, true);
 define('BASE_DIR', $base);
 require dirname(__DIR__) . '/lib/job.php';
 
-$path = sys_get_temp_dir() . '/nimbly-jobs-' . md5(BASE_DIR) . '.lock';
+$path = BASE_DIR . 'ext/data/.state/jobs.lock';
 $holder = fopen($path, 'c');
 if (!$holder || !flock($holder, LOCK_EX | LOCK_NB)) {
     throw new RuntimeException('Could not hold the test job lock');
@@ -20,5 +20,8 @@ try {
     flock($holder, LOCK_UN);
     fclose($holder);
     unlink($path);
+    rmdir($base . 'ext/data/.state');
+    rmdir($base . 'ext/data');
+    rmdir($base . 'ext');
     rmdir($base);
 }

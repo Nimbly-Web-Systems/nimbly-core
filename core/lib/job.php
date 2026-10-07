@@ -172,7 +172,12 @@ function job_resource_meta()
 function job_run_queued($limit = 1)
 {
     $base_dir = defined('BASE_DIR') ? BASE_DIR : (string)($GLOBALS['SYSTEM']['file_base'] ?? '');
-    $lock_path = sys_get_temp_dir() . '/nimbly-jobs-' . md5($base_dir) . '.lock';
+    // In the site's own data, so containers that share it share the lock.
+    $lock_dir = $base_dir . 'ext/data/.state';
+    if (!is_dir($lock_dir)) {
+        @mkdir($lock_dir, 0775, true);
+    }
+    $lock_path = $lock_dir . '/jobs.lock';
     $lock = @fopen($lock_path, 'c') ?: @fopen($lock_path, 'r');
     if (!$lock || !flock($lock, LOCK_EX | LOCK_NB)) {
         if ($lock) {
