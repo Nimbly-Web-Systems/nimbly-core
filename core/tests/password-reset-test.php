@@ -109,6 +109,25 @@ assert_reset(password_reset_complete('existing', $valid_token, 'valid-password')
 $test_update_fails = false;
 assert_reset($test_users['existing']['password_reset_token'] === $valid_token, 'save failure preserves link');
 
+$test_users['old'] = ['uuid' => 'old', 'email' => 'old@example.com', 'name' => 'Old', 'password' => 'hash', 'salt' => 'salt',
+    'password_reset_token' => 'old-token', 'password_reset_token_at' => time() - 25 * 3600];
+assert_reset(!password_reset_token_matches($test_users['old'], 'old-token'), 'expired token is refused');
+assert_reset(password_reset_complete('old', 'old-token', 'valid-password') === false, 'expired token cannot set a password');
+password_reset_request('old@example.com');
+assert_reset($test_users['old']['password_reset_token'] !== 'old-token', 'expired token is replaced on a new request');
+assert_reset(password_reset_token_matches($test_users['old'], $test_users['old']['password_reset_token']), 'replacement token works');
+
+$untimed = ['password_reset_token' => 'site-token', '_modified' => time() - 3600];
+assert_reset(password_reset_token_matches($untimed, 'site-token'), 'token without its own time counts from the last change');
+$untimed['_modified'] = time() - 25 * 3600;
+assert_reset(!password_reset_token_matches($untimed, 'site-token'), 'token without its own time expires too');
+
+$test_users['kept'] = ['uuid' => 'kept', 'email' => 'kept@example.com', 'name' => 'Kept', 'password' => 'hash', 'salt' => 'salt',
+    'password_reset_token' => 'kept-token', 'password_reset_token_at' => time() - 3600];
+password_reset_request('kept@example.com');
+assert_reset($test_users['kept']['password_reset_token'] === 'kept-token'
+    && $test_users['kept']['password_reset_token_at'] <= time() - 3600, 'a repeated request does not extend an outstanding link');
+
 password_reset_job(['payload' => ['email' => 'someone@example.com', 'name' => 'Someone', 'reset_url' => 'https://example.com/reset']]);
 assert_reset(($email_test_cfg['subject'] ?? '') === 'Reset your JE reis password', 'i18n site name subject');
 

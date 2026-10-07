@@ -22,8 +22,13 @@ function password_reset_request($email) {
 		return ['message' => $message, 'sent' => false];
 	}
 
-	$reset_token = empty($user['password_reset_token']) ? generate_uuid() : $user['password_reset_token'];
-	$updates = ['password_reset_token' => $reset_token];
+	// An outstanding link keeps working until it expires; after that a new one is issued.
+	$outstanding = !empty($user['password_reset_token']) && !password_reset_token_expired($user);
+	$reset_token = $outstanding ? $user['password_reset_token'] : generate_uuid();
+	$updates = [
+		'password_reset_token' => $reset_token,
+		'password_reset_token_at' => $outstanding ? password_reset_token_time($user) : time(),
+	];
 	if (empty($user['password']) || empty($user['salt'])) {
 		$updates['salt'] = generate_salt();
 		$updates['password'] = encrypt(generate_uuid(), $updates['salt']);
@@ -57,7 +62,21 @@ function password_reset_request($email) {
 function password_reset_token_matches($user, $reset_token)
 {
 	return !empty($user['password_reset_token'])
-		&& hash_equals((string)$user['password_reset_token'], (string)$reset_token);
+		&& hash_equals((string)$user['password_reset_token'], (string)$reset_token)
+		&& !password_reset_token_expired($user);
+}
+
+/** A token stored without its own time (written by a site, or before this field existed) counts from the record's last change. */
+function password_reset_token_time($user)
+{
+	return (int)($user['password_reset_token_at'] ?? $user['_modified'] ?? 0);
+}
+
+function password_reset_token_expired($user)
+{
+	load_library('env');
+	$hours = (int)env('PASSWORD_RESET_HOURS', 24);
+	return time() - password_reset_token_time($user) > $hours * 3600;
 }
 
 function password_reset_complete($user_uuid, $reset_token, $password)
@@ -85,6 +104,7 @@ function password_reset_complete($user_uuid, $reset_token, $password)
 		'salt' => $salt,
 		'password' => encrypt($password, $salt),
 		'password_reset_token' => $rotated_token,
+		'password_reset_token_at' => time(),
 	]);
 	if (!is_array($stored_user)
 		|| ($stored_user['salt'] ?? '') !== $salt
