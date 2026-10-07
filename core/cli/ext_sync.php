@@ -75,11 +75,21 @@ if (!empty(trim($status['output']))) {
     }
 }
 
-$pull = git('pull --rebase --autostash origin ' . escapeshellarg($branch));
-if ($pull['code'] !== 0) {
+// Fetch into the remote-tracking branch and rebase onto that. A plain pull
+// rebases onto FETCH_HEAD, which lists the branch twice when a second fetch
+// (a deploy) runs in the same checkout at the same moment.
+$tracking = 'refs/remotes/origin/' . $branch;
+$fetch = git('fetch origin ' . escapeshellarg('+refs/heads/' . $branch . ':' . $tracking));
+if ($fetch['code'] !== 0) {
+    echo "ext:sync error: git fetch failed\n{$fetch['output']}\n";
+    exit(1);
+}
+
+$rebase = git('rebase --autostash ' . escapeshellarg($tracking));
+if ($rebase['code'] !== 0) {
     // Abort so an unresolved rebase does not block every later sync.
     git('rebase --abort');
-    echo "ext:sync error: git pull --rebase failed\n{$pull['output']}\n";
+    echo "ext:sync error: git rebase failed\n{$rebase['output']}\n";
     exit(1);
 }
 
