@@ -78,9 +78,11 @@ function stats_shutdown(): void
         $status = http_response_code();
         $entry = stats_request_entry($_SERVER, headers_list(), is_int($status) ? $status : 200,
             microtime(true), stats_request_user());
-        if (stats_record($entry) && function_exists('fastcgi_finish_request')) {
+        // The visitor has the response before the log line is written.
+        if (function_exists('fastcgi_finish_request')) {
             fastcgi_finish_request();
         }
+        stats_record($entry);
     } catch (Throwable $e) {
     }
 }
@@ -128,8 +130,8 @@ function stats_site_path(string $request_uri, string $uri_base): string
 }
 
 /**
- * Appends one line. Returns true when this request started a new day, in which
- * case earlier days are rolled up after the response has been sent.
+ * Appends one line. Returns true when this request started a new day. Finished
+ * days are rolled up by the scheduler (stats:rollup), never in a web request.
  */
 function stats_record(array $entry, ?string $dir = null, ?int $max_bytes = null): bool
 {
@@ -148,18 +150,7 @@ function stats_record(array $entry, ?string $dir = null, ?int $max_bytes = null)
     }
     $line = json_encode($entry, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);
     @file_put_contents($path, $line . "\n", FILE_APPEND | LOCK_EX);
-    if ($new_day) {
-        register_shutdown_function('stats_rollup_quietly');
-    }
     return $new_day;
-}
-
-function stats_rollup_quietly(): void
-{
-    try {
-        stats_rollup();
-    } catch (Throwable $e) {
-    }
 }
 
 /**

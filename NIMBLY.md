@@ -2186,7 +2186,7 @@ query (relative to the base url), status, content type, duration, IP, user agent
 `Accept-Language` tag and a logged-in flag. Past `STATS_MAX_DAY_BYTES`
 (default 200 MB) a day only counts further requests as overflow.
 
-`stats:rollup` (mandatory maintenance, and the first request of each day)
+`stats:rollup` (mandatory maintenance, hourly)
 archives finished days under `ext/data/.stats/<env>/`, which `ext:sync`
 commits:
 
