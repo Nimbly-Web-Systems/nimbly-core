@@ -9,10 +9,10 @@ if (empty($user)) {
 load_library('encrypt');
 $current_pw = filter_input(INPUT_POST, 'password');
 $validate_ok = empty($current_pw) && empty($user['password']);
-$validate_ok |= hash_equals($user['password'], encrypt($current_pw, $user['salt']));
+$validate_ok |= password_matches($current_pw, $user['password'] ?? '') === true;
 $current_pw = false;
-$validate_ok &= validate_field('password', 'newpw1') === true;
-$validate_ok &= validate_field('password', 'newpw2') === true;
+$validate_ok &= validate_field('new_password', 'newpw1') === true;
+$validate_ok &= validate_field('new_password', 'newpw2') === true;
 $validate_ok &= filter_input(INPUT_POST, 'newpw1') === filter_input(INPUT_POST, 'newpw2');
 if (!$validate_ok) {
 	load_library("text");

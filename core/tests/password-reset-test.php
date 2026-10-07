@@ -16,7 +16,8 @@ function generate_uuid(): string { global $test_uuid; return 'generated-' . ++$t
 function generate_salt(): string { return 'salt-' . generate_uuid(); }
 function encrypt($password, $salt): string { return 'encrypted:' . $salt . ':' . $password; }
 function url_absolute($path): string { return 'https://example.com/' . ltrim($path, '/'); }
-function validate($type, $input) { return $type === 'password' && is_string($input) && strlen($input) >= 5 && strlen($input) <= 64; }
+function validate($type, $input) { return $type === 'new_password' && is_string($input) && strlen($input) >= 8 && strlen($input) <= 64; }
+function user_login_failures_clear($uuid): void { global $test_cleared; $test_cleared[] = $uuid; }
 function set_variable($key, $value): void {}
 function env($key, $default = null) { return $default; }
 
@@ -97,10 +98,11 @@ assert_reset(!str_contains(implode("\n", $test_logs), 'existing@example.com'), '
 $completed = password_reset_complete('imported', $imported_token, 'new-secure-password');
 assert_reset(is_array($completed), 'passwordless user first password');
 assert_reset(!password_reset_token_matches($completed, $imported_token), 'successful reset rotates token');
+assert_reset(($test_cleared ?? []) === ['imported'], 'successful reset lets the account log in again at once');
 
 $valid_token = $test_users['existing']['password_reset_token'];
 assert_reset(password_reset_complete('existing', $valid_token, '') === false, 'empty password rejection');
-assert_reset(password_reset_complete('existing', $valid_token, 'tiny') === false, 'invalid password rejection');
+assert_reset(password_reset_complete('existing', $valid_token, 'short77') === false, 'invalid password rejection');
 assert_reset($test_users['existing']['password_reset_token'] === $valid_token, 'invalid password preserves link');
 password_reset_complete('existing', 'private-invalid-token', 'valid-password');
 assert_reset(!str_contains(implode("\n", $test_logs), 'private-invalid-token'), 'invalid reset token is never logged');

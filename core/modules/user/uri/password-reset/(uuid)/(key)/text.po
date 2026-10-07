@@ -14,7 +14,7 @@ msgid "Back to login"
 msgstr "Back to login"
 
 msgid "validate_invalid_password"
-msgstr "Invalid password. Please try again."
+msgstr "Use a password of 8 to 64 characters."
 
 msgid "password_reset_save_failed"
 msgstr "Your password could not be saved. Please try again."

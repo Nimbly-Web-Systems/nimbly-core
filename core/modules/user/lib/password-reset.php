@@ -83,7 +83,7 @@ function password_reset_complete($user_uuid, $reset_token, $password)
 {
 	load_libraries(['data', 'util', 'encrypt', 'validate', 'log']);
 
-	if (validate('password', $password) !== true) {
+	if (validate('new_password', $password) !== true) {
 		log_system_event('password_reset.completion_failed', ['reason' => 'invalid_password']);
 		return false;
 	}
@@ -116,6 +116,8 @@ function password_reset_complete($user_uuid, $reset_token, $password)
 		]);
 		return false;
 	}
+	load_library('access');
+	user_login_failures_clear($user_uuid);
 	log_system_event('password_reset.completed', ['user_uuid' => $user_uuid]);
 
 	return $stored_user;

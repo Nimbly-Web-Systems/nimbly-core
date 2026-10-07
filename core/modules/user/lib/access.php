@@ -124,16 +124,54 @@ function persist_login_error() {
     return false;
 }
 
+const LOGIN_FAILURES_MAX = 5;
+const LOGIN_FAILURES_SECONDS = 900;
+
+function user_login_failures_path($uuid) {
+    return $GLOBALS['SYSTEM']['file_base'] . 'ext/data/.tmp/login-failures/' . md5((string)$uuid);
+}
+
+/** Times of the wrong passwords typed for this account in the last quarter of an hour. */
+function user_login_failures($uuid) {
+    $path = user_login_failures_path($uuid);
+    $times = is_file($path) ? (file($path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) ?: []) : [];
+    $since = time() - LOGIN_FAILURES_SECONDS;
+    return array_values(array_filter(array_map('intval', $times), fn($time) => $time > $since));
+}
+
+function user_login_failed($uuid) {
+    $path = user_login_failures_path($uuid);
+    if (!is_dir(dirname($path))) {
+        @mkdir(dirname($path), 0775, true);
+    }
+    $times = user_login_failures($uuid);
+    $times[] = time();
+    @file_put_contents($path, implode("\n", $times) . "\n", LOCK_EX);
+}
+
+function user_login_failures_clear($uuid) {
+    @unlink(user_login_failures_path($uuid));
+}
+
 /**
  * Checks a typed password against the user's stored hash. A hash made with
- * older settings is replaced once the password has matched.
+ * older settings is replaced once the password has matched. After five wrong
+ * passwords the account takes no password until the oldest is 15 minutes old.
  */
 function user_password_check($user_data, $password) {
     load_library('encrypt');
     $stored = $user_data['password'] ?? '';
-    if (empty($user_data['uuid']) || password_matches($password, $stored) !== true) {
+    if (empty($user_data['uuid'])) {
         return false;
     }
+    if (count(user_login_failures($user_data['uuid'])) >= LOGIN_FAILURES_MAX) {
+        return false;
+    }
+    if (password_matches($password, $stored) !== true) {
+        user_login_failed($user_data['uuid']);
+        return false;
+    }
+    user_login_failures_clear($user_data['uuid']);
     if (password_is_outdated($stored)) {
         data_update('users', $user_data['uuid'], ['password' => encrypt($password, $user_data['salt'])]);
     }

@@ -95,6 +95,18 @@ function _validate_email($input) {
     return true;
 }
 
+/** A password being set. Login keeps _validate_password, so shorter existing passwords still log in. */
+function _validate_new_password($input) {
+    $result = _validate_length($input);
+    if ($result !== true) {
+      return $result;
+    }
+    if (strlen($input) < 8) {
+      return "[#text validate_too_short#]";
+    }
+    return true;
+}
+
 function _validate_password($input) {
     $result = _validate_length($input);
     if ($result !== true) {

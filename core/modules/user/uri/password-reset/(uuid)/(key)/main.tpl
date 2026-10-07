@@ -27,7 +27,7 @@
                             <span class="label-text">[#text New password#]</span>
                         </label>
                         <input type="password" class="input input-bordered w-full bg-neutral-50" id="password"
-                            name="password" maxlength="64" placeholder="[#text Password#]" required />
+                            name="password" minlength="8" maxlength="64" placeholder="[#text Password#]" required />
                     </div>
 
                     <input type="submit" value="[#text Create new password#]" class="[#btn-class-primary#]" />

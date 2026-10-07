@@ -53,6 +53,9 @@ password_hash_test_assert(password_matches('typed-password', '') === false, 'an 
 password_hash_test_assert(password_matches('typed-password', null) === false, 'a missing stored password matched');
 password_hash_test_assert(password_matches("typed-password\0tail", $old_hash) === false, 'a password with a NUL byte matched');
 
+$GLOBALS['SYSTEM']['file_base'] = sys_get_temp_dir() . '/nimbly-password-hash-test-' . getmypid() . '/';
+register_shutdown_function(fn() => exec('rm -rf ' . escapeshellarg($GLOBALS['SYSTEM']['file_base'])));
+
 // login replaces an old hash once, and only after a match
 $user = ['uuid' => 'user-1', 'salt' => $salt, 'password' => $old_hash];
 password_hash_test_assert(user_password_check($user, 'other-password') === false, 'login accepted a wrong password');
@@ -65,6 +68,25 @@ password_hash_test_assert(password_is_outdated($user['password']) === false, 'th
 password_hash_test_assert(user_password_check($user, 'typed-password') === true, 'login refused the password after the hash was replaced');
 password_hash_test_assert(count($test_updates) === 1, 'a current hash was replaced again');
 password_hash_test_assert(user_password_check(['uuid' => 'user-2', 'salt' => $salt, 'password' => 'plain-text'], 'plain-text') === false, 'login accepted a stored value that is not a hash');
+
+// after five wrong passwords the right one is refused too, until the oldest is 15 minutes old
+$user['uuid'] = 'user-3';
+for ($i = 0; $i < 4; $i++) {
+    user_password_check($user, 'other-password');
+}
+password_hash_test_assert(user_password_check($user, 'typed-password') === true, 'login refused the right password after four wrong ones');
+password_hash_test_assert(user_login_failures('user-3') === [], 'a login did not clear the wrong passwords before it');
+for ($i = 0; $i < 5; $i++) {
+    user_password_check($user, 'other-password');
+}
+password_hash_test_assert(user_password_check($user, 'typed-password') === false, 'login accepted a password after five wrong ones');
+password_hash_test_assert(count(user_login_failures('user-3')) === 5, 'a refused attempt was counted');
+password_hash_test_assert(user_password_check(['uuid' => 'user-4'] + $user, 'typed-password') === true, 'wrong passwords on one account blocked another');
+file_put_contents(user_login_failures_path('user-3'), implode("\n", array_fill(0, 5, time() - LOGIN_FAILURES_SECONDS - 1)) . "\n");
+password_hash_test_assert(user_password_check($user, 'typed-password') === true, 'login still refused after the wait');
+user_password_check($user, 'other-password');
+user_login_failures_clear('user-3');
+password_hash_test_assert(user_login_failures('user-3') === [], 'clearing left wrong passwords behind');
 
 // two-way: a value stored with the old key
 $iv = random_bytes(12);
