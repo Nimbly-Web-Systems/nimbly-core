@@ -95,7 +95,7 @@ function api_token_get() {
         if (!is_array($u) || !is_array($u['api'] ?? null)) {
             continue;
         }
-        if (!empty($u['api']['access']) && ($u['api']['token'] ?? '') === $token) {
+        if (!empty($u['api']['access']) && hash_equals((string)($u['api']['token'] ?? ''), (string)$token)) {
             $user = $u;
             $user['uuid'] = $uuid;
             break;
