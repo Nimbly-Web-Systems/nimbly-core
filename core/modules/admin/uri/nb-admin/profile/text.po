@@ -1,0 +1,8 @@
+msgid "validate_wrong_current_password"
+msgstr "Your current password is not correct."
+
+msgid "validate_invalid_password"
+msgstr "Use a password of 8 to 64 characters."
+
+msgid "password_save_failed"
+msgstr "Your password could not be saved. Please try again."

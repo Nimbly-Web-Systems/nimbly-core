@@ -34,4 +34,32 @@
         </div>
         </div>
     </form>
+
+    <form name="change-password" action="[#url#]" method="post" accept-charset="utf-8" autocomplete="off"
+        class="bg-neutral-50 rounded-2xl p-10 shadow-md mt-6">
+        <div class="max-w-lg">
+            [#form-key change-password#]
+            <h2 class="text-lg font-semibold text-neutral-800">[#text Change password#]</h2>
+
+            <div class="form-control my-6">
+                <label for="current_password" class="label">
+                    <span class="label-text">[#text Current password#]</span>
+                </label>
+                <input type="password" id="current_password" name="current_password" maxlength="64" required
+                    autocomplete="current-password" class="input input-bordered w-full bg-neutral-50" />
+            </div>
+
+            <div class="form-control my-6">
+                <label for="new_password" class="label">
+                    <span class="label-text">[#text New password#]</span>
+                </label>
+                <input type="password" id="new_password" name="new_password" minlength="8" maxlength="64" required
+                    autocomplete="new-password" class="input input-bordered w-full bg-neutral-50" />
+            </div>
+
+            <input type="submit" value="[#text Change password#]" class="[#btn-class-primary#]" />
+
+            [#form-errors#]
+        </div>
+    </form>
 </section>
