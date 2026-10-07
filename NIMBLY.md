@@ -2660,6 +2660,10 @@ app and runtime together for repeatable image updates. Manual VPS deployment is
 equally valid for self-managed Apache/PHP hosts where you prefer direct control
 over the server. Choose the model that matches how the site will be operated.
 
+Every site answers `/health` for a load balancer or container check: `200` with
+`ok` when PHP runs and `ext/data` can be written, `503` otherwise. The answer is
+never cached. An `ext/uri/health` route replaces it.
+
 ### Docker deployment
 
 From the project checkout, generate the app image files in `ext/`:
