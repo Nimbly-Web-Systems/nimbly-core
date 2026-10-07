@@ -1,0 +1,12 @@
+parameters:
+    level: 0
+    paths:
+        - ../core
+        - ../index.php
+    fileExtensions:
+        - php
+        - inc
+    excludePaths:
+        analyse:
+            - ../core/lib/email/php_mailer/*
+            - ../core/tests/*

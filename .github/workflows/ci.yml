@@ -30,29 +30,31 @@ jobs:
       - name: Lint PHP
         run: |
           sudo apt-get update
-          sudo apt-get install -y -q php-cli php-mbstring
+          sudo apt-get install -y -q php-cli php-mbstring php-xml php-zip php-gd php-curl
           find core -name '*.php' -print0 | xargs -0 -n1 php -l
 
-      - name: Test sessions and mandatory maintenance
+      - name: Static analysis
         run: |
-          php core/tests/schedule-test.php
-          php core/tests/maintenance-test.php
-          php -d memory_limit=128M core/tests/session-test.php
-          php core/tests/session-http-test.php
-          php core/tests/host-audit-test.php
+          curl -sSfL -o /tmp/phpstan.phar https://github.com/phpstan/phpstan/releases/download/2.3.0/phpstan.phar
+          echo "64a1e7737c6ac24b798a3331a769241308d40af6504630fd7c9dc9b7f1bec83f  /tmp/phpstan.phar" | sha256sum -c -
+          php /tmp/phpstan.phar analyse -c .github/phpstan.neon --no-progress --memory-limit=1G
 
-      - name: Test request input, data access and passwords
+      - name: Run PHP tests
+        shell: bash
         run: |
-          php core/tests/setup-guards-test.php
-          php core/tests/request-input-shortcode-test.php
-          php core/tests/api-shortcode-escape-test.php
-          php core/tests/include-test.php
-          php core/tests/data-path-test.php
-          php core/tests/api-users-self-update-test.php
-          php core/tests/api-hidden-fields-test.php
-          php core/tests/password-hash-test.php
-          php core/tests/download-headers-test.php
-          php core/tests/http-header-test.php
+          set -o pipefail
+          failed=""
+          for test in core/tests/*-test.php; do
+            echo "::group::$test"
+            php -d memory_limit=128M "$test" 2>&1 | tee /tmp/test.log || failed="$failed $test"
+            grep -qi 'skipped' /tmp/test.log && failed="$failed $test(skipped)"
+            echo "::endgroup::"
+          done
+          if [ -n "$failed" ]; then
+            echo "Failed:$failed"
+            exit 1
+          fi
+          echo "All PHP tests passed"
 
   e2e:
     runs-on: ubuntu-latest

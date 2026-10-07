@@ -824,6 +824,17 @@ function data_create($resource, $uuid, $data_ls)
     return false;
 }
 
+function _data_index_path($resource, $index_name, $index_uuid)
+{
+    $base = data_path($resource) . '/.index/' . $index_name . '/';
+    $meta = data_meta($resource);
+    if (!empty($meta['splitdir']) && strlen($index_uuid) >= 4) {
+        $id = strtolower($index_uuid);
+        $base .= substr($id, 0, 2) . '/' . substr($id, 2, 2) . '/';
+    }
+    return $base . $index_uuid . '/';
+}
+
 /**
  * Creates an index entry by creating an empty file as a virtual link.
  *
@@ -836,17 +847,6 @@ function data_create($resource, $uuid, $data_ls)
  * @param string $index_uuid UUID derived from the index field value.
  * @return void
  */
-function _data_index_path($resource, $index_name, $index_uuid)
-{
-    $base = data_path($resource) . '/.index/' . $index_name . '/';
-    $meta = data_meta($resource);
-    if (!empty($meta['splitdir']) && strlen($index_uuid) >= 4) {
-        $id = strtolower($index_uuid);
-        $base .= substr($id, 0, 2) . '/' . substr($id, 2, 2) . '/';
-    }
-    return $base . $index_uuid . '/';
-}
-
 function _data_create_index($resource, $file, $index_name, $index_uuid)
 {
     $path = _data_index_path($resource, $index_name, $index_uuid);

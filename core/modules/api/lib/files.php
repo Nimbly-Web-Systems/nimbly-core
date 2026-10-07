@@ -84,17 +84,17 @@ function files_delete()
  *  Implementation on files item:
  */
 
-function files_id_get($resource = ".files_meta", $uuid)
+function files_id_get($resource, $uuid)
 { // read one
     return resource_id_get($resource, $uuid);
 }
 
-function files_id_put($resource = ".files_meta", $uuid)
+function files_id_put($resource, $uuid)
 { // update one
     return resource_id_put($resource, $uuid);
 }
 
-function files_id_delete($resource = ".files_meta", $uuid)
+function files_id_delete($resource, $uuid)
 { // delete one
     if (data_delete($resource, $uuid)) {
         data_delete(".files", $uuid);
