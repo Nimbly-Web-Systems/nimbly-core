@@ -131,6 +131,11 @@ function api_token_access($feature, $resource = false) {
     return api_user_access($feature, $resource);
 }
 
+/** A password set through the API has the length the reset screen asks for. An empty value is not a new password. */
+function api_password_too_short($value) {
+    return is_string($value) && $value !== '' && strlen($value) < 8;
+}
+
 /*
  * Creates data array from json input
  * + Encrypts fields
@@ -146,6 +151,9 @@ function api_json_input($resource) {
         foreach ($fs as $f) {
             if (!isset($data[$f])) {
                 continue;
+            }
+            if (api_password_too_short($data[$f])) {
+                return json_result(array('message' => 'INVALID_DATA'), 400);
             }
             $data['salt'] = $salt;
             $data[$f] = encrypt($data[$f], $salt);

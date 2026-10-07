@@ -100,4 +100,9 @@ if (class_exists('DOMDocument')) {
     echo "skipped: html sanitizer case needs the dom extension\n";
 }
 
+api_shortcode_escape_assert(api_password_too_short('short77') === true, 'a seven character password is accepted');
+api_shortcode_escape_assert(api_password_too_short('eight888') === false, 'an eight character password is refused');
+api_shortcode_escape_assert(api_password_too_short('') === false, 'an empty value counts as a new password');
+api_shortcode_escape_assert(api_password_too_short(null) === false, 'a missing value counts as a new password');
+
 echo "api shortcode escape test passed\n";

@@ -16,6 +16,7 @@
             <input type="password"
                 class="input w-full border-0 focus:outline-none bg-transparent"
                 x-model="[#_f.model#]"
+                minlength="8"
                 :disabled="form_data.keep_password"
                 :placeholder="form_data.keep_password ? '••••••••••' : ''"
                 :required="!form_data.keep_password" />

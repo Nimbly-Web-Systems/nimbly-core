@@ -176,7 +176,7 @@ foreach ([['(all)' => true], ['view-users' => true, 'edit-users' => true, 'creat
         'single user returned a hidden field'
     );
 
-    $answer = api_hidden_fields_request('PUT', 'users', 'u1', ['name' => 'B', 'password' => 'typed'], $features)['u1'];
+    $answer = api_hidden_fields_request('PUT', 'users', 'u1', ['name' => 'B', 'password' => 'typed-password'], $features)['u1'];
     api_hidden_fields_assert(api_hidden_fields_names($answer) === $visible_user && $answer['name'] === 'B', 'user update answer returned a hidden field');
     api_hidden_fields_assert(
         $GLOBALS['written']['password'] === 'hash-of-typed' && $GLOBALS['written']['salt'] === 'new-salt',

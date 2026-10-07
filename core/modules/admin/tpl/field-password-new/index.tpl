@@ -2,6 +2,7 @@
     <input type="password"
         class="input input-bordered w-full"
         x-model="[#_f.model#]"
+        minlength="8"
         [#if _f.required=(not-empty) echo=required#]
         placeholder="" />
     <label class="pointer-events-none absolute left-3 -top-2.5 px-1
