@@ -188,6 +188,11 @@ function render_field(array $def, string $field = '', $value = null, string $sto
         set_variable('_f.options', $safe_options);
     }
     set_variable('_f.wrapper_class', $def['wrapper_class'] ?? 'nb-field relative my-10');
+    // File fields historically read their saved selection from source (or
+    // record). Keep that fallback when no explicit value was supplied.
+    if ($type === 'file' && $value === null) {
+        $value = _get_field_value(($source ?? 'record') . '.' . $field);
+    }
     $field_value = $value ?? $def['default'] ?? '';
     if ($type === 'date' && $field_value === 'today') {
         $field_value = date('Y-m-d');

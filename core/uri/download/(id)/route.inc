@@ -21,20 +21,17 @@ $file_meta = data_read('.files_meta', $uuid);
 $file_path = $GLOBALS['SYSTEM']['file_base'] . 'ext/data/.files/' . $uuid;
 
 
-// browser cache return
-header('Cache-Control: private');
-$t = time();
-$headers = apache_request_headers();
-if (isset($headers['If-Modified-Since']) && strtotime($headers['If-Modified-Since']) < $t) {
-    header('Last-Modified: '. gmdate('D, d M Y H:i:s', $t).' GMT', true, 304);
+// Revalidate against the stored file, rather than the current request time.
+load_library('download-headers');
+$modified = filemtime($file_path);
+header('Cache-Control: private, no-cache');
+header('Last-Modified: ' . gmdate('D, d M Y H:i:s', $modified) . ' GMT');
+if (download_is_not_modified($modified, $_SERVER['HTTP_IF_MODIFIED_SINCE'] ?? '')) {
+    http_response_code(304);
     exit();
 }
 
-$cache_time = 315360000; //10 years
-header("Expires: " . gmdate("D, d M Y H:i:s", $t + $cache_time) . " GMT");
-header('Last-Modified: '. gmdate('D, d M Y H:i:s', $t).' GMT');
 header('Content-Length: '. filesize($file_path));
-load_library('download-headers');
 foreach (download_headers($file_meta['type'] ?? '', $file_meta['name'] ?? '') as $download_header) {
     header($download_header);
 }

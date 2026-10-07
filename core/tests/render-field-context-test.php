@@ -99,4 +99,35 @@ render_field_context_assert(
     'structured group value was not JSON encoded for Alpine initialization'
 );
 
+set_variable_dot('page_settings', ['menu_pdf' => 'august-menu']);
+$file_params = [
+    'def' => "{'type':'file','name':'Menu PDF'}",
+    'name' => 'menu_pdf',
+    'store' => 'settings',
+    'source' => 'page_settings',
+];
+render_field_sc($file_params);
+$file_context = $GLOBALS['rendered_field_contexts']['field-file'];
+render_field_context_assert(
+    $file_context['_f.value'] === 'august-menu'
+        && str_contains($file_context['_f.x_init'], 'settings.menu_pdf=&quot;august-menu&quot;'),
+    'source-only file fields must preserve the saved selection when settings are initialized'
+);
+render_field_sc($file_params + ['val' => '']);
+render_field_context_assert(
+    $GLOBALS['rendered_field_contexts']['field-file']['_f.value'] === '',
+    'an explicitly cleared file selection must not fall back to the saved source'
+);
+set_variable_dot('record', ['menu_pdf' => 'record-menu']);
+render_field(['type' => 'file'], 'menu_pdf');
+render_field_context_assert(
+    $GLOBALS['rendered_field_contexts']['field-file']['_f.value'] === 'record-menu',
+    'file fields without an explicit source must preserve the record selection'
+);
+render_field_sc($file_params + ['var' => 'record.menu_pdf']);
+render_field_context_assert(
+    $GLOBALS['rendered_field_contexts']['field-file']['_f.value'] === 'record-menu',
+    'explicit file value bindings must take precedence over the source fallback'
+);
+
 echo "Render field context tests passed.\n";
