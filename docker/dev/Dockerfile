@@ -7,6 +7,8 @@ ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get -y update && \
     apt-get -y install --no-install-recommends \
         apache2 \
+        ca-certificates \
+        git \
         php-cli \
         php-curl \
         php-fpm \
