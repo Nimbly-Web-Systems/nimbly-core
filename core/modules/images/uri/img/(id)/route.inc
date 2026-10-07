@@ -23,6 +23,8 @@ if (!data_exists(".files", $uuid)) {
 }
 
 $meta = data_read(".files_meta", $uuid);
+// A thumbnail is as new as the upload it is made from.
+$modified = (int)@filemtime(data_path(".files", $uuid));
 if (($meta['type'] ?? '') === 'image/svg+xml') {
 	$file = data_path(".files", $uuid);
 	if (!is_file($file)) {
@@ -34,7 +36,7 @@ if (($meta['type'] ?? '') === 'image/svg+xml') {
 	$cache_time = 315360000; //10 years
 	header('Cache-Control: private');
 	header("Expires: " . gmdate("D, d M Y H:i:s", $t + $cache_time) . " GMT");
-	header('Last-Modified: '. gmdate('D, d M Y H:i:s', $t).' GMT');
+	header('Last-Modified: '. gmdate('D, d M Y H:i:s', $modified).' GMT');
 	header('Content-Length: '. filesize($file));
 	header('Content-Type: image/svg+xml');
 	header("Content-Security-Policy: default-src 'none'; style-src 'unsafe-inline'");
@@ -45,9 +47,9 @@ if (($meta['type'] ?? '') === 'image/svg+xml') {
 // browser cache return
 header('Cache-Control: private');
 $t = time();
-$headers = apache_request_headers();
-if (isset($headers['If-Modified-Since']) && strtotime($headers['If-Modified-Since']) < $t) {
-    header('Last-Modified: '. gmdate('D, d M Y H:i:s', $t).' GMT', true, 304);
+load_library('download-headers');
+if (download_is_not_modified($modified, $_SERVER['HTTP_IF_MODIFIED_SINCE'] ?? '')) {
+    header('Last-Modified: '. gmdate('D, d M Y H:i:s', $modified).' GMT', true, 304);
     exit();
 }
 
@@ -143,7 +145,7 @@ if ($format === 'jpg') {
 // return thumb with cache headers
 $cache_time = 315360000; //10 years
 header("Expires: " . gmdate("D, d M Y H:i:s", $t + $cache_time) . " GMT");
-header('Last-Modified: '. gmdate('D, d M Y H:i:s', $t).' GMT');
+header('Last-Modified: '. gmdate('D, d M Y H:i:s', $modified).' GMT');
 header('Content-Length: '. filesize($file));
 header('Content-Type: ' . $type);
 readfile($file);

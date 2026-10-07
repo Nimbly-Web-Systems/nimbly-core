@@ -21,9 +21,10 @@ if (!data_exists(".files", $uuid) || !data_exists(".files_meta", $uuid)) {
 // browser cache return
 header('Cache-Control: private');
 $t = time();
-$headers = apache_request_headers();
-if (isset($headers['If-Modified-Since']) && strtotime($headers['If-Modified-Since']) < $t) {
-    header('Last-Modified: '. gmdate('D, d M Y H:i:s', $t).' GMT', true, 304);
+$modified = (int)@filemtime(sprintf("%s/.files/%s", $GLOBALS['SYSTEM']['data_base'], $uuid));
+load_library('download-headers');
+if (download_is_not_modified($modified, $_SERVER['HTTP_IF_MODIFIED_SINCE'] ?? '')) {
+    header('Last-Modified: '. gmdate('D, d M Y H:i:s', $modified).' GMT', true, 304);
     exit();
 }
 
@@ -39,7 +40,7 @@ $file = sprintf("%s/.files/%s", $GLOBALS['SYSTEM']['data_base'], $uuid);
 
 $cache_time = 315360000; //10 years
 header("Expires: " . gmdate("D, d M Y H:i:s", $t + $cache_time) . " GMT");
-header('Last-Modified: '. gmdate('D, d M Y H:i:s', $t).' GMT');
+header('Last-Modified: '. gmdate('D, d M Y H:i:s', $modified).' GMT');
 header('Content-Length: '. filesize($file));
 header('Content-Type: ' . $meta['type']);
 readfile($file);
