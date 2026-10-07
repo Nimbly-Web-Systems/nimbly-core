@@ -112,7 +112,9 @@ function pages_create($data_ls) {
     } else {
         $tpl = $data_ls['template'];
     }
-    return file_put_contents($file, $tpl) !== false && file_exists($file);
+    $created = file_put_contents($file, $tpl) !== false && file_exists($file);
+    find_forget();
+    return $created;
 }
 
 function pages_post() {

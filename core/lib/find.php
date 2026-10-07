@@ -11,15 +11,53 @@ function find_uri($name, $tpl_name = "index.tpl") {
     return find_path($name, 'uri', $tpl_name);
 }
 
+/**
+ * file_exists() for a path inside ext, core or one of their modules. A page asks
+ * for thousands of names that no module has, so the second folder level
+ * (tpl/<name>, uri/<name>) is checked against one listing per folder and the
+ * disk is only asked when the name is there.
+ */
+function find_exists($root, $rel) {
+    global $SYSTEM;
+    $parts = array_values(array_filter(explode('/', $rel), 'strlen'));
+    if (count($parts) < 2) {
+        return file_exists($root . $rel);
+    }
+    $dir = $root . $parts[0];
+    if (!isset($SYSTEM['find_listings'][$dir])) {
+        $entries = is_dir($dir) ? @scandir($dir) : [];
+        // false: a folder that cannot be listed is asked on disk every time
+        $SYSTEM['find_listings'][$dir] = $entries === false ? false : array_flip($entries);
+    }
+    $listing = $SYSTEM['find_listings'][$dir];
+    if ($listing !== false && !isset($listing[$parts[1]])) {
+        return false;
+    }
+    return file_exists($root . $rel);
+}
+
+/** Call after creating a template, route or library folder that is looked up later in the same run. */
+function find_forget() {
+    unset($GLOBALS['SYSTEM']['find_listings']);
+}
+
+function find_modules_once() {
+    static $modules_discovered = false;
+    if (!$modules_discovered) {
+        find_all_modules();
+        $modules_discovered = true;
+    }
+}
+
 function find_template($name, $dir = null) {
     global $SYSTEM;
 
     if (isset($dir)) {
         foreach ($SYSTEM['env_paths'] as $env_path) {
             foreach ($SYSTEM['modules'] as $module_path) {
-                $path = $SYSTEM['file_base'] . $env_path . $module_path . $dir . '/' . $name . ".tpl";
-                if (file_exists($path)) {
-                    return $path;
+                $root = $SYSTEM['file_base'] . $env_path . $module_path;
+                if (find_exists($root, $dir . '/' . $name . ".tpl")) {
+                    return $root . $dir . '/' . $name . ".tpl";
                 }
             }
         }
@@ -47,11 +85,7 @@ function find_template($name, $dir = null) {
 
 function find_library($name) {
     global $SYSTEM;
-    static $modules_discovered = false;
-    if (!$modules_discovered) {
-        find_all_modules();
-        $modules_discovered = true;
-    }
+    find_modules_once();
 
     if (!empty($SYSTEM['uri_path'])) {
         $local = $SYSTEM['uri_path'] . '/' . $name . '.inc';
@@ -71,6 +105,7 @@ function find_library($name) {
 
     foreach ($SYSTEM['env_paths'] as $env_path) {
         foreach ($SYSTEM['modules'] as $module_path) {
+            // asked on disk every time: a library missing now may exist on a later call
             $result = $SYSTEM['file_base'] . $env_path . $module_path . 'lib/' . $name . ".php";
             if (file_exists($result) && !infinite_loop($result)) {
                 return $result;
@@ -96,16 +131,13 @@ function infinite_loop($path) {
 
 function find_path($name, $path, $target = "index.tpl") {
     global $SYSTEM;
-    static $modules_discovered = false;
-    if (!$modules_discovered) {
-        find_all_modules();
-        $modules_discovered = true;
-    }
+    find_modules_once();
     foreach ($SYSTEM['env_paths'] as $env_path) {
         foreach ($SYSTEM['modules'] as $module_path) {
-            $result = $SYSTEM['file_base'] . $env_path . $module_path
-                    . $path . '/' . $name . '/' . $target;
-            if (file_exists($result) && !infinite_loop($result)) {
+            $root = $SYSTEM['file_base'] . $env_path . $module_path;
+            $rel = $path . '/' . $name . '/' . $target;
+            $result = $root . $rel;
+            if (find_exists($root, $rel) && !infinite_loop($result)) {
                 return $result;
             }
         }
