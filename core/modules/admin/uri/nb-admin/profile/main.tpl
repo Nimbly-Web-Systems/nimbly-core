@@ -55,6 +55,7 @@
                 </label>
                 <input type="password" id="new_password" name="new_password" minlength="8" maxlength="64" required
                     autocomplete="new-password" class="input input-bordered w-full bg-neutral-50" />
+                [#password-hint#]
             </div>
 
             <input type="submit" value="[#text Change password#]" class="[#btn-class-primary#]" />

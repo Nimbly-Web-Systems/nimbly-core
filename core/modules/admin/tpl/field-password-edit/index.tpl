@@ -20,6 +20,7 @@
                 :disabled="form_data.keep_password"
                 :placeholder="form_data.keep_password ? '••••••••••' : ''"
                 :required="!form_data.keep_password" />
+            [#password-hint#]
         </div>
     </div>
 </div>

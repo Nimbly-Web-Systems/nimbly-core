@@ -5,6 +5,7 @@
         minlength="8"
         [#if _f.required=(not-empty) echo=required#]
         placeholder="" />
+    [#password-hint#]
     <label class="pointer-events-none absolute left-3 -top-2.5 px-1
             font-bold text-sm leading-tight [#get _f.bg default=bg-neutral-50#]
             text-neutral-800">
