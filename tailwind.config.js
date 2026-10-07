@@ -5,7 +5,13 @@ import daisyui from "daisyui";
 
 // Keep the existing ext/tailwind.theme.js API while emitting daisyUI v5 CSS variables.
 function to_daisyui_v5_theme(theme_values) {
+  // Defaults for every colour core's own screens use; a site theme overrides any of them.
   const result = {
+    "--color-neutral": "#2a323c",
+    "--color-info": "#3abff8",
+    "--color-success": "#36d399",
+    "--color-warning": "#fbbd23",
+    "--color-error": "#f87272",
     "--color-primary-content": "#ffffff",
     "--color-secondary-content": "#ffffff",
     "--color-accent-content": "#ffffff",
