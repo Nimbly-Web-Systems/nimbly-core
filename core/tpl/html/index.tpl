@@ -43,7 +43,7 @@
 </html>
 
 <!--
-██▄  ██  Nimbly v1.1.0
+██▄  ██  Nimbly
 ██ ▀▄██  [#app-modified#]
 ██   ██  Generated in [#fmt [#execution-time#] type=number decimals=2#]s
 -->
