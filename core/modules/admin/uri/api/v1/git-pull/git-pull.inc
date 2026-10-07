@@ -7,18 +7,16 @@ function git_pull_sc() {
     $response['error'] = true;
     $response['status'] = "";
 
-    $dir = $GLOBALS['SYSTEM']['file_base'] . get_variable('dir', '', 'url');
+    // Only the project itself or its ext repository.
+    $dir = $GLOBALS['SYSTEM']['file_base'] . (get_variable('dir', '', 'url') === 'ext' ? 'ext' : '');
     if (@chdir($dir) !== true) {
         $response['status'] = "could not change directory to " . $dir;
         return json_encode($response);
     }
 
-    $pull_result = shell_exec("git pull 2>&1");
-    $response['status'] .= $pull_result;
-
-    if (stripos($pull_result, 'updating') !== false) {
-        $response['error'] = false;
-    }
+    exec('git pull 2>&1', $pull_output, $pull_code);
+    $response['status'] .= implode("\n", $pull_output);
+    $response['error'] = $pull_code !== 0;
 
     load_library('app-build');
     $response['assets_stale'] = app_build_stale();

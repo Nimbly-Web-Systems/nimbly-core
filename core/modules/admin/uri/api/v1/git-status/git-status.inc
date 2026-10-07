@@ -4,7 +4,8 @@ load_library('get');
 
 function git_status_sc() {
 
-    $dir = get_variable('dir', '', 'url');
+    // Only the project itself or its ext repository.
+    $dir = get_variable('dir', '', 'url') === 'ext' ? 'ext' : '';
 
     $response['error'] = true;
     $response['dir'] = $dir;
