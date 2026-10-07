@@ -147,7 +147,7 @@ function pages_update($uuid, $data) {
     $page = pages_find_by_key($uuid);
     if ($page) {
         return json_result(array(
-            $resource => array($uuid => $result),
+            "pages" => $page,
             'count' => 1,
             'message' => 'RESOURCE_UPDATED'
         ), 200);
@@ -171,13 +171,6 @@ function pages_id_delete($resource, $uuid) { // delete one
 
 function pages_id_put($resource, $uuid) { // update one
     $data = json_input(false);
-    $page = pages_update($uuid, $data);
-    if (!empty($page)) {
-        return json_result(array(
-            "pages" => array($uuid => $result),
-            'count' => 1,
-            'message' => 'RESOURCE_UPDATED'
-        ), 200);
-    }
+    pages_update($uuid, $data); // answers itself when the page exists
     return json_result(array('message' => 'RESOURCE_UPDATE_FAILED'), 500);
 }
