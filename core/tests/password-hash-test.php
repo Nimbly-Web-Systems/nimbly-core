@@ -82,6 +82,10 @@ for ($i = 0; $i < 5; $i++) {
 password_hash_test_assert(user_password_check($user, 'typed-password') === false, 'login accepted a password after five wrong ones');
 password_hash_test_assert(count(user_login_failures('user-3')) === 5, 'a refused attempt was counted');
 password_hash_test_assert(user_password_check(['uuid' => 'user-4'] + $user, 'typed-password') === true, 'wrong passwords on one account blocked another');
+$_SERVER['REMOTE_ADDR'] = '203.0.113.9';
+password_hash_test_assert(user_password_check($user, 'typed-password') === true, 'wrong passwords from one address kept the owner out at another');
+unset($_SERVER['REMOTE_ADDR']);
+password_hash_test_assert(user_password_check($user, 'typed-password') === false, 'a login from another address opened the blocked one');
 file_put_contents(user_login_failures_path('user-3'), implode("\n", array_fill(0, 5, time() - LOGIN_FAILURES_SECONDS - 1)) . "\n");
 password_hash_test_assert(user_password_check($user, 'typed-password') === true, 'login still refused after the wait');
 user_password_check($user, 'other-password');

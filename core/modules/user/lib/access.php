@@ -127,11 +127,13 @@ function persist_login_error() {
 const LOGIN_FAILURES_MAX = 5;
 const LOGIN_FAILURES_SECONDS = 900;
 
+/** Counted per account and address, so wrong passwords from elsewhere never keep the owner out. */
 function user_login_failures_path($uuid) {
-    return $GLOBALS['SYSTEM']['file_base'] . 'ext/data/.tmp/login-failures/' . md5((string)$uuid);
+    $address = (string)($_SERVER['REMOTE_ADDR'] ?? '');
+    return $GLOBALS['SYSTEM']['file_base'] . 'ext/data/.tmp/login-failures/' . md5($uuid . '|' . $address);
 }
 
-/** Times of the wrong passwords typed for this account in the last quarter of an hour. */
+/** Times of the wrong passwords typed for this account from this address in the last quarter of an hour. */
 function user_login_failures($uuid) {
     $path = user_login_failures_path($uuid);
     $times = is_file($path) ? (file($path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) ?: []) : [];
@@ -156,7 +158,8 @@ function user_login_failures_clear($uuid) {
 /**
  * Checks a typed password against the user's stored hash. A hash made with
  * older settings is replaced once the password has matched. After five wrong
- * passwords the account takes no password until the oldest is 15 minutes old.
+ * passwords from one address the account takes no password from that address
+ * until the oldest is 15 minutes old.
  */
 function user_password_check($user_data, $password) {
     load_library('encrypt');
