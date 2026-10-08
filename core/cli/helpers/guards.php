@@ -29,8 +29,9 @@ function setup_guard_is_legacy(string $content): bool {
  * content is site-specific and is left alone.
  *
  * Returns a list of ['dir' => ..., 'action' => created|updated|custom].
+ * With $apply false nothing is written and the list says what would happen.
  */
-function setup_sync_guards(string $base_dir, string $template_dir): array {
+function setup_sync_guards(string $base_dir, string $template_dir, bool $apply = true): array {
     $result = [];
     foreach (setup_guard_dirs() as $dir => $type) {
         if (!is_dir($base_dir . $dir)) {
@@ -39,7 +40,9 @@ function setup_sync_guards(string $base_dir, string $template_dir): array {
         $dst = $base_dir . $dir . '/.htaccess';
         $expected = file_get_contents($template_dir . $type . '.htaccess');
         if (!file_exists($dst)) {
-            file_put_contents($dst, $expected);
+            if ($apply) {
+                file_put_contents($dst, $expected);
+            }
             $result[] = ['dir' => $dir, 'action' => 'created'];
             continue;
         }
@@ -48,7 +51,9 @@ function setup_sync_guards(string $base_dir, string $template_dir): array {
             continue;
         }
         if (setup_guard_is_legacy($current)) {
-            file_put_contents($dst, $expected);
+            if ($apply) {
+                file_put_contents($dst, $expected);
+            }
             $result[] = ['dir' => $dir, 'action' => 'updated'];
             continue;
         }

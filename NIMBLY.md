@@ -2064,11 +2064,26 @@ Low-level commands used by `./nimbly test:run`. `test:setup` creates the `test` 
 
 #### `system:repair`
 
-Brings generated files level with the current core. Today it checks the root `.htaccess` against `core/cli/setup/htaccess.tpl`; a core update never rewrites that file, so an older site can miss rules that newer installs have. The pepper and the rewrite base are taken from the existing file.
+Brings generated files and system records level with the current core. A core update never rewrites them, so an older site can miss what a new install gets from `system:setup`. Each check reports first; nothing changes without `--yes`.
+
+| Check | Repaired when |
+|-------|---------------|
+| Root `.htaccess` | It differs from `core/cli/setup/htaccess.tpl`. The pepper and the rewrite base are taken from the existing file; the previous file is kept as `.htaccess.before-repair`. |
+| Directory guards | An `.htaccess` under `ext/` or `core/` is missing or still in the old `<files *.*>` form. A guard with its own content is reported and left alone. |
+| `ext/.gitignore` | It does not ignore the thumbnail cache, the job queue, the scheduler state or the agent chats and runs. |
+| `.config/.meta` | It has no `upsert`, so page settings cannot be saved for a page that has none yet. |
+| Core routes | A core route added after the site was set up is not registered. |
+| Users email index | `users/.meta` does not index `email`. `unique` is added only when no two users share an address. |
 
 ```bash
 ./nimbly system:repair         # report only
-./nimbly system:repair --yes   # apply; the previous file is kept as .htaccess.before-repair
+./nimbly system:repair --yes   # apply
+```
+
+The ignored folders change on every server by themselves (the scheduler state every minute), so tracking one makes `ext:sync` conflict and can leave the server's `ext/` stuck in a rebase. The ignore rule does not untrack a folder that is already tracked:
+
+```bash
+git -C ext rm -r --cached data/.state
 ```
 
 #### `system:upgrade-11`

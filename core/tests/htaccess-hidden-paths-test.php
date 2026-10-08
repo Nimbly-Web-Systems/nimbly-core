@@ -13,9 +13,9 @@ mkdir($fixture, 0755, true);
 symlink(dirname(__DIR__), $fixture . '/core');
 define('BASE_DIR', $fixture . '/');
 
-require_once dirname(__DIR__) . '/cli/helpers/htaccess.php';
+require_once dirname(__DIR__) . '/cli/helpers/repair.php';
 
-$current = upgrade_11_render_htaccess('pepper', '/', '');
+$current = repair_htaccess_render(BASE_DIR, 'pepper', '/');
 $rule = 'RewriteRule (^|/)\.(?!well-known/) - [F]';
 htaccess_hidden_assert(
     str_contains($current, "RewriteCond %{REQUEST_URI} !/api/v1/\\.\n" . $rule),
@@ -41,12 +41,12 @@ file_put_contents($fixture . '/.htaccess', str_replace(
     $current
 ));
 htaccess_hidden_assert(
-    upgrade_11_htaccess_state('pepper', '/', '')['action'] === 'recreate_hidden_files',
-    'an .htaccess with only the root-level rule is recreated'
+    repair_htaccess_state(BASE_DIR)['action'] === 'write',
+    'an .htaccess with only the root-level rule is rewritten'
 );
 file_put_contents($fixture . '/.htaccess', $current);
 htaccess_hidden_assert(
-    upgrade_11_htaccess_state('pepper', '/', '')['action'] === 'noop',
+    repair_htaccess_state(BASE_DIR)['action'] === 'ok',
     'an .htaccess from the current template needs no repair'
 );
 

@@ -12,6 +12,13 @@
 /data/.state/*
 !/data/.state/.meta
 /static/_thumb_/
+/data/.agent_runs/*
+/data/.agent_events/*
+/data/.agent_actions/*
+/data/.agent_approvals/*
+/data/.agent_state/*
+/data/.agent_steps/*
+/data/.agent_conversations/*
 /data/.log-entries/*
 !/data/.log-entries/.meta
 /node_modules/
