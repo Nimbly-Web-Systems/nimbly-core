@@ -57,6 +57,8 @@ jobs:
           echo "All PHP tests passed"
 
   e2e:
+    # A low-risk commit skips the browser tests with [skip e2e] in its message.
+    if: ${{ !contains(github.event.head_commit.message, '[skip e2e]') }}
     runs-on: ubuntu-latest
     env:
       COMPOSE_PROJECT_NAME: nimbly
