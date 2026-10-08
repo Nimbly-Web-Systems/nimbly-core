@@ -5,6 +5,7 @@
  * Nimbly CLI
  *
  * Usage: php core/cli/nimbly.php <command>
+ *        php core/cli/nimbly.php <command> --help
  */
 
 if (php_sapi_name() !== 'cli') {
@@ -110,8 +111,13 @@ if (!$command || $command === 'help' || !isset($commands[$command])) {
         printf("  %-38s %s\n", $name, $meta['desc']);
         $last_scope = $scope;
     }
-    echo "\n";
+    echo "\n  Add --help to a command to read what it does and takes.\n\n";
     exit($command && $command !== 'help' ? 1 : 0);
+}
+
+if (array_intersect(['--help', '-h'], array_slice($argv, 2))) {
+    echo cli_command_help($command, $commands[$command], BASE_DIR);
+    exit(0);
 }
 
 if (str_starts_with($command, 'docs:')) {

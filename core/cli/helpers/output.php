@@ -67,3 +67,27 @@ function cli_status(string $message): void
     }
     echo cli_color('✓', 'green') . ' ' . $message . "\n";
 }
+
+/**
+ * The help text of a command: its name and description, then the comment at
+ * the top of its file, written the way the command is typed.
+ */
+function cli_command_help(string $name, array $meta, string $base_dir): string
+{
+    $help = $name . "\n  " . ($meta['desc'] ?? '') . "\n";
+    $file = $base_dir . ($meta['file'] ?? '');
+    $source = is_file($file) ? (string)file_get_contents($file) : '';
+    if (!preg_match('~^(?:#![^\n]*\n)?<\?php\s*/\*\*(.*?)\*/~s', $source, $match)) {
+        return $help;
+    }
+    $lines = [];
+    foreach (explode("\n", trim($match[1])) as $line) {
+        $line = rtrim((string)preg_replace('~^\s*\* ?~', '', $line));
+        if (preg_match('~^Nimbly CLI\b.*\bcommand$~', $line)) {
+            continue;
+        }
+        $lines[] = str_replace('php core/cli/nimbly.php ', './nimbly ', $line);
+    }
+    $text = trim(implode("\n", $lines));
+    return $text === '' ? $help : $help . "\n" . $text . "\n";
+}

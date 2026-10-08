@@ -3,6 +3,8 @@
 /**
  * Nimbly CLI — test:setup command
  *
+ * Usage: php core/cli/nimbly.php test:setup
+ *
  * Creates the test role, test user, test-records resource and two seed records.
  * Idempotent: skips anything that already exists.
  */

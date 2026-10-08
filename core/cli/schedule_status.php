@@ -1,5 +1,13 @@
 <?php
 
+/**
+ * Reports whether the mandatory maintenance tasks ran on time.
+ *
+ * Usage: php core/cli/nimbly.php schedule:status
+ *
+ * Prints JSON; exit code 1 when a task is overdue.
+ */
+
 require_once __DIR__ . '/cli_bootstrap.inc';
 require_once BASE_DIR . 'core/lib/maintenance.php';
 $path = BASE_DIR . 'ext/data/.state/schedule';

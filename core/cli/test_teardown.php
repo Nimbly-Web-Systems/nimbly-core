@@ -3,6 +3,8 @@
 /**
  * Nimbly CLI — test:teardown command
  *
+ * Usage: php core/cli/nimbly.php test:teardown
+ *
  * Removes the test role, test user, and test-records resource created by test:setup.
  */
 

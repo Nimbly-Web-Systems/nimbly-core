@@ -1,5 +1,21 @@
 <?php
 
+/**
+ * Agent runs: queue one, run it, and look after the chat worker.
+ *
+ * Usage:
+ *   php core/cli/nimbly.php agent:enqueue <agent-id> (--scheduled|--manual=<key>|--operator=<key>) [--target=<identity>] [--read-only]
+ *   php core/cli/nimbly.php agent:run <run-uuid>
+ *   php core/cli/nimbly.php agent:retry <failed-run-uuid>
+ *   php core/cli/nimbly.php agent:recover
+ *   php core/cli/nimbly.php agent:chat
+ *   php core/cli/nimbly.php agent:follow-up <agent-id> --conversation=<uuid> --message=<text>
+ *   php core/cli/nimbly.php agent:evidence <agent-id> --run=<run-uuid> [--out=<path>]
+ *
+ * The same key never queues a second run. The scheduler calls agent:chat
+ * every minute.
+ */
+
 if (php_sapi_name() !== 'cli') {
     die("agent.php must be run from the command line.\n");
 }

@@ -1,9 +1,15 @@
 <?php
 
-/*
- * Reads Apache access log lines from stdin, e.g. as root:
- *   zcat -f /var/log/apache2/site-access.log.1 | sudo -u www-data ./nimbly stats:import-apache
- * Options: --mode=enrich|full  --before=2026-09-25T02:02:00Z  --base=/subdir/  --host=example.com
+/**
+ * Imports Apache access log lines from stdin into the request stats.
+ *
+ * Usage:
+ *   zcat -f /var/log/apache2/site-access.log.1 | sudo -u www-data php core/cli/nimbly.php stats:import-apache
+ *
+ * --mode=enrich|full  enrich (default) takes only what never reaches PHP; full takes every line
+ * --before=<ISO-8601> Only lines before this moment, e.g. 2026-09-25T02:02:00Z
+ * --base=/subdir/     The site's base path on the server
+ * --host=example.com  The site's host name; without it, the one in SITE_URL
  */
 
 require_once __DIR__ . '/cli_bootstrap.inc';

@@ -47,6 +47,7 @@ Run these commands from the parent project directory:
 ./nimbly build      # Run one complete asset build
 ./nimbly test:run   # Run the end-to-end test suite
 ./nimbly help       # List every available command
+./nimbly <command> --help   # What one command does and takes
 ```
 
 Run `./nimbly watch` while changing templates, CSS, JavaScript or translation

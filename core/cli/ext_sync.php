@@ -3,6 +3,8 @@
 /**
  * Nimbly CLI — ext:sync command
  *
+ * Usage: php core/cli/nimbly.php ext:sync
+ *
  * Commits any changes in ext/ and pushes to the remote repository.
  * Intended to run via the scheduler on live and staging environments.
  *

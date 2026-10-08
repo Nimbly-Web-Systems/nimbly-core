@@ -1974,6 +1974,8 @@ sections return an error.
 
 ### Commands
 
+`./nimbly help` lists the commands. `./nimbly <command> --help` (or `-h`) prints what one command does and takes, without running it.
+
 #### `system:setup`
 Sets up the local system. Safe to re-run — existing files and records are never overwritten.
 

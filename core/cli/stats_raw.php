@@ -1,5 +1,13 @@
 <?php
 
+/**
+ * Prints the decrypted raw request log of one day, one JSON line per request.
+ *
+ * Usage: php core/cli/nimbly.php stats:raw YYYY-MM-DD [--apache]
+ *
+ * --apache  The lines imported from the Apache log instead of the site's own.
+ */
+
 require_once __DIR__ . '/cli_bootstrap.inc';
 load_library('stats');
 $date = (string)($argv[2] ?? '');

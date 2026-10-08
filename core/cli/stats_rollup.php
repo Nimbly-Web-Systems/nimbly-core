@@ -1,5 +1,14 @@
 <?php
 
+/**
+ * Archives every finished day of request stats and refreshes the summaries
+ * of the months they belong to.
+ *
+ * Usage: php core/cli/nimbly.php stats:rollup [--rebuild]
+ *
+ * Prints the archived dates as JSON. The scheduler runs it every hour.
+ */
+
 require_once __DIR__ . '/cli_bootstrap.inc';
 load_library('stats');
 try {

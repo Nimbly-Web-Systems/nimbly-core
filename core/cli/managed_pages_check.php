@@ -1,5 +1,13 @@
 <?php
 
+/**
+ * Checks the managed page declarations and reports addresses that collide.
+ *
+ * Usage: php core/cli/nimbly.php pages:check
+ *
+ * Exit code 1 when it finds a problem.
+ */
+
 if (php_sapi_name() !== 'cli') {
     die("nimbly.php must be run from the command line.\n");
 }
