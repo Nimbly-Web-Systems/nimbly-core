@@ -73,5 +73,13 @@ $second_path = thumbnail_create($uuid, 64, 0, 'w', 'jpg');
 thumbnail_test_assert($second_path === $cache_path, 'cache hit returned a different path');
 thumbnail_test_assert(hash_file('sha256', $cache_path) === $first_hash, 'cache hit rewrote the thumbnail');
 
+// a cache hit does not open the original: an unreadable original that is
+// older than the cached thumbnail still gets the cached file
+$source_time = filemtime($source_directory . '/' . $uuid);
+file_put_contents($source_directory . '/' . $uuid, 'not an image');
+touch($source_directory . '/' . $uuid, $source_time);
+$third_path = thumbnail_create($uuid, 64, 0, 'w', 'jpg');
+thumbnail_test_assert($third_path === $cache_path, 'cache hit opened the original');
+
 thumbnail_test_remove_directory($fixture);
 echo "Thumbnail cache tests passed.\n";

@@ -59,6 +59,23 @@ function thumbnail_create($uuid, $size, $ratio = 0, $mode = 'h', $format = '')
 
     $result = "";
     $org_path = sprintf("%s/.files/%s", $GLOBALS['SYSTEM']['data_base'], $uuid);
+
+    // A cached thumbnail is returned before the original is opened
+    $static_path = $GLOBALS['SYSTEM']['file_base'] . 'ext/static/_thumb_/' . $GLOBALS['SYSTEM']['request_uri'];
+
+    $query_ratio = get_variable('ratio', null, 'url');
+    if (!empty($query_ratio)) {
+        $static_path .= '_r' . $query_ratio;
+    }
+    if ($format !== '') {
+        $static_path .= '_f' . $format;
+    }
+
+    clearstatcache(true, $static_path);
+    $source_mtime = @filemtime($org_path) ?: 0;
+    if (thumbnail_cache_is_valid($static_path, $source_mtime, $format)) {
+        return $static_path;
+    }
     list($org_w, $org_h, $org_type) = @getimagesize($org_path);
     if (empty($org_type)) {
         $org_type = @mime_content_type($org_path); 
@@ -161,25 +178,8 @@ function thumbnail_create($uuid, $size, $ratio = 0, $mode = 'h', $format = '')
     //3. handling based on image type, e.g. transparency and store to static cache
 
     $thumb_img = imagecreatetruecolor($w, $h);
-    $static_path = $GLOBALS['SYSTEM']['file_base'] . 'ext/static/_thumb_/' . $GLOBALS['SYSTEM']['request_uri'];
-
-    $query_ratio = get_variable('ratio', null, 'url');
-    if (!empty($query_ratio)) {
-        $static_path .= '_r' . $query_ratio;
-    }
-    if ($format !== '') {
-        $static_path .= '_f' . $format;
-    }
 
     @mkdir(dirname($static_path), 0750, true);
-
-    clearstatcache(true, $static_path);
-    $source_mtime = @filemtime($org_path) ?: 0;
-    if (thumbnail_cache_is_valid($static_path, $source_mtime, $format)) {
-        imagedestroy($org_img);
-        imagedestroy($thumb_img);
-        return $static_path;
-    }
 
     $write_path = tempnam(dirname($static_path), basename($static_path) . '.tmp.');
     if ($write_path === false) {
