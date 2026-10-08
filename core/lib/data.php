@@ -640,6 +640,90 @@ function array_merge_recursive_distinct(array &$array1, array &$array2)
 }
 
 /**
+ * Takes the write lock of a resource, so that reading a record, merging and
+ * writing it back is one step for every process on the same data folder.
+ * A process that holds the lock may take it again.
+ *
+ * @param string $resource Resource name.
+ * @return bool False when the lock file cannot be opened; the write then goes ahead without it.
+ */
+function _data_lock($resource)
+{
+    $key = (string)$resource;
+    if (isset($GLOBALS['SYSTEM']['data_locks'][$key])) {
+        $GLOBALS['SYSTEM']['data_locks'][$key]['depth']++;
+        return true;
+    }
+
+    // Under .state, which no project tracks in git
+    $dir = data_path('.state') . '/.locks';
+    if (!is_dir($dir)) {
+        @mkdir($dir, 0750, true);
+    }
+    $file = $dir . '/' . preg_replace('/[^A-Za-z0-9._-]/', '_', $key) . '.lock';
+    $handle = @fopen($file, 'c');
+    if ($handle === false) {
+        // Another user's lock file can still be locked through a read handle
+        $handle = @fopen($file, 'r');
+    }
+    if ($handle === false || !flock($handle, LOCK_EX)) {
+        if (is_resource($handle)) {
+            fclose($handle);
+        }
+        return false;
+    }
+
+    $GLOBALS['SYSTEM']['data_locks'][$key] = ['handle' => $handle, 'depth' => 1];
+    return true;
+}
+
+/**
+ * Gives a resource's write lock back. Lifecycle events that were held while
+ * a lock was taken run once this process holds none.
+ *
+ * @param string $resource Resource name.
+ * @return void
+ */
+function _data_unlock($resource)
+{
+    $key = (string)$resource;
+    if (!isset($GLOBALS['SYSTEM']['data_locks'][$key])) {
+        return;
+    }
+    if (--$GLOBALS['SYSTEM']['data_locks'][$key]['depth'] > 0) {
+        return;
+    }
+    $handle = $GLOBALS['SYSTEM']['data_locks'][$key]['handle'];
+    unset($GLOBALS['SYSTEM']['data_locks'][$key]);
+    flock($handle, LOCK_UN);
+    fclose($handle);
+
+    if (!empty($GLOBALS['SYSTEM']['data_locks']) || empty($GLOBALS['SYSTEM']['data_events'])) {
+        return;
+    }
+    $events = $GLOBALS['SYSTEM']['data_events'];
+    $GLOBALS['SYSTEM']['data_events'] = [];
+    load_library('event');
+    foreach ($events as $event) {
+        event_resource_lifecycle(...$event);
+    }
+}
+
+/**
+ * Emits a resource lifecycle event. While this process holds a write lock the
+ * event waits, so a handler never runs inside it.
+ */
+function _data_lifecycle($action, $resource, $uuid, $data)
+{
+    if (!empty($GLOBALS['SYSTEM']['data_locks'])) {
+        $GLOBALS['SYSTEM']['data_events'][] = [$action, $resource, $uuid, $data];
+        return;
+    }
+    load_library('event');
+    event_resource_lifecycle($action, $resource, $uuid, $data);
+}
+
+/**
  * Updates a specific data object file or multiple objects.
  *
  * If `$uuid` is empty, updates multiple records given in `$data_update_ls`.
@@ -656,18 +740,14 @@ function data_update($resource, $uuid, $data_update_ls)
 {
     data_error_clear();
 
-    if ((string)$uuid !== '' && !empty($data_update_ls) && !data_exists($resource, $uuid)) {
-        $meta = data_meta($resource);
-        if (!empty($meta['upsert'])) {
-            data_create($resource, $uuid, []);
-        }
-    }
-
-    if (empty($data_update_ls) || !data_exists($resource, $uuid)) {
+    if (empty($data_update_ls)) {
         return false;
     }
 
     if ((string)$uuid === '') { // update multiple
+        if (!data_exists($resource)) {
+            return false;
+        }
         $result = [];
         foreach ($data_update_ls as $pk => $updates) {
             $id = empty($pk) ? $updates['uuid'] : $pk;
@@ -683,42 +763,58 @@ function data_update($resource, $uuid, $data_update_ls)
         return $result;
     }
 
-    $data_ls = data_read($resource, $uuid);
-
-    if (empty($data_ls)) {
-        $data_merged_ls = $data_update_ls;
-    } else {
-        $data_merged_ls = array_merge_recursive_distinct($data_ls, $data_update_ls);
-    }
-
-    $meta = data_meta($resource);
-    // Update modification metadata
-    load_library('util');
-    load_library('username');
-    $data_merged_ls['_modified_by'] = md5_uuid(username_get());
-    $data_merged_ls['_modified'] = time();
-    if (_data_validate($resource, $uuid, $data_merged_ls) !== true) {
-        return false;
-    }
-
-    if (data_create($resource, $uuid, $data_merged_ls)) {
-        if (!empty($data_ls) && isset($meta['index']) && is_array($meta['index'])) {
-            $file = data_path($resource, $uuid);
-            foreach ($meta['index'] as $index_name) {
-                if (empty($data_ls[$index_name])) {
-                    continue;
-                }
-                $old_index_uuids = data_index_uuids($data_ls[$index_name]);
-                $new_index_uuids = data_index_uuids($data_merged_ls[$index_name] ?? '');
-                foreach (array_diff($old_index_uuids, $new_index_uuids) as $old_index_uuid) {
-                    _data_delete_index($resource, $file, $index_name, $old_index_uuid);
-                }
+    _data_lock($resource);
+    try {
+        if (!data_exists($resource, $uuid)) {
+            $meta = data_meta($resource);
+            if (empty($meta['upsert'])) {
+                return false;
+            }
+            data_create($resource, $uuid, []);
+            if (!data_exists($resource, $uuid)) {
+                return false;
             }
         }
-        return $data_merged_ls;
-    }
 
-    return false;
+        $data_ls = data_read($resource, $uuid);
+
+        if (empty($data_ls)) {
+            $data_merged_ls = $data_update_ls;
+        } else {
+            $data_merged_ls = array_merge_recursive_distinct($data_ls, $data_update_ls);
+        }
+
+        $meta = data_meta($resource);
+        // Update modification metadata
+        load_library('util');
+        load_library('username');
+        $data_merged_ls['_modified_by'] = md5_uuid(username_get());
+        $data_merged_ls['_modified'] = time();
+        if (_data_validate($resource, $uuid, $data_merged_ls) !== true) {
+            return false;
+        }
+
+        if (data_create($resource, $uuid, $data_merged_ls)) {
+            if (!empty($data_ls) && isset($meta['index']) && is_array($meta['index'])) {
+                $file = data_path($resource, $uuid);
+                foreach ($meta['index'] as $index_name) {
+                    if (empty($data_ls[$index_name])) {
+                        continue;
+                    }
+                    $old_index_uuids = data_index_uuids($data_ls[$index_name]);
+                    $new_index_uuids = data_index_uuids($data_merged_ls[$index_name] ?? '');
+                    foreach (array_diff($old_index_uuids, $new_index_uuids) as $old_index_uuid) {
+                        _data_delete_index($resource, $file, $index_name, $old_index_uuid);
+                    }
+                }
+            }
+            return $data_merged_ls;
+        }
+
+        return false;
+    } finally {
+        _data_unlock($resource);
+    }
 }
 
 
@@ -756,18 +852,7 @@ function data_create($resource, $uuid, $data_ls)
     $exists = file_exists($file);
 
     $meta = $uuid === '.meta' && is_array($data_ls) ? $data_ls : data_meta($resource);
-    $write_lock = false;
-    if (!empty($meta['write_lock'])) {
-        $write_lock = @fopen($dir . '/.write.lock', 'c');
-        if ($write_lock === false || !flock($write_lock, LOCK_EX)) {
-            if (is_resource($write_lock)) {
-                fclose($write_lock);
-            }
-            data_error_set('WRITE_LOCK_FAILED');
-            return false;
-        }
-    }
-
+    _data_lock($resource);
     try {
 
         if (_data_validate($resource, $uuid, $data_ls) !== true) {
@@ -809,16 +894,12 @@ function data_create($resource, $uuid, $data_ls)
             }
 
             if ($uuid !== '.meta') {
-                load_library('event');
-                event_resource_lifecycle($exists ? 'update' : 'create', $resource, $uuid, $data_ls);
+                _data_lifecycle($exists ? 'update' : 'create', $resource, $uuid, $data_ls);
             }
             return true;
         }
     } finally {
-        if (is_resource($write_lock)) {
-            flock($write_lock, LOCK_UN);
-            fclose($write_lock);
-        }
+        _data_unlock($resource);
     }
 
     return false;
@@ -899,43 +980,47 @@ function data_delete($resource, $uuid = null)
 
     if ((string)$uuid !== '') {
         // Delete a single record file
-        $file = data_path($resource, $uuid);
-        if (!file_exists($file)) {
-            return $result;
-        }
-        $meta = data_meta($resource);
-        if (isset($meta['index']) && is_array($meta['index'])) {
-            $data_ls = data_read($resource, $uuid);
-            load_library('util');
-            foreach ($meta['index'] as $index_name) {
-                if (empty($data_ls[$index_name])) {
-                    continue;
-                }
-                foreach (data_index_uuids($data_ls[$index_name]) as $index_uuid) {
-                    $result += _data_delete_index($resource, $file, $index_name, $index_uuid);
+        _data_lock($resource);
+        try {
+            $file = data_path($resource, $uuid);
+            if (!file_exists($file)) {
+                return $result;
+            }
+            $meta = data_meta($resource);
+            if (isset($meta['index']) && is_array($meta['index'])) {
+                $data_ls = data_read($resource, $uuid);
+                load_library('util');
+                foreach ($meta['index'] as $index_name) {
+                    if (empty($data_ls[$index_name])) {
+                        continue;
+                    }
+                    foreach (data_index_uuids($data_ls[$index_name]) as $index_uuid) {
+                        $result += _data_delete_index($resource, $file, $index_name, $index_uuid);
+                    }
                 }
             }
+            $data_ls = $data_ls ?? data_read($resource, $uuid);
+            $result += (int)unlink($file);
+            if ($result > 0) {
+                // Unlike data_create()/data_update(), a delete never rewrites a
+                // surviving file, so it produces no newer max-mtime for
+                // _data_read_all()'s cache-vs-data_modified() comparison to
+                // detect. touch() alone is not reliable here: filemtime() has
+                // 1-second resolution, and a create-then-delete within the same
+                // second (e.g. a script, or two quick requests) leaves the
+                // touched dir's mtime equal to — not greater than — the cache
+                // file's, so the stale-check ("cache_time < modified") misses
+                // it. Clear the cache file directly instead.
+                touch($dir);
+                _data_clear_cache('_data_read_all', $resource);
+            }
+            if ($result > 0 && $uuid !== '.meta') {
+                _data_lifecycle('delete', $resource, $uuid, $data_ls);
+            }
+            return $result;
+        } finally {
+            _data_unlock($resource);
         }
-        $data_ls = $data_ls ?? data_read($resource, $uuid);
-        $result += (int)unlink($file);
-        if ($result > 0) {
-            // Unlike data_create()/data_update(), a delete never rewrites a
-            // surviving file, so it produces no newer max-mtime for
-            // _data_read_all()'s cache-vs-data_modified() comparison to
-            // detect. touch() alone is not reliable here: filemtime() has
-            // 1-second resolution, and a create-then-delete within the same
-            // second (e.g. a script, or two quick requests) leaves the
-            // touched dir's mtime equal to — not greater than — the cache
-            // file's, so the stale-check ("cache_time < modified") misses
-            // it. Clear the cache file directly instead.
-            touch($dir);
-            _data_clear_cache('_data_read_all', $resource);
-        }
-        if ($result > 0 && $uuid !== '.meta') {
-            load_library('event');
-            event_resource_lifecycle('delete', $resource, $uuid, $data_ls);
-        }
-        return $result;
     }
 
     // Delete entire resource: all files including .meta, and resource directory

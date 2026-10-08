@@ -11,7 +11,7 @@ Enable it with application-owned configuration in `ext/data/.config/managed_page
 
 Only users with `manage-system` may change this record through the web or API; editors use the feature but cannot change how it is set up. Older projects may still keep `url-areas.json` and `navigation-slots.json` in `ext/modules/managed-pages/`; they are read only when the matching key is missing from the record.
 
-Create `pages` and `.navigation` resources using the schemas required by the application. Page resources should use `managed-pages` / `managed_pages_validate_record` as their custom validator and enable `write_lock`. Localized page records use `title`, `path`, `published`, `body`, `seo_title`, `seo_description`, and internally maintained `previous_paths` fields.
+Create `pages` and `.navigation` resources using the schemas required by the application. Page resources should use `managed-pages` / `managed_pages_validate_record` as their custom validator. Localized page records use `title`, `path`, `published`, `body`, `seo_title`, `seo_description`, and internally maintained `previous_paths` fields.
 
 Core always provides `default`, rendered by `managed-page-default`. A page-type definition uses the type ID as its key and provides `name`, `description`, and `template`. The admin field can use `options_library: managed-pages` and `options_function: managed_pages_type_options` to derive its choices from the merged configuration. Application definitions replace a Core definition when they use the same ID.
 
@@ -63,4 +63,4 @@ Use `[#managed-navigation slot=main var=main_navigation#]` to load a public, nor
 
 Editors with `edit-.navigation` can use `/nb-admin/navigation`. The editor saves through the API (`PUT /api/v1/.navigation/<slot>-<language>`), so the standard `edit-.navigation` permission applies. Saves replace the complete tree and must send the `revision` they were loaded with; stale edits are rejected with `revision:stale`, and an invalid item is reported as `items.<item id>:<reason>` in the response `detail`.
 
-The `.navigation` resource's `.meta` must enable `write_lock` and `upsert` and use `managed-navigation` / `managed_navigation_validate_record` as its custom validator. Run `./nimbly pages:check` before release to check declarations, missing templates, invalid addresses, duplicate claims, and collisions with code routes.
+The `.navigation` resource's `.meta` must enable `upsert` and use `managed-navigation` / `managed_navigation_validate_record` as its custom validator. Run `./nimbly pages:check` before release to check declarations, missing templates, invalid addresses, duplicate claims, and collisions with code routes.
