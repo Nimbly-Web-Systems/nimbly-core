@@ -1,6 +1,7 @@
 {
   "name": "message",
   "resource": "messages",
+  "form_class": "",
   "success_message": "Saved. Open the admin and look under Messages.",
   "fields": {
     "name": {
