@@ -25,9 +25,8 @@ This document is the authoritative reference for implementing features in Nimbly
 - [16. Modules](#16-modules)
 - [17. UX principles](#17-ux-principles)
 - [18. Anti-patterns](#18-anti-patterns)
-- [19. Upgrading from core 1.0.0 to core 1.1.0](#19-upgrading-from-core-100-to-core-110)
-- [20. Code Quality & Conventions](#20-code-quality--conventions)
-- [21. Form field rendering pipeline](#21-form-field-rendering-pipeline)
+- [19. Code Quality & Conventions](#19-code-quality--conventions)
+- [20. Form field rendering pipeline](#20-form-field-rendering-pipeline)
 
 Use `./nimbly docs:list` to inspect the complete hierarchy, `./nimbly docs:section "Heading > Child"` to print one section, and `./nimbly docs:search "term"` to find compact line-numbered matches.
 
@@ -209,7 +208,7 @@ Keep manifest `start_url`, `scope`, and icon URLs relative so the same applicati
 
 The default Phase 1 service worker precaches only the versioned application CSS, JavaScript, favicon, and PWA icon files. It never intercepts page navigation, admin or authentication pages, APIs, media/data endpoints, non-GET requests, or mutations. Disabling PWA support unregisters the worker and removes caches for that application scope. Offline navigation, cached content, offline editing, background synchronization, and conflict handling are application features for a separately designed Phase 2.
 
-After upgrading an existing Apache installation, run `./nimbly system:upgrade-11 --yes` once to add the manifest MIME type and safe service-worker cache headers to its generated `.htaccess`.
+On an existing Apache installation, `./nimbly system:repair --yes` adds the manifest MIME type and the service-worker cache headers to its generated `.htaccess`.
 
 ### Choosing the rendering boundary
 
@@ -1948,7 +1947,7 @@ php core/cli/nimbly.php module:install <name>
 php core/cli/nimbly.php routes:sync
 php core/cli/nimbly.php index:rebuild [resource]
 php core/cli/nimbly.php user:email-index:rebuild
-php core/cli/nimbly.php system:upgrade-11
+php core/cli/nimbly.php system:repair
 php core/cli/nimbly.php help
 ```
 
@@ -2085,9 +2084,6 @@ The ignored folders change on every server by themselves (the scheduler state ev
 ```bash
 git -C ext rm -r --cached data/.state
 ```
-
-#### `system:upgrade-11`
-Runs the guided Nimbly 1.0.0 → 1.1.0 migration checks and updates. See [Upgrading from core 1.0.0 to core 1.1.0](#19-upgrading-from-core-100-to-core-110).
 
 #### `schedule:run`
 Runs due scheduled commands for one project. On manual VPS servers with multiple
@@ -3266,7 +3262,7 @@ Tokens expire after **10 minutes**. Refresh before expiry with a GET to the same
 > **PHP-FPM and the Authorization header**
 > On servers running PHP-FPM (rather than mod_php), Apache strips the `Authorization` header before it reaches PHP. The Nimbly API validates Bearer tokens via `getallheaders()["Authorization"]`, so without the header, every authenticated API call returns `403 ACCESS_DENIED` even with a valid token.
 >
-> `core/cli/setup/htaccess.tpl` includes the fix by default (`system:setup` for new installs; `system:upgrade-11` detects and repairs an existing project's `.htaccess` if it predates this and is missing it):
+> `core/cli/setup/htaccess.tpl` includes the fix by default (`system:setup` for new installs; `system:repair` brings an existing project's `.htaccess` level with it):
 >
 > ```apache
 > CGIPassAuth On
@@ -3274,7 +3270,7 @@ Tokens expire after **10 minutes**. Refresh before expiry with a GET to the same
 > RewriteRule .* - [E=HTTP_AUTHORIZATION:%1]
 > ```
 >
-> `CGIPassAuth On` tells Apache to forward the Authorization header to the FPM process. The `RewriteRule` additionally exposes it as `$_SERVER['HTTP_AUTHORIZATION']` for any code that reads that directly. Both lines are needed for full compatibility. Any project that exposes the Nimbly API to external clients on a PHP-FPM host requires this — if `.htaccess` was hand-edited after generation and lost this block, re-run `system:upgrade-11` to restore it.
+> `CGIPassAuth On` tells Apache to forward the Authorization header to the FPM process. The `RewriteRule` additionally exposes it as `$_SERVER['HTTP_AUTHORIZATION']` for any code that reads that directly. Both lines are needed for full compatibility. Any project that exposes the Nimbly API to external clients on a PHP-FPM host requires this — if `.htaccess` was hand-edited after generation and lost this block, run `system:repair --yes` to restore it.
 
 ```bash
 curl -X GET "/api/v1/auth/token" \
@@ -3457,12 +3453,6 @@ ext/lib/prepare-events/prepare-events.php
 ```
 
 Use the directory format only when the library needs support files that belong beside the entrypoint.
-
-To migrate existing single-file library directories automatically:
-
-```bash
-php core/cli/nimbly.php migrate-lib-flat
-```
 
 The function must be named `<name>_sc($params)` with hyphens converted to underscores:
 
@@ -3723,429 +3713,7 @@ Apply this reasoning before adding any field, section, or link to a template.
 
 ---
 
-## 19. Upgrading from core 1.0.0 to core 1.1.0
-
-### What changed
-
-| Area | 1.0.0 | 1.1.0 |
-|---|---|---|
-| UUID | Could be derived from a field value via `md5_uuid(pk_value)` | Always a stable random identifier — never derived |
-| `.meta` `pk` key | Defined which field drove the UUID | Removed entirely |
-| Slug routing | Routes did `data_exists($resource, md5_uuid($slug))` | Routes use `data_read_index($resource, 'slug_field', md5_uuid($slug))` |
-| Index storage | `.index/` subdir (also 1.0 late) | Same, fully automatic |
-| `data_update_pk()` | Existed — renamed data files on pk change | Removed |
-| Resource side effects | Automatic global `data-create` trigger handlers such as `member-on-data-create` | Explicit resource `.meta` `events`, optionally using `job:<type>` |
-| Email delivery | Configured in `.services` resource (SMTP credentials stored encrypted) | Configured via `.env`: `MAIL_SERVICE`, `MAIL_FROM`, `MAIL_FROM_NAME`, provider key (e.g. `RESEND_API_KEY`) |
-| Password reset email | Sent synchronously over SMTP during the web request | Enqueued as a `password-reset` job; processed by the job runner |
-| Frontend theme | `ext/tailwind.theme.js` — default export only (Tailwind colors) | `ext/tailwind.theme.js` — must also export named `daisyuiThemes` for DaisyUI CSS variables |
-
-**Core rule in 1.1.0:** the UUID is the primary key and it never changes. Slugs are stored as normal fields and looked up via indexes.
-
-### Migration steps
-
-#### 1. Update core
-
-Deploy the latest core through the normal CI/CD path for the project. For simple self-managed installations, the admin dashboard's **Site status** band surfaces an **Update now** action when a core update is pending, or pull manually:
-
-```bash
-git pull   # run from the project root (core repo)
-```
-
-#### 2. Run the migration command
-
-The `system:upgrade-11` CLI command is the normal operator-facing entrypoint for the Nimbly 1.1.0 upgrade:
-
-```bash
-php core/cli/nimbly.php system:upgrade-11
-```
-
-The upgrade command also updates the Tailwind CSS entrypoint at `css/tw/in.css`
-from the Tailwind 3 `@tailwind base/components/utilities` directives to the
-Tailwind 4 format:
-
-```css
-@config "../../tailwind.config.js";
-@import "tailwindcss";
-```
-
-This matters because Tailwind 4 reads the project config from the CSS
-entrypoint. The command preserves any custom CSS below those directives.
-
-The upgrade command also migrates the `users` resource away from email-derived
-identity. Existing Nimbly 1.0 sites often stored users with `md5(email)` as the
-record UUID. In 1.1, user records should keep a stable UUID and treat email as
-an indexed lookup field. The upgrade adds `email` to `users/.meta.index`, adds
-`email` to `users/.meta.unique` when there are no duplicate emails, and rebuilds
-the users email index. If duplicate emails exist, the command lists them and
-leaves uniqueness disabled until an operator resolves the duplicate records.
-
-It also removes legacy Tailwind Elements bundles from `ext/static/`
-(`tw-elements*`). Core 1.1.0 uses Alpine.js and DaisyUI for admin interactivity,
-so these assets should not remain in upgraded projects. Remove Tailwind
-Elements from the project package manifests as well: delete `tw-elements` from
-`ext/package.json`, update `ext/package-lock.json`, and remove any
-`tw-elements/dist/plugin` or `node_modules/tw-elements` references from legacy
-Tailwind config files.
-
-The command also reports two visual migration risks that require manual review:
-
-- A project-defined `.footer` class can collide with DaisyUI 5's `footer`
-  component, which applies a grid layout and gap. A formerly centered horizontal
-  footer may therefore become a widely spaced vertical navigation. Rename custom
-  footers to a project-specific class unless the DaisyUI component is intended.
-- Native `input`, `textarea`, or `select` elements that retain `border-0` may
-  become visually borderless after Tailwind Elements and its `data-te-*`
-  enhancer are removed. Give these controls an explicit border when the old
-  enhancer previously supplied the visible field boundary.
-
-These checks are warnings only because both class names can be intentional.
-Always inspect public footers and forms after rebuilding migrated assets.
-
-#### Add `daisyuiThemes` export to `ext/tailwind.theme.js`
-
-In 1.0.0, `ext/tailwind.theme.js` only had a default export (Tailwind color
-tokens). In 1.1.0, the file must also export a named `daisyuiThemes` array that
-provides the DaisyUI CSS variables (such as `--color-base-content`, `--border`,
-`--depth`, `--radius-field`) used by DaisyUI components in the admin.
-
-Without this export, none of those CSS variables are injected into the compiled
-stylesheet. Admin form fields lose their correct DaisyUI styling — for example,
-input border colors fall back to `currentColor` instead of the expected subtle
-gray.
-
-Add the following to `ext/tailwind.theme.js` and map the project's brand colors
-to the DaisyUI `primary` and `secondary` slots:
-
-```js
-export const daisyuiThemes = [
-  {
-    light: {
-      primary: "#408ff6",   // project primary color
-      secondary: "#b1d1f2", // project secondary color
-    }
-  }
-];
-```
-
-The `tailwind.config.js` `to_daisyui_v5_theme()` function fills in all remaining
-defaults (`--color-base-content`, `--border`, `--depth`, etc.), so only the
-project-specific color overrides need to go in the theme object.
-
-#### `ext/.gitignore`: ignore scheduler state and job queue
-
-Core 1.1.0 introduced the scheduler (`ext/data/.state/schedule`) and job queue
-(`ext/data/.jobs/`) resources. Both are runtime state, not real content — the
-job queue churns constantly and the scheduler state file is rewritten on
-**every** `jobs:run` tick (every minute by default). Projects set up before
-these features existed may still have an `ext/.gitignore` that predates them
-and does not exclude these paths, which silently starts tracking them.
-
-If `.state/schedule` ends up git-tracked, it becomes a file that changes every
-minute and gets committed by `ext:sync` on every auto-sync cycle. Any push to
-the tracked branch that lands between two auto-syncs (a manual fix, a merge
-from `main`, another environment's sync) creates near-guaranteed conflicts on
-that single file when `ext:sync`'s `git pull --rebase` runs next — and because
-`ext_sync.php` does not resolve conflicts itself, a failed rebase leaves the
-production `ext/` repo stuck mid-rebase (detached HEAD) until someone manually
-resolves and completes it. While stuck, `ext:sync` skips silently on every
-subsequent run (it checks for `.git/rebase-merge`/`rebase-apply` and bails), so
-the repo quietly stops syncing in both directions — new fixes pushed to the
-tracked branch never reach production, and production's own data changes never
-reach git — until the stuck rebase is noticed and fixed by hand.
-
-`system:upgrade-11` checks `ext/.gitignore` for the current template's rules
-(`/data/.jobs/*` / `!/data/.jobs/.meta` and `/data/.state/*` /
-`!/data/.state/.meta`, alongside the existing `/static/_thumb_/` thumbnail
-cache rule) and appends any that are missing. If either path was already
-tracked before the rule existed, also untrack it — adding the ignore rule
-alone does not stop already-tracked files from being committed:
-
-```bash
-git -C ext rm -r --cached data/.jobs
-git -C ext rm -r --cached data/.state
-```
-
-#### `.config`: create page settings on save, not on every page view
-
-Earlier core versions pre-created an empty `.config/<url_key>` record on
-**every page view** (`[#create-settings#]`, called from `core/tpl/html/init.tpl`),
-purely so that the per-page settings modal (nimblybar gear icon) had something
-to `PUT` an update onto later — `data_update()` fails on a record that doesn't
-exist yet, and this was the workaround. In practice this meant every route
-ever visited by anyone got a permanent empty `.config` record, whether or not
-its settings were ever touched.
-
-1.1.0 fixes this at the data layer instead: `.config`'s `.meta` sets
-`"upsert": true` (see §4 root-level `.meta` config), and `data_update()`
-creates the missing record itself, on save, only for resources that opt in.
-`[#create-settings#]` and `init.tpl`'s call to it are removed. `system:upgrade-11`
-adds `"upsert": true` to an existing project's `.config/.meta` if missing.
-
-#### Tailwind 4 scanner: quoted values in `[#set#]`
-
-Tailwind 4's class scanner is stricter than Tailwind 3. In Tailwind 3, any
-word-like pattern anywhere in a file was picked up as a candidate class name.
-In Tailwind 4, the scanner splits on whitespace and quote characters (`"`, `'`).
-This means a class name in an unquoted `[#set#]` value is not reliably detected:
-
-```
-[#set nav-bg=bg-cbeige#]   ← Tailwind 4 does NOT pick up bg-cbeige
-```
-
-The fix is to quote the value, which makes the class a cleanly delimited token:
-
-```
-[#set nav-bg="bg-cbeige"#]  ← Tailwind 4 picks up bg-cbeige correctly
-```
-
-**Rule:** always quote `[#set#]` values that contain Tailwind utility classes.
-This applies to all dynamic class patterns — any class that is set via a
-variable and injected into a `class="[#myvar#]"` slot must appear quoted
-somewhere in a scanned file, or it will be absent from the compiled CSS.
-
-Legacy `nb-open` / `nb-close` class toggles and `data-open` / `data-close`
-attributes are also pre-1.1 patterns. Replace them with local Alpine.js state
-and bind state to visibility or classes directly:
-
-```html
-<!-- Old pattern (1.0) -->
-<button data-open=".mobile-menu" data-close=".menu-button">Menu</button>
-<nav class="mobile-menu nb-close">...</nav>
-
-<!-- New pattern (1.1.0) -->
-<div x-data="{ menu_open: false }">
-    <button type="button" x-show="!menu_open" @click="menu_open = true">
-        Menu
-    </button>
-    <button type="button" x-show="menu_open" @click="menu_open = false">
-        Close
-    </button>
-    <nav :class="{ 'is-open': menu_open }">...</nav>
-</div>
-```
-
-When migration work touches responsive CSS, use the Tailwind breakpoint values
-already configured for the project (`sm`, `md`, `lg`, etc.) instead of inventing
-new one-off media query widths. For example, use `@media (min-width: 768px)`
-for Tailwind's default `md` breakpoint.
-
-The command also scans for legacy value shortcodes that were unified into
-`[#get#]`: `[#get-key#]`, `[#jget#]`, `[#get-i18n#]`, and `[#lookup#]`.
-Run the apply step to rewrite those templates to the 1.1.0 `[#get#]` form.
-
-Direct variable shortcodes such as `[#record.uuid#]` still work when the exact
-variable has already been set. Use `[#get#]` when you need default values,
-language resolution, JSON output, or lookup/traversal behavior.
-
-The command also rewrites legacy utility library loads. Helpers such as
-`md5_uuid()` and `make_slug()` now live in `core/lib/util.php`, so both singular
-and plural loads must use `util`:
-
-```php
-load_library('util');
-load_libraries(['data', 'detect-language', 'util']);
-```
-
-The upgrade command rewrites `load_library('salt')`, `load_library('md5')`,
-`load_library('slug')`, and the same names inside `load_libraries([...])`.
-
-Internally, the resource `pk` migration step is handled by:
-
-```bash
-php core/cli/nimbly.php migrate-pk-index
-```
-
-For each resource whose `.meta` still has a `pk` key it will:
-
-1. Add the pk field to the `index` array in `.meta` (if not already there)
-2. Create index entries for all records — including the **self-referential** entries (`index_uuid === record_uuid`) that exist because 1.0 records had `uuid = md5_uuid(pk_field_value)`. Normal record writes and `index:rebuild` also preserve these entries so that `data_read_index` can find them.
-   For i18n fields whose stored value is an object keyed by language, each non-empty scalar language value is indexed separately.
-3. Remove `pk` from `.meta` and save the file
-
-It also reports legacy `*-on-data-create` trigger handlers so they can be migrated manually to `.meta` events.
-
-The command also normalizes role permissions and registers new core routes needed by the canonical roles/permissions editor introduced in 1.1.0:
-
-- **Role permission normalization** — any role whose stored `features` uses a shorthand macro (such as `manage-content`) is rewritten to the fully expanded, concrete feature list (`permission_expand_features()`), since the permissions matrix UI edits concrete per-resource checkboxes rather than macros. Roles already stored as `(all)` are left untouched.
-- **Core route registration** — creates the `.routes` record for the dynamic `nb-admin/roles/(id)` route if missing, matching the same registration `routes:sync` performs for any other dynamic admin route.
-
-The command is interactive and asks for confirmation before making any changes.
-
-#### 3. Update route.inc files
-
-Any route that used the old `data_exists` + `md5_uuid` lookup must be updated to use `data_read_index`.
-
-**Old pattern (1.0):**
-
-```php
-$slug = $parts[0];
-load_libraries(['data', 'util']);
-
-if (!data_exists('articles', md5_uuid($slug))) return;
-set_variable('slug', $slug);
-
-router_accept();
-```
-
-**New pattern (1.1.0):**
-
-```php
-$slug = $parts[0];
-load_libraries(['data', 'util']);
-
-$records = data_read_index('articles', 'url_slug', md5_uuid($slug));
-if (empty($records)) return;
-
-$record = reset($records);
-set_variable_dot('record', $record);
-
-router_accept();
-```
-
-The slug field name (`url_slug` in the example) must match what is defined in `.meta` and listed in its `index` array.
-
-#### 4. Migrate legacy trigger handlers to `.meta` events
-
-Core 1.0 supported automatic global data-create handlers:
-
-```text
-ext/modules/member/lib/member-on-data-create/member-on-data-create.php
-function member_on_data_create($event) {}
-```
-
-Core 1.1.0 removes that broadcast. Resource side effects must be declared on the target resource `.meta`:
-
-```json
-{
-  "events": {
-    "create": ["membership-application-created"]
-  }
-}
-```
-
-Plain event names dispatch to module libraries by convention:
-
-```text
-ext/modules/member/lib/membership-application-created.php
-function membership_application_created($event) {}
-```
-
-Use `job:<type>` when the work should be queued:
-
-```json
-{
-  "events": {
-    "create": ["job:application-email-created"]
-  }
-}
-```
-
-The `.jobs` resource is a core setup resource. On older installs it is created lazily the first time `job_enqueue()` runs.
-
-Queued jobs are processed by:
-
-```bash
-php core/cli/nimbly.php jobs:run
-```
-
-The default run processes one eligible job, which keeps scheduler usage simple, for example one CLI call every few seconds.
-
-Job handlers use the same single-file module library convention and are identified by their `_job` function suffix:
-
-```text
-ext/modules/member/lib/application-email-created.php
-function application_email_created_job($job) {}
-```
-
-#### 5. Verify `.meta` fields
-
-After migration, each previously pk-driven resource should look like this:
-
-```json
-{
-  "fields": {
-    "title":    { "name": "Title", "type": "text", "required": true },
-    "url_slug": { "name": "URL slug", "type": "slug", "source": "title" }
-  },
-  "index": ["url_slug"]
-}
-```
-
-- No `pk` key
-- A `slug` type field for the URL slug, with `source` pointing to the field it is derived from
-- The slug field listed in `index`
-
-If you already had a plain `text` field acting as the slug, change its `type` to `slug` and add `"source": "source_field"` so the admin auto-computes it. Then rebuild the index:
-
-```bash
-php core/cli/nimbly.php index:rebuild articles
-```
-
-#### 6. Remove any direct calls to `data_update_pk()`
-
-The function no longer exists. If any custom shortcode or module called it, remove that code. The UUID is immutable — use a slug field + index instead.
-
-#### 7. Migrate email service config from `.services` to `.env`
-
-Core 1.1.0 drops SMTP-via-`.services` for core-managed emails. Email delivery is now configured in `.env`; Resend is recommended, and SMTP is still supported. The password reset email is no longer sent inline — it is enqueued as a job and dispatched by the job runner.
-
-Add the following to your `.env`:
-
-```
-MAIL_SERVICE=resend
-MAIL_FROM=no-reply@yourdomain.com
-MAIL_FROM_NAME=Your Site Name
-RESEND_API_KEY=re_xxxxxxxxxxxx
-```
-
-For SMTP:
-
-```
-MAIL_SERVICE=smtp
-MAIL_FROM=no-reply@yourdomain.com
-MAIL_FROM_NAME=Your Site Name
-SMTP_HOST=smtp.example.com
-SMTP_PORT=465
-SMTP_USER=smtp-user
-SMTP_PASSWORD=smtp-password
-SMTP_SECURE=smtps
-```
-
-If your project had a `.services` record with `tpl: email-password-reset`, it is no longer used. The `upgrade-11` command will warn you if such records are found. After every credential in `.services` has been copied to `.env` and verified, remove the entire `ext/data/.services/` directory, including its `.meta` file. Do not leave an empty or partially migrated `.services` resource behind.
-
-Projects with no `.services` records need no action here.
-
-#### 8. Check for removed field types
-
-**`name` → `text`**
-
-The `name` field type no longer exists in 1.1.0. Any `.meta` using `"type": "name"` must be changed to `"type": "text"`. In 1.0.0 the `name` type carried a `slug: true` shorthand that auto-generated a URL slug — this does not exist on `text` fields. Replace the pattern with a dedicated `slug`-type field:
-
-```diff
-- "title": { "name": "Title", "type": "name", "required": true, "slug": true }
-+ "title": { "name": "Title", "type": "text", "required": true },
-+ "url_slug": { "name": "URL slug", "type": "slug", "source": "title" }
-```
-
-**`gallery` — data format changed**
-
-The `gallery` type in 1.1.0 stores its value as a JSON array in a single field. Projects from 1.0.0 that used gallery data as flat sibling fields (e.g. `grid1`, `grid1_cover`, `grid2`, `grid2_cover`, ...) are not compatible. Changing `.meta` to `"type": "gallery"` without migration shows an empty gallery in the admin — the data exists in the flat fields, but the 1.1.0 gallery type reads `record.{fieldname}` as a JSON array (which is absent).
-
-Options:
-
-1. **Custom field type** — create a `field-{typename}` template and register `"type": "{typename}"` in `.meta`. The template receives `_f.*` variables, and `form_data` contains all flat fields already initialized from the record. This avoids touching the stored data.
-
-2. **Data migration** — write a script that reads every record, collects the flat fields into a JSON array, writes it to the single gallery field, removes the flat keys, and saves the record. Then use `"type": "gallery"` normally.
-
-### What you do NOT need to do
-
-- **Rename existing record files.** UUIDs on existing records stay as they are (even the md5-derived ones from 1.0). They are just UUIDs now — their origin no longer matters.
-- **Rewrite all templates.** Only `route.inc` files that resolved slugs to records need updating.
-- **Re-import data.** The existing JSON record files are fully compatible.
-
----
-
-## 20. Code Quality & Conventions
+## 19. Code Quality & Conventions
 
 ### Efficient development with agents
 
@@ -4249,7 +3817,7 @@ If more context is needed, add it as a second paragraph after a blank line — b
 
 ---
 
-## 21. Form field rendering pipeline
+## 20. Form field rendering pipeline
 
 This section explains the full flow from a resource field definition to a rendered form input. Read this before building a new field type.
 

@@ -34,7 +34,7 @@
 - Automatic `data-create` global trigger handlers
 
 ### Upgrade
-Run `./nimbly system:upgrade-11` to migrate a 1.0.0 project automatically. See [NIMBLY.md](NIMBLY.md) §19 for the full upgrade guide.
+The 1.0.0 → 1.1.0 migration command and its guide were removed in October 2026, when no 1.0.0 project was left. `./nimbly system:repair` covers what can still be out of date on a site.
 
 ---
 

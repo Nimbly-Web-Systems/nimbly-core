@@ -20,7 +20,6 @@ $commands = [
     'help'              => ['file' => '',                           'desc' => 'Show command help', 'public' => true],
     'system:setup'     => ['file' => 'core/cli/setup/setup.php',    'desc' => 'Set up local system files, resources, roles, routes, and first user', 'public' => true],
     'system:repair'    => ['file' => 'core/cli/repair.php',        'desc' => 'Bring generated files level with the current core (--yes to apply)', 'public' => true],
-    'system:upgrade-11' => ['file' => 'core/cli/upgrade_11.php',    'desc' => 'Upgrade project to Nimbly 1.1.0', 'public' => true],
     'user:create'      => ['file' => 'core/cli/create_user.php',    'desc' => 'Create a new user account', 'public' => true],
     'user:email-index:rebuild' => ['file' => 'core/cli/users_email_index.php', 'desc' => 'Add and rebuild users email lookup index', 'public' => true],
     'module:install'   => ['file' => 'core/cli/install_module.php', 'desc' => 'Install a module (runs its .install.inc)', 'public' => true],
@@ -65,7 +64,6 @@ $commands = [
     'create-user'      => ['file' => 'core/cli/create_user.php',    'desc' => 'Alias of user:create', 'public' => false],
     'install-module'   => ['file' => 'core/cli/install_module.php', 'desc' => 'Alias of module:install', 'public' => false],
     'reindex'          => ['file' => 'core/cli/reindex.php',        'desc' => 'Alias of index:rebuild', 'public' => false],
-    'upgrade-11'       => ['file' => 'core/cli/upgrade_11.php',     'desc' => 'Alias of system:upgrade-11', 'public' => false],
     'architecture:check' => ['file' => 'core/cli/architecture_check.php', 'desc' => 'Alias of test:architecture', 'public' => false],
     'schedule:publish' => ['file' => 'core/cli/schedule_publish.php', 'desc' => 'Alias of schedule:init', 'public' => false],
     'scheduler:orchestrator:install' => ['file' => 'core/cli/scheduler_orchestrator.php', 'desc' => 'Alias of scheduler:install', 'public' => false],
@@ -79,12 +77,8 @@ $commands = [
     'scheduler:orchestrator:cron:install' => ['file' => 'core/cli/scheduler_orchestrator.php', 'desc' => 'Alias of scheduler:cron:install', 'public' => false],
     'scheduler:orchestrator:cron:remove' => ['file' => 'core/cli/scheduler_orchestrator.php', 'desc' => 'Alias of scheduler:cron:remove', 'public' => false],
     'scheduler:orchestrator:cron:status' => ['file' => 'core/cli/scheduler_orchestrator.php', 'desc' => 'Alias of scheduler:cron:status', 'public' => false],
-    'migrate-pk-index' => ['file' => 'core/cli/migrate_10.php',     'desc' => 'Migrate 1.0.0 pk resources to indexed 1.1.0 resources', 'public' => false],
-    'migrate-lib-flat' => ['file' => 'core/cli/migrate_lib.php',    'desc' => 'Flatten single-file library directories to lib/name.php', 'public' => false],
     'routes:add'      => ['file' => 'core/cli/routes_add.php',   'desc' => 'Alias of routes:sync', 'public' => false],
     'users:email-index' => ['file' => 'core/cli/users_email_index.php', 'desc' => 'Alias of user:email-index:rebuild', 'public' => false],
-    'migrate-10'       => ['file' => 'core/cli/migrate_10.php',     'desc' => 'Alias of migrate-pk-index', 'public' => false],
-    'migrate-lib'      => ['file' => 'core/cli/migrate_lib.php',    'desc' => 'Alias of migrate-lib-flat', 'public' => false],
 ];
 
 $main_commands = ['init', 'build', 'watch', 'up'];

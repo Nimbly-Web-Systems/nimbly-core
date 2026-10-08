@@ -98,7 +98,6 @@ function command_label(name) {
     'routes:add': 'Sync routes',
     'user:email-index:rebuild': 'Rebuild user email index',
     'users:email-index': 'Rebuild user email index',
-    'system:upgrade-11': 'Upgrade 1.1.0',
     '': 'Usage: ./nimbly <command>',
   };
   return labels[name] ?? name;
