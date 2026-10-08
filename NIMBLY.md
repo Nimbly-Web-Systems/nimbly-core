@@ -82,6 +82,10 @@ git clone git@github.com:your-org/your-app.git ext
 
 After this, the project is fully operational. Core and ext evolve independently.
 
+Start the local site with `./nimbly up` and open `http://localhost`; the admin
+is at `http://localhost/nb-admin/`. A site without pages of its own opens on
+the starter home page that `system:setup` wrote to `ext/uri/`.
+
 `./nimbly` uses npm internally for frontend dependencies and assets. It uses host PHP when PHP 8+ is available. If PHP is not available, it automatically runs PHP-backed commands through the Nimbly Docker Compose service. To force Docker explicitly:
 
 ```bash
@@ -1923,6 +1927,7 @@ Nimbly ships a CLI at `core/cli/nimbly.php`. The root `./nimbly` launcher is the
 
 ```bash
 ./nimbly init
+./nimbly up
 ./nimbly deps
 ./nimbly build
 ./nimbly watch
@@ -2673,7 +2678,7 @@ npm run build:tw    # build Tailwind once
 npm run build:css   # build CSS (esbuild)
 npm run build:js    # build JS (esbuild)
 npm run build:text  # merge .po translation files
-npm run up          # start Docker dev environment
+./nimbly up         # start the local Docker environment at http://localhost
 ```
 
 Built files go to `ext/static/`. Always run build after changing CSS, JS, or Tailwind classes.
@@ -2830,7 +2835,7 @@ baseline is the same path used in CI:
 
 ```bash
 ./nimbly deps
-APP_ENV=prod SITE_NAME="My Site" ADMIN_EMAIL=admin@example.com ADMIN_PASSWORD="change-me" PEPPER="$PEPPER" ./nimbly setup
+APP_ENV=prod SITE_NAME="My Site" ADMIN_EMAIL=admin@example.com ADMIN_PASSWORD="change-me" PEPPER="$PEPPER" ./nimbly system:setup
 ./nimbly build
 ./nimbly help
 find core -name '*.php' -print0 | xargs -0 -n1 php -l
@@ -2840,7 +2845,7 @@ When host PHP is not available, use the Docker-backed CLI and PHP lint:
 
 ```bash
 APP_ENV=prod SITE_NAME="My Site" ADMIN_EMAIL=admin@example.com ADMIN_PASSWORD="change-me" PEPPER="$PEPPER" ./nimbly --docker system:setup
-docker compose -f docker/docker-compose.yml run --rm --build nimbly sh -lc "find core -name '*.php' -print0 | xargs -0 -n1 php -l"
+docker compose -f docker/dev/docker-compose.yml run --rm --build nimbly sh -lc "find core -name '*.php' -print0 | xargs -0 -n1 php -l"
 ```
 
 Keep `.env` on the target host and ensure it contains the production `APP_ENV`, stable `PEPPER`, canonical `SITE_URL`, and mail settings. Re-running `system:setup` is idempotent and is safe when a deployment needs to create missing directories, routes, roles, `.jobs`, or `.htaccess`.

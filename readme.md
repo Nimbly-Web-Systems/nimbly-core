@@ -40,6 +40,17 @@ cd my-project
 `./nimbly init` installs the dependencies, prepares the application, creates
 the first admin user and builds the assets.
 
+Start the site and open [http://localhost](http://localhost):
+
+```bash
+./nimbly up
+```
+
+A new site opens on a short home page that shows where pages, content and
+data live. The admin is at
+[http://localhost/nb-admin/](http://localhost/nb-admin/); log in with the
+admin user you just created.
+
 Nimbly requires Node 20+ and either PHP 8+ or Docker.
 
 ## Learn more

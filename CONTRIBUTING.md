@@ -60,10 +60,10 @@ Run the usual checks before opening a pull request:
 find core -name '*.php' -print0 | xargs -0 -n1 php -l
 ```
 
-Use Docker for local development when host PHP is unavailable:
+Start the local site with Docker and open [http://localhost](http://localhost):
 
 ```bash
-npm run up
+./nimbly up
 ```
 
 ## Code Style
