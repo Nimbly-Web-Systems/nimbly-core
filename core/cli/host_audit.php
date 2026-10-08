@@ -6,6 +6,7 @@
  * Usage:
  *   php core/cli/nimbly.php host:audit [--format=json|text] [--since=24h]
  *   php core/cli/nimbly.php host:audit:install [--user=<ssh-user>]
+ *   php core/cli/nimbly.php host:sites [--format=text|json] [--url=<site url> --path=<checkout>]
  */
 
 if (php_sapi_name() !== 'cli') {
@@ -29,6 +30,8 @@ if (!defined('NIMBLY_HOST_AUDIT_LIBRARY')) {
         host_audit_install($argv);
     } elseif ($host_audit_command === 'host:audit') {
         host_audit_main($argv);
+    } elseif ($host_audit_command === 'host:sites') {
+        host_sites_main($argv);
     } else {
         fwrite(STDERR, "Unknown host audit command: {$host_audit_command}\n");
         exit(3);
@@ -113,6 +116,176 @@ function host_audit_main(array $argv): void
     }
 
     exit(host_audit_exit_code($overall));
+}
+
+/**
+ * Asks every Nimbly site on this server, from the server itself, for the
+ * pages a visitor needs: home, stylesheet, script, login, an unknown page,
+ * the health route and the bot tripwire. One line per site; exit code 1 when
+ * a site fails. Read-only. With --url and --path it checks that one site.
+ */
+function host_sites_main(array $argv): void
+{
+    $format = host_audit_option($argv, '--format') ?: 'text';
+    if (!in_array($format, ['json', 'text'], true)) {
+        fwrite(STDERR, "--format must be json or text\n");
+        exit(3);
+    }
+
+    $url = host_audit_option($argv, '--url');
+    $path = host_audit_option($argv, '--path');
+    if (($url === '') !== ($path === '')) {
+        fwrite(STDERR, "--url and --path go together\n");
+        exit(3);
+    }
+    $sites = $url !== ''
+        ? [['url' => rtrim($url, '/'), 'path' => rtrim($path, '/')]]
+        : host_sites_discover(host_audit_read_config()['apache_sites_enabled']);
+
+    $results = [];
+    foreach ($sites as $site) {
+        $results[] = host_sites_check($site['url'], $site['path']);
+    }
+
+    if ($format === 'json') {
+        echo json_encode(['sites' => $results], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . "\n";
+    } else {
+        foreach ($results as $result) {
+            echo host_sites_line($result) . "\n";
+        }
+    }
+    exit(count(array_filter($results, fn ($result) => !$result['ok'])) > 0 ? 1 : 0);
+}
+
+/**
+ * Every Nimbly checkout Apache serves: at a host's root, or under an Alias.
+ * An Alias outside any host belongs to the server's own host, the first one
+ * whose root is not a Nimbly checkout.
+ */
+function host_sites_discover(string $sites_enabled): array
+{
+    $is_checkout = fn (string $path): bool => $path !== '' && is_file($path . '/core/lib/run.php') && is_dir($path . '/ext');
+    $hosts = [];
+    $aliases = [];
+    foreach (glob(rtrim($sites_enabled, '/') . '/*') ?: [] as $config_path) {
+        if (!is_file($config_path)) {
+            continue;
+        }
+        $host = null;
+        foreach (file($config_path, FILE_IGNORE_NEW_LINES) ?: [] as $line) {
+            $line = trim(preg_replace('/\s+#.*$/', '', $line) ?? $line);
+            if (preg_match('/^<VirtualHost\b/i', $line)) {
+                $host = ['name' => '', 'root' => '', 'aliases' => []];
+            } elseif (preg_match('/^<\/VirtualHost>/i', $line)) {
+                if ($host !== null && $host['name'] !== '') {
+                    $hosts[] = $host;
+                }
+                $host = null;
+            } elseif ($host !== null && preg_match('/^ServerName\s+(\S+)/i', $line, $match)) {
+                $host['name'] = strtolower($match[1]);
+            } elseif ($host !== null && preg_match('/^DocumentRoot\s+["\']?([^"\']+)["\']?$/i', $line, $match)) {
+                $host['root'] = rtrim(trim($match[1]), '/');
+            } elseif (preg_match('~^Alias\s+/([^/\s]+)/?\s+["\']?([^"\']+)["\']?$~i', $line, $match)) {
+                if ($host !== null) {
+                    $host['aliases'][$match[1]] = rtrim(trim($match[2]), '/');
+                } else {
+                    $aliases[$match[1]] = rtrim(trim($match[2]), '/');
+                }
+            }
+        }
+    }
+
+    $sites = [];
+    $own_host = '';
+    foreach ($hosts as $host) {
+        if ($own_host === '' && $host['root'] !== '' && !$is_checkout($host['root'])) {
+            $own_host = $host['name'];
+        }
+        foreach (['' => $host['root']] + $host['aliases'] as $alias => $path) {
+            if ($is_checkout($path)) {
+                $sites[$path] ??= ['url' => 'https://' . $host['name'] . ($alias === '' ? '' : '/' . $alias), 'path' => $path];
+            }
+        }
+    }
+    foreach ($aliases as $alias => $path) {
+        if ($own_host !== '' && $is_checkout($path)) {
+            $sites[$path] ??= ['url' => 'https://' . $own_host . '/' . $alias, 'path' => $path];
+        }
+    }
+    ksort($sites);
+    return array_values($sites);
+}
+
+/** Requests one site's pages over the loopback address and judges the answers. */
+function host_sites_check(string $url, string $path): array
+{
+    $version = trim((string)@file_get_contents($path . '/ext/static/app.version'));
+    $host = (string)parse_url($url, PHP_URL_HOST);
+    // The body goes to a file: a page can be larger than a command's captured output.
+    $body_path = tempnam(sys_get_temp_dir(), 'nimbly-sites-');
+    $fetch = function (string $request_path) use ($url, $host, $body_path): array {
+        $result = host_audit_run_command([
+            'curl', '-s', '-L', '--max-time', '20', '-o', $body_path,
+            '--resolve', $host . ':443:127.0.0.1', '--resolve', $host . ':80:127.0.0.1',
+            '-w', '%{http_code}:%{size_download}', $url . $request_path,
+        ], 25);
+        $tail = explode(':', trim($result['stdout']));
+        return [
+            'status' => (int)($tail[0] ?? 0),
+            'size' => (int)($tail[1] ?? 0),
+            'body' => in_array($request_path, ['/', '/robots.txt'], true) ? (string)@file_get_contents($body_path) : '',
+        ];
+    };
+
+    $answers = [];
+    foreach (['/', '/app.css?v=' . $version, '/app.js', '/login', '/zz-unknown-page-x', '/health', '/robots.txt'] as $request_path) {
+        $answers[strtok($request_path, '?')] = $fetch($request_path);
+    }
+    $tripwire = preg_match('~^Disallow: /(nb-[0-9a-f]{12})/$~m', $answers['/robots.txt']['body'], $match) ? $match[1] : '';
+    if ($tripwire !== '') {
+        $answers['tripwire'] = $fetch('/' . $tripwire . '/');
+    }
+
+    @unlink($body_path);
+
+    $failures = host_sites_failures($answers, $version);
+    foreach ($answers as $name => $answer) {
+        unset($answers[$name]['body']);
+    }
+    unset($answers['/robots.txt']);
+    return ['url' => $url, 'path' => $path, 'version' => $version, 'answers' => $answers, 'failures' => $failures, 'ok' => empty($failures)];
+}
+
+/** What is wrong with a site's answers; empty when all is well. Needs the bodies of / and /robots.txt. */
+function host_sites_failures(array $answers, string $version): array
+{
+    $expected = ['/' => 200, '/app.css' => 200, '/app.js' => 200, '/login' => 200, '/zz-unknown-page-x' => 404, '/health' => 200, 'tripwire' => 418];
+    $failures = [];
+    if ($version === '') {
+        $failures[] = 'ext/static/app.version is missing';
+    }
+    foreach ($expected as $name => $status) {
+        if (!isset($answers[$name])) {
+            continue;
+        }
+        if ($answers[$name]['status'] !== $status) {
+            $failures[] = "{$name} answers {$answers[$name]['status']}, not {$status}";
+        }
+    }
+    if ($version !== '' && ($answers['/']['status'] ?? 0) === 200 && !str_contains((string)($answers['/']['body'] ?? ''), 'app.css?v=' . $version)) {
+        $failures[] = "the home page does not load app.css?v={$version}";
+    }
+    return $failures;
+}
+
+/** One line per site: every answer as status:size, then ok or what failed. */
+function host_sites_line(array $result): string
+{
+    $line = $result['url'];
+    foreach ($result['answers'] as $name => $answer) {
+        $line .= " | {$name} {$answer['status']}:{$answer['size']}";
+    }
+    return $line . ' | ' . ($result['ok'] ? 'ok' : 'FAIL: ' . implode('; ', $result['failures']));
 }
 
 function host_audit_default_config(): array

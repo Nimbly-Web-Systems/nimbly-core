@@ -2301,6 +2301,27 @@ whole host and is configurable with `NIMBLY_SCHEDULER_MAX_CONCURRENCY`; the
 slot lock files themselves live under `NIMBLY_SCHEDULER_SEMAPHORE_DIR`
 (default: the system temp directory).
 
+#### `host:sites`
+
+Asks every Nimbly site on the server for the pages a visitor needs, from the
+server itself, and prints one line per site:
+
+```bash
+php core/cli/nimbly.php host:sites
+php core/cli/nimbly.php host:sites --format=json
+php core/cli/nimbly.php host:sites --url=https://example.com --path=/var/www/example
+```
+
+Per site it requests the home page, `app.css` with the version in
+`ext/static/app.version`, `app.js`, the login page, an unknown page, `/health`
+and the bot tripwire, and shows each answer as `status:size`. A site is `ok`
+when the home page loads the current stylesheet, the unknown page answers 404,
+the tripwire answers 418 and the rest answer 200; the command exits 1 when a
+site fails. Sites are found in Apache's enabled site configuration, at a host's
+root or under an `Alias`. It reads only, needs no root, and its requests come
+from the loopback address, so a server's own ban rules leave it alone. Use it
+after a deploy, and keep two runs to compare a rollout before and after.
+
 #### `host:audit`
 
 Runs a read-only health audit for a manually managed Nimbly host. Project

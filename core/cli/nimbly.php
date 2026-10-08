@@ -50,6 +50,7 @@ $commands = [
     'scheduler:cron:status' => ['file' => 'core/cli/scheduler_orchestrator.php', 'desc' => 'Show server scheduler cron status', 'public' => true],
     'host:audit'         => ['file' => 'core/cli/host_audit.php',    'desc' => 'Audit host and registered Nimbly project health', 'public' => true],
     'host:audit:install' => ['file' => 'core/cli/host_audit.php',    'desc' => 'Install the server host-audit wrapper', 'public' => true],
+    'host:sites'         => ['file' => 'core/cli/host_audit.php',    'desc' => 'Ask every Nimbly site on this server for its pages, from the server itself', 'public' => true],
     'routes:sync'     => ['file' => 'core/cli/routes_add.php',   'desc' => 'Scan route.inc files and create missing dynamic route records', 'public' => true],
     'pages:check'     => ['file' => 'core/cli/managed_pages_check.php', 'desc' => 'Check managed page declarations and address collisions', 'public' => true],
     'index:rebuild'    => ['file' => 'core/cli/reindex.php',        'desc' => 'Rebuild index entries for a resource', 'public' => true],

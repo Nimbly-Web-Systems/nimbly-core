@@ -555,6 +555,58 @@ audit_assert(
         && $slow['requests'][1]['script'] === '/var/www/site/index.php',
     'groups slow PHP requests by script and the call they were stuck in'
 );
+// host:sites finds the Nimbly checkouts Apache serves and judges their answers.
+$sites_fixture = sys_get_temp_dir() . '/nimbly-host-sites-' . getmypid();
+foreach (['one', 'two', 'plain'] as $name) {
+    mkdir($sites_fixture . '/www/' . $name . '/ext', 0755, true);
+}
+foreach (['one', 'two'] as $name) {
+    mkdir($sites_fixture . '/www/' . $name . '/core/lib', 0755, true);
+    touch($sites_fixture . '/www/' . $name . '/core/lib/run.php');
+}
+mkdir($sites_fixture . '/sites-enabled');
+file_put_contents($sites_fixture . '/sites-enabled/one.conf', implode("\n", [
+    '<VirtualHost *:80>', '  ServerName one.example', '  Redirect permanent / https://one.example/', '</VirtualHost>',
+    '<VirtualHost *:443>', '  ServerName www.one.example', '  Redirect permanent / https://one.example/', '</VirtualHost>',
+    '<VirtualHost *:443>', '  ServerName One.Example', '  ServerAlias www.one.example', "  DocumentRoot {$sites_fixture}/www/one", '</VirtualHost>',
+]));
+file_put_contents($sites_fixture . '/sites-enabled/stage.conf', implode("\n", [
+    '<VirtualHost *:443>', '  ServerName stage.example', "  DocumentRoot {$sites_fixture}/www/plain",
+    "  Alias /plain {$sites_fixture}/www/plain", '</VirtualHost>',
+]));
+// an alias outside any host is served by the server's own host
+file_put_contents($sites_fixture . '/sites-enabled/two.conf', "Alias /two/ \"{$sites_fixture}/www/two/\"\n");
+$found = host_sites_discover($sites_fixture . '/sites-enabled');
+audit_assert(array_column($found, 'url') === ['https://one.example', 'https://stage.example/two'],
+    'finds Nimbly checkouts at a host root and under an alias, and nothing else');
+audit_assert($found[1]['path'] === $sites_fixture . '/www/two', 'keeps the checkout path of a site');
+audit_remove_fixture($sites_fixture);
+
+$good_answers = [
+    '/' => ['status' => 200, 'size' => 900, 'body' => '<link rel="stylesheet" href="/app.css?v=abc123">'],
+    '/app.css' => ['status' => 200, 'size' => 50], '/app.js' => ['status' => 200, 'size' => 60],
+    '/login' => ['status' => 200, 'size' => 70], '/zz-unknown-page-x' => ['status' => 404, 'size' => 80],
+    '/health' => ['status' => 200, 'size' => 3], 'tripwire' => ['status' => 418, 'size' => 47],
+];
+audit_assert(host_sites_failures($good_answers, 'abc123') === [], 'a site that answers as expected has no failures');
+$bad_answers = $good_answers;
+$bad_answers['/zz-unknown-page-x']['status'] = 200;
+$bad_answers['tripwire']['status'] = 404;
+audit_assert(count(host_sites_failures($bad_answers, 'abc123')) === 2, 'an unknown page that answers 200 and a tripwire that does not answer 418 both fail');
+audit_assert(host_sites_failures($good_answers, 'other') === ['the home page does not load app.css?v=other'],
+    'a home page with an older stylesheet fails');
+unset($bad_answers['tripwire']);
+$bad_answers['/zz-unknown-page-x']['status'] = 404;
+audit_assert(host_sites_failures($bad_answers, 'abc123') === [], 'a site without a tripwire is not failed for it');
+audit_assert(host_sites_failures($good_answers, '') === ['ext/static/app.version is missing'], 'a missing version file fails');
+$line_answers = $good_answers;
+unset($line_answers['/']['body']);
+audit_assert(
+    host_sites_line(['url' => 'https://one.example', 'answers' => $line_answers, 'failures' => [], 'ok' => true])
+        === 'https://one.example | / 200:900 | /app.css 200:50 | /app.js 200:60 | /login 200:70 | /zz-unknown-page-x 404:80 | /health 200:3 | tripwire 418:47 | ok',
+    'prints one line per site with every answer'
+);
+
 audit_remove_fixture($fixture);
 
 echo "Host audit tests passed\n";
