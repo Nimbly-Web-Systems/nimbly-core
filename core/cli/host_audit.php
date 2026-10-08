@@ -169,7 +169,8 @@ function host_sites_main(array $argv): void
 function host_sites_discover(string $sites_enabled): array
 {
     $is_checkout = fn (string $path): bool => $path !== '' && is_file($path . '/core/lib/run.php') && is_dir($path . '/ext');
-    $is_closed = fn (string $path): bool => $path !== '' && is_dir($path) && !is_readable($path);
+    // also when a folder above it is closed, so that the path cannot be seen at all
+    $is_closed = fn (string $path): bool => $path !== '' && !is_readable($path);
     $hosts = [];
     $aliases = [];
     foreach (glob(rtrim($sites_enabled, '/') . '/*') ?: [] as $config_path) {
@@ -203,7 +204,7 @@ function host_sites_discover(string $sites_enabled): array
     $sites = [];
     $own_host = '';
     foreach ($hosts as $host) {
-        if ($own_host === '' && $host['root'] !== '' && !$is_checkout($host['root']) && !$is_closed($host['root'])) {
+        if ($own_host === '' && $host['root'] !== '' && !$is_checkout($host['root'])) {
             $own_host = $host['name'];
         }
         foreach (['' => $host['root']] + $host['aliases'] as $alias => $path) {
