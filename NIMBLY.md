@@ -2062,6 +2062,15 @@ not part of the Core test suite.
 #### `test:setup` / `test:teardown`
 Low-level commands used by `./nimbly test:run`. `test:setup` creates the `test` role, `test@nimbly.dev` user, `test-records` resource, and seed records. `test:teardown` removes those records and the temporary `.test` route config entries.
 
+#### `system:repair`
+
+Brings generated files level with the current core. Today it checks the root `.htaccess` against `core/cli/setup/htaccess.tpl`; a core update never rewrites that file, so an older site can miss rules that newer installs have. The pepper and the rewrite base are taken from the existing file.
+
+```bash
+./nimbly system:repair         # report only
+./nimbly system:repair --yes   # apply; the previous file is kept as .htaccess.before-repair
+```
+
 #### `system:upgrade-11`
 Runs the guided Nimbly 1.0.0 → 1.1.0 migration checks and updates. See [Upgrading from core 1.0.0 to core 1.1.0](#19-upgrading-from-core-100-to-core-110).
 

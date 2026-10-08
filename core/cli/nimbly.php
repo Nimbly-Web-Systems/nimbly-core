@@ -19,6 +19,7 @@ $command = $argv[1] ?? null;
 $commands = [
     'help'              => ['file' => '',                           'desc' => 'Show command help', 'public' => true],
     'system:setup'     => ['file' => 'core/cli/setup/setup.php',    'desc' => 'Set up local system files, resources, roles, routes, and first user', 'public' => true],
+    'system:repair'    => ['file' => 'core/cli/repair.php',        'desc' => 'Bring generated files level with the current core (--yes to apply)', 'public' => true],
     'system:upgrade-11' => ['file' => 'core/cli/upgrade_11.php',    'desc' => 'Upgrade project to Nimbly 1.1.0', 'public' => true],
     'user:create'      => ['file' => 'core/cli/create_user.php',    'desc' => 'Create a new user account', 'public' => true],
     'user:email-index:rebuild' => ['file' => 'core/cli/users_email_index.php', 'desc' => 'Add and rebuild users email lookup index', 'public' => true],
