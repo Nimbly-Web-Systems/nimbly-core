@@ -410,18 +410,12 @@ When appropriate:
 
 Do not restart or rebuild the environment unnecessarily when it is already running.
 
-## 15. Migration bookkeeping
+## 15. Core version, credentials and mail
 
-For Nimbly 1.1 project migrations:
-
-* Reconcile the Intra project record before considering the migration complete.
-* Projects are expected to use current `master` Core unless a temporary exception is documented in project notes.
-* Book two hours to the migrated project for migration and production verification, reusing or normalizing an existing booking rather than creating duplicates.
-* Migrate legacy SMTP or `.services` mail configuration to Resend.
-* Reuse established Resend credentials where appropriate.
-* Keep credentials only in runtime `.env` files.
-* Set `MAIL_FROM_NAME` to the project site name.
-* Verify obsolete SMTP variables or tracked service credentials are removed.
+* A project runs current `master` Core. There are no versions to pin; the commit is the version.
+* A site that drifted from the setup templates is brought level with `./nimbly system:repair`: it reports first and changes nothing without `--yes`.
+* Keep credentials only in runtime `.env` files, never in tracked files, commit messages or output.
+* Mail is configured in `.env`. Set `MAIL_FROM_NAME` to the project site name.
 
 ## 16. Commit completed work
 
