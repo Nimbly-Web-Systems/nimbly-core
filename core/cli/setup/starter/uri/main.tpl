@@ -40,8 +40,8 @@
             <h2 class="mt-2 text-lg font-semibold text-neutral-900">Records without a database</h2>
             <p class="mt-2 text-sm leading-6 text-neutral-600">
                 A resource is a folder under <code class="rounded bg-base-200 px-1 py-0.5 text-xs">ext/data</code>
-                with a <code class="rounded bg-base-200 px-1 py-0.5 text-xs">.meta</code> file that lists its fields.
-                Add one and it has its admin screens and its API.
+                with one <code class="rounded bg-base-200 px-1 py-0.5 text-xs">.meta</code> file, in JSON, that lists its fields.
+                That file is all it takes: the admin screens and the API follow.
             </p>
         </div>
     </div>
