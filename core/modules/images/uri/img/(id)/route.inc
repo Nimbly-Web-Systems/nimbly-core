@@ -54,8 +54,15 @@ if (download_is_not_modified($modified, $_SERVER['HTTP_IF_MODIFIED_SINCE'] ?? ''
 }
 
 // prepare thumbnail creation
-// without a size part the last part is the id itself, not a size
-$size = count($parts) > 2 ? $parts[count($parts) - 1] : 240;
+// without a size part the last part is the id itself, not a size; the
+// thumbnail is then the default one and is cached as such, next to the
+// other sizes of the image
+if (count($parts) > 2) {
+	$size = $parts[count($parts) - 1];
+} else {
+	$size = 240;
+	$GLOBALS['SYSTEM']['request_uri'] = 'img/' . $uuid . '/240h';
+}
 $ratio_text = (string) get_variable('ratio', '', 'url');
 $ratio = 0;
 if ($ratio_text !== '') {
