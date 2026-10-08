@@ -1982,7 +1982,7 @@ What it does:
 - Generates `.htaccess` from template
 - Generates `.user.ini` from template for PHP-FPM runtime settings
 - Creates the `ext/` directory scaffold (`data/`, `static/`, `lib/`, `modules/`, `tpl/`, `uri/`, temp dirs)
-- Gives a site without any page a first home page (`ext/uri/index.tpl` and `main.tpl`): a short, editable page that shows where pages, content and data live. It is yours to change or remove; a site that already has a route is left alone
+- Gives a site without any page a first home page (`ext/uri/index.tpl` and `main.tpl`): a short, editable page that shows where pages, content and data live, with one example resource (`ext/data/messages/.meta`) and one form that saves to it (`ext/uri/message.json`), closed to visitors. It is yours to change or remove; a site that already has a route is left alone
 - Creates `.config/site`, the `.content` resource, core `.routes` records, and default roles (`admin`, `editor`)
 - Creates the `users` resource and an initial admin user
 

@@ -60,10 +60,21 @@ try {
     file_put_contents($base . 'fresh/uri/.htaccess', 'Require all denied');
     $written = setup_starter_copy($starter, $base . 'fresh/');
     sort($written);
-    setup_guards_assert($written === ['uri/index.tpl', 'uri/main.tpl'], 'a site without pages gets the starter home page');
+    setup_guards_assert($written === [
+        'data/messages/.meta', 'uri/index.tpl', 'uri/main.tpl',
+        'uri/message-form.tpl', 'uri/message-login.tpl', 'uri/message.json',
+    ], 'a site without pages gets the starter home page, form and resource: ' . json_encode($written));
+    $form = json_decode(file_get_contents($base . 'fresh/uri/message.json'), true);
+    $meta = json_decode(file_get_contents($base . 'fresh/data/messages/.meta'), true);
+    setup_guards_assert(($form['resource'] ?? '') === 'messages' && array_keys($form['fields']) === array_keys($meta['fields']),
+        'the starter form saves the fields of the starter resource');
     setup_guards_assert(str_contains(file_get_contents($base . 'fresh/uri/index.tpl'), '[#html#]'), 'the starter page uses the page shell');
     setup_guards_assert(str_contains(file_get_contents($base . 'fresh/uri/main.tpl'), 'data-nb-edit="[#cfield title#]"'), 'the starter title is editable');
     setup_guards_assert(setup_starter_copy($starter, $base . 'fresh/') === [], 'a second run writes nothing');
+    mkdir($base . 'taken/uri', 0755, true);
+    mkdir($base . 'taken/data/messages', 0755, true);
+    setup_guards_assert(!in_array('data/messages/.meta', setup_starter_copy($starter, $base . 'taken/'), true)
+        && !is_file($base . 'taken/data/messages/.meta'), 'a resource the site already has is left alone');
     mkdir($base . 'own/uri/about', 0755, true);
     setup_guards_assert(setup_starter_copy($starter, $base . 'own/') === [] && !is_file($base . 'own/uri/index.tpl'),
         'a site with a page of its own is left alone');

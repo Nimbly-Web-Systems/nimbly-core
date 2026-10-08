@@ -1,0 +1,24 @@
+{
+  "name": "message",
+  "resource": "messages",
+  "success_message": "Saved. Open the admin and look under Messages.",
+  "fields": {
+    "name": {
+      "type": "text",
+      "name": "Your name",
+      "required": true
+    },
+    "email": {
+      "type": "email",
+      "name": "Email address",
+      "required": true
+    },
+    "message": {
+      "type": "textarea",
+      "name": "Message"
+    }
+  },
+  "buttons": [
+    { "type": "submit", "title": "Save message" }
+  ]
+}

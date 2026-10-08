@@ -47,6 +47,33 @@
     </div>
 </section>
 
+<section class="mx-auto max-w-5xl px-6 pb-16">
+    <div class="grid gap-10 rounded-box border border-base-300 bg-base-100 p-6 sm:p-8 md:grid-cols-2">
+        <div>
+            <p class="text-xs font-semibold uppercase tracking-wide text-primary">Try it</p>
+            <h2 class="mt-2 text-lg font-semibold text-neutral-900">A resource and a form</h2>
+            <p class="mt-2 text-sm leading-6 text-neutral-600">
+                Your project has one example resource,
+                <code class="rounded bg-base-200 px-1 py-0.5 text-xs">ext/data/messages/.meta</code>, and this form,
+                <code class="rounded bg-base-200 px-1 py-0.5 text-xs">ext/uri/message.json</code>. Each is a few lines of JSON.
+                What you save here appears in the admin under Messages.
+            </p>
+            <p class="mt-3 text-sm leading-6 text-neutral-600">
+                A form only takes what the person may write, so this one is closed to visitors. To open it, make a route
+                <code class="rounded bg-base-200 px-1 py-0.5 text-xs">ext/uri/api/v1/messages/index.tpl</code> that holds
+                <code class="rounded bg-base-200 px-1 py-0.5 text-xs">&#91;#api-allow post messages#&#93;</code>,
+                and show the form to everyone in
+                <code class="rounded bg-base-200 px-1 py-0.5 text-xs">ext/uri/main.tpl</code>.
+            </p>
+        </div>
+        <div>
+            [#set starter-visitor=[#logged-in#]#]
+            [#if starter-visitor=logged-in tpl=message-form#]
+            [#if starter-visitor=(empty) tpl=message-login#]
+        </div>
+    </div>
+</section>
+
 <section class="mx-auto max-w-5xl px-6 pb-24">
     <div class="rounded-box bg-neutral p-6 text-neutral-content sm:p-8">
         <h2 class="text-lg font-semibold">Where to go next</h2>

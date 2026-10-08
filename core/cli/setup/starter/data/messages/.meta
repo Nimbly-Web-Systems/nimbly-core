@@ -1,0 +1,19 @@
+{
+  "fields": {
+    "name": {
+      "name": "Name",
+      "type": "text",
+      "required": true
+    },
+    "email": {
+      "name": "Email",
+      "type": "email",
+      "required": true
+    },
+    "message": {
+      "name": "Message",
+      "type": "textarea",
+      "admin_col": false
+    }
+  }
+}
