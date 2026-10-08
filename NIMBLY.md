@@ -2699,7 +2699,8 @@ leaves the banning to the server:
   one jail file for a server with Apache access logs: a ban on any `418`
   answer, on more than 60 page requests in a minute, and on 20 not-found
   answers in ten minutes. Images, styles, scripts, API calls and admin screens
-  are not page requests. Copy the filters to `/etc/fail2ban/filter.d/` and the
+  are not page requests, and a missing image, style, script or document does
+  not count as not found: that is the site's own broken link. Copy the filters to `/etc/fail2ban/filter.d/` and the
   jail file to `/etc/fail2ban/jail.d/`, add your own servers to `ignoreip`, and
   run each filter with `fail2ban-regex` against your logs before switching it
   on.
