@@ -327,8 +327,13 @@ agent_chat_delete($trash, $owner);
 chat_test_assert(data_read('.agent_conversations', $trash) === null, 'your own chat can be deleted');
 
 // Unread.
-data_update('.agent_conversations', $uuid, ['read_at' => time() - 10]);
-chat_test_assert(agent_chat_list($owner)[0]['unread'] === 3, 'agent messages after the last read count as unread');
+// Counted against a conversation that was never read, so the result does not
+// depend on how fast the messages above were written.
+data_update('.agent_conversations', $uuid, ['read_at' => 0]);
+$agent_messages = count(array_filter(data_read('.agent_conversations', $uuid)['messages'],
+    fn($message) => !in_array($message['from'] ?? 'user', ['user', 'occasion'], true)));
+chat_test_assert($agent_messages >= 3 && agent_chat_list($owner)[0]['unread'] === $agent_messages,
+    'agent messages after the last read count as unread');
 agent_chat_mark_read($uuid, $owner);
 chat_test_assert(agent_chat_list($owner)[0]['unread'] === 0, 'opening the conversation clears unread');
 
