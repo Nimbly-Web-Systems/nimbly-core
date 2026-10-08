@@ -1,0 +1,37 @@
+# Bans by behaviour, for a server that runs Nimbly sites behind Apache.
+# The three filters go in /etc/fail2ban/filter.d/, this file in
+# /etc/fail2ban/jail.d/. Add the addresses of servers that call these sites
+# (other Nimbly servers, monitors of your own) to ignoreip.
+
+[DEFAULT]
+ignoreip = 127.0.0.1/8 ::1
+
+# One request for a tripwire: the bot ignores robots.txt.
+[nimbly-tripwire]
+enabled = true
+port = http,https
+filter = nimbly-tripwire
+logpath = /var/log/apache2/*access.log
+maxretry = 1
+findtime = 60
+bantime = 3600
+
+# More than a page a second, for a minute.
+[nimbly-pace]
+enabled = true
+port = http,https
+filter = nimbly-pace
+logpath = /var/log/apache2/*access.log
+maxretry = 60
+findtime = 60
+bantime = 3600
+
+# Twenty addresses that do not exist within ten minutes.
+[nimbly-notfound]
+enabled = true
+port = http,https
+filter = nimbly-notfound
+logpath = /var/log/apache2/*access.log
+maxretry = 20
+findtime = 600
+bantime = 3600

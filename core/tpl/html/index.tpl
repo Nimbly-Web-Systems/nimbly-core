@@ -36,6 +36,7 @@
         </footer>
     </div>
     [#agent-chat-widget#]
+    [#bot-tripwire-link#]
     [#page-actions-cond#]
     [#scripts#]
 </body>

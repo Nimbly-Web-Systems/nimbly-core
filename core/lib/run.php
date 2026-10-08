@@ -50,6 +50,16 @@ function run_output($buffer) {
  */
 function run_uri($uri) {
 
+    /*
+     * The bot tripwire has no page of its own and comes before any route
+     */
+    if (strncmp((string)$uri, 'nb-', 3) === 0) {
+        load_library('bot-tripwire');
+        if (bot_tripwire_answer((string)$uri)) {
+            exit();
+        }
+    }
+
     $routed = find_uri($uri, 'route.inc');
     if ($routed === false) {
         $file = find_uri($uri);
