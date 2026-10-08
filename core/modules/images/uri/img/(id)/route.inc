@@ -54,7 +54,8 @@ if (download_is_not_modified($modified, $_SERVER['HTTP_IF_MODIFIED_SINCE'] ?? ''
 }
 
 // prepare thumbnail creation
-$size = $parts[count($parts) - 1] ?? 240;
+// without a size part the last part is the id itself, not a size
+$size = count($parts) > 2 ? $parts[count($parts) - 1] : 240;
 $ratio_text = (string) get_variable('ratio', '', 'url');
 $ratio = 0;
 if ($ratio_text !== '') {
@@ -103,7 +104,7 @@ if (is_numeric($size)) {
 	$size = 240;
 } else {
 	$parts = explode('x', $size, 2);
-	if (count($parts) == 2 && is_numeric($parts[0]) && is_numeric($parts[1])) {
+	if (count($parts) == 2 && is_numeric($parts[0]) && is_numeric($parts[1]) && $parts[1] > 0) {
 		$size = $parts[0] + 0;
 		$ratio = $size / ($parts[1] + 0);
 	} else {

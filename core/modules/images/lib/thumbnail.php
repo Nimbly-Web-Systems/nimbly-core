@@ -140,7 +140,7 @@ function thumbnail_create($uuid, $size, $ratio = 0, $mode = 'h', $format = '')
         if ($size < $max_w) {
             $max_w = $size;
         }
-        if ($size / $ratio < $max_h) {
+        if ($ratio > 0 && $size / $ratio < $max_h) {
             $max_h = $size / $ratio;
         }
         $w = $size;

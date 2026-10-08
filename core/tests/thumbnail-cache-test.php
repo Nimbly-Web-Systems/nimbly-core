@@ -73,6 +73,15 @@ $second_path = thumbnail_create($uuid, 64, 0, 'w', 'jpg');
 thumbnail_test_assert($second_path === $cache_path, 'cache hit returned a different path');
 thumbnail_test_assert(hash_file('sha256', $cache_path) === $first_hash, 'cache hit rewrote the thumbnail');
 
+// fit mode without a ratio (a URL without a size whose id ends in f lands
+// here) keeps the image's own proportions
+$GLOBALS['SYSTEM']['request_uri'] = 'img/' . $uuid . '/64f';
+$fit_path = thumbnail_create($uuid, 64, 0, 'f', 'jpg');
+thumbnail_test_assert(is_file($fit_path), 'fit mode without a ratio wrote no thumbnail');
+[$fit_w, $fit_h] = getimagesize($fit_path);
+thumbnail_test_assert($fit_w === 64 && $fit_h === 40, 'fit mode without a ratio lost the proportions');
+$GLOBALS['SYSTEM']['request_uri'] = 'img/' . $uuid . '/64w';
+
 // a cache hit does not open the original: an unreadable original that is
 // older than the cached thumbnail still gets the cached file
 $source_time = filemtime($source_directory . '/' . $uuid);
