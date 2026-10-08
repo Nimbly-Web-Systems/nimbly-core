@@ -429,6 +429,15 @@ if (!file_exists($gitignore_dst)) {
 }
 
 // -----------------------------------------------------------------------
+// A first home page, only for a site that has no page of its own yet
+// -----------------------------------------------------------------------
+
+foreach (setup_starter_copy(SETUP_DIR . 'starter/', BASE_DIR . 'ext/') as $starter_file) {
+    $project_files_changed = true;
+    nb_status("Created: ext/{$starter_file}");
+}
+
+// -----------------------------------------------------------------------
 // Create ext/readme.md from template
 // -----------------------------------------------------------------------
 

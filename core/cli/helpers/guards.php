@@ -61,3 +61,23 @@ function setup_sync_guards(string $base_dir, string $template_dir, bool $apply =
     }
     return $result;
 }
+
+/**
+ * Copies the starter pages into a site that has no route yet, and returns
+ * the files it wrote. A site with anything under ext/uri is left alone.
+ */
+function setup_starter_copy(string $starter_dir, string $ext_dir): array
+{
+    $uri_dir = rtrim($ext_dir, '/') . '/uri';
+    if (!is_dir($uri_dir) || count(array_diff(scandir($uri_dir) ?: [], ['.', '..', '.htaccess'])) > 0) {
+        return [];
+    }
+    $written = [];
+    foreach (glob(rtrim($starter_dir, '/') . '/uri/*.tpl') ?: [] as $source) {
+        $name = 'uri/' . basename($source);
+        if (copy($source, rtrim($ext_dir, '/') . '/' . $name)) {
+            $written[] = $name;
+        }
+    }
+    return $written;
+}

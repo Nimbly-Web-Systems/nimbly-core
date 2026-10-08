@@ -54,6 +54,20 @@ try {
     $again = array_column(setup_sync_guards($base, $templates), 'action', 'dir');
     setup_guards_assert($again === ['core' => 'custom'], 'second run changes nothing');
 
+    // The starter home page goes only into a site that has no page yet.
+    $starter = dirname(__DIR__) . '/cli/setup/starter/';
+    mkdir($base . 'fresh/uri', 0755, true);
+    file_put_contents($base . 'fresh/uri/.htaccess', 'Require all denied');
+    $written = setup_starter_copy($starter, $base . 'fresh/');
+    sort($written);
+    setup_guards_assert($written === ['uri/index.tpl', 'uri/main.tpl'], 'a site without pages gets the starter home page');
+    setup_guards_assert(str_contains(file_get_contents($base . 'fresh/uri/index.tpl'), '[#html#]'), 'the starter page uses the page shell');
+    setup_guards_assert(str_contains(file_get_contents($base . 'fresh/uri/main.tpl'), 'data-nb-edit="[#cfield title#]"'), 'the starter title is editable');
+    setup_guards_assert(setup_starter_copy($starter, $base . 'fresh/') === [], 'a second run writes nothing');
+    mkdir($base . 'own/uri/about', 0755, true);
+    setup_guards_assert(setup_starter_copy($starter, $base . 'own/') === [] && !is_file($base . 'own/uri/index.tpl'),
+        'a site with a page of its own is left alone');
+
     echo "setup guards tests passed\n";
 } finally {
     exec('rm -rf ' . escapeshellarg($base));
