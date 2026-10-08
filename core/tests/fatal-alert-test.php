@@ -9,7 +9,7 @@ function load_libraries($names): void {}
 function load_library($name): void {}
 function env($name, $default = '') { return $name === 'SYSTEM_ALERT_EMAIL' ? 'operator@example.test' : $default; }
 function data_lookup($resource, $uuid, $field, $default = '') { return 'Fixture Site'; }
-function set_variable($name, $value): void {}
+function set_variable($name, $value): void { $GLOBALS['fatal_test_variables'][$name] = $value; }
 function t($value) { return $value; }
 function email($message): bool
 {
@@ -90,6 +90,8 @@ fatal_error_alert_job($retry_job);
 $incident = reset($fatal_test_records['.state']);
 fatal_test_assert(!empty($incident['notifications']['first']['sent_at']),
     'successful retry records delivery');
+fatal_test_assert($fatal_test_variables['fatal_time'] === gmdate('Y-m-d H:i:s', $retry_job['payload']['last_at']) . ' UTC',
+    'the email names the time of the error in UTC');
 fatal_alert_enqueue($error, $start + 31 * 86400);
 $incident = reset($fatal_test_records['.state']);
 fatal_test_assert($incident['count'] === 1 && count($incident['events']) === 1,

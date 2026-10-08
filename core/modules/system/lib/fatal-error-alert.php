@@ -28,6 +28,8 @@ function fatal_error_alert_job($job)
     set_variable('fatal_url', system_alert_html($payload['url'] ?? ''));
     set_variable('fatal_host', system_alert_html($payload['host'] ?? ''));
     set_variable('fatal_signature', system_alert_html($payload['signature'] ?? ''));
+    $last_at = (int)($payload['last_at'] ?? 0);
+    set_variable('fatal_time', $last_at > 0 ? gmdate('Y-m-d H:i:s', $last_at) . ' UTC' : '');
 
     $sent = email([
         'service' => env('MAIL_SERVICE', 'resend'),
