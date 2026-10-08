@@ -45,10 +45,28 @@ function run_output($buffer) {
 }
 
 /**
+ * True when the project folder is there but the web server may not read its
+ * routes. Core's own pages would answer instead (the home page sends a
+ * visitor to the login), which hides a broken install.
+ */
+function run_ext_unreadable(string $base): bool {
+    $ext = $base . 'ext';
+    if (!is_dir($ext)) {
+        return false;
+    }
+    return !is_executable($ext) || (is_dir($ext . '/uri') && !is_readable($ext . '/uri'));
+}
+
+/**
  * Run a uri and exit.
  * @param string $uri the path of the uri, e.g. css-demo/type
  */
 function run_uri($uri) {
+
+    if ($uri !== 'errors/500' && run_ext_unreadable($GLOBALS['SYSTEM']['file_base'])) {
+        error_log('Nimbly: the web server cannot read ' . $GLOBALS['SYSTEM']['file_base'] . 'ext/uri');
+        run_uri('errors/500');
+    }
 
     /*
      * The bot tripwire has no page of its own and comes before any route
