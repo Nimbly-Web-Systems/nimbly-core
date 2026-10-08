@@ -29,7 +29,9 @@ repair_checks_assert(!file_exists(BASE_DIR . 'ext/data/.htaccess'), 'reporting d
 repair_checks_assert(repair_guards_apply($state), 'guards are written');
 repair_checks_assert(str_contains(file_get_contents(BASE_DIR . 'ext/data/.htaccess'), 'Require all denied'), 'the data folder is denied');
 repair_checks_assert(file_get_contents(BASE_DIR . 'ext/static/.htaccess') === "# site rule\n", 'a guard with own content is kept');
-repair_checks_assert(repair_guards_state(BASE_DIR)['action'] === 'ok', 'repaired guards need nothing');
+$state = repair_guards_state(BASE_DIR);
+repair_checks_assert($state['action'] === 'ok', 'repaired guards need nothing');
+repair_checks_assert(str_contains($state['note'], 'ext/static'), 'a guard with own content is still named');
 
 // ext/.gitignore: missing rules are appended, existing lines stay
 repair_checks_assert(repair_gitignore_state(BASE_DIR)['action'] === 'skip', 'a missing .gitignore is skipped');

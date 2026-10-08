@@ -7,7 +7,8 @@
  *
  * A check is a pair of functions: repair_<name>_state() returns
  * ['action' => ok|write|skip, 'message' => ...] and repair_<name>_apply()
- * takes that state and returns whether the change was made.
+ * takes that state and returns whether the change was made. A 'note' is
+ * printed whatever the action.
  */
 
 require_once __DIR__ . '/guards.php';
@@ -103,10 +104,8 @@ function repair_guards_state(string $base_dir): array
     }
 
     $message = empty($write) ? 'Directory guards match the current templates.' : 'Directory guards to write: ' . implode(', ', $write) . '.';
-    if (!empty($custom)) {
-        $message .= ' Left alone, own content: ' . implode(', ', $custom) . '.';
-    }
-    return ['action' => empty($write) ? 'ok' : 'write', 'message' => $message, 'base_dir' => $base_dir];
+    $note = empty($custom) ? '' : 'Directory guards left alone, own content: ' . implode(', ', $custom) . '.';
+    return ['action' => empty($write) ? 'ok' : 'write', 'message' => $message, 'note' => $note, 'base_dir' => $base_dir];
 }
 
 function repair_guards_apply(array $state): bool

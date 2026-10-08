@@ -25,6 +25,9 @@ foreach (repair_checks() as $check) {
     $state = in_array($check, ['htaccess', 'guards', 'gitignore'], true)
         ? ('repair_' . $check . '_state')(BASE_DIR)
         : ('repair_' . $check . '_state')();
+    if (!empty($state['note'])) {
+        echo $state['note'] . "\n";
+    }
     if ($state['action'] === 'ok') {
         $level++;
         continue;
