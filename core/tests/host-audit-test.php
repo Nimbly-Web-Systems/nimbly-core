@@ -580,6 +580,16 @@ $found = host_sites_discover($sites_fixture . '/sites-enabled');
 audit_assert(array_column($found, 'url') === ['https://one.example', 'https://stage.example/two'],
     'finds Nimbly checkouts at a host root and under an alias, and nothing else');
 audit_assert($found[1]['path'] === $sites_fixture . '/www/two', 'keeps the checkout path of a site');
+audit_assert($found[0]['seen'] === true && $found[1]['seen'] === true, 'a checkout it can read is seen');
+if (function_exists('posix_geteuid') && posix_geteuid() !== 0) {
+    // a folder this user may not look into stays a candidate
+    mkdir($sites_fixture . '/www/closed/core/lib', 0755, true);
+    file_put_contents($sites_fixture . '/sites-enabled/closed.conf', "Alias /closed/ \"{$sites_fixture}/www/closed/\"\n");
+    chmod($sites_fixture . '/www/closed', 0000);
+    $closed = array_values(array_filter(host_sites_discover($sites_fixture . '/sites-enabled'), fn ($site) => str_ends_with($site['url'], '/closed')));
+    chmod($sites_fixture . '/www/closed', 0755);
+    audit_assert(count($closed) === 1 && $closed[0]['seen'] === false, 'a folder it may not read is a candidate, not seen');
+}
 audit_remove_fixture($sites_fixture);
 
 $good_answers = [

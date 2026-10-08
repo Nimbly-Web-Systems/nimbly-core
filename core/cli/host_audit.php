@@ -144,7 +144,10 @@ function host_sites_main(array $argv): void
 
     $results = [];
     foreach ($sites as $site) {
-        $results[] = host_sites_check($site['url'], $site['path']);
+        $result = host_sites_check($site['url'], $site['path'], $site['seen'] ?? true);
+        if ($result !== null) {
+            $results[] = $result;
+        }
     }
 
     if ($format === 'json') {
@@ -160,11 +163,13 @@ function host_sites_main(array $argv): void
 /**
  * Every Nimbly checkout Apache serves: at a host's root, or under an Alias.
  * An Alias outside any host belongs to the server's own host, the first one
- * whose root is not a Nimbly checkout.
+ * whose root is not a Nimbly checkout. A folder this user may not look into
+ * is kept as a candidate ('seen' false); its home page then tells.
  */
 function host_sites_discover(string $sites_enabled): array
 {
     $is_checkout = fn (string $path): bool => $path !== '' && is_file($path . '/core/lib/run.php') && is_dir($path . '/ext');
+    $is_closed = fn (string $path): bool => $path !== '' && is_dir($path) && !is_readable($path);
     $hosts = [];
     $aliases = [];
     foreach (glob(rtrim($sites_enabled, '/') . '/*') ?: [] as $config_path) {
@@ -198,26 +203,30 @@ function host_sites_discover(string $sites_enabled): array
     $sites = [];
     $own_host = '';
     foreach ($hosts as $host) {
-        if ($own_host === '' && $host['root'] !== '' && !$is_checkout($host['root'])) {
+        if ($own_host === '' && $host['root'] !== '' && !$is_checkout($host['root']) && !$is_closed($host['root'])) {
             $own_host = $host['name'];
         }
         foreach (['' => $host['root']] + $host['aliases'] as $alias => $path) {
-            if ($is_checkout($path)) {
-                $sites[$path] ??= ['url' => 'https://' . $host['name'] . ($alias === '' ? '' : '/' . $alias), 'path' => $path];
+            if ($is_checkout($path) || $is_closed($path)) {
+                $sites[$path] ??= ['url' => 'https://' . $host['name'] . ($alias === '' ? '' : '/' . $alias), 'path' => $path, 'seen' => $is_checkout($path)];
             }
         }
     }
     foreach ($aliases as $alias => $path) {
-        if ($own_host !== '' && $is_checkout($path)) {
-            $sites[$path] ??= ['url' => 'https://' . $own_host . '/' . $alias, 'path' => $path];
+        if ($own_host !== '' && ($is_checkout($path) || $is_closed($path))) {
+            $sites[$path] ??= ['url' => 'https://' . $own_host . '/' . $alias, 'path' => $path, 'seen' => $is_checkout($path)];
         }
     }
     ksort($sites);
     return array_values($sites);
 }
 
-/** Requests one site's pages over the loopback address and judges the answers. */
-function host_sites_check(string $url, string $path): array
+/**
+ * Requests one site's pages over the loopback address and judges the answers.
+ * Without the right to read the checkout, the stylesheet version is taken from
+ * the home page; null when such a folder turns out not to be a Nimbly site.
+ */
+function host_sites_check(string $url, string $path, bool $seen = true): ?array
 {
     $version = trim((string)@file_get_contents($path . '/ext/static/app.version'));
     $host = (string)parse_url($url, PHP_URL_HOST);
@@ -237,8 +246,16 @@ function host_sites_check(string $url, string $path): array
         ];
     };
 
-    $answers = [];
-    foreach (['/', '/app.css?v=' . $version, '/app.js', '/login', '/zz-unknown-page-x', '/health', '/robots.txt'] as $request_path) {
+    $answers = ['/' => $fetch('/')];
+    $is_nimbly = str_contains($answers['/']['body'], '<meta name="generator" content="Nimbly">');
+    if (!$seen && $answers['/']['status'] === 200 && !$is_nimbly) {
+        @unlink($body_path);
+        return null;
+    }
+    if ($version === '' && preg_match('~app\.css\?v=([0-9a-f]{6,40})~', $answers['/']['body'], $match)) {
+        $version = $match[1];
+    }
+    foreach (['/app.css?v=' . $version, '/app.js', '/login', '/zz-unknown-page-x', '/health', '/robots.txt'] as $request_path) {
         $answers[strtok($request_path, '?')] = $fetch($request_path);
     }
     $tripwire = preg_match('~^Disallow: /(nb-[0-9a-f]{12})/$~m', $answers['/robots.txt']['body'], $match) ? $match[1] : '';
