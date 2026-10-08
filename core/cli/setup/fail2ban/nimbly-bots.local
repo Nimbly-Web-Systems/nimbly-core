@@ -8,6 +8,8 @@
 enabled = true
 port = http,https
 filter = nimbly-tripwire
+# read the log files, also where the server default is the journal
+backend = auto
 logpath = /var/log/apache2/*access.log
 maxretry = 1
 findtime = 60
@@ -19,6 +21,8 @@ ignoreip = 127.0.0.1/8 ::1
 enabled = true
 port = http,https
 filter = nimbly-pace
+# read the log files, also where the server default is the journal
+backend = auto
 logpath = /var/log/apache2/*access.log
 maxretry = 60
 findtime = 60
@@ -30,6 +34,8 @@ ignoreip = 127.0.0.1/8 ::1
 enabled = true
 port = http,https
 filter = nimbly-notfound
+# read the log files, also where the server default is the journal
+backend = auto
 logpath = /var/log/apache2/*access.log
 maxretry = 20
 findtime = 600
