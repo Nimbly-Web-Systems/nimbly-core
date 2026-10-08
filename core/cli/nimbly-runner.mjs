@@ -334,6 +334,32 @@ function run_docker_php() {
   ]);
 }
 
+const runner_help = {
+  deps: ['./nimbly deps', 'Installs the build dependencies with npm ci.'],
+  build: ['./nimbly build', 'Builds the stylesheet, the script, the texts and the asset version once.'],
+  watch: ['./nimbly watch', 'Rebuilds the assets whenever a source file changes, until stopped.'],
+  up: ['./nimbly up', 'Rebuilds the local Docker image and starts the site in it.'],
+  init: ['./nimbly init', 'Prepares a checkout for first use: dependencies, system:setup, then a build.'],
+  'test:run': [
+    './nimbly test [playwright options]',
+    'Runs the PHP tests, then the browser tests against the local site. Options after the command go to Playwright.',
+  ],
+};
+
+if (['--help', '-h'].includes(command)) {
+  banner(command_label('help'));
+  show_common_help();
+  process.exit(0);
+}
+
+if (runner_help[command] && cli_args.slice(1).some((arg) => arg === '--help' || arg === '-h')) {
+  console.log(requested_command);
+  console.log(`  ${runner_help[command][1]}`);
+  console.log('');
+  console.log(`Usage: ${runner_help[command][0]}`);
+  process.exit(0);
+}
+
 if (command === 'deps') {
   banner(command_label(command));
   run_dependencies();

@@ -93,6 +93,10 @@ if (file_exists($ext_commands_file)) {
     }
 }
 
+if (in_array($command, ['--help', '-h'], true)) {
+    $command = 'help';
+}
+
 if (!$command || $command === 'help' || !isset($commands[$command])) {
     if ($command && $command !== 'help') {
         echo "Unknown command: {$command}\n\n";
