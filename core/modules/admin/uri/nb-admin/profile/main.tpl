@@ -11,6 +11,7 @@
     </div>
 </section>
 <section class="bg-neutral-100 px-2 sm:px-4 md:px-6 lg:px-8 pb-10">
+    [#form-errors#]
     <form autocomplete="false" x-data="form_account('[#userfield uuid#]')" @submit.prevent="submit"
         class="bg-neutral-50 rounded-2xl p-10 shadow-md">
         <div class="max-w-lg">
@@ -59,8 +60,33 @@
             </div>
 
             <input type="submit" value="[#text Change password#]" class="[#btn-class-primary#]" />
+        </div>
+    </form>
 
-            [#form-errors#]
+    <form name="change-email" action="[#url#]" method="post" accept-charset="utf-8" autocomplete="off"
+        class="bg-neutral-50 rounded-2xl p-10 shadow-md mt-6">
+        <div class="max-w-lg">
+            [#form-key change-email#]
+            <h2 class="text-lg font-semibold text-neutral-800">[#text Change email address#]</h2>
+            <p class="text-sm text-neutral-700 pt-1">[#userfield email#]</p>
+
+            <div class="form-control my-6">
+                <label for="email_current_password" class="label">
+                    <span class="label-text">[#text Current password#]</span>
+                </label>
+                <input type="password" id="email_current_password" name="current_password" maxlength="64" required
+                    autocomplete="current-password" class="input input-bordered w-full bg-neutral-50" />
+            </div>
+
+            <div class="form-control my-6">
+                <label for="new_email" class="label">
+                    <span class="label-text">[#text New email address#]</span>
+                </label>
+                <input type="email" id="new_email" name="new_email" maxlength="255" required
+                    autocomplete="email" class="input input-bordered w-full bg-neutral-50" />
+            </div>
+
+            <input type="submit" value="[#text Change email address#]" class="[#btn-class-primary#]" />
         </div>
     </form>
 </section>

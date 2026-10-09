@@ -6,3 +6,9 @@ msgstr "Use a password of 8 to 64 characters."
 
 msgid "password_save_failed"
 msgstr "Your password could not be saved. Please try again."
+
+msgid "validate_invalid_email"
+msgstr "Enter a valid email address."
+
+msgid "email_save_failed"
+msgstr "Your new email address could not be saved. Please try again."
