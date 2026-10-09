@@ -670,6 +670,11 @@ function _data_lock($resource)
         if (is_resource($handle)) {
             fclose($handle);
         }
+        if (empty($GLOBALS['SYSTEM']['data_lock_reported'])) {
+            // Once per request: the write still happens, without the lock
+            $GLOBALS['SYSTEM']['data_lock_reported'] = true;
+            error_log('Nimbly: no write lock for ' . $key . ', cannot open ' . $file);
+        }
         return false;
     }
 

@@ -125,6 +125,20 @@ try {
     data_lock_assert(data_read('tasks', 'n3', 'seen') === 'n2', 'A handler could not write its own resource');
     data_lock_assert(empty($GLOBALS['SYSTEM']['data_locks']), 'A lock is still held after the writes');
 
+    // A lock file that cannot be opened is reported once and does not stop the write
+    if (function_exists('posix_geteuid') && posix_geteuid() !== 0) {
+        chmod($fixture . '/ext/data/.state/.locks', 0500);
+        $log = $fixture . '/error.log';
+        ini_set('error_log', $log);
+        data_lock_assert(data_create('letters', 'l1', ['title' => 'one']) === true, 'A write stopped because its lock file could not be opened');
+        data_lock_assert(is_array(data_update('letters', 'l1', ['title' => 'two'])), 'An update stopped because its lock file could not be opened');
+        chmod($fixture . '/ext/data/.state/.locks', 0750);
+        data_lock_assert(
+            substr_count((string)@file_get_contents($log), 'no write lock for letters') === 1,
+            'A missing lock was not reported exactly once'
+        );
+    }
+
     echo "data write lock tests passed\n";
 } finally {
     data_lock_remove($fixture);
