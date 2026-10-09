@@ -38,6 +38,10 @@ require $root . 'core/lib/find.php';
 foreach (['run', 'get', 'request-input', 'url-key', 'util', 'data', 'app-build'] as $library) {
     load_library($library);
 }
+// The rights of the fixture user come with the request.
+function access_by_feature($feature) {
+    return in_array($feature, explode(',', $_GET['has'] ?? 'pull-core-updates,pull-ext-updates'), true);
+}
 require $root . 'core/modules/admin/uri/api/v1/git-status/git-status.inc';
 require $root . 'core/modules/admin/uri/api/v1/git-pull/git-pull.inc';
 $GLOBALS['SYSTEM']['file_base'] = SITE_PATH;
@@ -54,8 +58,8 @@ function admin_update_assert($condition, string $message): void {
     if (!$condition) { throw new RuntimeException($message); }
 }
 
-function admin_update_fetch(string $address, string $do, string $dir = ''): array {
-    $url = 'http://' . $address . '/?do=' . $do . ($dir === '' ? '' : '&dir=' . rawurlencode($dir));
+function admin_update_fetch(string $address, string $do, string $dir = '', ?string $has = null): array {
+    $url = 'http://' . $address . '/?do=' . $do . ($dir === '' ? '' : '&dir=' . rawurlencode($dir)) . ($has === null ? '' : '&has=' . rawurlencode($has));
     return (array)json_decode((string)file_get_contents($url, false, stream_context_create(['http' => ['timeout' => 20]])), true);
 }
 
@@ -94,6 +98,17 @@ try {
 
     $response = admin_update_fetch($address, 'pull', 'ext');
     admin_update_assert($response['error'] === false && admin_update_git($tmp . '/site/ext', 'rev-parse HEAD') === $new, 'ext is pulled');
+
+    // The right to pull one repository does not pull the other.
+    file_put_contents($tmp . '/seed/file.txt', "three\n");
+    admin_update_git($tmp . '/seed', 'commit -q -am three');
+    admin_update_git($tmp . '/seed', 'push -q origin master');
+    $response = admin_update_fetch($address, 'pull', 'ext', 'pull-core-updates');
+    admin_update_assert($response['error'] === true && admin_update_git($tmp . '/site/ext', 'rev-parse HEAD') === $new, 'the core right does not pull ext');
+    $response = admin_update_fetch($address, 'pull', '', 'pull-ext-updates');
+    admin_update_assert($response['error'] === true && admin_update_git($tmp . '/site', 'rev-parse HEAD') === $new, 'the ext right does not pull the project');
+    $response = admin_update_fetch($address, 'pull', '', 'pull-core-updates');
+    admin_update_assert($response['error'] === false && admin_update_git($tmp . '/site', 'rev-parse HEAD') !== $new, 'the core right pulls the project');
 
     // A pull that fails is an error.
     admin_update_git($tmp . '/site/ext', 'remote set-url origin ' . escapeshellarg($tmp . '/gone.git'));
