@@ -8,9 +8,7 @@ function resource_record_actions_sc()
         return;
     }
     $actions = data_meta($resource)['record_actions'] ?? [];
-    if (!is_array($actions)) {
-        return;
-    }
+    $actions = is_array($actions) ? $actions : [];
 
     // Actions are add-, edit-, or view-only by nature (an import-from-document
     // action makes no sense once a record exists; a create-newsletter action
@@ -62,6 +60,14 @@ function resource_record_actions_sc()
         clear_variable_dot('record_action');
         if ($content !== '') {
             $rendered[] = '<div>' . $content . '</div>';
+        }
+    }
+    if ($current_scope !== 'add') {
+        // Every record of a resource with history shows its latest changes
+        load_library('record-history');
+        $history = record_history_panel($resource, (string)(get_variable('uuid', '') ?: get_variable('_bf_uuid', '')));
+        if ($history !== '') {
+            $rendered[] = $history;
         }
     }
     if (empty($rendered)) {

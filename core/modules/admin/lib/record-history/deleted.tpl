@@ -10,7 +10,7 @@
         <h1 class="text-2xl font-semibold text-neutral-800 md:text-3xl">[#text Deleted records#]</h1>
         <a class="[#btn-class-secondary#] inline-flex min-h-11 items-center justify-center sm:min-h-0" href="[#base-url#]/nb-admin/[#resource-id#]">[#text Back to overview#]</a>
     </div>
-    <form action="[#base-url#]/nb-admin/history?resource=[#resource-id#]" method="post" accept-charset="utf-8" class="rounded-box border border-base-300 bg-base-100 p-2 sm:p-3">
+    <form action="[#base-url#]/nb-admin/[#resource-id#]/deleted" method="post" accept-charset="utf-8" class="rounded-box border border-base-300 bg-base-100 p-2 sm:p-3">
         [#form-key restore_record#]
         <div class="overflow-x-auto">
             <table class="table">

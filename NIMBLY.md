@@ -1516,7 +1516,9 @@ as a legacy alias, but new documentation and scripts should use
 
 Every create, update and delete of a record by a logged-in user, an API user or the chat agent is kept: the record as it was before the change, who made the change, when, which fields changed, and for the chat agent the id of its run. A save that changes nothing is not kept, and neither is what the site writes by itself (scheduled tasks, webhooks, forms posted by visitors). Emptying or removing a resource keeps every record it held.
 
-In the admin, a record's edit and view screens have a **History** button: the list of changes with the fields each one touched, and **Restore** to put the record back as it was before that change. A restore replaces the whole record and is itself a change in the list. The resource overview links to the **Deleted records**, which can be brought back the same way. The page is `/nb-admin/history?resource=<resource>[&record=<uuid>]` and needs `edit-<resource>`.
+In the admin, the action panel beside a record shows its latest changes, with **All changes** leading to `/nb-admin/<resource>/<uuid>/history`: every change with the fields it touched, and **Restore** to put the record back as it was before that change. A restore replaces the whole record and is itself a change in the list. A record without changes says so. The resource overview links to `/nb-admin/<resource>/deleted`, the deleted records, which can be brought back the same way. Both pages need `edit-<resource>`. The panel block appears wherever a screen renders `[#resource-record-actions#]`.
+
+The two routes are dynamic: `system:setup` registers them for a new site and `system:repair` for an existing one.
 
 History is stored under `ext/data/.state/.history/<resource>/<uuid>/`, outside Git, so it is not part of a deploy or of `ext:sync`. Changes older than 90 days are removed by the mandatory `history-prune` task. A deleted record therefore stays on disk for up to 90 days; set `"history": false` in the `.meta` of a resource whose deleted records must be gone at once.
 

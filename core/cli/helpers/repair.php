@@ -201,7 +201,11 @@ function repair_core_routes_state(): array
         return ['action' => 'skip', 'message' => 'The .routes resource is missing; system:setup creates it.'];
     }
     $missing = [];
-    foreach ([['route' => 'nb-admin/roles/(id)', 'order' => 200]] as $route) {
+    foreach ([
+        ['route' => 'nb-admin/roles/(id)', 'order' => 200],
+        ['route' => 'nb-admin/(resource)/deleted', 'order' => 300],
+        ['route' => 'nb-admin/(resource)/(id)/history', 'order' => 300],
+    ] as $route) {
         if (!data_exists('.routes', md5($route['route']))) {
             $missing[] = $route;
         }

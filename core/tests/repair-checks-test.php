@@ -61,6 +61,8 @@ $state = repair_core_routes_state();
 repair_checks_assert($state['action'] === 'write', 'a missing core route is reported');
 repair_checks_assert(repair_core_routes_apply($state), 'the route is registered');
 repair_checks_assert(data_read('.routes', md5('nb-admin/roles/(id)'))['order'] === 200, 'with its order');
+repair_checks_assert(data_read('.routes', md5('nb-admin/(resource)/(id)/history'))['order'] === 300
+    && data_exists('.routes', md5('nb-admin/(resource)/deleted')), 'the history routes are registered too');
 repair_checks_assert(repair_core_routes_state()['action'] === 'ok', 'registered routes need nothing');
 
 // users email index

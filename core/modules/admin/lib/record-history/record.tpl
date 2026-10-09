@@ -12,10 +12,9 @@
             [#_rh.back#]
         </div>
     </div>
-    <form action="[#base-url#]/nb-admin/history?resource=[#resource-id#]&amp;record=[#get history-record#]" method="post" accept-charset="utf-8"
+    <form action="[#base-url#]/nb-admin/[#resource-id#]/[#get uuid#]/history" method="post" accept-charset="utf-8"
         class="rounded-box border border-base-300 bg-base-100 p-2 sm:p-3">
         [#form-key restore_record#]
-        <input type="hidden" name="record" value="[#get history-record#]">
         <div class="overflow-x-auto">
             <table class="table">
                 <thead>
@@ -27,7 +26,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    [#_rh.rows#]
+                    [#_rh.rows#][#_rh.empty#]
                 </tbody>
             </table>
         </div>

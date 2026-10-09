@@ -1,5 +1,0 @@
-[#record-history-access#]
-[#set _resource_url="[#base-url#]/nb-admin/[#resource-id#]"#]
-[#set page-title="[#text History#] · [#resource-name [#resource-id#] plural#]"#]
-[#post#]
-[#html#]

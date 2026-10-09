@@ -1,1 +1,1 @@
-<a class="[#btn-class-secondary#] inline-flex min-h-11 items-center justify-center sm:min-h-0" href="[#base-url#]/nb-admin/history?resource=[#resource-id#]">[#text Deleted records#]</a>
+<a class="[#btn-class-secondary#] inline-flex min-h-11 items-center justify-center sm:min-h-0" href="[#base-url#]/nb-admin/[#resource-id#]/deleted">[#text Deleted records#]</a>

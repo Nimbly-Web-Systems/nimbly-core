@@ -578,6 +578,8 @@ $routes = [
     ['route' => 'nb-admin/(resource)/(id)',            'order' => 500],
     ['route' => 'nb-admin/(resource)/add',            'order' => 300],
     ['route' => 'nb-admin/(resource)/import',         'order' => 300],
+    ['route' => 'nb-admin/(resource)/deleted',        'order' => 300],
+    ['route' => 'nb-admin/(resource)/(id)/history',   'order' => 300],
     ['route' => 'nb-admin/roles/(id)',                 'order' => 200],
     ['route' => 'nb-admin/pages/(id)',                 'order' => 200],
     ['route' => 'nb-admin/files/(id)',                 'order' => 200],

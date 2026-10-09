@@ -5,19 +5,22 @@ load_library('history');
 load_library('set');
 load_library('get');
 load_library('fmt');
+load_library('access');
 
-/** The changes of one record, or the deleted records of a resource, each with a restore button. */
+/**
+ * On a record's history page the changes of that record, each with a restore
+ * button; with `deleted` the deleted records of the resource.
+ */
 function record_history_sc($params)
 {
     $resource = (string)get_variable('resource-id', '');
-    $uuid = (string)get_variable('history-record', '');
     if ($resource === '' || !history_enabled($resource)) {
         return '';
     }
     $fields = data_meta($resource)['fields'] ?? [];
     $rows = '';
 
-    if ($uuid === '') {
+    if (in_array('deleted', (array)$params, true)) {
         foreach (history_deleted($resource) as $deleted_uuid => $change) {
             record_history_row_set($resource, $deleted_uuid, $change, $fields);
             $rows .= run_buffered(dirname(__FILE__) . '/deleted-row.tpl');
@@ -27,6 +30,7 @@ function record_history_sc($params)
         return run_buffered(dirname(__FILE__) . ($rows === '' ? '/deleted-empty.tpl' : '/deleted.tpl'));
     }
 
+    $uuid = (string)get_variable('uuid', '');
     foreach (history_list($resource, $uuid) as $change) {
         record_history_row_set($resource, $uuid, $change, $fields);
         $rows .= run_buffered(dirname(__FILE__) . '/row.tpl');
@@ -34,7 +38,26 @@ function record_history_sc($params)
     }
     set_variable('_rh.back', run_buffered(dirname(__FILE__) . (data_exists($resource, $uuid) ? '/record-link.tpl' : '/deleted-link.tpl')));
     set_variable('_rh.rows', $rows);
+    set_variable('_rh.empty', $rows === '' ? run_buffered(dirname(__FILE__) . '/empty-row.tpl') : '');
     return run_buffered(dirname(__FILE__) . '/record.tpl');
+}
+
+/** The history block of the record action panel: the latest changes and a link to all of them. */
+function record_history_panel($resource, $uuid)
+{
+    if ($resource === '' || $uuid === '' || !history_enabled($resource) || !access_by_feature('edit-' . $resource)) {
+        return '';
+    }
+    $fields = data_meta($resource)['fields'] ?? [];
+    $rows = '';
+    foreach (array_slice(history_list($resource, $uuid), 0, 5) as $change) {
+        record_history_row_set($resource, $uuid, $change, $fields);
+        $rows .= run_buffered(dirname(__FILE__) . '/panel-row.tpl');
+        clear_variable_dot('_row');
+    }
+    set_variable('_rh.rows', $rows);
+    set_variable('_rh.uuid', htmlspecialchars($uuid, ENT_QUOTES, 'UTF-8'));
+    return run_buffered(dirname(__FILE__) . ($rows === '' ? '/panel-empty.tpl' : '/panel.tpl'));
 }
 
 function record_history_row_set($resource, $uuid, array $change, $fields)
