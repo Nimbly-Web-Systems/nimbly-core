@@ -1,5 +1,7 @@
 @config "../../tailwind.config.js";
 @import "tailwindcss";
+/* The starter page is copied into a new project and styled from there */
+@source not "../../core/cli/setup";
 
 @layer base {
   .prose *:first-child {
