@@ -1350,6 +1350,7 @@ the resource retains simple scalar coordinates:
 | `upsert` | Boolean. When `true`, `data_update()` (and therefore `PUT /api/v1/{resource}/{uuid}`) creates a missing record instead of failing. Use only for key-value-style resources where "record may not exist yet" is the normal, expected state (e.g. core's `.config`, used for per-page settings) — not for regular content resources, where updating a non-existent record should stay an error. |
 | `self_edit` | `users` only. Comma-separated fields a user may save on their own record through `PUT /api/v1/users/{uuid}`. Default: `name`. Anyone who may edit users (`edit-users`, `manage-users`, admin) saves every field. |
 | `hidden` | Comma-separated fields the API never returns: not in a list, a single record, the answer to a create or update, or an export. They are still stored and saved as usual; read them in PHP with `data_read()`. Fields named in `encrypt` are always hidden. For `users`, `password`, `salt`, `api`, `password_reset_token` and `change_email_token` are hidden by core, whatever the `.meta` says. |
+| `history` | Boolean. Whether changes to the resource's records are kept, see Record history below. Default: on for regular resources, off for `users` and for hidden resources other than `.config`, `.content`, `.i18n` and `.navigation`. |
 | `sitemap` | Lazy sitemap declaration. `url` is a string or language-keyed URL template; optional `published` names a publication field and optional `each` names one array field to expand. Rendering exposes `record`, `language`, and `sitemap_item`. |
 
 ### Resource lifecycle events
@@ -1510,6 +1511,18 @@ php core/cli/nimbly.php index:rebuild articles
 The command is idempotent — safe to run multiple times. `reindex` still exists
 as a legacy alias, but new documentation and scripts should use
 `index:rebuild`.
+
+### Record history
+
+Every create, update and delete of a record is kept: the record as it was before the change, who made the change, when, and for a change by the chat agent the id of its run. A save that changes nothing is not kept. Emptying or removing a resource keeps every record it held.
+
+In the admin, a record's edit and view screens have a **History** button: the list of changes with the fields each one touched, and **Restore** to put the record back as it was before that change. A restore replaces the whole record and is itself a change in the list. The resource overview links to the **Deleted records**, which can be brought back the same way. The page is `/nb-admin/history?resource=<resource>[&record=<uuid>]` and needs `edit-<resource>`.
+
+History is stored under `ext/data/.state/.history/<resource>/<uuid>/`, outside Git, so it is not part of a deploy or of `ext:sync`. Changes older than 90 days are removed by the mandatory `history-prune` task. A deleted record therefore stays on disk for up to 90 days; set `"history": false` in the `.meta` of a resource whose deleted records must be gone at once.
+
+`history` in `.meta` turns it on or off for one resource. Without it, regular resources keep history; `users` (password hashes and tokens) and hidden resources do not, except `.config`, `.content`, `.i18n` and `.navigation`.
+
+In PHP (`load_library('history')`): `history_list($resource, $uuid)`, `history_deleted($resource)`, `history_restore($resource, $uuid, $id)`.
 
 ### Data caching
 
@@ -2137,6 +2150,7 @@ remove or reschedule these mandatory invocations:
 | `sessions-prune` | `sessions:prune` | 30 minutes |
 | `jobs-run` | `jobs:run 10` | 1 minute |
 | `jobs-prune` | `jobs:prune --days=30` | 24 hours |
+| `history-prune` | `history:prune --days=90` | 24 hours |
 | `stats-rollup` | `stats:rollup` | 1 hour |
 
 Existing application entries with these IDs or commands are deduplicated.

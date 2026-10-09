@@ -31,6 +31,7 @@ $commands = [
     'stats:import-apache' => ['file' => 'core/cli/stats_import_apache.php', 'desc' => 'Import Apache access log lines from stdin (--mode=enrich|full --before= --base= --host=)', 'public' => true],
     'stats:raw'        => ['file' => 'core/cli/stats_raw.php',      'desc' => 'Print the decrypted raw request log of one day (YYYY-MM-DD [--apache])', 'public' => true],
     'jobs:prune'       => ['file' => 'core/cli/jobs_prune.php',     'desc' => 'Delete completed and terminally failed jobs older than N days (--days=30)', 'public' => false],
+    'history:prune'    => ['file' => 'core/cli/history_prune.php',  'desc' => 'Delete record history older than N days (--days=90)', 'public' => false],
     'agent:enqueue'     => ['file' => 'core/cli/agent.php',          'desc' => 'Enqueue an idempotent agent run', 'public' => false],
     'agent:run'         => ['file' => 'core/cli/agent.php',          'desc' => 'Run or resume an agent run', 'public' => false],
     'agent:retry'       => ['file' => 'core/cli/agent.php',          'desc' => 'Retry a failed scheduled agent run', 'public' => false],

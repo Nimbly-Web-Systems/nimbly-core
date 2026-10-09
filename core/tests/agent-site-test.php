@@ -55,6 +55,7 @@ function data_create($resource, $uuid, $record)
 function data_update($resource, $uuid, $changes)
 {
     $GLOBALS['site_test_data'][$resource][$uuid] = array_merge($GLOBALS['site_test_data'][$resource][$uuid], $changes);
+    $GLOBALS['site_test_actor'] = $GLOBALS['SYSTEM']['data_actor'] ?? null;
     return $GLOBALS['site_test_data'][$resource][$uuid];
 }
 function data_delete($resource, $uuid)
@@ -153,6 +154,9 @@ site_test_assert($saved['status'] === 'done' && $site_test_data['articles']['a1'
     'a translation is added without losing the other languages');
 site_test_assert(!isset($site_test_data['articles']['a1']['_created_by']) && $site_test_data['articles']['a1']['uuid'] === 'a1',
     'system fields and the uuid cannot be written');
+agent_site_write($writer, 'update', 'articles', 'a1', ['status' => 'draft'], 'abcdef0123456789');
+site_test_assert($site_test_actor === ['username' => 'w', 'run' => 'abcdef0123456789'] && !isset($GLOBALS['SYSTEM']['data_actor']),
+    'a write names the asker and the run while it happens, and nothing afterwards');
 $created = agent_site_write($writer, 'create', 'articles', '', ['title' => ['en' => 'New'], 'status' => 'draft']);
 site_test_assert($site_test_data['articles'][md5('fresh')]['_created_by'] === md5('w'), 'the colleague who asked is the creator');
 site_test_assert($created['uuid'] === md5('fresh') && $created['admin_page'] === '/nb-admin/articles/' . md5('fresh'), 'a new record gets a uuid and a link');

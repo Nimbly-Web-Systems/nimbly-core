@@ -377,7 +377,18 @@ function agent_site_write_refusal(array $asker, string $action, string $resource
  * Create, update or delete one record the way the admin and API do (validation, HTML sanitizing).
  * Translated fields merge per language, so sending {"nl": "..."} adds a translation.
  */
-function agent_site_write(array $asker, string $action, string $resource, string $uuid, array $fields): array
+function agent_site_write(array $asker, string $action, string $resource, string $uuid, array $fields, string $run_uuid = ''): array
+{
+    // The change is the asker's, made in this run: both go into the record and its history.
+    $GLOBALS['SYSTEM']['data_actor'] = ['username' => $asker['username'], 'run' => $run_uuid];
+    try {
+        return agent_site_write_record($asker, $action, $resource, $uuid, $fields);
+    } finally {
+        unset($GLOBALS['SYSTEM']['data_actor']);
+    }
+}
+
+function agent_site_write_record(array $asker, string $action, string $resource, string $uuid, array $fields): array
 {
     $refusal = agent_site_write_refusal($asker, $action, $resource, $uuid);
     if ($refusal !== null) {

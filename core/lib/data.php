@@ -729,6 +729,16 @@ function _data_lifecycle($action, $resource, $uuid, $data)
     event_resource_lifecycle($action, $resource, $uuid, $data);
 }
 
+/** Who is writing: the user an agent works for, or the logged-in user. */
+function _data_actor()
+{
+    if (!empty($GLOBALS['SYSTEM']['data_actor']['username'])) {
+        return (string)$GLOBALS['SYSTEM']['data_actor']['username'];
+    }
+    load_library('username');
+    return (string)username_get();
+}
+
 /**
  * Updates a specific data object file or multiple objects.
  *
@@ -793,26 +803,15 @@ function data_update($resource, $uuid, $data_update_ls)
         $meta = data_meta($resource);
         // Update modification metadata
         load_library('util');
-        load_library('username');
-        $data_merged_ls['_modified_by'] = md5_uuid(username_get());
+        $data_merged_ls['_modified_by'] = md5_uuid(_data_actor());
         $data_merged_ls['_modified'] = time();
         if (_data_validate($resource, $uuid, $data_merged_ls) !== true) {
             return false;
         }
 
         if (data_create($resource, $uuid, $data_merged_ls)) {
-            if (!empty($data_ls) && isset($meta['index']) && is_array($meta['index'])) {
-                $file = data_path($resource, $uuid);
-                foreach ($meta['index'] as $index_name) {
-                    if (empty($data_ls[$index_name])) {
-                        continue;
-                    }
-                    $old_index_uuids = data_index_uuids($data_ls[$index_name]);
-                    $new_index_uuids = data_index_uuids($data_merged_ls[$index_name] ?? '');
-                    foreach (array_diff($old_index_uuids, $new_index_uuids) as $old_index_uuid) {
-                        _data_delete_index($resource, $file, $index_name, $old_index_uuid);
-                    }
-                }
+            if (!empty($data_ls)) {
+                _data_delete_stale_indexes($resource, $uuid, $data_ls, $data_merged_ls);
             }
             return $data_merged_ls;
         }
@@ -871,8 +870,7 @@ function data_create($resource, $uuid, $data_ls)
 
         if (!isset($data_ls['_created_by'])) {
             load_library('util');
-            load_library('username');
-            $data_ls['_created_by'] = md5_uuid(username_get());
+            $data_ls['_created_by'] = md5_uuid(_data_actor());
         }
 
         if (!isset($data_ls['_created'])) {
@@ -881,6 +879,8 @@ function data_create($resource, $uuid, $data_ls)
         }
 
         $data_ls['uuid'] = $uuid;
+
+        _data_history($exists ? 'update' : 'create', $resource, $uuid, $meta, $data_ls);
 
         $json_data = json_encode($data_ls, JSON_UNESCAPED_UNICODE);
         if (_data_write_file_atomically($file, $json_data) !== false) {
@@ -909,6 +909,57 @@ function data_create($resource, $uuid, $data_ls)
     }
 
     return false;
+}
+
+/** Removes the index entries of values a record had before a write and no longer has. */
+function _data_delete_stale_indexes($resource, $uuid, $old_ls, $new_ls)
+{
+    $meta = data_meta($resource);
+    if (!isset($meta['index']) || !is_array($meta['index'])) {
+        return;
+    }
+    $file = data_path($resource, $uuid);
+    foreach ($meta['index'] as $index_name) {
+        if (empty($old_ls[$index_name])) {
+            continue;
+        }
+        $old_index_uuids = data_index_uuids($old_ls[$index_name]);
+        $new_index_uuids = data_index_uuids($new_ls[$index_name] ?? '');
+        foreach (array_diff($old_index_uuids, $new_index_uuids) as $old_index_uuid) {
+            _data_delete_index($resource, $file, $index_name, $old_index_uuid);
+        }
+    }
+}
+
+/**
+ * Keeps the change that is about to happen in the record history, when the
+ * resource has one. Called inside the write lock, before the file changes.
+ *
+ * @param array|null $new_ls The record about to be written; null for a delete.
+ */
+function _data_history($action, $resource, $uuid, $meta, $new_ls = null)
+{
+    if ($uuid === '.meta') {
+        return;
+    }
+    require_once __DIR__ . '/history.php';
+    if (!history_enabled($resource, $meta)) {
+        return;
+    }
+    $old_ls = $action === 'create' ? null : json_decode((string)@file_get_contents(data_path($resource, $uuid)), true);
+    if ($action === 'update' && history_same_record($old_ls, $new_ls)) {
+        return;
+    }
+    history_capture($action, $resource, $uuid, $old_ls);
+}
+
+/** Keeps every record of a resource that is about to be emptied or removed. */
+function _data_history_all($resource)
+{
+    $meta = data_meta($resource);
+    foreach (data_list($resource) ?: [] as $uuid) {
+        _data_history('delete', $resource, $uuid, $meta);
+    }
 }
 
 function _data_index_path($resource, $index_name, $index_uuid)
@@ -1006,6 +1057,7 @@ function data_delete($resource, $uuid = null)
                 }
             }
             $data_ls = $data_ls ?? data_read($resource, $uuid);
+            _data_history('delete', $resource, $uuid, $meta);
             $result += (int)unlink($file);
             if ($result > 0) {
                 // Unlike data_create()/data_update(), a delete never rewrites a
@@ -1031,6 +1083,7 @@ function data_delete($resource, $uuid = null)
 
     // Delete entire resource: all files including .meta, and resource directory
     load_library('util');
+    _data_history_all($resource);
     $files = @scandir($dir);
     if (!is_array($files)) {
         return $result;
@@ -1069,6 +1122,7 @@ function data_empty($resource)
     }
 
     load_library('util');
+    _data_history_all($resource);
 
     $files = @scandir($dir);
     if (!is_array($files)) {
