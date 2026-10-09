@@ -1514,7 +1514,7 @@ as a legacy alias, but new documentation and scripts should use
 
 ### Record history
 
-Every create, update and delete of a record is kept: the record as it was before the change, who made the change, when, and for a change by the chat agent the id of its run. A save that changes nothing is not kept. Emptying or removing a resource keeps every record it held.
+Every create, update and delete of a record by a logged-in user, an API user or the chat agent is kept: the record as it was before the change, who made the change, when, which fields changed, and for the chat agent the id of its run. A save that changes nothing is not kept, and neither is what the site writes by itself (scheduled tasks, webhooks, forms posted by visitors). Emptying or removing a resource keeps every record it held.
 
 In the admin, a record's edit and view screens have a **History** button: the list of changes with the fields each one touched, and **Restore** to put the record back as it was before that change. A restore replaces the whole record and is itself a change in the list. The resource overview links to the **Deleted records**, which can be brought back the same way. The page is `/nb-admin/history?resource=<resource>[&record=<uuid>]` and needs `edit-<resource>`.
 

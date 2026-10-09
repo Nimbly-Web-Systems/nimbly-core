@@ -22,7 +22,7 @@ function load_library($library)
 
 function username_get()
 {
-    return 'tester';
+    return $GLOBALS['history_test_user'] ?? 'tester';
 }
 
 require_once dirname(__DIR__) . '/lib/data.php';
@@ -74,6 +74,20 @@ history_test_assert($changes[0]['record']['title'] === 'One' && $changes[0]['cha
 
 data_update('articles', 'a1', ['title' => 'Two']);
 history_test_assert(count(history_list('articles', 'a1')) === 2, 'saving the same values keeps nothing');
+
+data_update('articles', 'a1', ['phone' => '0612345678']);
+data_update('articles', 'a1', ['phone' => '612345678']);
+$changes = history_list('articles', 'a1');
+history_test_assert(count($changes) === 4 && $changes[0]['changed'] === ['phone'], 'values that are equal only as numbers are a change');
+history_restore('articles', 'a1', $changes[1]['id']);
+array_map('unlink', array_slice(glob(history_path('articles', 'a1') . '/*'), 2));
+
+// What the site writes by itself is not kept
+$GLOBALS['history_test_user'] = 'anonymous';
+data_update('articles', 'a1', ['title' => 'By a scheduled task']);
+data_update('articles', 'a1', ['title' => 'Two']);
+unset($GLOBALS['history_test_user']);
+history_test_assert(count(history_list('articles', 'a1')) === 2, 'a write without a user or an agent keeps nothing');
 
 // An agent's change carries the asker and the run
 $GLOBALS['SYSTEM']['data_actor'] = ['username' => 'asker', 'run' => 'abcdef0123456789'];

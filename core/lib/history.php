@@ -42,9 +42,10 @@ function history_path($resource, $uuid = '')
  *
  * @param string $action create, update or delete.
  * @param array|null $record The record as it was before the change; null for a create.
+ * @param array $changed Names of the fields an update changes.
  * @return bool
  */
-function history_capture($action, $resource, $uuid, $record = null)
+function history_capture($action, $resource, $uuid, $record = null, $changed = [])
 {
     $dir = history_path($resource, $uuid);
     if ($dir === false || (!is_dir($dir) && !@mkdir($dir, 0750, true) && !is_dir($dir))) {
@@ -56,6 +57,7 @@ function history_capture($action, $resource, $uuid, $record = null)
         'at' => (int)$now,
         'by' => _data_actor(),
         'run' => (string)($GLOBALS['SYSTEM']['data_actor']['run'] ?? ''),
+        'changed' => array_values((array)$changed),
         'record' => is_array($record) ? $record : null,
     ];
     $file = $dir . '/' . sprintf('%017.6F', $now) . '-' . bin2hex(random_bytes(3));
@@ -69,7 +71,7 @@ function history_same_record($before, $after)
         return false;
     }
     unset($before['_modified'], $before['_modified_by'], $after['_modified'], $after['_modified_by']);
-    return $before == $after;
+    return $before === $after;
 }
 
 /** Names of the fields that differ between two versions of a record. */
@@ -83,7 +85,7 @@ function history_changed_fields($before, $after)
         if ($field === 'uuid' || $field[0] === '_') {
             continue;
         }
-        if (($before[$field] ?? null) != ($after[$field] ?? null)) {
+        if (($before[$field] ?? null) !== ($after[$field] ?? null)) {
             $changed[] = $field;
         }
     }
@@ -92,8 +94,8 @@ function history_changed_fields($before, $after)
 
 /**
  * The changes of one record, newest first. Each has `id`, `action`, `at`,
- * `by`, `run`, `record` (the record before the change) and `changed`, the
- * fields the change touched.
+ * `by`, `run`, `changed` (the fields an update changed) and `record`, the
+ * record before the change.
  */
 function history_list($resource, $uuid)
 {
@@ -110,14 +112,6 @@ function history_list($resource, $uuid)
         if (is_array($entry)) {
             $entries[] = ['id' => $id] + $entry;
         }
-    }
-    // What a change left behind is what the next change found
-    $after = data_exists($resource, $uuid) ? data_read($resource, $uuid) : null;
-    foreach ($entries as $key => $entry) {
-        $entries[$key]['changed'] = $entry['action'] === 'update'
-            ? history_changed_fields($entry['record'] ?? null, $after)
-            : [];
-        $after = $entry['record'] ?? null;
     }
     return $entries;
 }

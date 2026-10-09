@@ -933,13 +933,15 @@ function _data_delete_stale_indexes($resource, $uuid, $old_ls, $new_ls)
 
 /**
  * Keeps the change that is about to happen in the record history, when the
- * resource has one. Called inside the write lock, before the file changes.
+ * resource has one and a person or an agent makes the change. What the site
+ * writes by itself (scheduled tasks, webhooks, visitors' forms) is not kept.
+ * Called inside the write lock, before the file changes.
  *
  * @param array|null $new_ls The record about to be written; null for a delete.
  */
 function _data_history($action, $resource, $uuid, $meta, $new_ls = null)
 {
-    if ($uuid === '.meta') {
+    if ($uuid === '.meta' || _data_actor() === 'anonymous') {
         return;
     }
     require_once __DIR__ . '/history.php';
@@ -950,7 +952,7 @@ function _data_history($action, $resource, $uuid, $meta, $new_ls = null)
     if ($action === 'update' && history_same_record($old_ls, $new_ls)) {
         return;
     }
-    history_capture($action, $resource, $uuid, $old_ls);
+    history_capture($action, $resource, $uuid, $old_ls, $action === 'update' ? history_changed_fields($old_ls, $new_ls) : []);
 }
 
 /** Keeps every record of a resource that is about to be emptied or removed. */
