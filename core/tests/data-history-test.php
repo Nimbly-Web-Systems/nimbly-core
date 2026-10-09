@@ -124,6 +124,29 @@ data_create('articles', 'a2', ['title' => 'Second']);
 data_empty('articles');
 history_test_assert(array_keys(history_deleted('articles')) == ['a1', 'a2'] || array_keys(history_deleted('articles')) == ['a2', 'a1'], 'emptying a resource keeps its records');
 
+// The whole resource, newest first
+$all = history_resource_list('articles');
+history_test_assert(count($all) >= 6 && $all[0]['at'] >= $all[count($all) - 1]['at'], 'the changes of a resource are listed newest first');
+history_test_assert(array_values(array_unique(array_column(array_filter($all, fn($change) => $change['deleted']), 'uuid'))) == ['a1', 'a2']
+    || array_values(array_unique(array_column(array_filter($all, fn($change) => $change['deleted']), 'uuid'))) == ['a2', 'a1'],
+    'with a mark on the change that deleted a record that is still gone');
+history_test_assert(count(history_resource_list('articles', 2)) === 2, 'and no more than asked for');
+
+// Removing for good
+history_test_assert(history_forget('articles', 'a2') > 0 && array_keys(history_deleted('articles')) === ['a1'] && !is_dir(history_path('articles', 'a2')),
+    'a deleted record can be removed for good');
+history_test_assert(history_forget('articles', '../a1') === 0 && history_forget('articles', '') === 0, 'only one record at a time, by its uuid');
+data_create('articles', 'a3', ['title' => 'Third']);
+data_update('articles', 'a3', ['title' => 'Third, changed']);
+data_create('articles', 'a4', ['title' => 'Fourth']);
+data_delete('articles', 'a4');
+history_test_assert(history_forget_deleted('articles') === 2 && history_deleted('articles') === [], 'all deleted records of a resource can be removed for good');
+history_test_assert(count(history_list('articles', 'a3')) === 2, 'the history of records that exist stays');
+history_test_assert(history_forget('articles', 'a3') === 2 && history_list('articles', 'a3') === [] && data_read('articles', 'a3')['title'] === 'Third, changed',
+    'clearing the history of a record leaves the record');
+history_restore('articles', 'a1', 'x');
+data_create('articles', 'a1', ['title' => 'Two']);
+
 // No history where it is off
 data_create('quiet', 'q1', ['title' => 'x']);
 data_update('quiet', 'q1', ['title' => 'y']);

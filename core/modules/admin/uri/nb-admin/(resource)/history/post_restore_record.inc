@@ -2,13 +2,12 @@
 
 load_libraries(['data', 'history', 'get', 'system-messages', 'redirect']);
 
-// A deleted record comes back as it was when it was deleted
+// The button names the record and the change: <uuid>/<change>
 $resource = (string)get_variable('resource-id', '');
-$uuid = (string)filter_input(INPUT_POST, 'record');
-$change = (string)(history_deleted($resource)[$uuid]['id'] ?? '');
+[$uuid, $change] = explode('/', (string)filter_input(INPUT_POST, 'change'), 2) + [1 => ''];
 
 if ($change === '' || history_restore($resource, $uuid, $change) === false) {
-    $GLOBALS['SYSTEM']['validation_errors']['_global'][] = '[#text This record could not be restored.#]';
+    $GLOBALS['SYSTEM']['validation_errors']['_global'][] = '[#text This version could not be restored.#]';
     return;
 }
 system_message('The record has been restored.');

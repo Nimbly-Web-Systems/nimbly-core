@@ -1516,15 +1516,19 @@ as a legacy alias, but new documentation and scripts should use
 
 Every create, update and delete of a record by a logged-in user, an API user or the chat agent is kept: the record as it was before the change, who made the change, when, which fields changed, and for the chat agent the id of its run. A save that changes nothing is not kept, and neither is what the site writes by itself (scheduled tasks, webhooks, forms posted by visitors). Emptying or removing a resource keeps every record it held.
 
-In the admin, the action panel beside a record shows its latest changes, with **All changes** leading to `/nb-admin/<resource>/<uuid>/history`: every change with the fields it touched, and **Restore** to put the record back as it was before that change. A restore replaces the whole record and is itself a change in the list. A record without changes says so. The resource overview links to `/nb-admin/<resource>/deleted`, the deleted records, which can be brought back the same way. Both pages need `edit-<resource>`. The panel block appears wherever a screen renders `[#resource-record-actions#]`.
+In the admin:
 
-The two routes are dynamic: `system:setup` registers them for a new site and `system:repair` for an existing one.
+- The action panel beside a record shows its latest changes; a record without changes says so. The block appears wherever a screen renders `[#resource-record-actions#]`.
+- `/nb-admin/<resource>/<uuid>/history` lists every change of one record with the fields it touched. **Restore** puts the record back as it was before that change: the whole record is replaced, and the restore is itself a change in the list. **Clear history** removes the earlier versions of the record for good.
+- `/nb-admin/<resource>/history`, linked from the resource overview, lists the latest 500 changes of the whole resource, with search and a filter for deleted records. A deleted record can be restored there, or removed for good with **Delete permanently**; **Empty** does that for all deleted records of the resource.
 
-History is stored under `ext/data/.state/.history/<resource>/<uuid>/`, outside Git, so it is not part of a deploy or of `ext:sync`. Changes older than 90 days are removed by the mandatory `history-prune` task. A deleted record therefore stays on disk for up to 90 days; set `"history": false` in the `.meta` of a resource whose deleted records must be gone at once.
+The pages need `edit-<resource>`; removing for good needs `delete-<resource>`. The two routes are dynamic: `system:setup` registers them for a new site and `system:repair` for an existing one.
+
+History is stored under `ext/data/.state/.history/<resource>/<uuid>/`, outside Git, so it is not part of a deploy or of `ext:sync`. Changes older than 90 days are removed by the mandatory `history-prune` task. A deleted record therefore stays on disk for up to 90 days unless someone deletes it permanently; set `"history": false` in the `.meta` of a resource whose deleted records must always be gone at once.
 
 `history` in `.meta` turns it on or off for one resource. Without it, regular resources keep history; `users` (password hashes and tokens) and hidden resources do not, except `.config`, `.content`, `.i18n` and `.navigation`.
 
-In PHP (`load_library('history')`): `history_list($resource, $uuid)`, `history_deleted($resource)`, `history_restore($resource, $uuid, $id)`.
+In PHP (`load_library('history')`): `history_list($resource, $uuid)`, `history_resource_list($resource)`, `history_deleted($resource)`, `history_restore($resource, $uuid, $id)`, `history_forget($resource, $uuid)`.
 
 ### Data caching
 

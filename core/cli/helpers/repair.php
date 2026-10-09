@@ -203,7 +203,7 @@ function repair_core_routes_state(): array
     $missing = [];
     foreach ([
         ['route' => 'nb-admin/roles/(id)', 'order' => 200],
-        ['route' => 'nb-admin/(resource)/deleted', 'order' => 300],
+        ['route' => 'nb-admin/(resource)/history', 'order' => 300],
         ['route' => 'nb-admin/(resource)/(id)/history', 'order' => 300],
     ] as $route) {
         if (!data_exists('.routes', md5($route['route']))) {
@@ -211,13 +211,18 @@ function repair_core_routes_state(): array
         }
     }
 
-    if (empty($missing)) {
+    // Routes core had for a short while; their folders are gone
+    $retired = array_values(array_filter(['nb-admin/(resource)/deleted'], fn($route) => data_exists('.routes', md5($route))));
+
+    if (empty($missing) && empty($retired)) {
         return ['action' => 'ok', 'message' => 'Core routes are registered.'];
     }
     return [
         'action' => 'write',
-        'message' => 'Core routes not registered: ' . implode(', ', array_column($missing, 'route')) . '.',
+        'message' => trim((empty($missing) ? '' : 'Core routes not registered: ' . implode(', ', array_column($missing, 'route')) . '. ')
+            . (empty($retired) ? '' : 'Retired core routes still registered: ' . implode(', ', $retired) . '.')),
         'missing' => $missing,
+        'retired' => $retired,
     ];
 }
 
@@ -226,6 +231,9 @@ function repair_core_routes_apply(array $state): bool
     $done = true;
     foreach ($state['missing'] as $route) {
         $done = data_create('.routes', md5($route['route']), $route) !== false && $done;
+    }
+    foreach ($state['retired'] ?? [] as $route) {
+        $done = data_delete('.routes', md5($route)) > 0 && $done;
     }
     return $done;
 }

@@ -62,7 +62,11 @@ repair_checks_assert($state['action'] === 'write', 'a missing core route is repo
 repair_checks_assert(repair_core_routes_apply($state), 'the route is registered');
 repair_checks_assert(data_read('.routes', md5('nb-admin/roles/(id)'))['order'] === 200, 'with its order');
 repair_checks_assert(data_read('.routes', md5('nb-admin/(resource)/(id)/history'))['order'] === 300
-    && data_exists('.routes', md5('nb-admin/(resource)/deleted')), 'the history routes are registered too');
+    && data_exists('.routes', md5('nb-admin/(resource)/history')), 'the history routes are registered too');
+data_create('.routes', md5('nb-admin/(resource)/deleted'), ['route' => 'nb-admin/(resource)/deleted', 'order' => 300]);
+$state = repair_core_routes_state();
+repair_checks_assert($state['action'] === 'write' && repair_core_routes_apply($state) && !data_exists('.routes', md5('nb-admin/(resource)/deleted')),
+    'a retired route is taken out');
 repair_checks_assert(repair_core_routes_state()['action'] === 'ok', 'registered routes need nothing');
 
 // users email index

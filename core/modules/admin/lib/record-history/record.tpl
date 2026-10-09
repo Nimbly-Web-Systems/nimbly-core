@@ -9,9 +9,11 @@
     <div class="mb-4 flex flex-col items-stretch gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
         <h1 class="text-2xl font-semibold text-neutral-800 md:text-3xl">[#text History#]</h1>
         <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
+            [#_rh.clear#]
             [#_rh.back#]
         </div>
     </div>
+    [#_rh.forget#]
     <form action="[#base-url#]/nb-admin/[#resource-id#]/[#get uuid#]/history" method="post" accept-charset="utf-8"
         class="rounded-box border border-base-300 bg-base-100 p-2 sm:p-3">
         [#form-key restore_record#]

@@ -139,6 +139,46 @@ function history_deleted($resource)
 }
 
 /**
+ * The latest changes of a whole resource, newest first, each as in
+ * history_list() plus `uuid` and `deleted`: true on the change that deleted a
+ * record that is still gone.
+ */
+function history_resource_list($resource, $limit = 500)
+{
+    $dir = history_path($resource);
+    if ($dir === false || !is_dir($dir)) {
+        return [];
+    }
+    // The file names start with the time, so the newest are found without opening a file
+    $ids = [];
+    $latest = [];
+    foreach (scandir($dir) as $uuid) {
+        if ($uuid === '.' || $uuid === '..' || !is_dir($dir . '/' . $uuid)) {
+            continue;
+        }
+        foreach (scandir($dir . '/' . $uuid) as $id) {
+            if ($id[0] !== '.') {
+                $ids[] = $id . '/' . $uuid;
+                $latest[$uuid] = max($latest[$uuid] ?? '', $id);
+            }
+        }
+    }
+    rsort($ids, SORT_STRING);
+    $entries = [];
+    foreach (array_slice($ids, 0, $limit) as $key) {
+        [$id, $uuid] = explode('/', $key, 2);
+        $entry = json_decode((string)@file_get_contents($dir . '/' . $uuid . '/' . $id), true);
+        if (!is_array($entry)) {
+            continue;
+        }
+        $entries[] = ['id' => $id, 'uuid' => $uuid] + $entry + [
+            'deleted' => ($entry['action'] ?? '') === 'delete' && $latest[$uuid] === $id && !data_exists($resource, $uuid),
+        ];
+    }
+    return $entries;
+}
+
+/**
  * Puts a record back as it was before the given change. The whole record is
  * replaced, so a field added later is gone again; the replaced version is
  * itself kept as a change.
@@ -173,6 +213,36 @@ function history_restore($resource, $uuid, $id)
     } finally {
         _data_unlock($resource);
     }
+}
+
+/**
+ * Removes everything kept about one record, for good. For a deleted record
+ * that is the record itself.
+ *
+ * @return int Number of changes removed.
+ */
+function history_forget($resource, $uuid)
+{
+    $dir = history_path($resource, $uuid);
+    if ($dir === false || (string)$uuid === '' || !is_dir($dir)) {
+        return 0;
+    }
+    $removed = 0;
+    foreach (array_diff(scandir($dir), ['.', '..']) as $id) {
+        $removed += (int)@unlink($dir . '/' . $id);
+    }
+    @rmdir($dir);
+    return $removed;
+}
+
+/** Removes every deleted record of a resource for good. Returns how many records. */
+function history_forget_deleted($resource)
+{
+    $records = 0;
+    foreach (array_keys(history_deleted($resource)) as $uuid) {
+        $records += history_forget($resource, $uuid) > 0 ? 1 : 0;
+    }
+    return $records;
 }
 
 /**
