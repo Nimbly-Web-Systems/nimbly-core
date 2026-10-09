@@ -11,6 +11,7 @@
 /node_modules/
 .sass-cache/
 .htaccess
+*.before-repair
 .DS_Store
 .claude
 css/tw/out.css
