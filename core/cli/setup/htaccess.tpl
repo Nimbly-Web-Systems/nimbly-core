@@ -78,6 +78,7 @@ RewriteCond %{ENV:IMG_RATIO} !^$
 RewriteCond %{REQUEST_URI} ^/%%REWRITE_BASE_PATH%%img/(.*)
 RewriteCond ext/static/_thumb_/img/%1%{ENV:IMG_RATIO} -F
 Header set Content-Type "image/webp" "expr=%{REQUEST_URI} =~ m#/ext/static/_thumb_/img/# && -z %{CONTENT_TYPE}"
+Header set Cache-Control "max-age=290304000, public" "expr=%{REQUEST_URI} =~ m#/ext/static/_thumb_/img/#"
 RewriteRule ^ ext/static/_thumb_/img/%1%{ENV:IMG_RATIO} [END]
 
 # rewrite: use EXT static if available for the requested file
