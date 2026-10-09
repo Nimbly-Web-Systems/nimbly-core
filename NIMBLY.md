@@ -2894,10 +2894,17 @@ Thumbnails are cached in `ext/static/_thumb_`. Mount a second shared volume
 there as well: otherwise each container makes its own, and the thumbnails of a
 deleted image stay behind on the containers that did not handle the delete.
 
+Every container runs `system:setup` when it starts and then makes `www-data`
+the owner of the site's files, the shared volume included. So the volume must
+let root change owners (on NFS: `no_root_squash`, or an export already owned
+by `www-data`), and a volume with very many files makes a start slow. Two
+containers may start on an empty volume at the same moment.
+
 `core/tests/multi-node.sh` tries this on a workstation: it starts a throwaway
 site in two containers on one folder (`docker/dev/docker-compose.nodes.yml`)
 and checks the login, concurrent writes to one record, the scheduler and the
-request statistics. It has run on a local disk only, not on a network volume.
+request statistics. It has run on a local disk only, not on a network volume
+and not behind a real load balancer.
 
 ### Manual VPS deployment
 

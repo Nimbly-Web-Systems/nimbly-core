@@ -66,19 +66,32 @@ record="$(cat "$site/ext/data/notes/n1")"
 grep -q '"title":"first"' <<<"$record" && grep -q '"wa":150' <<<"$record" && grep -q '"wb":150' <<<"$record" || fail "an update was lost: $record"
 echo "ok   writes from both nodes to one record are all kept"
 
-# 3. Both nodes start the scheduler in the same second, five times: every task runs once.
-runs=""
-for round in 1 2 3 4 5; do
+# 3. Both nodes start the scheduler while a task of two seconds is due: it runs once.
+mkdir -p "$site/ext/cli"
+cat > "$site/ext/cli/commands.php" <<'PHP'
+<?php
+return ['nodes:slow' => ['file' => 'ext/cli/nodes-slow.php', 'desc' => 'Two seconds of work', 'public' => false]];
+PHP
+cat > "$site/ext/cli/nodes-slow.php" <<'PHP'
+<?php
+sleep(2);
+file_put_contents(BASE_DIR . 'ext/data/.tmp/nodes-slow.log', gethostname() . "\n", FILE_APPEND | LOCK_EX);
+PHP
+cat > "$site/ext/cli/schedule.inc" <<'PHP'
+<?php
+return [['id' => 'nodes-slow', 'command' => 'nodes:slow', 'every' => 'minute']];
+PHP
+for round in 1 2 3; do
     rm -f "$site/ext/data/.state/schedule"
     node node-a php core/cli/nimbly.php schedule:run > "$site/schedule-a.txt" 2>&1 &
     node node-b php core/cli/nimbly.php schedule:run > "$site/schedule-b.txt" 2>&1 &
     wait
-    twice="$(cat "$site/schedule-a.txt" "$site/schedule-b.txt" | awk '$1 == "run" { print $2 }' | sort | uniq -d)"
-    [ -z "$twice" ] || fail "scheduled twice in round $round: $twice"
-    runs="$runs$(cat "$site/schedule-a.txt" "$site/schedule-b.txt" | awk '$1 == "run"' | wc -l) "
+    grep -qh "Schedule already running" "$site/schedule-a.txt" "$site/schedule-b.txt" \
+        || fail "round $round: the two scheduler runs did not overlap, or both ran: $(cat "$site/schedule-a.txt" "$site/schedule-b.txt")"
+    [ "$(wc -l < "$site/ext/data/.tmp/nodes-slow.log")" = "$round" ] \
+        || fail "round $round: the task ran $(wc -l < "$site/ext/data/.tmp/nodes-slow.log") times in all, expected $round"
 done
-[ "$(tr -d ' 0' <<<"$runs")" != "" ] || fail "the scheduler ran nothing"
-echo "ok   a scheduled task runs on one node only (tasks run per round: $runs)"
+echo "ok   a scheduled task that is due on both nodes runs on one"
 
 # 4. Request statistics: both nodes append to the one day file.
 before="$(cat "$site"/ext/data/.tmp/stats/running-*.log 2>/dev/null | wc -l)"
