@@ -2713,6 +2713,20 @@ Every site answers `/health` for a load balancer or container check: `200` with
 `ok` when PHP runs and `ext/data` can be written, `503` otherwise. The answer is
 never cached. An `ext/uri/health` route replaces it.
 
+Behind a load balancer that ends TLS, name its address in `.env`:
+
+```env
+TRUSTED_PROXIES=10.0.0.0/8
+```
+
+Addresses and ranges, separated by commas. A request that comes straight from
+one of them gets its scheme, port and visitor address from `X-Forwarded-Proto`,
+`X-Forwarded-Port` and `X-Forwarded-For`, so the session cookie is `secure`,
+absolute links start with `https://` and the login pause and the statistics
+count the visitor rather than the balancer. From any other address, and
+without the setting, these headers are ignored. The web server's own access
+log still shows the balancer; that is `mod_remoteip` in the server config.
+
 ### Bots
 
 Bots are welcome when they follow `robots.txt`, ask only for addresses the

@@ -37,6 +37,9 @@ foreach ($SYSTEM['env_paths'] as $env_path) {
         break;
     }
 }
+load_library('env');
+load_library('trusted-proxy');
+trusted_proxy_apply();
 load_library('fatal-alert');
 fatal_alert_register();
 load_library('stats');
