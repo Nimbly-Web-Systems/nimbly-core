@@ -473,7 +473,8 @@ function _data_read_cache($op, $resource, $setting)
 
     $cache_time = filemtime($cache_file);
 
-    if ($cache_time < $modified) {
+    // Times have whole seconds: a cache written in the second of the last change may have missed it.
+    if ($cache_time <= $modified) {
         @unlink($cache_file);
         return false;
     }
@@ -1254,30 +1255,29 @@ function data_modified($resource, $uuid = null)
 }
 
 /**
- * Returns the newest modification time for files that make up a resource.
+ * Returns the newest modification time of the folders that make up a resource.
  *
- * Resource collections may be changed outside the data API by Git or a
- * deployment. A directory's own mtime does not change when an existing record
- * is rewritten, so collection caches must inspect the record files. Data
- * indexes are derived state and may be unreadable by the current process; they
- * do not affect the resource contents and are skipped.
+ * A record is never rewritten in place: the data API and Git both put a new
+ * file where the old one was, which changes the time of the folder it is in.
+ * So the folders tell when a collection changed, and the check costs one
+ * lookup per folder instead of one per record, which matters on a network
+ * volume. `.meta` is edited by hand and is looked at itself. A record edited
+ * in place by hand is not seen until the next write to the resource.
  *
  * @param string $dir Resource or split-directory path.
  * @return int Newest Unix modification timestamp.
  */
 function _data_modified_recursive($dir)
 {
-    $modified = filemtime($dir) ?: 0;
+    $modified = max(filemtime($dir) ?: 0, @filemtime("$dir/.meta") ?: 0);
 
     foreach (scandir($dir) as $entry) {
-        if ($entry === '.' || $entry === '..' || $entry === '.index') {
+        if (strlen($entry) !== 2 || $entry[0] === '.') {
             continue;
         }
 
         $path = "$dir/$entry";
-        if (is_file($path)) {
-            $modified = max($modified, filemtime($path) ?: 0);
-        } elseif (is_dir($path) && strlen($entry) === 2) {
+        if (is_dir($path)) {
             $modified = max($modified, _data_modified_recursive($path));
         }
     }
