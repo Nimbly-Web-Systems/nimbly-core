@@ -37,6 +37,10 @@ RUN mkdir -p ext/data && chown -R www-data:www-data /var/www/nimbly
 
 EXPOSE 80
 
+# The site's own /health: PHP runs and ext/data can be written.
+HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
+    CMD php -r 'exit(trim((string)@file_get_contents("http://127.0.0.1/health")) === "ok" ? 0 : 1);'
+
 COPY docker/prod/run.sh /run.sh
 RUN chmod 755 /run.sh
 CMD ["/run.sh"]

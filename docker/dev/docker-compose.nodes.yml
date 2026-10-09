@@ -1,0 +1,20 @@
+# Two identical containers on one site folder, to try a site on several nodes.
+# Used by core/tests/multi-node.sh, which makes the throwaway site first.
+x-node: &node
+  build:
+    context: ../..
+    dockerfile: docker/dev/Dockerfile
+  image: ${NIMBLY_NODES_IMAGE:-dev-nimbly}
+  working_dir: /var/www/nimbly
+  volumes:
+    - ${NIMBLY_NODES_SITE:?set NIMBLY_NODES_SITE to the site folder}:/var/www/nimbly
+
+services:
+  node-a:
+    <<: *node
+    ports:
+      - ${NIMBLY_NODES_PORT_A:-8091}:80
+  node-b:
+    <<: *node
+    ports:
+      - ${NIMBLY_NODES_PORT_B:-8092}:80

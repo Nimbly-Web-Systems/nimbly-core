@@ -2844,6 +2844,61 @@ runs `system:setup` at startup and runs the scheduler every minute. In live
 editing mode, make sure `ext:sync` has pushed current production data before
 replacing the container.
 
+### Several containers
+
+A site can run in several identical containers behind a load balancer. There is
+no setting for it: everything a site remembers is a file under `ext/`
+(records, uploads, sessions, jobs, scheduler state, request statistics,
+caches), so the containers only have to share that folder.
+
+- **One volume.** Mount the same volume at `/var/www/nimbly/ext/data` in every
+  container. With live editing, mount the whole `ext/` instead, so there is one
+  Git checkout for `ext:sync` and not one per container. The volume must
+  support file locks (`flock`): NFSv4 and Amazon EFS do.
+- **Same `.env`.** Every container gets the same `PEPPER` and settings.
+- **Load balancer.** Point its check at `/health` and set `TRUSTED_PROXIES`
+  (above) to its address. No sticky sessions are needed: a login on one
+  container is valid on the others.
+- **Scheduler.** Every container runs it each minute; a lock on the shared
+  volume lets one of them do the work, so a task runs once.
+- **Writes.** Changes to the records of a resource happen one at a time across
+  all containers, so two editors saving the same record lose nothing.
+
+```yaml
+services:
+  web:
+    image: ghcr.io/your-org/your-nimbly-app:main
+    restart: unless-stopped
+    env_file:
+      - .env.prod
+    deploy:
+      replicas: 2
+    volumes:
+      - nimbly-data:/var/www/nimbly/ext/data
+      - nimbly-thumbs:/var/www/nimbly/ext/static/_thumb_
+
+volumes:
+  nimbly-data:
+    driver_opts:
+      type: nfs
+      o: addr=10.0.0.10,nfsvers=4.1,rw
+      device: ":/nimbly/example/data"
+  nimbly-thumbs:
+    driver_opts:
+      type: nfs
+      o: addr=10.0.0.10,nfsvers=4.1,rw
+      device: ":/nimbly/example/thumbs"
+```
+
+Thumbnails are cached in `ext/static/_thumb_`. Mount a second shared volume
+there as well: otherwise each container makes its own, and the thumbnails of a
+deleted image stay behind on the containers that did not handle the delete.
+
+`core/tests/multi-node.sh` tries this on a workstation: it starts a throwaway
+site in two containers on one folder (`docker/dev/docker-compose.nodes.yml`)
+and checks the login, concurrent writes to one record, the scheduler and the
+request statistics. It has run on a local disk only, not on a network volume.
+
 ### Manual VPS deployment
 
 Manual VPS deployment is supported for self-managed installations. The release
