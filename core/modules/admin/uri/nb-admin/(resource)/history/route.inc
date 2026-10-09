@@ -7,14 +7,9 @@ if ($parts === false || count($parts) !== 1) {
     return;
 }
 
-$resource = $parts[0];
-
-load_library('data');
-load_library('history');
-if (!data_exists($resource) || !history_enabled($resource)) {
+load_library('record-history-link');
+if (record_history_route($parts[0]) === '') {
     return;
 }
-
-set_variable('resource-id', $resource);
 
 router_accept();

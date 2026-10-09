@@ -8,5 +8,8 @@
     <div class="text-xs text-neutral-500 font-normal">
         [#text Updated#]: [#fmt [#data-last-update [#item.key#]#] ago#] 
     </div>
-    [#feature-cond features=create-[#item.key#] tpl=data-resource-add#]
+    <div class="flex flex-wrap gap-x-4">
+        [#feature-cond features=create-[#item.key#] tpl=data-resource-add#]
+        [#record-history-link [#item.key#]#]
+    </div>
 </li>

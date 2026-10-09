@@ -2,7 +2,7 @@
     <nav class="mb-2 flex items-center gap-1.5 text-xs font-medium text-neutral-500" aria-label="Breadcrumb">
         [#breadcrumb-home#]
         <span aria-hidden="true">/</span>
-        <a class="hover:text-cnormal hover:underline" href="[#base-url#]/nb-admin/[#resource-id#]">[#resource-name [#resource-id#] plural#]</a>
+        <a class="hover:text-cnormal hover:underline" href="[#base-url#]/[#get history-home#]">[#resource-name [#resource-id#] plural#]</a>
         <span aria-hidden="true">/</span>
         <span class="text-neutral-700">[#text History#]</span>
     </nav>
@@ -14,7 +14,7 @@
         </div>
     </div>
     [#_rh.forget#]
-    <form action="[#base-url#]/nb-admin/[#resource-id#]/[#get uuid#]/history" method="post" accept-charset="utf-8"
+    <form action="[#base-url#]/nb-admin/[#get history-slug#]/[#get uuid#]/history" method="post" accept-charset="utf-8"
         class="rounded-box border border-base-300 bg-base-100 p-2 sm:p-3">
         [#form-key restore_record#]
         <div class="overflow-x-auto">

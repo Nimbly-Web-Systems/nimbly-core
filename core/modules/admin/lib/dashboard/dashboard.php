@@ -203,7 +203,17 @@ function dashboard_stats_hours(array $days): array
 
 function dashboard_data_section(): string
 {
-    if (empty(get_variable('data.user-resources'))) {
+    // Page text, page settings and menus are no resources in this list; their history is reached here
+    load_library('record-history-link');
+    $links = '';
+    foreach (record_history_content_links() as $name => $link) {
+        set_variable('_rh.name', $name);
+        set_variable('_rh.link', $link);
+        $links .= run_buffered(dirname(__FILE__, 2) . '/record-history/dashboard-content-link.tpl');
+    }
+    set_variable('_dash.content_history_links', $links);
+    set_variable('_dash.content_history', $links === '' ? '' : run_buffered(dirname(__FILE__) . '/content-history.tpl'));
+    if (empty(get_variable('data.user-resources')) && $links === '') {
         return '';
     }
     return run_buffered(dirname(__FILE__) . '/data-band.tpl');

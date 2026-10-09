@@ -7,7 +7,7 @@
  */
 
 /** Hidden resources with content an editor changes; the other hidden ones are machine state. */
-const HISTORY_HIDDEN_RESOURCES = ['.config', '.content', '.i18n', '.navigation'];
+const HISTORY_HIDDEN_RESOURCES = ['.content', '.config', '.navigation'];
 
 /**
  * Whether changes to a resource are recorded. `history` in `.meta` decides;

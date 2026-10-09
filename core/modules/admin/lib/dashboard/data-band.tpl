@@ -3,4 +3,5 @@
     <ul class="relative flex max-h-[260px] flex-wrap items-start justify-start gap-x-6 gap-y-4 overflow-y-auto text-sm">
         [#repeat data.user-resources tpl=data-resource-item#]
     </ul>
+    [#_dash.content_history#]
 </section>

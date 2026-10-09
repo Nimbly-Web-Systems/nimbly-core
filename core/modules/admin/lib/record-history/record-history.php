@@ -6,6 +6,7 @@ load_library('set');
 load_library('get');
 load_library('fmt');
 load_library('access');
+load_library('record-history-link');
 
 /**
  * On a record's history page the changes of that record, each with a restore
@@ -24,7 +25,7 @@ function record_history_sc($params)
     $here = dirname(__FILE__);
 
     if (in_array('resource', (array)$params, true)) {
-        set_variable('_rh.action', '[#base-url#]/nb-admin/' . $resource . '/history');
+        set_variable('_rh.action', '[#base-url#]/nb-admin/' . record_history_slug($resource) . '/history');
         foreach (history_resource_list($resource) as $change) {
             record_history_row_set($resource, $change['uuid'], $change, $fields);
             set_variable('_row.deleted', $change['deleted'] ? '1' : '');
@@ -49,9 +50,9 @@ function record_history_sc($params)
         $rows .= run_buffered(dirname(__FILE__) . '/row.tpl');
         clear_variable_dot('_row');
     }
-    set_variable('_rh.back', run_buffered(dirname(__FILE__) . (data_exists($resource, $uuid) ? '/record-link.tpl' : '/deleted-link.tpl')));
+    set_variable('_rh.back', run_buffered(dirname(__FILE__) . (data_exists($resource, $uuid) && $resource[0] !== '.' ? '/record-link.tpl' : '/deleted-link.tpl')));
     set_variable('_rh.rows', $rows);
-    set_variable('_rh.action', '[#base-url#]/nb-admin/' . $resource . '/' . htmlspecialchars($uuid, ENT_QUOTES, 'UTF-8') . '/history');
+    set_variable('_rh.action', '[#base-url#]/nb-admin/' . record_history_slug($resource) . '/' . htmlspecialchars($uuid, ENT_QUOTES, 'UTF-8') . '/history');
     set_variable('_rh.forget', $may_forget && $rows !== '' ? run_buffered($here . '/forget-form.tpl') : '');
     set_variable('_rh.clear', $may_forget && $rows !== '' ? run_buffered($here . '/clear-button.tpl') : '');
     set_variable('_rh.empty', $rows === '' ? run_buffered($here . '/record-empty-row.tpl') : '');

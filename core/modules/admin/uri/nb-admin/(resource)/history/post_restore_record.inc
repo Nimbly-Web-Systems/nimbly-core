@@ -1,6 +1,6 @@
 <?php
 
-load_libraries(['data', 'history', 'get', 'system-messages', 'redirect']);
+load_libraries(['data', 'history', 'get', 'system-messages', 'redirect', 'record-history-link']);
 
 // The button names the record and the change: <uuid>/<change>
 $resource = (string)get_variable('resource-id', '');
@@ -11,4 +11,4 @@ if ($change === '' || history_restore($resource, $uuid, $change) === false) {
     return;
 }
 system_message('The record has been restored.');
-redirect('nb-admin/' . $resource . '/' . $uuid);
+redirect(record_history_record_url($resource, $uuid));

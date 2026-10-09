@@ -1,5 +1,5 @@
 [#access feature=edit-[#resource-id#]#]
-[#set _resource_url="[#base-url#]/nb-admin/[#resource-id#]"#]
+[#set _resource_url="[#base-url#]/[#get history-home#]"#]
 [#set page-title="[#text History#] · [#resource-name [#resource-id#] plural#]"#]
 [#post#]
 [#html#]

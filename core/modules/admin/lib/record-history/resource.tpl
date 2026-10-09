@@ -3,13 +3,13 @@
     <nav class="mb-2 flex items-center gap-1.5 text-xs font-medium text-neutral-500" aria-label="Breadcrumb">
         [#breadcrumb-home#]
         <span aria-hidden="true">/</span>
-        <a class="hover:text-cnormal hover:underline" href="[#base-url#]/nb-admin/[#resource-id#]">[#resource-name [#resource-id#] plural#]</a>
+        <a class="hover:text-cnormal hover:underline" href="[#base-url#]/[#get history-home#]">[#resource-name [#resource-id#] plural#]</a>
         <span aria-hidden="true">/</span>
         <span class="text-neutral-700">[#text History#]</span>
     </nav>
     <div class="mb-4 flex flex-col items-stretch gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
         <h1 class="text-2xl font-semibold text-neutral-800 md:text-3xl">[#text History#]</h1>
-        <a class="[#btn-class-secondary#] inline-flex min-h-11 items-center justify-center sm:min-h-0" href="[#base-url#]/nb-admin/[#resource-id#]">[#text Back to overview#]</a>
+        <a class="[#btn-class-secondary#] inline-flex min-h-11 items-center justify-center sm:min-h-0" href="[#base-url#]/[#get history-home#]">[#text Back to overview#]</a>
     </div>
     [#_rh.forget#]
     <div class="mb-4 rounded-box border border-base-300 bg-base-100 p-2 sm:p-3">
@@ -27,7 +27,7 @@
             <span class="sm:ml-auto" x-show="only === 'deleted'" x-cloak>[#_rh.clear#]</span>
         </div>
     </div>
-    <form action="[#base-url#]/nb-admin/[#resource-id#]/history" method="post" accept-charset="utf-8"
+    <form action="[#base-url#]/nb-admin/[#get history-slug#]/history" method="post" accept-charset="utf-8"
         class="rounded-box border border-base-300 bg-base-100 p-2 sm:p-3">
         [#form-key restore_record#]
         <div class="overflow-x-auto">

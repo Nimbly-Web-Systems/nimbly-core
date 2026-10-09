@@ -1350,7 +1350,7 @@ the resource retains simple scalar coordinates:
 | `upsert` | Boolean. When `true`, `data_update()` (and therefore `PUT /api/v1/{resource}/{uuid}`) creates a missing record instead of failing. Use only for key-value-style resources where "record may not exist yet" is the normal, expected state (e.g. core's `.config`, used for per-page settings) — not for regular content resources, where updating a non-existent record should stay an error. |
 | `self_edit` | `users` only. Comma-separated fields a user may save on their own record through `PUT /api/v1/users/{uuid}`. Default: `name`. Anyone who may edit users (`edit-users`, `manage-users`, admin) saves every field. |
 | `hidden` | Comma-separated fields the API never returns: not in a list, a single record, the answer to a create or update, or an export. They are still stored and saved as usual; read them in PHP with `data_read()`. Fields named in `encrypt` are always hidden. For `users`, `password`, `salt`, `api`, `password_reset_token` and `change_email_token` are hidden by core, whatever the `.meta` says. |
-| `history` | Boolean. Whether changes to the resource's records are kept, see Record history below. Default: on for regular resources, off for `users` and for hidden resources other than `.config`, `.content`, `.i18n` and `.navigation`. |
+| `history` | Boolean. Whether changes to the resource's records are kept, see Record history below. Default: on for regular resources, off for `users` and for hidden resources other than `.content`, `.config` and `.navigation`. |
 | `sitemap` | Lazy sitemap declaration. `url` is a string or language-keyed URL template; optional `published` names a publication field and optional `each` names one array field to expand. Rendering exposes `record`, `language`, and `sitemap_item`. |
 
 ### Resource lifecycle events
@@ -1522,11 +1522,13 @@ In the admin:
 - `/nb-admin/<resource>/<uuid>/history` lists every change of one record with the fields it touched. **Restore** puts the record back as it was before that change: the whole record is replaced, and the restore is itself a change in the list. **Clear history** removes the earlier versions of the record for good.
 - `/nb-admin/<resource>/history`, linked from the resource overview, lists the latest 500 changes of the whole resource, with search and a filter for deleted records. A deleted record can be restored there, or removed for good with **Delete permanently**; **Empty** does that for all deleted records of the resource.
 
+The dashboard's data panel has a **History** link per resource, and under it the history of what has no resource screen: page text edited on the page (`.content`), page settings (`.config`) and menus (`.navigation`).
+
 The pages need `edit-<resource>`; removing for good needs `delete-<resource>`. The two routes are dynamic: `system:setup` registers them for a new site and `system:repair` for an existing one.
 
 History is stored under `ext/data/.state/.history/<resource>/<uuid>/`, outside Git, so it is not part of a deploy or of `ext:sync`. Changes older than 90 days are removed by the mandatory `history-prune` task. A deleted record therefore stays on disk for up to 90 days unless someone deletes it permanently; set `"history": false` in the `.meta` of a resource whose deleted records must always be gone at once.
 
-`history` in `.meta` turns it on or off for one resource. Without it, regular resources keep history; `users` (password hashes and tokens) and hidden resources do not, except `.config`, `.content`, `.i18n` and `.navigation`.
+`history` in `.meta` turns it on or off for one resource. Without it, regular resources keep history; `users` (password hashes and tokens) and hidden resources do not, except `.content`, `.config` and `.navigation`.
 
 In PHP (`load_library('history')`): `history_list($resource, $uuid)`, `history_resource_list($resource)`, `history_deleted($resource)`, `history_restore($resource, $uuid, $id)`, `history_forget($resource, $uuid)`.
 

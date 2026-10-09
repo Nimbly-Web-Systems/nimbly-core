@@ -7,17 +7,15 @@ if ($parts === false || count($parts) !== 2) {
     return;
 }
 
-[$resource, $uuid] = $parts;
+$uuid = $parts[1];
 
-load_library('data');
-load_library('history');
+load_library('record-history-link');
+$resource = record_history_route($parts[0]);
 // A deleted record has a history too; a record that never existed has not
-if (!data_exists($resource) || !history_enabled($resource) || $uuid[0] === '.'
-    || (!data_exists($resource, $uuid) && history_list($resource, $uuid) === [])) {
+if ($resource === '' || $uuid[0] === '.' || (!data_exists($resource, $uuid) && history_list($resource, $uuid) === [])) {
     return;
 }
 
-set_variable('resource-id', $resource);
 set_variable('uuid', $uuid);
 
 router_accept();
