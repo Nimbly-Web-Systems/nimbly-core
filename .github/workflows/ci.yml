@@ -125,6 +125,7 @@ jobs:
         run: ./nimbly --docker system:setup
 
       - name: Run E2E tests
+        timeout-minutes: 10
         run: ./nimbly --docker test:run
 
       - name: Upload test report

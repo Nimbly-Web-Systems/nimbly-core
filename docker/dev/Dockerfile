@@ -4,7 +4,7 @@ RUN userdel -r ubuntu || true
 
 # Install required software and modules
 ENV DEBIAN_FRONTEND=noninteractive
-RUN apt-get -y update && \
+RUN apt-get -y -o APT::Update::Error-Mode=any update && \
     apt-get -y install --no-install-recommends \
         apache2 \
         ca-certificates \
