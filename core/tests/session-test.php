@@ -44,6 +44,8 @@ try {
     $_COOKIE['nb_session_id'] = 'abc123';
     $from('POST', ['HTTP_SEC_FETCH_SITE' => 'cross-site']);
     session_test_assert(session_exists() === false, 'a write from another site found the session');
+    session_sc();
+    session_test_assert(session_status() !== PHP_SESSION_ACTIVE, 'a write from another site opened the session');
     $from('POST', ['HTTP_SEC_FETCH_SITE' => 'same-origin']);
     session_test_assert(session_exists() === true, 'a write from the site itself did not find the session');
     unset($_COOKIE['nb_session_id'], $_SERVER['HTTP_SEC_FETCH_SITE'], $_SERVER['HTTP_ORIGIN']);

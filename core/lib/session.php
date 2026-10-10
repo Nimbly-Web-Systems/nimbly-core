@@ -10,6 +10,11 @@ $GLOBALS['SYSTEM']['session_path'] = $GLOBALS['SYSTEM']['file_base'] . 'ext/data
  */
 function session_sc() {
 
+    // A change started by another site never opens the visitor's session.
+    if (session_status() !== PHP_SESSION_ACTIVE && session_request_from_elsewhere()) {
+        return;
+    }
+
     //1. initialize session
     static $session_started = false;
     if ($session_started) {
