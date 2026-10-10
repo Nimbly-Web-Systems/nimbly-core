@@ -41,6 +41,14 @@ fi
 php /var/www/nimbly/core/cli/nimbly.php system:setup
 chown -R www-data:www-data /var/www/nimbly
 
+# Behind a load balancer (TRUSTED_PROXIES in .env): Apache's own log shows the visitor too.
+php /var/www/nimbly/core/cli/nimbly.php host:proxy-conf > /etc/apache2/conf-available/nimbly-proxy.conf || true
+if [ -s /etc/apache2/conf-available/nimbly-proxy.conf ]; then
+    a2enmod -q remoteip && a2enconf -q nimbly-proxy
+else
+    a2disconf -q nimbly-proxy 2>/dev/null || true
+fi
+
 mkdir -p /run/php
 /usr/local/sbin/php-fpm -F &
 

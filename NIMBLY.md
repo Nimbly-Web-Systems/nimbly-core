@@ -2755,8 +2755,22 @@ one of them gets its scheme, port and visitor address from `X-Forwarded-Proto`,
 `X-Forwarded-Port` and `X-Forwarded-For`, so the session cookie is `secure`,
 absolute links start with `https://` and the login pause and the statistics
 count the visitor rather than the balancer. From any other address, and
-without the setting, these headers are ignored. The web server's own access
-log still shows the balancer; that is `mod_remoteip` in the server config.
+without the setting, these headers are ignored.
+
+The web server's own access log, and what reads it (the bot rules below), need
+the visitor's address as well. The container images arrange that at start from
+the same setting. On a server of your own, enable `mod_remoteip` and put the
+lines this prints in the Apache server config (not in `.htaccess`), again after
+a change of the setting:
+
+```bash
+sudo a2enmod remoteip
+./nimbly host:proxy-conf
+```
+
+A ban by address stops nothing behind a load balancer: the connection comes
+from the balancer. Have the balancer or its firewall refuse the addresses the
+rules find.
 
 ### Bots
 

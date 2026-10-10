@@ -6,11 +6,17 @@
  * the scheme, port and visitor address are taken from the forwarded headers,
  * once, so every later reader of $_SERVER gets the visitor's request.
  * Without TRUSTED_PROXIES, or from any other address, the headers are ignored.
+ *
+ * A web server that puts the visitor in REMOTE_ADDR itself (mod_remoteip) names
+ * the address it was called from in CONN_REMOTE_ADDR. That address is the one
+ * checked then, and the visitor address stays the web server's: what is left in
+ * X-Forwarded-For is whatever the client sent.
  */
 function trusted_proxy_apply(): void
 {
     $trusted = trusted_proxy_list((string)env('TRUSTED_PROXIES', ''));
-    $peer = (string)($_SERVER['REMOTE_ADDR'] ?? '');
+    $connection = (string)($_SERVER['CONN_REMOTE_ADDR'] ?? '');
+    $peer = $connection !== '' ? $connection : (string)($_SERVER['REMOTE_ADDR'] ?? '');
     if (!$trusted || !trusted_proxy_matches($peer, $trusted)) {
         return;
     }
@@ -24,6 +30,10 @@ function trusted_proxy_apply(): void
         }
         $port = trim(explode(',', (string)($_SERVER['HTTP_X_FORWARDED_PORT'] ?? ''))[0]);
         $_SERVER['SERVER_PORT'] = ctype_digit($port) ? $port : ($proto === 'https' ? '443' : '80');
+    }
+
+    if ($connection !== '') {
+        return;
     }
 
     // Read from the right: the last address was added by our own proxy, the first is whatever the client sent.
@@ -56,6 +66,22 @@ function trusted_proxy_list(string $value): array
         $list[] = [$packed, $bits === null ? $max : (int)$bits];
     }
     return $list;
+}
+
+/** The mod_remoteip lines for Apache that go with a TRUSTED_PROXIES value; empty without a valid address. */
+function trusted_proxy_apache_config(string $value): string
+{
+    $lines = [];
+    foreach (trusted_proxy_list($value) as [$network, $bits]) {
+        // Apache wants the start of a range: 10.1.2.3/8 becomes 10.0.0.0/8.
+        $mask = str_pad(str_repeat("\xFF", intdiv($bits, 8)) . ($bits % 8 ? chr(0xFF << (8 - $bits % 8) & 0xFF) : ''), strlen($network), "\0");
+        $lines[] = 'RemoteIPInternalProxy ' . inet_ntop($network & $mask) . '/' . $bits;
+    }
+    if (!$lines) {
+        return '';
+    }
+    return "RemoteIPHeader X-Forwarded-For\n" . implode("\n", $lines) . "\n"
+        . 'SetEnvIfExpr "%{CONN_REMOTE_ADDR} =~ /(.+)/" CONN_REMOTE_ADDR=$1' . "\n";
 }
 
 function trusted_proxy_matches(string $address, array $trusted): bool

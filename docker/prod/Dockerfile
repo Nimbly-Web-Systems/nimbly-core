@@ -24,6 +24,7 @@ RUN PHP_VER=$(php -r 'echo PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION;') && \
     ln -sf /usr/sbin/php-fpm${PHP_VER} /usr/local/sbin/php-fpm && \
     sed -i "s|listen = /run/php/php.*-fpm.sock|listen = 127.0.0.1:9000|" /etc/php/${PHP_VER}/fpm/pool.d/www.conf && \
     sed -i "s|^pm.max_children = .*|pm.max_children = 20|" /etc/php/${PHP_VER}/fpm/pool.d/www.conf && \
+    sed -i "s|^;clear_env = no|clear_env = no|" /etc/php/${PHP_VER}/fpm/pool.d/www.conf && \
     cp /tmp/php-nimbly.ini /etc/php/${PHP_VER}/fpm/conf.d/99-nimbly.ini && \
     a2dismod mpm_prefork || true && \
     a2enmod mpm_event proxy proxy_fcgi rewrite expires headers && \

@@ -72,6 +72,23 @@ proxy_assert($server['REMOTE_ADDR'] === '2001:db8::1', 'IPv6 proxies and visitor
 $server = proxy_test_request('fd00:1::/32', ['REMOTE_ADDR' => 'fd00:2::7'] + $forwarded);
 proxy_assert($server['REMOTE_ADDR'] === 'fd00:2::7', 'an IPv6 address outside the range is not a proxy');
 
+// A web server that already put the visitor in REMOTE_ADDR names the address it was called from.
+$remoteip = ['REMOTE_ADDR' => '203.0.113.9', 'CONN_REMOTE_ADDR' => '10.0.0.5', 'HTTP_X_FORWARDED_FOR' => '1.2.3.4', 'HTTP_X_FORWARDED_PROTO' => 'https'];
+$server = proxy_test_request('10.0.0.0/8', $remoteip);
+proxy_assert($server['HTTPS'] === 'on' && $server['SERVER_PORT'] === '443', 'the scheme is taken from the header when the web server was called by the proxy');
+proxy_assert($server['REMOTE_ADDR'] === '203.0.113.9', 'the visitor address of the web server stays; the rest of the header is the client\'s');
+$server = proxy_test_request('10.0.0.0/8', ['CONN_REMOTE_ADDR' => '198.51.100.7', 'REMOTE_ADDR' => '10.0.0.5'] + $remoteip);
+proxy_assert(empty($server['HTTPS']) && $server['REMOTE_ADDR'] === '10.0.0.5', 'a web server called from an unknown address changes nothing');
+
+// The same list as Apache lines.
+proxy_assert(trusted_proxy_apache_config('') === '' && trusted_proxy_apache_config('nonsense, 10.0.0.0/99') === '', 'no valid address gives no Apache lines');
+$config = trusted_proxy_apache_config('10.1.2.3/8, nonsense, 192.168.1.7, fd00:1:2::7/32');
+proxy_assert(
+    $config === "RemoteIPHeader X-Forwarded-For\nRemoteIPInternalProxy 10.0.0.0/8\nRemoteIPInternalProxy 192.168.1.7/32\nRemoteIPInternalProxy fd00:1::/32\n"
+        . 'SetEnvIfExpr "%{CONN_REMOTE_ADDR} =~ /(.+)/" CONN_REMOTE_ADDR=$1' . "\n",
+    'the Apache lines name each valid address once, as the start of its range: ' . $config
+);
+
 // A list nobody can match trusts nobody.
 foreach (['nonsense', '10.0.0.0/99', '/8', ','] as $broken) {
     $server = proxy_test_request($broken, $forwarded);
