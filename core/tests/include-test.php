@@ -29,7 +29,33 @@ try {
     include_test_assert(include_test_render($root . 'core/' . str_repeat('../', 30) . ltrim($outside, '/')) === '', 'a path that climbs out of the project is not included');
     include_test_assert(include_test_render($root . 'core/tests/fixtures/missing.txt') === '', 'a missing file prints nothing');
     include_test_assert(include_test_render($root . 'core/tests/fixtures') === '', 'a directory prints nothing');
+
+    // site data is never included, a template next to it is
+    $project = sys_get_temp_dir() . '/nimbly-include-project-' . bin2hex(random_bytes(6));
+    mkdir($project . '/ext/data/.files', 0750, true);
+    mkdir($project . '/ext/tpl', 0750, true);
+    file_put_contents($project . '/ext/data/.files/upload', 'uploaded');
+    file_put_contents($project . '/ext/tpl/part.txt', 'template');
+    $GLOBALS['SYSTEM']['file_base'] = $project . '/';
+    include_test_assert(include_test_render($project . '/ext/data/.files/upload') === '', 'a file in the site data is not included');
+    include_test_assert(include_test_render($project . '/ext/tpl/../data/.files/upload') === '', 'a roundabout path into the site data is not included');
+    include_test_assert(trim(include_test_render($project . '/ext/tpl/part.txt')) === 'template', 'a template file of the project is included');
+    $GLOBALS['SYSTEM']['file_base'] = $root;
+
+    // the settings core keeps secret are not printed, other settings are
+    putenv('SMTP_PASSWORD=secret-password');
+    putenv('NIMBLY_TEST_MAP_KEY=public-key');
+    ob_start();
+    run_template('[#env SMTP_PASSWORD#]|[#env SMTP_PASSWORD default=none#]|[#env NIMBLY_TEST_MAP_KEY#]');
+    include_test_assert((string)ob_get_clean() === '|none|public-key', 'a secret setting was printed, or a public one was not');
+    include_test_assert(env('SMTP_PASSWORD') === 'secret-password', 'PHP no longer reads a secret setting');
+
     echo "include-test: ok\n";
 } finally {
     unlink($outside);
+    if (isset($project)) {
+        @unlink($project . '/ext/data/.files/upload');
+        @unlink($project . '/ext/tpl/part.txt');
+        @rmdir($project . '/ext/data/.files'); @rmdir($project . '/ext/data'); @rmdir($project . '/ext/tpl'); @rmdir($project . '/ext'); @rmdir($project);
+    }
 }

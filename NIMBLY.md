@@ -883,7 +883,7 @@ $text = plain_text($html);
 ```
 
 #### `[#env KEY default=value#]`
-Returns a value from `.env`, falling back to `default` when the key is missing.
+Returns a value from `.env`, falling back to `default` when the key is missing. The settings core keeps secret (`PEPPER`, `STATS_KEY`, `ADMIN_PASSWORD`, `SMTP_PASSWORD`, `AGENT_REMOTE_PASSWORD`, `OPENAI_API_KEY`, `RESEND_API_KEY`, `GIT_TOKEN`) are never printed: read those in PHP with `env()`.
 
 ```
 [#env STRIPE_LINK_ANNUAL#]

@@ -1,10 +1,25 @@
 <?php
 
+/**
+ * [#env KEY#] prints a setting. The settings core keeps secret are for PHP
+ * only (env()): a template never needs them on a page.
+ */
 function env_sc($params)
 {
     $key = get_param_value($params, 'key', current($params));
     $default = get_param_value($params, 'default', '');
+    if (in_array((string)$key, env_secret_keys(), true)) {
+        return $default;
+    }
     return env($key, $default);
+}
+
+function env_secret_keys(): array
+{
+    return [
+        'PEPPER', 'STATS_KEY', 'ADMIN_PASSWORD', 'SMTP_PASSWORD', 'AGENT_REMOTE_PASSWORD',
+        'OPENAI_API_KEY', 'RESEND_API_KEY', 'GIT_TOKEN',
+    ];
 }
 
 function env($key, $default = '')
