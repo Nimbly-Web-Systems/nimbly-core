@@ -15,14 +15,14 @@ Alpine.data('updates', () => ({
     },
     async pull_site() {
         this.busy = true;
-        nb.api.get('api/v1/git-pull?dir=ext').then(data => {
+        nb.api.post('api/v1/git-pull?dir=ext').then(data => {
             this.site_updates = data.error? this.site_updates : 0;
             this.busy = false;
         });
     },
     async pull_core() {
         this.busy = true;
-        nb.api.get('api/v1/git-pull').then(data => {
+        nb.api.post('api/v1/git-pull').then(data => {
             this.core_updates = data.error? this.core_updates : 0;
             this.busy = false;
         });

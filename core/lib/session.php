@@ -60,10 +60,41 @@ function session_exists() {
     if (session_status() === PHP_SESSION_ACTIVE) {
         return true;
     }
+    if (session_request_from_elsewhere()) {
+        return false;
+    }
     return isset($_COOKIE['nb_session_id'])
         && is_string($_COOKIE['nb_session_id'])
         && preg_match('/^[a-zA-Z0-9,-]+$/D', $_COOKIE['nb_session_id'])
         && file_exists($GLOBALS['SYSTEM']['session_path'] . '/sess_' . $_COOKIE['nb_session_id']);
+}
+
+/**
+ * A request that changes something and that the browser says was started by
+ * another site does not get the visitor's session: it is handled as a request
+ * from someone who is not logged in. Browsers name the starting site in
+ * Sec-Fetch-Site, older ones in Origin; a request without either (a script, a
+ * server, the command line) is not a page acting for a logged-in visitor.
+ */
+function session_request_from_elsewhere(): bool {
+    if (in_array(strtoupper((string)($_SERVER['REQUEST_METHOD'] ?? 'GET')), ['GET', 'HEAD', 'OPTIONS'], true)) {
+        return false;
+    }
+    $site = strtolower(trim((string)($_SERVER['HTTP_SEC_FETCH_SITE'] ?? '')));
+    if ($site !== '') {
+        return !in_array($site, ['same-origin', 'none'], true);
+    }
+    $origin = trim((string)($_SERVER['HTTP_ORIGIN'] ?? ''));
+    if ($origin === '') {
+        return false;
+    }
+    $host = strtolower((string)parse_url($origin, PHP_URL_HOST));
+    $port = parse_url($origin, PHP_URL_PORT);
+    $own = strtolower((string)($_SERVER['HTTP_HOST'] ?? ''));
+    if ($host === '' || $own === '') {
+        return true;
+    }
+    return !in_array($own, [$host, $host . ':' . ($port ?: (str_starts_with(strtolower($origin), 'https:') ? 443 : 80))], true);
 }
 
 function session_resume() {

@@ -98,7 +98,7 @@ document.addEventListener("alpine:init", () => {
         },
         pull_site() {
             this.busy = true;
-            nb.api.get(nb.base_url + "/api/v1/git-pull?dir=ext").then((data) => {
+            nb.api.post(nb.base_url + "/api/v1/git-pull?dir=ext").then((data) => {
                 this.site_updates = data.error ? this.site_updates : 0;
                 this.site_updated_label = data.error ? this.site_updated_label : "now";
                 this.assets_stale = data.assets_stale ?? this.assets_stale;
@@ -108,7 +108,7 @@ document.addEventListener("alpine:init", () => {
         },
         pull_core() {
             this.busy = true;
-            nb.api.get(nb.base_url + "/api/v1/git-pull").then((data) => {
+            nb.api.post(nb.base_url + "/api/v1/git-pull").then((data) => {
                 this.core_updates = data.error ? this.core_updates : 0;
                 this.core_updated_label = data.error ? this.core_updated_label : "now";
                 this.assets_stale = data.assets_stale ?? this.assets_stale;

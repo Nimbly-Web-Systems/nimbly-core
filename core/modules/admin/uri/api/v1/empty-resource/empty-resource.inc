@@ -6,6 +6,11 @@ function empty_resource_sc()
 {
     $response['error'] = true;
     $response['count'] = 0;
+    if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
+        http_response_code(405);
+        $response['msg'] = "use POST";
+        return json_result($response);
+    }
     $resource = get_variable('resource', null, 'url');
     if (empty($resource) || !data_exists($resource)) {
         $response['msg'] = "unknown resource";

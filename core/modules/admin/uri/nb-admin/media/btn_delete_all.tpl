@@ -22,7 +22,7 @@
 		if (event.target != nb_btn_delete_all) {
 			return;
 		}
-		nb.api.get("[#base_url#]/api/v1/empty-resource?resource=.files").then((data) => {
+		nb.api.post("[#base_url#]/api/v1/empty-resource?resource=.files").then((data) => {
 			if (data.success) {
 				nb.api.post('[#base_url#]/api/v1/.system-messages', { message: "[#text Deleted all files#]"}).then((data) =>
 				{ window.location.reload(); });

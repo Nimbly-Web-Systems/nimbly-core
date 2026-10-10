@@ -25,6 +25,31 @@ $now = time();
 $user = ['username' => 'test@example.test', 'user_uuid' => 'test-user', 'modified' => $now, 'created' => $now - 86400 * 90, 'roles' => ['user' => true], 'session_policy_version' => 1];
 $admin = array_replace($user, ['roles' => ['admin' => true]]);
 try {
+    // a change started by another site is handled without the visitor's session
+    $from = function (string $method, array $headers): bool {
+        foreach (['HTTP_SEC_FETCH_SITE', 'HTTP_ORIGIN'] as $name) { unset($_SERVER[$name]); }
+        $_SERVER = array_replace($_SERVER, ['REQUEST_METHOD' => $method, 'HTTP_HOST' => 'site.example.test'], $headers);
+        return session_request_from_elsewhere();
+    };
+    session_test_assert($from('POST', ['HTTP_SEC_FETCH_SITE' => 'cross-site']) === true, 'a write from another site kept the session');
+    session_test_assert($from('PUT', ['HTTP_SEC_FETCH_SITE' => 'same-site']) === true, 'a write from a neighbouring address kept the session');
+    session_test_assert($from('DELETE', ['HTTP_ORIGIN' => 'https://other.example.test']) === true, 'a write with another origin kept the session');
+    session_test_assert($from('POST', ['HTTP_ORIGIN' => 'null']) === true, 'a write without a readable origin kept the session');
+    session_test_assert($from('POST', ['HTTP_SEC_FETCH_SITE' => 'same-origin']) === false, 'a write from the site itself lost the session');
+    session_test_assert($from('POST', ['HTTP_ORIGIN' => 'https://site.example.test']) === false, 'a write with the own origin lost the session');
+    session_test_assert($from('POST', ['HTTP_ORIGIN' => 'http://site.example.test:8081', 'HTTP_HOST' => 'site.example.test:8081']) === false, 'a write on another port of the own address lost the session');
+    session_test_assert($from('POST', []) === false, 'a write from a script without browser headers lost the session');
+    session_test_assert($from('GET', ['HTTP_SEC_FETCH_SITE' => 'cross-site']) === false, 'a link from another site lost the session');
+    file_put_contents($tmp . '/sess_abc123', '');
+    $_COOKIE['nb_session_id'] = 'abc123';
+    $from('POST', ['HTTP_SEC_FETCH_SITE' => 'cross-site']);
+    session_test_assert(session_exists() === false, 'a write from another site found the session');
+    $from('POST', ['HTTP_SEC_FETCH_SITE' => 'same-origin']);
+    session_test_assert(session_exists() === true, 'a write from the site itself did not find the session');
+    unset($_COOKIE['nb_session_id'], $_SERVER['HTTP_SEC_FETCH_SITE'], $_SERVER['HTTP_ORIGIN']);
+    unlink($tmp . '/sess_abc123');
+    $_SERVER['REQUEST_METHOD'] = 'GET';
+
     session_test_assert(session_idle_lifetime([]) === 14400, 'anonymous expiry');
     session_test_assert(session_idle_lifetime($user) === 259200, 'user expiry');
     session_test_assert(session_idle_lifetime($admin) === 604800, 'admin expiry');

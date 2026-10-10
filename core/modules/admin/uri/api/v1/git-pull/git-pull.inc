@@ -6,6 +6,11 @@ function git_pull_sc() {
 
     $response['error'] = true;
     $response['status'] = "";
+    if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
+        http_response_code(405);
+        $response['status'] = 'use POST';
+        return json_encode($response);
+    }
 
     // Only the project itself or its ext repository, each with its own right.
     $ext = get_variable('dir', '', 'url') === 'ext';

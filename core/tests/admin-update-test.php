@@ -58,9 +58,9 @@ function admin_update_assert($condition, string $message): void {
     if (!$condition) { throw new RuntimeException($message); }
 }
 
-function admin_update_fetch(string $address, string $do, string $dir = '', ?string $has = null): array {
+function admin_update_fetch(string $address, string $do, string $dir = '', ?string $has = null, ?string $method = null): array {
     $url = 'http://' . $address . '/?do=' . $do . ($dir === '' ? '' : '&dir=' . rawurlencode($dir)) . ($has === null ? '' : '&has=' . rawurlencode($has));
-    return (array)json_decode((string)file_get_contents($url, false, stream_context_create(['http' => ['timeout' => 20]])), true);
+    return (array)json_decode((string)file_get_contents($url, false, stream_context_create(['http' => ['timeout' => 20, 'ignore_errors' => true, 'method' => $method ?? ($do === 'pull' ? 'POST' : 'GET')]])), true);
 }
 
 try {
@@ -71,6 +71,10 @@ try {
         usleep(20000);
     }
     admin_update_assert($ready, 'fixture server started');
+
+    // A pull is a change: a link (GET) does not start one.
+    $by_link = admin_update_fetch($address, 'pull', '', null, 'GET');
+    admin_update_assert(($by_link['error'] ?? null) === true && ($by_link['status'] ?? '') === 'use POST', 'a pull started by a GET request');
 
     // Nothing to fetch is not an error.
     $response = admin_update_fetch($address, 'pull');
