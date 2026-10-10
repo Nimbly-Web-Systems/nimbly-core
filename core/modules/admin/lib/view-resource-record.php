@@ -182,7 +182,7 @@ function view_resource_record_value(string $type, $value, array $field = []): st
                 'style' => 'badge',
             ]);
         case 'html':
-            return '<div class="prose max-w-none">' . normalize_media_base_url($string) . '</div>';
+            return '<div class="prose max-w-none">' . normalize_link_base_url(normalize_media_base_url($string)) . '</div>';
         case 'textarea':
             return '<div class="whitespace-pre-wrap">' . htmlspecialchars($string, ENT_QUOTES, 'UTF-8') . '</div>';
         case 'url':

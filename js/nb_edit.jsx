@@ -557,10 +557,21 @@ nb_edit.on_beforeunload = function (e) {
 
 // Editor HTML without upload placeholders, which must never be stored.
 nb_edit.editor_html = function (ed) {
-    if (!ed.querySelector('[data-nb-upload-placeholder]')) return ed.innerHTML.trim();
+    if (!ed.querySelector('[data-nb-upload-placeholder]')) return nb_edit.links_for_storage(ed.innerHTML.trim());
     const clone = ed.cloneNode(true);
     clone.querySelectorAll('[data-nb-upload-placeholder]').forEach(el => el.remove());
-    return clone.innerHTML.trim();
+    return nb_edit.links_for_storage(clone.innerHTML.trim());
+};
+
+// Links are stored without this installation's base path; the page adds it again when it is shown.
+nb_edit.links_for_storage = function (html, base_url = nb.base_url) {
+    const base = String(base_url || '').replace(/\/+$/, '');
+    if (!base) return html;
+    const prefix = base.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    return html.replace(
+        new RegExp('(<a\\b[^>]*?\\shref=")' + prefix + '(?=[/?#"])', 'gi'),
+        (match, start, offset, whole) => start + (whole[offset + match.length] === '/' ? '' : '/')
+    );
 };
 
 nb_edit.has_pending_uploads = function (scope = null) {

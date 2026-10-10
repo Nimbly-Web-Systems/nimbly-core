@@ -43,3 +43,30 @@ function normalize_media_base_url(string $html): string {
 
     return $html;
 }
+
+/**
+ * Puts the installation's base path in front of root-relative links in stored
+ * HTML, so a link written as /contact also works where the site runs in a
+ * subfolder. A link that already starts with the base path, a link to another
+ * host (//host/…) and every other kind of address are left as they are.
+ *
+ * @param string $html
+ * @return string
+ */
+function normalize_link_base_url(string $html): string {
+    $base_url = trim($GLOBALS['SYSTEM']['uri_base'] ?? '', ' \\/');
+    if ($base_url === '' || stripos($html, 'href=') === false) {
+        return $html;
+    }
+
+    return preg_replace_callback(
+        '/(<a\b[^>]*?\shref=)(["\'])(\/(?!\/)[^"\'>]*)\2/i',
+        function ($match) use ($base_url) {
+            $rest = substr($match[3], strlen($base_url) + 1);
+            $has_base = strncmp($match[3], '/' . $base_url, strlen($base_url) + 1) === 0
+                && ($rest === '' || strpbrk($rest[0], '/?#') !== false);
+            return $match[1] . $match[2] . ($has_base ? '' : '/' . $base_url) . $match[3] . $match[2];
+        },
+        $html
+    ) ?? $html;
+}

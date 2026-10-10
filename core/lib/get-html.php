@@ -70,6 +70,7 @@ function get_html_sc($params)
     }
 
     $html = normalize_media_base_url($html);
+    $html = normalize_link_base_url($html);
 
     // replace legacy lazy loading images
     $legacy_img_sizes = get_param_value($params, 'legacy-img-sizes');

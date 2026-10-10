@@ -704,6 +704,8 @@ Outputs an editable HTML content field. Supports inline admin editing.
 [#get-html content.home.intro default="<p>Edit this text</p>"#]
 ```
 
+Links in content are written from the site's root, `/contact` or `/en/article/deep-space`, without `[#base-url#]`. Where the site runs in a subfolder (staging under an alias), `get-html` puts the base path in front when the page is shown, and the editor takes it off again when it saves, so the stored link works on every environment. A link that already starts with the base path, and a link to another site, are left as they are.
+
 I18n fields are resolved automatically by `[#get#]` and `[#fmt#]` when the value is an object keyed by configured language codes. Use `lang=` to force a language.
 
 ```
