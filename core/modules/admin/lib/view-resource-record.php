@@ -156,7 +156,7 @@ function view_resource_record_value(string $type, $value, array $field = []): st
         $field['max_length'] = 0;
         $fields = ['value' => $field];
         $formatted = _prep_record(['value' => $value], $fields, _build_resource_maps($fields));
-        return htmlspecialchars((string)$formatted['value'], ENT_QUOTES, 'UTF-8');
+        return (string)$formatted['value']; // escaped by _prep_record()
     }
 
     if (is_array($value)) {
