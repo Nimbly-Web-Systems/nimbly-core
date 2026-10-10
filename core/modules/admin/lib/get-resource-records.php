@@ -223,6 +223,10 @@ function _prep_record($record, $fields, $resource_maps = [])
             $fmt_params['fmt'] = $v['fmt'];
         }
         $result[$k] = fmt_sc($fmt_params);
+        // The list shows values as HTML: only what the formatter builds itself is markup.
+        if (!array_intersect([$v['type'] ?? '', $v['fmt'] ?? ''], ['boolean', 'color', 'image', 'gallery', 'file'])) {
+            $result[$k] = htmlspecialchars((string)$result[$k], ENT_QUOTES, 'UTF-8', false);
+        }
     }
     return $result;
 }

@@ -28,6 +28,21 @@ function admin_resource_records_assert(bool $condition, string $message): void
     }
 }
 
+// a value a visitor typed is shown as text, markup the formatter builds stays markup
+$typed = _prep_record(
+    ['title' => '<img src=x onerror=alert(1)>', 'note' => 'Tom &amp; Jerry &#91;#x#&#93; "q"', 'live' => '<b>yes</b>', 'kind' => '<i>n</i>'],
+    [
+        'title' => ['type' => 'text'],
+        'note' => ['type' => 'html'],
+        'live' => ['type' => 'boolean'],
+        'kind' => ['type' => 'select', 'options' => ['<i>n</i>' => '<i>Label</i>']],
+    ]
+);
+admin_resource_records_assert($typed['title'] === '&lt;img src=x onerror=alert(1)&gt;', 'a text value reached the list as markup');
+admin_resource_records_assert($typed['note'] === 'Tom &amp; Jerry &#91;#x#&#93; &quot;q&quot;', 'entities in a value were encoded twice');
+admin_resource_records_assert($typed['live'] === '<b>yes</b>', 'markup built by the formatter was escaped');
+admin_resource_records_assert($typed['kind'] === '&lt;i&gt;Label&lt;/i&gt;', 'a select label reached the list as markup');
+
 $fields = [
     'delivery_status' => [
         'type' => 'select',
