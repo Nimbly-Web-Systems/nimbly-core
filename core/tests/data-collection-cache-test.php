@@ -118,6 +118,18 @@ data_read('notes', null, ['title']);
 clearstatcache();
 data_cache_assert(filemtime($cache_files[0]) > time() - 30, 'an edited .meta renews the cache');
 
+// A record edited in place by hand is not seen, until the cache is cleared.
+data_cache_settle($fixture);
+data_cache_titles('notes');
+$record = json_decode(file_get_contents($fixture . '/ext/data/notes/n1'), true);
+file_put_contents($fixture . '/ext/data/notes/n1', json_encode(['title' => 'eins'] + $record));
+touch($fixture . '/ext/data/notes/n1', time() - 120);
+clearstatcache();
+data_cache_assert(data_cache_titles('notes') === 'uno', 'a record edited in place is not seen by the cached collection');
+data_cache_assert(data_cache_clear() > 0, 'clearing the cache removes its files');
+data_cache_assert(is_dir($fixture . '/ext/data/.tmp/cache/_data'), 'the cache folder itself stays');
+data_cache_assert(data_cache_titles('notes') === 'eins', 'after clearing, the edited record is seen');
+
 // Records in split folders.
 mkdir($fixture . '/ext/data/logs', 0750, true);
 file_put_contents($fixture . '/ext/data/logs/.meta', json_encode(['splitdir' => true]));

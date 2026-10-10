@@ -1534,7 +1534,15 @@ In PHP (`load_library('history')`): `history_list($resource, $uuid)`, `history_r
 
 ### Data caching
 
-The data library automatically caches all query results in `ext/data/.tmp/cache/`. The cache is invalidated when any record in the queried resource is modified. No manual cache management is needed — it is fully automatic.
+The data library automatically caches all query results in `ext/data/.tmp/cache/`. The cache is invalidated when a record in the queried resource is saved, added or removed, by the site, the API, Git or `ext:sync`, and when its `.meta` is edited. No manual cache management is needed for any of those.
+
+One case is not seen: a record file edited in place by hand (an editor that writes into the existing file). A cached list shows the old values until the next write to that resource. Clear the cache after such an edit:
+
+```bash
+./nimbly data:cache:clear
+```
+
+The admin dashboard has the same action, `Clear data cache`.
 
 ---
 
@@ -1972,6 +1980,7 @@ php core/cli/nimbly.php user:create
 php core/cli/nimbly.php module:install <name>
 php core/cli/nimbly.php routes:sync
 php core/cli/nimbly.php index:rebuild [resource]
+php core/cli/nimbly.php data:cache:clear
 php core/cli/nimbly.php user:email-index:rebuild
 php core/cli/nimbly.php system:repair
 php core/cli/nimbly.php help
@@ -2056,6 +2065,13 @@ php core/cli/nimbly.php index:rebuild articles    # direct: reindex the 'article
 ```
 
 The command scans all records in the resource and creates any missing index files. It is idempotent — existing entries are left untouched.
+
+#### `data:cache:clear`
+Throws away the cached query results of every resource; the next read builds them again. Use this after editing a record file in place by hand (see Data caching). Saving through the site, the API, Git or `ext:sync` needs no clearing.
+
+```bash
+php core/cli/nimbly.php data:cache:clear
+```
 
 #### `user:email-index:rebuild`
 Adds email lookup metadata to the `users` resource and rebuilds its email index.

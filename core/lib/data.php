@@ -518,6 +518,24 @@ function _data_clear_cache($op, $resource, $options = null)
 }
 
 /**
+ * Throws away every cached query result; the next read of a resource builds
+ * its cache again. For a record that was edited in place by hand, which the
+ * folder check does not see. The folder itself stays, with its owner.
+ *
+ * @return int Number of cache files removed.
+ */
+function data_cache_clear()
+{
+    $removed = 0;
+    foreach (glob($GLOBALS['SYSTEM']['file_base'] . 'ext/data/.tmp/cache/_data/*') ?: [] as $file) {
+        if (is_file($file) && @unlink($file)) {
+            $removed++;
+        }
+    }
+    return $removed;
+}
+
+/**
  * Checks if an index exists for a given resource, index name, and index UUID.
  *
  * @param string $resource Resource name.
@@ -1318,7 +1336,8 @@ function data_modified($resource, $uuid = null)
  * So the folders tell when a collection changed, and the check costs one
  * lookup per folder instead of one per record, which matters on a network
  * volume. `.meta` is edited by hand and is looked at itself. A record edited
- * in place by hand is not seen until the next write to the resource.
+ * in place by hand is not seen until the next write to the resource, or until
+ * the cache is cleared (data_cache_clear(), `./nimbly data:cache:clear`).
  *
  * @param string $dir Resource or split-directory path.
  * @return int Newest Unix modification timestamp.
