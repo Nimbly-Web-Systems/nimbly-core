@@ -42,11 +42,14 @@ php /var/www/nimbly/core/cli/nimbly.php system:setup
 chown -R www-data:www-data /var/www/nimbly
 
 # Behind a load balancer (TRUSTED_PROXIES in .env): Apache's own log shows the visitor too.
-php /var/www/nimbly/core/cli/nimbly.php host:proxy-conf > /etc/apache2/conf-available/nimbly-proxy.conf || true
-if [ -s /etc/apache2/conf-available/nimbly-proxy.conf ]; then
+a2disconf -q nimbly-proxy 2>/dev/null || true
+if php /var/www/nimbly/core/cli/nimbly.php host:proxy-conf > /etc/apache2/conf-available/nimbly-proxy.conf 2>/dev/null \
+    && [ -s /etc/apache2/conf-available/nimbly-proxy.conf ]; then
     a2enmod -q remoteip && a2enconf -q nimbly-proxy
-else
-    a2disconf -q nimbly-proxy 2>/dev/null || true
+    if ! apache2ctl -t 2>/dev/null; then
+        echo "Notice: the proxy lines for TRUSTED_PROXIES were refused by Apache; starting without them."
+        a2disconf -q nimbly-proxy
+    fi
 fi
 
 mkdir -p /run/php
