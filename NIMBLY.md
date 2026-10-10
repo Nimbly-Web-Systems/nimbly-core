@@ -476,6 +476,7 @@ Loads all records of a resource into `data.<resource>`.
 [#data articles var=featured filter=featured:yes#]
 [#data users.abc123#]           → loads single record into data.users.abc123
 [#data users uuid=abc123#]      → same
+[#data articles filter=published:1 sort=date|text|desc limit=20 offset=40#]   → the third page of 20
 ```
 
 Parameters:
@@ -484,6 +485,9 @@ Parameters:
 - `search` — full-text search across all fields
 - `var` — custom variable name instead of `data.<resource>`
 - `op` — `read` (default) or `list` (UUIDs only)
+- `limit`, `offset` — one page of the list: at most `limit` records, after skipping `offset`. The number of records before the cut is in `data.<resource>-total` (or `<var>-total`)
+
+With `limit` or `offset` the list is answered without reading every record. For each field the `filter` and the `sort` name, the values of all records are kept together in a cache file (`ext/data/.tmp/cache/_data/list/<resource>/<field>`), built the first time the field is asked for; only the records of the page are read. A write adds a line to those files, a Git pull makes them build again, and `./nimbly data:cache:clear` removes them. Use it for every list of a large resource; a sort with a type (`date|text|desc`, `price|num|asc`) is the fast one. `search` still reads every record. From PHP: `data_query($resource, ['filter' => …, 'sort' => …, 'limit' => 20, 'offset' => 40])` in `core/lib/data-list.php` returns `['records' => …, 'total' => …]`.
 
 #### `[#repeat data.articles#]`
 Iterates over a data variable, rendering the template with the same name for each item.

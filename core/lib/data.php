@@ -43,6 +43,26 @@ function data_sc($params)
     $uuid = count($set) > 1 ? $set[1] : get_param_value($params, 'uuid', null);
     $op = get_param_value($params, "op", "read");
     $var_id = get_param_value($params, "var", null);
+    $limit = get_param_value($params, "limit", false);
+    $offset = get_param_value($params, "offset", false);
+    if (($limit !== false || $offset !== false) && $op === 'read' && (string)$uuid === '') {
+        // A page of a list: answered without reading every record
+        require_once __DIR__ . '/data-list.php';
+        $page = data_query($resource, [
+            'sort' => get_param_value($params, "sort", false),
+            'search' => get_param_value($params, "search", false),
+            'filter' => get_param_value($params, "filter", false),
+            'fields' => get_param_value($params, "fields", false),
+            'limit' => $limit,
+            'offset' => $offset,
+        ]);
+        $data_var = $var_id ?? data_var($resource, $uuid, $op);
+        load_library('set');
+        set_variable($data_var, $page['records']);
+        set_variable($data_var . '-total', $page['total']);
+        return;
+    }
+
     $function_name = sprintf("data_%s", $op);
     $result = call_user_func($function_name, $resource, $uuid);
 
@@ -532,6 +552,12 @@ function data_cache_clear()
             $removed++;
         }
     }
+    require_once __DIR__ . '/data-list.php';
+    foreach (glob($GLOBALS['SYSTEM']['file_base'] . 'ext/data/.tmp/cache/_data/list/*/*') ?: [] as $file) {
+        if (is_file($file) && @unlink($file)) {
+            $removed++;
+        }
+    }
     return $removed;
 }
 
@@ -932,6 +958,8 @@ function _data_store($resource, $uuid, $data_ls)
         if (_data_write_file_atomically($file, $json_data) !== false) {
             touch($dir); // Update directory modification time to signal change and invalidate caches
             _data_clear_cache('_data_read_all', $resource);
+            require_once __DIR__ . '/data-list.php';
+            _data_list_note($resource, $uuid, $file);
 
             if (isset($meta['index']) && is_array($meta['index'])) {
                 load_library('util');
@@ -1119,6 +1147,8 @@ function data_delete($resource, $uuid = null)
                 // it. Clear the cache file directly instead.
                 touch($dir);
                 _data_clear_cache('_data_read_all', $resource);
+                require_once __DIR__ . '/data-list.php';
+                _data_list_note($resource, $uuid, $file, true);
             }
             if ($result > 0 && $uuid !== '.meta') {
                 _data_lifecycle('delete', $resource, $uuid, $data_ls);
@@ -1150,6 +1180,8 @@ function data_delete($resource, $uuid = null)
     }
     @rmdir($dir);
     _data_clear_cache('_data_read_all', $resource);
+    require_once __DIR__ . '/data-list.php';
+    _data_list_drop($resource);
     return $result;
 }
 
@@ -1189,6 +1221,9 @@ function data_empty($resource)
             @rrmdir($path);
         }
     }
+
+    require_once __DIR__ . '/data-list.php';
+    _data_list_drop($resource);
 
     return $result;
 }
