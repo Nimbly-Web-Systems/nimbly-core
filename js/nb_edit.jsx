@@ -563,14 +563,16 @@ nb_edit.editor_html = function (ed) {
     return nb_edit.links_for_storage(clone.innerHTML.trim());
 };
 
-// Links are stored without this installation's base path; the page adds it again when it is shown.
-nb_edit.links_for_storage = function (html, base_url = nb.base_url) {
+// Links to this site are stored from its root: without this environment's own address and
+// without its base path. The page adds the base path again when it is shown.
+nb_edit.links_for_storage = function (html, base_url = nb.base_url, origin = window.location.origin) {
+    const escape = text => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const base = String(base_url || '').replace(/\/+$/, '');
-    if (!base) return html;
-    const prefix = base.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const own = '(?:' + escape(String(origin || '')) + ')' + (origin ? '?' : '') + escape(base);
+    if (!origin && !base) return html;
     return html.replace(
-        new RegExp('(<a\\b[^>]*?\\shref=")' + prefix + '(?=[/?#"])', 'gi'),
-        (match, start, offset, whole) => start + (whole[offset + match.length] === '/' ? '' : '/')
+        new RegExp('(<a\\b[^>]*?\\shref=")(' + own + ')(?=[/?#"])', 'gi'),
+        (match, start, address, offset, whole) => address === '' ? match : start + (whole[offset + match.length] === '/' ? '' : '/')
     );
 };
 
