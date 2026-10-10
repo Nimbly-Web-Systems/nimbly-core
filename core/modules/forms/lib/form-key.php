@@ -29,7 +29,7 @@ function form_key_get() {
         $key = request_input_escape($_COOKIE['key']);
     } else {
         $key = md5(uniqid(rand(), true));
-        setcookie('key', $key, time() + (30*86400), "/");
+        setcookie('key', $key, persistent_cookie_options());
     }
     return $key;
 }

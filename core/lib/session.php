@@ -99,6 +99,18 @@ function session_cookie_options(): array
     ];
 }
 
+/**
+ * Options for a cookie that outlives the browser session (the form key, a
+ * persisted template variable): as the session cookie, with an end date.
+ */
+function persistent_cookie_options(int $days = 30): array
+{
+    $options = session_cookie_options();
+    unset($options['lifetime']);
+    $options['expires'] = time() + $days * 86400;
+    return $options;
+}
+
 function session_refresh_cookie(): void
 {
     if (PHP_SAPI === 'cli' || headers_sent()) {

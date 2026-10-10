@@ -2195,6 +2195,13 @@ Anonymous reads and permission checks do not create sessions; forms and other
 stateful features may do so. Authenticated cookies persist across browser
 restarts; anonymous cookies remain browser-session cookies.
 
+Every cookie core sets has the same options (`session_cookie_options()`): the
+site's base path, `HttpOnly`, `SameSite=Lax`, and `Secure` on https. That goes
+for the session cookie, the form key of a visitor without a session (`key`) and
+a variable kept with `[#set session ...#]` when there is no session; the last
+two last 30 days (`persistent_cookie_options()`). Scripts in the page cannot
+read them.
+
 Projects can configure durations in seconds under `session` in `.config/site`:
 
 ```json

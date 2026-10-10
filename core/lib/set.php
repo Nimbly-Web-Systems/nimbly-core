@@ -40,9 +40,9 @@ function persist_variable($key, $value, $if_exists=true) {
     if (session_resume() && isset($_SESSION['variables'])) {
         set_session_variable($key, $value, $if_exists);
     } else if (empty($_COOKIE[$key]) || $if_exists === true) {
-        setcookie($key, $value, time() + (30*86400), "/");
+        setcookie($key, $value, persistent_cookie_options());
     } else if (is_string($if_exists)) {
-        setcookie($key, $_COOKIE[$key] . $if_exists . $value, time() + (30*86400), "/");
+        setcookie($key, $_COOKIE[$key] . $if_exists . $value, persistent_cookie_options());
     }
 }
 

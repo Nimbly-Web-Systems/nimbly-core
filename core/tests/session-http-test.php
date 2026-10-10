@@ -22,6 +22,13 @@ if ($action === 'login') {
 } elseif ($action === 'logout') {
     session_sc();
     session_initialize();
+} elseif ($action === 'form-key' || $action === 'form-key-https') {
+    $action === 'form-key-https' && $_SERVER['HTTPS'] = 'on';
+    require $root . 'core/modules/forms/lib/form-key.php';
+    form_key_get();
+} elseif ($action === 'persist') {
+    load_library('set');
+    persist_variable('theme', 'dark');
 } else {
     session_resume();
 }
@@ -75,6 +82,14 @@ try {
     [$login] = session_http_request($address, 'login');
     [$logout, $cookies] = session_http_request($address, 'logout', 'nb_session_id=' . $login['id']);
     session_http_assert(!$logout['authenticated'] && !file_exists($tmp . '/sessions/sess_' . $login['id']), 'logout revokes login');
+    foreach (['form-key' => 'key=', 'persist' => 'theme=dark'] as $action => $cookie) {
+        [, $cookies] = session_http_request($address, $action);
+        $set = (string)end($cookies);
+        session_http_assert(count($cookies) === 1 && str_contains($set, $cookie) && str_contains(strtolower($set), 'httponly') && str_contains($set, 'SameSite=Lax') && str_contains($set, 'path=/app/') && str_contains($set, 'Max-Age=2592000'), $action . ' cookie is scoped, HttpOnly and SameSite');
+        session_http_assert(!str_contains(strtolower($set), 'secure'), $action . ' cookie is not secure over http');
+    }
+    [, $cookies] = session_http_request($address, 'form-key-https');
+    session_http_assert(str_contains(strtolower((string)end($cookies)), '; secure'), 'form-key cookie is secure over https');
     echo "session HTTP tests passed\n";
 } finally {
     proc_terminate($process); proc_close($process);
