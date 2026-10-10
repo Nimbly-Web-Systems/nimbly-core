@@ -43,11 +43,16 @@ function nb_prompt(string $question, string $default = '', string $env_var = '')
         return $env_val;
     }
     $hint = $default !== '' ? " [$default]" : '';
-    echo $question . $hint . ': ';
+    if (nb_can_prompt()) {
+        echo $question . $hint . ': ';
+    }
     $input = fgets(STDIN);
     if ($input === false) {
-        fwrite(STDERR, "\nError: input is required.\n");
-        exit(1);
+        if ($default === '') {
+            nb_fail_without_answer();
+        }
+        echo $question . ': ' . $default . " [default]\n";
+        return $default;
     }
     $value = trim($input);
     return $value !== '' ? $value : $default;
@@ -58,21 +63,37 @@ function nb_prompt_password(string $question, string $env_var = ''): string {
         echo $question . ': [from $' . $env_var . "]\n";
         return $env_val;
     }
-    echo $question . ': ';
-    if (strtoupper(substr(PHP_OS, 0, 3)) !== 'WIN') {
+    $terminal = nb_can_prompt();
+    $hide_input = $terminal && strtoupper(substr(PHP_OS, 0, 3)) !== 'WIN';
+    if ($terminal) {
+        echo $question . ': ';
+    }
+    if ($hide_input) {
         system('stty -echo');
     }
     $input = fgets(STDIN);
-    if (strtoupper(substr(PHP_OS, 0, 3)) !== 'WIN') {
+    if ($hide_input) {
         system('stty echo');
     }
-    echo "\n";
+    if ($terminal) {
+        echo "\n";
+    }
     if ($input === false) {
-        fwrite(STDERR, "Error: input is required.\n");
-        exit(1);
+        nb_fail_without_answer();
     }
     $value = trim($input);
     return $value;
+}
+
+// No terminal and nothing on standard input (a container, a scheduler): name the settings to set.
+function nb_fail_without_answer(): void {
+    $missing = array_values(array_filter(
+        ['ADMIN_EMAIL', 'ADMIN_PASSWORD'],
+        fn($name) => (string)getenv($name) === ''
+    ));
+    $what = $missing ? 'Set ' . implode(' and ', $missing) . '.' : 'Input is required.';
+    fwrite(STDERR, "Error: setup cannot ask for the first admin user here. $what\n");
+    exit(1);
 }
 
 function nb_optional_env_or_empty(string $env_var): string {

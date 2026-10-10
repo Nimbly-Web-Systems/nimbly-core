@@ -2028,6 +2028,8 @@ Prompts: **Site name**, **Admin email**, **Admin password**. Steps that are alre
 SITE_NAME="My Site" ADMIN_EMAIL=admin@example.com ADMIN_PASSWORD=secret123 ./nimbly system:setup
 ```
 
+Without a terminal (a container start, a scheduler) setup never waits for an answer. A missing `SITE_NAME` becomes `My Nimbly Site`. A site without users needs `ADMIN_EMAIL` and `ADMIN_PASSWORD`: when one is missing, setup stops with one line that names it and exit code 1, so a production container on an empty volume does not start until both are set.
+
 #### `user:create`
 Creates an additional user account. Prompts for email, role, and password interactively. Available roles are read from `ext/data/roles/`. The user is always also assigned the `user` role. Requires setup to have been run first.
 

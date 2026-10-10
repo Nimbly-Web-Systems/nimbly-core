@@ -31,7 +31,7 @@ jobs:
       - name: Lint PHP
         run: |
           sudo apt-get update
-          sudo apt-get install -y -q php-cli php-mbstring php-xml php-zip php-gd php-curl
+          sudo apt-get install -y -q php-cli php-mbstring php-xml php-zip php-gd php-curl php-gmp
           find core -name '*.php' -print0 | xargs -0 -n1 php -l
 
       - name: Static analysis
