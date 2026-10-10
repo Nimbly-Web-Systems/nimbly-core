@@ -1,4 +1,5 @@
 {
+  "keep_shortcodes": true,
   "fields": {
     "agent_id": {"name": "Agent", "type": "text", "required": true},
     "status": {"name": "Status", "type": "text", "required": true},

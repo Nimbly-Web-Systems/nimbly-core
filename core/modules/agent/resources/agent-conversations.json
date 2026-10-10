@@ -1,4 +1,5 @@
 {
+  "keep_shortcodes": true,
   "fields": {
     "owner_uuid": {"name": "Owner", "type": "text", "required": true},
     "title": {"name": "Title", "type": "text"},

@@ -811,6 +811,8 @@ function data_update($resource, $uuid, $data_update_ls)
         }
 
         $data_ls = data_read($resource, $uuid);
+        // Only what comes in is escaped: values the record already holds stay as they are.
+        $data_update_ls = _data_escape_tags($resource, $uuid, data_meta($resource), $data_update_ls);
 
         if (empty($data_ls)) {
             $data_merged_ls = $data_update_ls;
@@ -827,7 +829,7 @@ function data_update($resource, $uuid, $data_update_ls)
             return false;
         }
 
-        if (data_create($resource, $uuid, $data_merged_ls)) {
+        if (_data_store($resource, $uuid, $data_merged_ls)) {
             if (!empty($data_ls)) {
                 _data_delete_stale_indexes($resource, $uuid, $data_ls, $data_merged_ls);
             }
@@ -855,6 +857,32 @@ function data_update($resource, $uuid, $data_update_ls)
  * @return bool True on success, false on failure.
  */
 function data_create($resource, $uuid, $data_ls)
+{
+    if ($uuid !== null && $uuid !== '' && is_array($data_ls)) {
+        $meta = $uuid === '.meta' ? $data_ls : data_meta($resource);
+        $data_ls = _data_escape_tags($resource, $uuid, $meta, $data_ls);
+    }
+    return _data_store($resource, $uuid, $data_ls);
+}
+
+/**
+ * Shortcode tags in the values of a record that comes in are kept as text
+ * (`[#` and `#]` become HTML entities), whoever writes it: a stored value is
+ * parsed as template text when it is printed inside another shortcode. Not for
+ * a resource definition (`.meta`), and not for a resource whose `.meta` sets
+ * `keep_shortcodes`, which holds its text exactly as written.
+ */
+function _data_escape_tags($resource, $uuid, $meta, $data_ls)
+{
+    if ($uuid === '.meta' || !is_array($data_ls) || !empty($meta['keep_shortcodes'])) {
+        return $data_ls;
+    }
+    require_once __DIR__ . '/request-input.php';
+    return request_input_escape_record(is_array($meta) ? $meta : [], $data_ls);
+}
+
+/** Writes a record as given. data_create() and data_update() escape what comes in first. */
+function _data_store($resource, $uuid, $data_ls)
 {
     data_error_clear();
     $path = data_path($resource, $uuid);

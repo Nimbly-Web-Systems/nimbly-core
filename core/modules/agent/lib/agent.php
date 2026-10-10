@@ -365,6 +365,21 @@ function agent_ensure_resources(): void
             }
             data_create_resource($resource, $meta);
         }
+        agent_resource_keeps_text($resource);
+    }
+}
+
+/**
+ * Runs, events, steps, actions and conversations hold what was said and done
+ * exactly as written, shortcode tags included: none of it is printed by a
+ * template. A resource made before `keep_shortcodes` existed gets it here.
+ */
+function agent_resource_keeps_text(string $resource): void
+{
+    $meta = data_read($resource, '.meta');
+    if (is_array($meta) && empty($meta['keep_shortcodes'])) {
+        $meta['keep_shortcodes'] = true;
+        file_put_contents(data_path($resource, '.meta'), json_encode($meta, JSON_UNESCAPED_UNICODE), LOCK_EX);
     }
 }
 

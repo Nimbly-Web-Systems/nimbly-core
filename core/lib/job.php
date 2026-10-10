@@ -60,6 +60,11 @@ function job_ensure_resource()
     }
     $changed = false;
 
+    if (empty($meta['keep_shortcodes'])) {
+        $meta['keep_shortcodes'] = true;
+        $changed = true;
+    }
+
     if (($meta['fields']['payload']['admin_col'] ?? null) !== false) {
         $meta['fields']['payload']['admin_col'] = false;
         $changed = true;
@@ -101,6 +106,8 @@ function job_ensure_resource()
 function job_resource_meta()
 {
     return [
+        // A payload is handed to its handler exactly as it was queued.
+        'keep_shortcodes' => true,
         'fields' => [
             'type' => [
                 'name' => 'Type',

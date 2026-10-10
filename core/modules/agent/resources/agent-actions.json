@@ -1,4 +1,5 @@
 {
+  "keep_shortcodes": true,
   "fields": {
     "lineage_key": {"name": "Lineage", "type": "text", "required": true},
     "tool": {"name": "Tool", "type": "text", "required": true},

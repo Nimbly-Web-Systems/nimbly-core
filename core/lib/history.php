@@ -203,7 +203,7 @@ function history_restore($resource, $uuid, $id)
         load_library('util');
         $record['_modified_by'] = md5_uuid(_data_actor());
         $record['_modified'] = time();
-        if (!data_create($resource, $uuid, $record)) {
+        if (!_data_store($resource, $uuid, $record)) { // an earlier version goes back exactly as it was
             return false;
         }
         if (is_array($current)) {

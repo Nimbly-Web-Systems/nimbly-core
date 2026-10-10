@@ -176,25 +176,13 @@ function api_json_input($resource) {
 }
 
 /**
- * A stored value is parsed as template text when it is printed inside another
- * shortcode, as in [#set page-title="[#get record.title#]"#]. Shortcode tags in
- * submitted record values are therefore stored as HTML entities, so they still
- * display as typed. One-way encrypted fields stay as typed: login hashes the
- * password exactly as it was entered.
+ * Record values are escaped before they are encrypted, so a two-way encrypted
+ * field holds its text without a live shortcode tag too. The data layer does
+ * the same for every other write (see data_create()).
  */
 function api_escape_shortcodes($meta, $data) {
-    if (!is_array($data)) {
-        return $data;
-    }
     load_library('request-input');
-    $as_typed = isset($meta['encrypt']) ? explode(',', $meta['encrypt']) : [];
-    foreach ($data as $key => $value) {
-        if (in_array((string)$key, $as_typed, true)) {
-            continue;
-        }
-        $data[$key] = is_array($value) ? api_escape_shortcodes($meta, $value) : request_input_escape($value);
-    }
-    return $data;
+    return request_input_escape_record($meta, $data);
 }
 
 /**

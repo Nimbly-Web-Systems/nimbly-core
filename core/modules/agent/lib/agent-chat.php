@@ -74,6 +74,7 @@ function agent_chat_ensure_resource(): void
         $meta = json_decode((string)file_get_contents(agent_base_dir() . 'core/modules/agent/resources/agent-conversations.json'), true);
         data_create_resource('.agent_conversations', $meta);
     }
+    agent_resource_keeps_text('.agent_conversations');
 }
 
 function agent_chat_conversation(string $uuid, string $owner): array
