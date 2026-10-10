@@ -48,6 +48,10 @@ RUN mkdir /var/www/nimbly/ext
 RUN mkdir /var/www/nimbly/ext/data
 RUN chown -R www-data:www-data /var/www/nimbly/ext/
 
+# The mounted checkout belongs to the host user: Git reads it for every user in the container, root included
+RUN git config --system --add safe.directory /var/www/nimbly && \
+    git config --system --add safe.directory /var/www/nimbly/ext
+
 # Add docker ports and volumes
 EXPOSE 80
 VOLUME ["/var/www/nimbly"]
