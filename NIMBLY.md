@@ -2361,6 +2361,21 @@ root or under an `Alias`. It reads only, needs no root, and its requests come
 from the loopback address, so a server's own ban rules leave it alone. Use it
 after a deploy, and keep two runs to compare a rollout before and after.
 
+#### `host:proxy-conf`
+
+Prints the Apache lines that go with `TRUSTED_PROXIES` in `.env` (see
+Deployment), so that Apache's own access log shows the visitor and not the
+load balancer:
+
+```bash
+php core/cli/nimbly.php host:proxy-conf
+```
+
+It prints nothing when the setting is absent or names no valid address. The
+lines need `mod_remoteip` (`sudo a2enmod remoteip`) and belong in the site's
+`<VirtualHost>`, not in `.htaccess`. The container images run it at every
+start.
+
 #### `host:audit`
 
 Runs a read-only health audit for a manually managed Nimbly host. Project
@@ -2760,8 +2775,8 @@ without the setting, these headers are ignored.
 The web server's own access log, and what reads it (the bot rules below), need
 the visitor's address as well. The container images arrange that at start from
 the same setting. On a server of your own, enable `mod_remoteip` and put the
-lines this prints in the Apache server config (not in `.htaccess`), again after
-a change of the setting:
+lines this prints in the site's `<VirtualHost>` (not in `.htaccess`), again
+after a change of the setting:
 
 ```bash
 sudo a2enmod remoteip

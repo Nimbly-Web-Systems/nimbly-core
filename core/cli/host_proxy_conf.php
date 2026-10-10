@@ -8,7 +8,7 @@
  * Usage: php core/cli/nimbly.php host:proxy-conf
  *
  * Prints nothing when TRUSTED_PROXIES is not set. Needs mod_remoteip
- * (a2enmod remoteip); put the lines in the server config, not in .htaccess.
+ * (a2enmod remoteip); put the lines in the site's VirtualHost, not in .htaccess.
  */
 
 require_once __DIR__ . '/cli_bootstrap.inc';

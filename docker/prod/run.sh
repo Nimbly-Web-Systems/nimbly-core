@@ -50,7 +50,8 @@ else
 fi
 
 mkdir -p /run/php
-/usr/local/sbin/php-fpm -F &
+# Requests get the container's settings, not the two secrets only this script and setup use.
+env -u ADMIN_PASSWORD -u GIT_TOKEN /usr/local/sbin/php-fpm -F &
 
 apache2ctl -k start
 
