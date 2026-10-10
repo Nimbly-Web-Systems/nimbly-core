@@ -54,5 +54,13 @@ setup_no_terminal_assert(count(setup_no_terminal_users($site)) === 1, 'the admin
 $run = setup_no_terminal_run($site, []);
 setup_no_terminal_assert($run['code'] === 0, 'a second run asks nothing: ' . $run['err']);
 
+// A root .htaccess that differs from the template is not replaced unasked.
+$edited = file_get_contents($site . '/.htaccess') . "# edited by hand\n";
+file_put_contents($site . '/.htaccess', $edited);
+$run = setup_no_terminal_run($site, ['BASE_PATH' => '/']);
+setup_no_terminal_assert($run['code'] === 0, 'setup finishes on an edited .htaccess: ' . $run['err']);
+setup_no_terminal_assert(str_contains($run['out'], 'left as-is'), 'the question is answered with leave: ' . $run['out']);
+setup_no_terminal_assert(file_get_contents($site . '/.htaccess') === $edited, 'the edited .htaccess is left as it is');
+
 exec('rm -rf ' . escapeshellarg($site));
 echo "PASS: setup-no-terminal-test\n";

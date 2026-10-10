@@ -37,7 +37,7 @@ load_library('util');
 // Prompt helpers
 // -----------------------------------------------------------------------
 
-function nb_prompt(string $question, string $default = '', string $env_var = ''): string {
+function nb_prompt(string $question, string $default = '', string $env_var = '', ?string $unanswered = null): string {
     if ($env_var !== '' && ($env_val = getenv($env_var)) !== false && $env_val !== '') {
         echo $question . ': ' . $env_val . " [from \$$env_var]\n";
         return $env_val;
@@ -48,11 +48,12 @@ function nb_prompt(string $question, string $default = '', string $env_var = '')
     }
     $input = fgets(STDIN);
     if ($input === false) {
-        if ($default === '') {
-            nb_fail_without_answer();
+        $unanswered ??= $default;
+        if ($unanswered === '') {
+            nb_fail_without_answer($env_var);
         }
-        echo $question . ': ' . $default . " [default]\n";
-        return $default;
+        echo $question . ': ' . $unanswered . " [default]\n";
+        return $unanswered;
     }
     $value = trim($input);
     return $value !== '' ? $value : $default;
@@ -79,16 +80,18 @@ function nb_prompt_password(string $question, string $env_var = ''): string {
         echo "\n";
     }
     if ($input === false) {
-        nb_fail_without_answer();
+        nb_fail_without_answer($env_var);
     }
     $value = trim($input);
     return $value;
 }
 
 // No terminal and nothing on standard input (a container, a scheduler): name the settings to set.
-function nb_fail_without_answer(): void {
+function nb_fail_without_answer(string $env_var): void {
+    $settings = ['ADMIN_EMAIL', 'ADMIN_PASSWORD'];
+    $asked = array_slice($settings, (int)array_search($env_var, $settings, true));
     $missing = array_values(array_filter(
-        ['ADMIN_EMAIL', 'ADMIN_PASSWORD'],
+        $env_var !== '' ? $asked : [],
         fn($name) => (string)getenv($name) === ''
     ));
     $what = $missing ? 'Set ' . implode(' and ', $missing) . '.' : 'Input is required.';
@@ -355,7 +358,7 @@ if (!file_exists($htaccess_file)) {
         }
     } elseif ($base_path_requested && trim($htaccess_content) !== trim($expected_htaccess)) {
         echo "Warning: .htaccess differs from the setup template for BASE_PATH '$base_path'.\n";
-        $choice = nb_prompt('How to proceed? [leave/recreate]', 'recreate');
+        $choice = nb_prompt('How to proceed? [leave/recreate]', 'recreate', '', 'leave');
         if (strtolower(trim($choice)) === 'recreate') {
             file_put_contents($htaccess_file, $expected_htaccess);
             chmod($htaccess_file, 0640);
