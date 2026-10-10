@@ -74,7 +74,13 @@ function host_audit_main(array $argv): void
     $context['known_hosts'] = $project_result['known_hosts'];
     $context['access_log_projects'] = $project_result['access_log_projects'];
     $context['error_log_projects'] = $project_result['error_log_projects'];
+    $context['banned_addresses'] = host_audit_banned_addresses((array)$checks['security']['bot_bans']);
     $checks['apache'] = host_audit_apache($context, $findings);
+    $checks['security']['bot_bans'] = host_audit_describe_bot_bans(
+        (array)$checks['security']['bot_bans'],
+        (array)$checks['apache']['banned_clients']
+    );
+    unset($checks['apache']['banned_clients']);
     $project_result['checks'] = host_audit_merge_project_metrics(
         $project_result['checks'],
         (array)($checks['apache']['projects'] ?? [])
@@ -317,7 +323,9 @@ function host_audit_default_config(): array
         'scheduler_max_age_minutes' => 10,
         'job_running_stale_minutes' => 30,
         'required_services' => ['apache2', 'ssh', 'fail2ban'],
-        'required_fail2ban_jails' => ['sshd', 'recidive', 'apache-php-scan'],
+        'required_fail2ban_jails' => ['sshd', 'recidive', 'apache-php-scan',
+            'nimbly-pace', 'nimbly-notfound', 'nimbly-tripwire'],
+        'fail2ban_log' => '/var/log/fail2ban.log',
         'scheduler_config' => '/etc/nimbly/scheduler-projects.json',
         'scheduler_log' => '/var/log/nimbly-scheduler.log',
         'apache_log_dir' => '/var/log/apache2',
@@ -593,13 +601,17 @@ function host_audit_security(array $context, array &$findings): array
         $jail_status[$jail] = host_audit_fail2ban_counts($status['stdout']);
     }
     ksort($jail_status);
-    $fail2ban_activity = host_audit_fail2ban_activity($context['since']);
+    $fail2ban_activity = host_audit_fail2ban_activity(
+        $context['since'],
+        (string)($context['config']['fail2ban_log'] ?? '')
+    );
 
     return [
         'ssh' => array_intersect_key($ssh, $expected),
         'fail2ban_jails' => $jail_status,
         'new_bans' => $fail2ban_activity['new_bans'],
         'ssh_failures' => $fail2ban_activity['ssh_failures'],
+        'bot_bans' => $fail2ban_activity['bot_bans'],
     ];
 }
 
@@ -622,6 +634,8 @@ function host_audit_apache(array $context, array &$findings): array
     $rejected_method_probes = 0;
     $not_found_total = 0;
     $not_found_routes = [];
+    $banned_addresses = (array)($context['banned_addresses'] ?? []);
+    $banned_clients = [];
     foreach (array_unique($access_files) as $file) {
         $file_project = host_audit_log_project(
             $file,
@@ -637,7 +651,9 @@ function host_audit_apache(array $context, array &$findings): array
             &$route_5xx,
             &$rejected_method_probes,
             &$not_found_total,
-            &$not_found_routes
+            &$not_found_routes,
+            $banned_addresses,
+            &$banned_clients
         ): void {
             $entry = host_audit_parse_access_line($line);
             if ($entry === null) {
@@ -647,6 +663,9 @@ function host_audit_apache(array $context, array &$findings): array
                 return;
             }
             $requests++;
+            if ($banned_addresses) {
+                host_audit_note_banned_client($banned_clients, $banned_addresses, $line, $entry, $file_project);
+            }
             if (host_audit_501_is_rejected_method_probe($entry)) {
                 $rejected_method_probes++;
                 return;
@@ -858,6 +877,7 @@ function host_audit_apache(array $context, array &$findings): array
         'http_5xx' => $status_counts['5xx'],
         'top_problem_route' => array_key_first($route_5xx),
         'rejected_method_probes' => $rejected_method_probes,
+        'banned_clients' => $banned_clients,
         'not_found' => [
             'total' => $not_found_total,
             'known_route_total' => $known_route_404_count,
@@ -1536,7 +1556,39 @@ function host_audit_project(string $name, string $path, array $context, array &$
         'system_log_events' => $system_log_events,
         'jobs' => $jobs,
         'git' => $git,
+        'fatal_incidents' => host_audit_project_fatal_incidents($path, (int)$context['now']),
     ];
+}
+
+/**
+ * The fatal incidents a site recorded in the last 30 days (core/lib/fatal-alert.php),
+ * newest first: at most 50 incidents, each with its latest 100 event times.
+ */
+function host_audit_project_fatal_incidents(string $path, int $now): array
+{
+    $incidents = [];
+    foreach (glob($path . '/ext/data/.state/fatal-incident-*') ?: [] as $file) {
+        $record = json_decode((string)@file_get_contents($file), true);
+        if (!is_array($record) || (int)($record['last_at'] ?? 0) < $now - 2592000) {
+            continue;
+        }
+        $events = array_values(array_filter(
+            array_map('intval', (array)($record['events'] ?? [])),
+            fn (int $event): bool => $event >= $now - 2592000
+        ));
+        sort($events);
+        $incidents[] = [
+            'signature' => substr((string)($record['signature'] ?? ''), 0, 64),
+            'file' => substr((string)($record['file'] ?? ''), 0, 120),
+            'line' => (int)($record['line'] ?? 0),
+            'last_at' => (int)$record['last_at'],
+            'event_count' => count($events),
+            'events' => array_slice($events, -100),
+            'overflow' => (int)($record['overflow'] ?? 0),
+        ];
+    }
+    usort($incidents, fn (array $a, array $b): int => $b['last_at'] <=> $a['last_at']);
+    return ['incidents' => array_slice($incidents, 0, 50), 'omitted' => max(0, count($incidents) - 50)];
 }
 
 function host_audit_project_maintenance(string $name, string $path, array &$findings): array
@@ -2387,19 +2439,40 @@ function host_audit_fail2ban_counts(string $output): array
     return $counts;
 }
 
-function host_audit_fail2ban_activity(int $since): array
+function host_audit_fail2ban_activity(int $since, string $log_path = ''): array
 {
-    $fail2ban = host_audit_run_command(
-        ['journalctl', '-u', 'fail2ban', '--since', '@' . $since, '--no-pager', '-o', 'cat'],
-        15
-    );
+    $fail2ban = '';
+    $files = $log_path === '' ? [] : array_filter([$log_path . '.1', $log_path], 'is_readable');
+    if ($files) {
+        // Fail2ban writes to its own log file here; the journal holds no ban lines then.
+        foreach ($files as $file) {
+            host_audit_each_line($file, function (string $line) use (&$fail2ban, $since): void {
+                if (!str_contains($line, '] Ban ')) {
+                    return;
+                }
+                $time = strtotime(substr($line, 0, 19));
+                if ($time !== false && $time >= $since) {
+                    $fail2ban .= $line . "\n";
+                }
+            });
+        }
+    } else {
+        $fail2ban = host_audit_run_command(
+            ['journalctl', '-u', 'fail2ban', '--since', '@' . $since, '--no-pager', '-o', 'cat'],
+            15
+        )['stdout'];
+    }
     $ssh = host_audit_run_command(
         ['journalctl', '-u', 'ssh', '--since', '@' . $since, '--no-pager', '-o', 'cat'],
         15
     );
-    return host_audit_parse_security_activity($fail2ban['stdout'], $ssh['stdout']);
+    return host_audit_parse_security_activity($fail2ban, $ssh['stdout']);
 }
 
+/**
+ * Counts the bans and lists, for the Nimbly bot rules, who was banned:
+ * per rule each address with how often and when last, at most 50 addresses.
+ */
 function host_audit_parse_security_activity(string $fail2ban, string $ssh): array
 {
     $ssh_failures = 0;
@@ -2408,10 +2481,91 @@ function host_audit_parse_security_activity(string $fail2ban, string $ssh): arra
             $ssh_failures++;
         }
     }
+    $new_bans = 0;
+    $bot_bans = [];
+    foreach (preg_split('/\R/', $fail2ban) ?: [] as $line) {
+        if (!preg_match('/\[(?<jail>[\w.-]+)\]\s+Ban\s+(?<address>[0-9a-fA-F:.]{3,45})\s*$/', $line, $match)
+            || filter_var($match['address'], FILTER_VALIDATE_IP) === false) {
+            continue;
+        }
+        $new_bans++;
+        if (!str_starts_with($match['jail'], 'nimbly-')) {
+            continue;
+        }
+        $time = strtotime(substr($line, 0, 19));
+        $ban = &$bot_bans[$match['jail']][$match['address']];
+        $ban ??= ['address' => $match['address'], 'bans' => 0, 'last_at' => null];
+        $ban['bans']++;
+        if ($time !== false && preg_match('/^\d{4}-\d\d-\d\d /', $line)) {
+            $ban['last_at'] = gmdate('c', $time);
+        }
+        unset($ban);
+    }
+    ksort($bot_bans);
+    foreach ($bot_bans as $jail => $addresses) {
+        $bot_bans[$jail] = [
+            'bans' => array_sum(array_column($addresses, 'bans')),
+            'addresses' => count($addresses),
+            'banned' => array_slice(array_values($addresses), -50),
+        ];
+    }
     return [
-        'new_bans' => preg_match_all('/\bBan\s+\d{1,3}(?:\.\d{1,3}){3}\b/', $fail2ban),
+        'new_bans' => $new_bans,
         'ssh_failures' => $ssh_failures,
+        'bot_bans' => $bot_bans,
     ];
+}
+
+function host_audit_banned_addresses(array $bot_bans): array
+{
+    $addresses = [];
+    foreach ($bot_bans as $jail) {
+        foreach ((array)($jail['banned'] ?? []) as $ban) {
+            $addresses[(string)$ban['address']] = true;
+        }
+    }
+    return $addresses;
+}
+
+/** Keeps, for a banned address, what its requests in the access logs say about it. */
+function host_audit_note_banned_client(
+    array &$clients,
+    array $banned_addresses,
+    string $line,
+    array $entry,
+    ?string $file_project
+): void {
+    if (!preg_match('/(?:^|\s)(?<address>[0-9a-fA-F:.]{3,45}) \S+ \S+ \[/', $line, $match)
+        || !isset($banned_addresses[$match['address']])) {
+        return;
+    }
+    $client = &$clients[$match['address']];
+    $client ??= ['agent' => '', 'sites' => [], 'requests' => 0, 'statuses' => [], 'sample' => []];
+    $client['requests']++;
+    $client['statuses'][$entry['status']] = ($client['statuses'][$entry['status']] ?? 0) + 1;
+    if ($client['agent'] === '' && preg_match('/" \d{3} \S+ "[^"]*" "(?<agent>[^"]*)"/', $line, $agent)) {
+        $client['agent'] = substr($agent['agent'], 0, 160);
+    }
+    $site = (string)($entry['vhost'] ?? $file_project ?? '');
+    if ($site !== '' && count($client['sites']) < 5 && !in_array($site, $client['sites'], true)) {
+        $client['sites'][] = $site;
+    }
+    if (count($client['sample']) < 5) {
+        $client['sample'][] = $entry['method'] . ' ' . substr((string)$entry['path'], 0, 100) . ' ' . $entry['status'];
+    }
+}
+
+function host_audit_describe_bot_bans(array $bot_bans, array $clients): array
+{
+    foreach ($bot_bans as &$jail) {
+        foreach ($jail['banned'] as &$ban) {
+            $ban += $clients[$ban['address']]
+                ?? ['agent' => '', 'sites' => [], 'requests' => 0, 'statuses' => [], 'sample' => []];
+        }
+        unset($ban);
+    }
+    unset($jail);
+    return $bot_bans;
 }
 
 function host_audit_parse_access_line(string $line): ?array

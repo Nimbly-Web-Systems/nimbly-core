@@ -358,6 +358,53 @@ $security_activity = host_audit_parse_security_activity(
 );
 audit_assert($security_activity['new_bans'] === 2, 'counts window bans');
 audit_assert($security_activity['ssh_failures'] === 2, 'counts SSH failures');
+audit_assert($security_activity['bot_bans'] === [], 'lists only the bans of the Nimbly bot rules');
+
+$bot_activity = host_audit_parse_security_activity(
+    "2026-10-10 03:36:36,219 fail2ban.actions        [729]: NOTICE  [nimbly-tripwire] Ban 192.0.2.7\n"
+    . "2026-10-10 04:00:00,000 fail2ban.actions        [729]: NOTICE  [nimbly-tripwire] Ban 2001:db8::7\n"
+    . "2026-10-10 05:00:00,000 fail2ban.actions        [729]: NOTICE  [nimbly-pace] Ban 192.0.2.7\n"
+    . "2026-10-10 06:00:00,000 fail2ban.actions        [729]: NOTICE  [nimbly-pace] Ban 192.0.2.7\n"
+    . "2026-10-10 06:00:01,000 fail2ban.actions        [729]: NOTICE  [nimbly-pace] Restore Ban 192.0.2.9\n"
+    . "2026-10-10 06:00:02,000 fail2ban.actions        [729]: NOTICE  [sshd] Ban 192.0.2.8\n",
+    ''
+);
+audit_assert($bot_activity['new_bans'] === 5, 'counts bans from the fail2ban log file, without restored ones');
+audit_assert(array_keys($bot_activity['bot_bans']) === ['nimbly-pace', 'nimbly-tripwire'], 'groups bot bans by rule');
+audit_assert($bot_activity['bot_bans']['nimbly-tripwire']['addresses'] === 2, 'lists IPv4 and IPv6 addresses');
+audit_assert($bot_activity['bot_bans']['nimbly-pace']['banned'][0]['bans'] === 2, 'counts repeated bans of one address');
+audit_assert(
+    $bot_activity['bot_bans']['nimbly-pace']['banned'][0]['last_at'] === gmdate('c', strtotime('2026-10-10 06:00:00')),
+    'keeps the time of the last ban'
+);
+$banned_addresses = host_audit_banned_addresses($bot_activity['bot_bans']);
+audit_assert(array_keys($banned_addresses) === ['192.0.2.7', '2001:db8::7'], 'collects the banned addresses');
+$banned_clients = [];
+foreach ([
+    '192.0.2.7 - - [10/Oct/2026:05:00:00 +0000] "GET /nb-0123456789ab/ HTTP/1.1" 418 12 "-" "ExampleBot/1.0" 1200',
+    'example.org:443 192.0.2.7 - - [10/Oct/2026:05:00:01 +0000] "GET /about HTTP/1.1" 200 900 "-" "ExampleBot/1.0"',
+    '192.0.2.50 - - [10/Oct/2026:05:00:02 +0000] "GET / HTTP/1.1" 200 900 "-" "Visitor"',
+] as $access_line) {
+    host_audit_note_banned_client(
+        $banned_clients,
+        $banned_addresses,
+        $access_line,
+        host_audit_parse_access_line($access_line),
+        'fixture'
+    );
+}
+$described = host_audit_describe_bot_bans($bot_activity['bot_bans'], $banned_clients);
+$described_ban = $described['nimbly-pace']['banned'][0];
+audit_assert(array_keys($banned_clients) === ['192.0.2.7'], 'reads only the requests of banned addresses');
+audit_assert($described_ban['agent'] === 'ExampleBot/1.0', 'adds the agent name of a banned address');
+audit_assert($described_ban['requests'] === 2 && $described_ban['statuses'] === [418 => 1, 200 => 1], 'adds its request counts');
+audit_assert($described_ban['sites'] === ['fixture', 'example.org'], 'adds the sites it asked');
+audit_assert($described_ban['sample'][0] === 'GET /nb-0123456789ab/ 418', 'adds sample requests');
+audit_assert($described['nimbly-tripwire']['banned'][1]['requests'] === 0, 'a banned address without requests stays listed');
+audit_assert(
+    array_slice(host_audit_default_config()['required_fail2ban_jails'], -3) === ['nimbly-pace', 'nimbly-notfound', 'nimbly-tripwire'],
+    'requires the three bot rules'
+);
 
 $metrics = [];
 host_audit_add_project_php_event(
@@ -452,6 +499,24 @@ $fixture_context = [
     'since' => time() - 86400,
     'config' => ['job_running_stale_minutes' => 30],
 ];
+mkdir($fixture . '/ext/data/.state', 0755, true);
+file_put_contents($fixture . '/ext/data/.state/fatal-incident-recent', json_encode([
+    'signature' => str_repeat('b', 64), 'file' => 'ext/lib/example.php', 'line' => 12, 'overflow' => 3,
+    'last_at' => time() - 60, 'events' => array_merge([time() - 3000000], range(time() - 260, time() - 60)),
+]));
+file_put_contents($fixture . '/ext/data/.state/fatal-incident-old', json_encode([
+    'signature' => str_repeat('c', 64), 'last_at' => time() - 3000000, 'events' => [time() - 3000000],
+]));
+$fatal_incidents = host_audit_project_fatal_incidents($fixture, time());
+audit_assert(count($fatal_incidents['incidents']) === 1 && $fatal_incidents['omitted'] === 0, 'lists fatal incidents of the last 30 days');
+audit_assert($fatal_incidents['incidents'][0]['event_count'] === 201, 'counts the events of the last 30 days');
+audit_assert(count($fatal_incidents['incidents'][0]['events']) === 100, 'keeps the latest 100 event times');
+audit_assert(
+    $fatal_incidents['incidents'][0]['file'] === 'ext/lib/example.php' && $fatal_incidents['incidents'][0]['overflow'] === 3,
+    'keeps where a fatal incident happened and its overflow'
+);
+audit_assert(host_audit_project_fatal_incidents($fixture . '/missing', time())['incidents'] === [], 'a site without incidents has none');
+
 $job_counts = host_audit_project_jobs(
     'fixture',
     $fixture,
