@@ -2442,16 +2442,17 @@ function host_audit_fail2ban_counts(string $output): array
 function host_audit_fail2ban_activity(int $since, string $log_path = ''): array
 {
     $fail2ban = '';
+    $zone = host_audit_system_timezone();
     $files = $log_path === '' ? [] : array_filter([$log_path . '.1', $log_path], 'is_readable');
     if ($files) {
         // Fail2ban writes to its own log file here; the journal holds no ban lines then.
         foreach ($files as $file) {
-            host_audit_each_line($file, function (string $line) use (&$fail2ban, $since): void {
+            host_audit_each_line($file, function (string $line) use (&$fail2ban, $since, $zone): void {
                 if (!str_contains($line, '] Ban ')) {
                     return;
                 }
-                $time = strtotime(substr($line, 0, 19));
-                if ($time !== false && $time >= $since) {
+                $time = host_audit_fail2ban_time($line, $zone);
+                if ($time !== null && $time >= $since) {
                     $fail2ban .= $line . "\n";
                 }
             });
@@ -2466,14 +2467,34 @@ function host_audit_fail2ban_activity(int $since, string $log_path = ''): array
         ['journalctl', '-u', 'ssh', '--since', '@' . $since, '--no-pager', '-o', 'cat'],
         15
     );
-    return host_audit_parse_security_activity($fail2ban, $ssh['stdout']);
+    return host_audit_parse_security_activity($fail2ban, $ssh['stdout'], $zone);
+}
+
+/** Fail2ban writes its log in the server's own time zone, which PHP's setting need not match. */
+function host_audit_system_timezone(): DateTimeZone
+{
+    $name = trim((string)@file_get_contents('/etc/timezone'));
+    if ($name === '' && str_contains((string)@readlink('/etc/localtime'), '/zoneinfo/')) {
+        $name = explode('/zoneinfo/', (string)readlink('/etc/localtime'))[1];
+    }
+    try {
+        return new DateTimeZone($name !== '' ? $name : date_default_timezone_get());
+    } catch (Throwable) {
+        return new DateTimeZone(date_default_timezone_get());
+    }
+}
+
+function host_audit_fail2ban_time(string $line, ?DateTimeZone $zone = null): ?int
+{
+    $time = DateTimeImmutable::createFromFormat('Y-m-d H:i:s', substr($line, 0, 19), $zone);
+    return $time === false ? null : $time->getTimestamp();
 }
 
 /**
  * Counts the bans and lists, for the Nimbly bot rules, who was banned:
  * per rule each address with how often and when last, at most 50 addresses.
  */
-function host_audit_parse_security_activity(string $fail2ban, string $ssh): array
+function host_audit_parse_security_activity(string $fail2ban, string $ssh, ?DateTimeZone $zone = null): array
 {
     $ssh_failures = 0;
     foreach (preg_split('/\R/', $ssh) ?: [] as $line) {
@@ -2492,11 +2513,11 @@ function host_audit_parse_security_activity(string $fail2ban, string $ssh): arra
         if (!str_starts_with($match['jail'], 'nimbly-')) {
             continue;
         }
-        $time = strtotime(substr($line, 0, 19));
+        $time = host_audit_fail2ban_time($line, $zone);
         $ban = &$bot_bans[$match['jail']][$match['address']];
         $ban ??= ['address' => $match['address'], 'bans' => 0, 'last_at' => null];
         $ban['bans']++;
-        if ($time !== false && preg_match('/^\d{4}-\d\d-\d\d /', $line)) {
+        if ($time !== null) {
             $ban['last_at'] = gmdate('c', $time);
         }
         unset($ban);

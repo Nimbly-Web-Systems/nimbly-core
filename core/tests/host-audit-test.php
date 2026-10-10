@@ -377,6 +377,15 @@ audit_assert(
     $bot_activity['bot_bans']['nimbly-pace']['banned'][0]['last_at'] === gmdate('c', strtotime('2026-10-10 06:00:00')),
     'keeps the time of the last ban'
 );
+$zoned_activity = host_audit_parse_security_activity(
+    "2026-10-10 06:00:00,000 fail2ban.actions [729]: NOTICE  [nimbly-pace] Ban 192.0.2.7\n",
+    '',
+    new DateTimeZone('Europe/Amsterdam')
+);
+audit_assert(
+    $zoned_activity['bot_bans']['nimbly-pace']['banned'][0]['last_at'] === '2026-10-10T04:00:00+00:00',
+    'reads ban times in the server time zone'
+);
 $banned_addresses = host_audit_banned_addresses($bot_activity['bot_bans']);
 audit_assert(array_keys($banned_addresses) === ['192.0.2.7', '2001:db8::7'], 'collects the banned addresses');
 $banned_clients = [];
