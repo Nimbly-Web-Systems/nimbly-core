@@ -1433,6 +1433,14 @@ function data_search($data, $term, $level = 0)
     }
     foreach ($data as $key => $record) {
         $score = 0;
+        if (!is_array($record)) {
+            // Inside a field: a list of plain values, or one value in several languages
+            $p = $level > 0 && is_scalar($record) ? stripos(trim((string)$record), $term) : false;
+            if ($p !== false) {
+                return $p === 0 ? 2 : 1;
+            }
+            continue;
+        }
         foreach ($record as $field_name => $field_value) {
             if (is_scalar($field_value)) {
                 $v = trim($field_value);
