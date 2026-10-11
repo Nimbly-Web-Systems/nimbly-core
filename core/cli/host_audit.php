@@ -285,8 +285,9 @@ function host_sites_failures(array $answers, string $version): array
 {
     $expected = ['/' => 200, '/app.css' => 200, '/app.js' => 200, '/login' => 200, '/zz-unknown-page-x' => 404, '/health' => 200, 'tripwire' => 418];
     $failures = [];
-    if ($version === '') {
-        $failures[] = 'ext/static/app.version is missing';
+    if ($version === '' && ($answers['/']['status'] ?? 0) === 200) {
+        // A home page that does not answer says nothing about the version
+        $failures[] = 'no stylesheet version: ext/static/app.version is missing and the home page names none';
     }
     foreach ($expected as $name => $status) {
         if (!isset($answers[$name])) {

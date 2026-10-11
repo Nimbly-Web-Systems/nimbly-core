@@ -682,7 +682,15 @@ audit_assert(host_sites_failures($good_answers, 'other') === ['the home page doe
 unset($bad_answers['tripwire']);
 $bad_answers['/zz-unknown-page-x']['status'] = 404;
 audit_assert(host_sites_failures($bad_answers, 'abc123') === [], 'a site without a tripwire is not failed for it');
-audit_assert(host_sites_failures($good_answers, '') === ['ext/static/app.version is missing'], 'a missing version file fails');
+audit_assert(host_sites_failures($good_answers, '') === ['no stylesheet version: ext/static/app.version is missing and the home page names none'], 'a site without a version fails');
+$down_answers = $good_answers;
+foreach (['/', '/login', '/zz-unknown-page-x', '/health'] as $down_path) {
+    $down_answers[$down_path]['status'] = 503;
+}
+audit_assert(
+    array_filter(host_sites_failures($down_answers, ''), fn($failure) => str_contains($failure, 'version')) === [],
+    'a site that does not answer is not said to miss its version file'
+);
 $line_answers = $good_answers;
 unset($line_answers['/']['body']);
 audit_assert(
