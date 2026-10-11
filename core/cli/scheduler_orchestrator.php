@@ -88,6 +88,11 @@ function scheduler_orchestrator_log_path(): string
     return getenv('NIMBLY_SCHEDULER_LOG') ?: '/var/log/nimbly-scheduler.log';
 }
 
+function scheduler_orchestrator_logrotate_path(): string
+{
+    return getenv('NIMBLY_SCHEDULER_LOGROTATE') ?: '/etc/logrotate.d/nimbly-scheduler';
+}
+
 function scheduler_orchestrator_lock_path(): string
 {
     return getenv('NIMBLY_SCHEDULER_LOCK') ?: sys_get_temp_dir() . '/nimbly-scheduler-orchestrator.lock';
@@ -454,6 +459,42 @@ function scheduler_orchestrator_cron_install(array $argv): void
     chmod($cron_path, 0644);
 
     echo "Installed scheduler cron: {$cron_path}\n";
+
+    scheduler_orchestrator_logrotate_install($log_path, $user);
+}
+
+function scheduler_orchestrator_logrotate_install(string $log_path, string $user): void
+{
+    $logrotate_path = scheduler_orchestrator_logrotate_path();
+    scheduler_orchestrator_ensure_dir(dirname($logrotate_path));
+
+    $group = $user;
+    if (function_exists('posix_getpwnam') && function_exists('posix_getgrgid')) {
+        $user_info = posix_getpwnam($user);
+        $group_info = is_array($user_info) ? posix_getgrgid($user_info['gid']) : false;
+        if (is_array($group_info)) {
+            $group = $group_info['name'];
+        }
+    }
+
+    // The wrapper reopens the log every minute, so a new file is enough.
+    $rule = "{$log_path} {\n"
+        . "    weekly\n"
+        . "    rotate 8\n"
+        . "    compress\n"
+        . "    delaycompress\n"
+        . "    missingok\n"
+        . "    notifempty\n"
+        . "    create 0644 {$user} {$group}\n"
+        . "}\n";
+
+    if (file_put_contents($logrotate_path, $rule) === false) {
+        fwrite(STDERR, "Could not write scheduler log rotation rule: {$logrotate_path}\n");
+        exit(1);
+    }
+    chmod($logrotate_path, 0644);
+
+    echo "Installed scheduler log rotation: {$logrotate_path}\n";
 }
 
 function scheduler_orchestrator_prepare_log(string $log_path, string $user): void
@@ -477,6 +518,14 @@ function scheduler_orchestrator_prepare_log(string $log_path, string $user): voi
 function scheduler_orchestrator_cron_remove(): void
 {
     $cron_path = scheduler_orchestrator_cron_path();
+    $logrotate_path = scheduler_orchestrator_logrotate_path();
+    if (file_exists($logrotate_path)) {
+        if (!unlink($logrotate_path)) {
+            fwrite(STDERR, "Could not remove scheduler log rotation rule: {$logrotate_path}\n");
+            exit(1);
+        }
+        echo "Removed scheduler log rotation: {$logrotate_path}\n";
+    }
     if (!file_exists($cron_path)) {
         echo "Scheduler cron is not installed: {$cron_path}\n";
         return;
@@ -494,11 +543,13 @@ function scheduler_orchestrator_cron_status(): void
     $bin_path = scheduler_orchestrator_bin_path();
     $config_path = scheduler_orchestrator_config_path();
     $log_path = scheduler_orchestrator_log_path();
+    $logrotate_path = scheduler_orchestrator_logrotate_path();
 
     echo 'wrapper: ' . (is_executable($bin_path) ? 'installed' : 'missing') . " {$bin_path}\n";
     echo 'config:  ' . (file_exists($config_path) ? 'installed' : 'missing') . " {$config_path}\n";
     echo 'cron:    ' . (file_exists($cron_path) ? 'installed' : 'missing') . " {$cron_path}\n";
     echo 'log:     ' . (file_exists($log_path) ? 'present' : 'missing') . " {$log_path}\n";
+    echo 'rotate:  ' . (file_exists($logrotate_path) ? 'installed' : 'missing') . " {$logrotate_path}\n";
 }
 
 function scheduler_orchestrator_option(array $argv, string $name): string

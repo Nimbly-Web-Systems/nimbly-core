@@ -2324,6 +2324,7 @@ The orchestrator uses these server-managed files by default:
 | `/etc/nimbly/scheduler-projects.json` | Registered projects and defaults |
 | `/etc/cron.d/nimbly-scheduler` | System cron entry |
 | `/var/log/nimbly-scheduler.log` | Scheduler output log |
+| `/etc/logrotate.d/nimbly-scheduler` | Weekly rotation of the log, eight weeks kept |
 
 Install it once per server from any current Nimbly core checkout:
 
@@ -3023,7 +3024,8 @@ sudo php /var/www/site/core/cli/nimbly.php scheduler:cron:install --user=www-dat
 ```
 
 This creates `/etc/cron.d/nimbly-scheduler`, which runs
-`/usr/local/bin/nimbly-scheduler-orchestrator` every minute as `www-data`. The
+`/usr/local/bin/nimbly-scheduler-orchestrator` every minute as `www-data`, and
+`/etc/logrotate.d/nimbly-scheduler`, which rotates the scheduler log weekly. The
 orchestrator then dispatches registered project schedulers independently. In Docker
 containers the scheduler runs automatically, so no host cron setup is required.
 
