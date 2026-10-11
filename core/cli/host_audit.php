@@ -2285,17 +2285,6 @@ function host_audit_web_php_minor(string $fpm_config, ?callable $resolve = null)
     return null;
 }
 
-/** The newest stable PHP line, as php.net announces it; 'unknown' when it cannot be asked. */
-function host_audit_latest_php_minor(): string
-{
-    $result = host_audit_run_command([
-        'wget', '--quiet', '--output-document=-', '--timeout=15',
-        'https://www.php.net/releases/index.php?json&version=8',
-    ], 20);
-    $release = json_decode((string)$result['stdout'], true);
-    return host_audit_php_minor((string)($release['version'] ?? ''));
-}
-
 function host_audit_runtime_policy_findings(
     array $platform,
     array $php,
@@ -2315,10 +2304,9 @@ function host_audit_runtime_policy_findings(
     $ubuntu_alignment_known = $ubuntu_target !== '';
     $ubuntu_is_current_lts = $ubuntu_alignment_known && $installed_ubuntu === $ubuntu_target;
     $required_php = (string)($policy['php_line'] ?? '');
-    if ($required_php === 'latest-stable') {
-        $required_php = $resolved_php ?? host_audit_latest_php_minor();
-    } elseif ($required_php === 'ubuntu-default') {
-        $required_php = $resolved_php ?? host_audit_ubuntu_default_php_minor();
+    if ($required_php === 'ubuntu-default') {
+        // The PHP of the newest LTS, whatever release this server is on
+        $required_php = $resolved_php ?? host_audit_ubuntu_default_php_minor((string)($latest_meta['dist'] ?? ''));
     }
     $web_php = host_audit_php_minor((string)($php['version'] ?? ''));
     $checks = [
@@ -2337,8 +2325,9 @@ function host_audit_runtime_policy_findings(
             'enabled' => $required_php !== '',
             'aligned' => $required_php !== 'unknown' && $web_php === $required_php,
             'conclusive' => $required_php !== 'unknown',
-            'expected' => (['latest-stable' => 'latest stable PHP ', 'ubuntu-default' => 'Ubuntu default PHP ']
-                [(string)($policy['php_line'] ?? '')] ?? 'PHP ') . $required_php,
+            'expected' => (($policy['php_line'] ?? '') === 'ubuntu-default'
+                ? 'PHP ' . $required_php . ', as Ubuntu ' . ($ubuntu_target ?: 'LTS') . ' has it'
+                : 'PHP ' . $required_php),
             'observed' => $web_php,
         ],
         [
@@ -2388,14 +2377,36 @@ function host_audit_release_version(string $release): string
     return preg_match('/(\d+\.\d+)/', $release, $match) ? $match[1] : '';
 }
 
-function host_audit_ubuntu_default_php_minor(): string
+/**
+ * The PHP line an Ubuntu release carries, asked from Ubuntu's own archive:
+ * the version of its `php` package, e.g. "2:8.5+99ubuntu1".
+ *
+ * @param string $dist Release name as Ubuntu lists it, e.g. "resolute".
+ * @return string "8.5", or "unknown" when it cannot be asked.
+ */
+function host_audit_ubuntu_default_php_minor(string $dist): string
 {
-    $result = host_audit_run_command(['apt-cache', 'show', 'php'], 10);
-    if ($result['exit_code'] !== 0
-        || !preg_match('/^Depends:\s*php(\d+\.\d+)\b/im', $result['stdout'], $match)) {
+    if (preg_match('/^[a-z]+$/', $dist) !== 1) {
         return 'unknown';
     }
-    return $match[1];
+    $result = host_audit_run_command([
+        'wget', '--quiet', '--output-document=-', '--timeout=15',
+        'https://api.launchpad.net/1.0/ubuntu/+archive/primary?ws.op=getPublishedBinaries&binary_name=php'
+            . '&exact_match=true&status=Published&distro_arch_series=https://api.launchpad.net/1.0/ubuntu/' . $dist . '/amd64',
+    ], 20);
+    return host_audit_php_package_minor((string)$result['stdout']);
+}
+
+function host_audit_php_package_minor(string $json): string
+{
+    $versions = [];
+    foreach ((array)(json_decode($json, true)['entries'] ?? []) as $entry) {
+        if (preg_match('/(?:^|:)(\d+\.\d+)\+/', (string)($entry['binary_package_version'] ?? ''), $match)) {
+            $versions[] = $match[1];
+        }
+    }
+    usort($versions, 'version_compare');
+    return $versions === [] ? 'unknown' : end($versions);
 }
 
 function host_audit_php_minor(string $version): string

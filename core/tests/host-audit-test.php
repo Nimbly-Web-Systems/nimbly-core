@@ -100,28 +100,30 @@ $latest_runtime_findings = host_audit_runtime_policy_findings(
     [
         'version_id' => '22.04', 'name' => 'Ubuntu 22.04.5 LTS',
         'release_upgrade' => ['available' => true, 'target' => '24.04.5 LTS'],
-        'upgrade_path' => ['meta_release_lts' => ['entries' => [['version' => '24.04.5 LTS'], ['version' => '26.04.1 LTS']]]],
+        'upgrade_path' => ['meta_release_lts' => ['entries' => [['version' => '24.04.5 LTS', 'dist' => 'noble'], ['version' => '26.04.1 LTS', 'dist' => 'resolute']]]],
     ],
     ['version' => '8.4', 'cli_version' => '8.2.34', 'handler' => 'php-fpm'],
-    ['ubuntu_release' => 'current-lts', 'php_line' => 'latest-stable', 'php_handler' => 'php-fpm'],
+    ['ubuntu_release' => 'current-lts', 'php_line' => 'ubuntu-default', 'php_handler' => 'php-fpm'],
     'prod.example',
     '8.5'
 );
 audit_assert($latest_runtime_findings[0]['expected'] === '26.04 LTS', 'the expected Ubuntu is the newest LTS, not the next step offered');
 audit_assert(
-    $latest_runtime_findings[1]['expected'] === 'latest stable PHP 8.5' && $latest_runtime_findings[1]['observed'] === '8.4',
-    'the expected PHP is the latest stable line'
+    $latest_runtime_findings[1]['expected'] === 'PHP 8.5, as Ubuntu 26.04 has it' && $latest_runtime_findings[1]['observed'] === '8.4',
+    'the expected PHP is the one the newest LTS carries'
 );
 audit_assert(
     count(host_audit_runtime_policy_findings(
         ['version_id' => '26.04', 'upgrade_path' => ['meta_release_lts' => ['entries' => [['version' => '26.04.1 LTS']]]]],
         ['version' => '8.4', 'cli_version' => '8.4.26', 'handler' => 'php-fpm'],
-        ['ubuntu_release' => 'current-lts', 'php_line' => 'latest-stable', 'php_handler' => 'php-fpm'],
+        ['ubuntu_release' => 'current-lts', 'php_line' => 'ubuntu-default', 'php_handler' => 'php-fpm'],
         'prod.example',
         'unknown'
     )) === 0,
-    'a latest PHP that could not be asked reports nothing'
+    'a PHP that could not be asked reports nothing'
 );
+audit_assert(host_audit_php_package_minor('{"entries":[{"binary_package_version":"2:8.5+99ubuntu1","pocket":"Release"}]}') === '8.5', 'the PHP line is read from the version of Ubuntu\'s php package');
+audit_assert(host_audit_php_package_minor('') === 'unknown' && host_audit_ubuntu_default_php_minor('../x') === 'unknown', 'and is unknown without an answer or a release name');
 audit_assert(host_audit_web_php_minor('SetHandler "proxy:unix:/run/php/php8.4-fpm.sock|fcgi://localhost/"') === '8.4', 'the web PHP version is read from a socket that names it');
 audit_assert(
     host_audit_web_php_minor('SetHandler "proxy:unix:/run/php/php-fpm.sock|fcgi://localhost/"', fn($path) => $path === '/run/php/php-fpm.sock' ? '/run/php/php8.4-fpm.sock' : '') === '8.4',
