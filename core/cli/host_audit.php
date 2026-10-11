@@ -2257,11 +2257,7 @@ function host_audit_php_runtime(): array
         $modules['stdout'] . "\n" . $modules['stderr'],
         $fpm_config
     );
-    $web_version = null;
-    if ($handler === 'php-fpm'
-        && preg_match('/php(\d+\.\d+)-fpm(?:\.sock)?/i', $fpm_config, $match)) {
-        $web_version = $match[1];
-    }
+    $web_version = $handler === 'php-fpm' ? host_audit_web_php_minor($fpm_config) : null;
     return [
         'version' => $web_version ?? PHP_VERSION,
         'cli_version' => PHP_VERSION,
@@ -2271,26 +2267,58 @@ function host_audit_php_runtime(): array
     ];
 }
 
+/**
+ * The PHP version the sites run on, from the socket Apache hands requests to.
+ * A socket without a version in its name is a link to the one that has it.
+ */
+function host_audit_web_php_minor(string $fpm_config, ?callable $resolve = null): ?string
+{
+    if (preg_match('/php(\d+\.\d+)-fpm(?:\.sock)?/i', $fpm_config, $match)) {
+        return $match[1];
+    }
+    if (preg_match('~proxy:unix:(/[^|"\s]+\.sock)~i', $fpm_config, $match)) {
+        $target = (string)($resolve ? $resolve($match[1]) : realpath($match[1]));
+        if (preg_match('/php(\d+\.\d+)-fpm/i', $target, $match)) {
+            return $match[1];
+        }
+    }
+    return null;
+}
+
+/** The newest stable PHP line, as php.net announces it; 'unknown' when it cannot be asked. */
+function host_audit_latest_php_minor(): string
+{
+    $result = host_audit_run_command([
+        'wget', '--quiet', '--output-document=-', '--timeout=15',
+        'https://www.php.net/releases/index.php?json&version=8',
+    ], 20);
+    $release = json_decode((string)$result['stdout'], true);
+    return host_audit_php_minor((string)($release['version'] ?? ''));
+}
+
 function host_audit_runtime_policy_findings(
     array $platform,
     array $php,
     array $policy,
     ?string $host = null,
-    ?string $ubuntu_default_php = null
+    ?string $resolved_php = null
 ): array {
     $host = $host ?: (gethostname() ?: php_uname('n'));
-    $ubuntu_target = host_audit_release_version((string)($platform['release_upgrade']['target'] ?? ''));
+    // The newest LTS Ubuntu lists, not the next step the upgrader offers from here
+    $meta_entries = (array)($platform['upgrade_path']['meta_release_lts']['entries'] ?? []);
+    $latest_meta = $meta_entries === [] ? [] : end($meta_entries);
+    $ubuntu_target = host_audit_release_version((string)($latest_meta['version'] ?? ''));
     if ($ubuntu_target === '') {
-        $meta_entries = (array)($platform['upgrade_path']['meta_release_lts']['entries'] ?? []);
-        $latest_meta = $meta_entries === [] ? [] : end($meta_entries);
-        $ubuntu_target = host_audit_release_version((string)($latest_meta['version'] ?? ''));
+        $ubuntu_target = host_audit_release_version((string)($platform['release_upgrade']['target'] ?? ''));
     }
     $installed_ubuntu = host_audit_release_version((string)($platform['version_id'] ?? ''));
     $ubuntu_alignment_known = $ubuntu_target !== '';
     $ubuntu_is_current_lts = $ubuntu_alignment_known && $installed_ubuntu === $ubuntu_target;
     $required_php = (string)($policy['php_line'] ?? '');
-    if ($required_php === 'ubuntu-default') {
-        $required_php = $ubuntu_default_php ?? host_audit_ubuntu_default_php_minor();
+    if ($required_php === 'latest-stable') {
+        $required_php = $resolved_php ?? host_audit_latest_php_minor();
+    } elseif ($required_php === 'ubuntu-default') {
+        $required_php = $resolved_php ?? host_audit_ubuntu_default_php_minor();
     }
     $web_php = host_audit_php_minor((string)($php['version'] ?? ''));
     $checks = [
@@ -2308,11 +2336,9 @@ function host_audit_runtime_policy_findings(
             'title' => 'Web PHP version differs from infrastructure policy',
             'enabled' => $required_php !== '',
             'aligned' => $required_php !== 'unknown' && $web_php === $required_php,
-            'expected' => $required_php === 'unknown'
-                ? 'Ubuntu default PHP line'
-                : (($policy['php_line'] ?? '') === 'ubuntu-default'
-                    ? 'Ubuntu default PHP ' . $required_php
-                    : 'PHP ' . $required_php),
+            'conclusive' => $required_php !== 'unknown',
+            'expected' => (['latest-stable' => 'latest stable PHP ', 'ubuntu-default' => 'Ubuntu default PHP ']
+                [(string)($policy['php_line'] ?? '')] ?? 'PHP ') . $required_php,
             'observed' => $web_php,
         ],
         [
