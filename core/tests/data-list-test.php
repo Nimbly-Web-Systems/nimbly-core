@@ -292,14 +292,15 @@ $expected = array_slice(data_list_full('split', ['filter' => 'published:1', 'sor
 data_list_assert(array_keys($GLOBALS['SYSTEM']['variables']['data.split']) === array_keys($expected), 'the tag gives the page');
 data_list_assert($GLOBALS['SYSTEM']['variables']['data.split-total'] === count(data_list_full('split', ['filter' => 'published:1'])), 'the tag gives the total');
 
-// A unique field without an index is checked against its list file.
+// A unique field is an index field, listed under index or not.
 mkdir($fixture . '/ext/data/codes', 0750, true);
 file_put_contents($fixture . '/ext/data/codes/.meta', '{"history": false, "splitdir": true, "unique": ["code"]}');
 data_list_assert(data_create('codes', 'one', ['code' => 'A-1']) !== false, 'the first record of a unique resource is created');
 for ($i = 2; $i < 30; $i++) {
     data_create('codes', md5('code-' . $i), ['code' => 'A-' . $i, 'label' => 'x']);
 }
-data_list_assert(is_file($list_dir . '/codes/code'), 'the unique check keeps a list file of the field');
+data_list_assert(is_file($fixture . '/ext/data/codes/.index/code/.unique'), 'a unique field gets an index');
+data_list_assert(array_keys(data_read_index('codes', 'code', md5('A-5'))) === [md5('code-5')], 'with an entry for every record written');
 data_list_assert(count(data_read('codes')) === 29, 'different values are all created');
 data_list_assert(data_create('codes', 'copy', ['code' => 'A-7']) === false, 'a value another record has is refused on create');
 data_list_assert(data_create('codes', 'spaced', ['code' => ' A-7 ']) === false, 'also with spaces around it');
@@ -309,15 +310,30 @@ data_list_assert(data_update('codes', 'one', ['code' => 'B-1']) !== false, 'a ne
 data_list_assert(data_create('codes', 'reuse', ['code' => 'A-1']) !== false, 'the value it left is free');
 data_delete('codes', md5('code-7'));
 data_list_assert(data_create('codes', 'copy', ['code' => 'A-7']) !== false, 'the value of a deleted record is free');
-// A field name that is no file name is checked by reading the records.
+// Records from before the field was unique are indexed the first time it is checked.
+mkdir($fixture . '/ext/data/older/ab/cd', 0750, true);
+file_put_contents($fixture . '/ext/data/older/.meta', '{"history": false, "splitdir": true, "unique": ["sku"]}');
+file_put_contents($fixture . '/ext/data/older/ab/cd/abcd0001', '{"sku": "S-1"}');
+file_put_contents($fixture . '/ext/data/older/ab/cd/abcd0002', '{"sku": "S-2"}');
+file_put_contents($fixture . '/ext/data/older/plain', '{"sku": "S-3"}');
+data_list_assert(data_create('older', 'new1', ['sku' => 'S-2']) === false, 'a value of an older record is refused');
+data_list_assert(data_create('older', 'new2', ['sku' => 'S-3']) === false, 'also of one outside the split folders');
+data_list_assert(data_create('older', 'new3', ['sku' => 'S-4']) !== false, 'a new value is accepted next to older records');
+data_list_assert(data_update('older', 'abcd0001', ['sku' => 'S-1', 'note' => 'x']) !== false, 'an older record keeps its value');
+data_list_assert(data_update('older', 'abcd0001', ['sku' => 'S-9']) !== false && data_create('older', 'new4', ['sku' => 'S-1']) !== false, 'and frees it when it changes');
+data_cache_clear();
+data_list_assert(data_create('older', 'new5', ['sku' => 'S-9']) === false && data_create('older', 'new6', ['sku' => 'S-2']) === false, 'the index does not depend on the cache');
+
+// A field name that is no folder name is checked by reading the records.
 mkdir($fixture . '/ext/data/odd', 0750, true);
 file_put_contents($fixture . '/ext/data/odd/.meta', '{"history": false, "unique": ["../../../../../odd/escaped", "code"]}');
 data_list_assert(data_create('odd', 'one', ['code' => 'C-1', '../../../../../odd/escaped' => 'v']) !== false, 'a unique field with a path for a name is accepted once');
 data_list_assert(data_create('odd', 'two', ['code' => 'C-2', '../../../../../odd/escaped' => 'v']) === false, 'and refused the second time');
 data_list_assert(
-    !file_exists($fixture . '/ext/data/odd/escaped') && array_diff(@scandir($list_dir . '/odd') ?: [], ['.', '..', 'code']) === [],
-    'without a file outside the list folder'
+    !file_exists($fixture . '/ext/data/odd/escaped') && array_diff(@scandir($fixture . '/ext/data/odd/.index') ?: [], ['.', '..', 'code']) === [],
+    'without a file or folder outside its place'
 );
+data_list_assert(data_query('odd', ['filter' => '../../../../../odd/escaped:v', 'limit' => 5])['total'] === 1 && !file_exists($fixture . '/ext/data/odd/escaped'), 'and a list on such a field reads the records too');
 data_cache_clear();
 data_list_assert(data_create('codes', 'late', ['code' => 'B-1']) === false, 'and after a cache clear the check still holds');
 

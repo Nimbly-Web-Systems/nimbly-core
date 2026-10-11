@@ -59,8 +59,8 @@ $indexed_resources = [];
 foreach (glob($data_dir . '*/.meta') as $meta_file) {
     $resource = basename(dirname($meta_file));
     $meta = json_decode(file_get_contents($meta_file), true) ?? [];
-    if (!empty($meta['index']) && is_array($meta['index'])) {
-        $indexed_resources[$resource] = $meta['index'];
+    if (_data_index_fields($meta) !== []) {
+        $indexed_resources[$resource] = _data_index_fields($meta);
     }
 }
 

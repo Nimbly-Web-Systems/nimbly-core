@@ -961,9 +961,9 @@ function _data_store($resource, $uuid, $data_ls)
             require_once __DIR__ . '/data-list.php';
             _data_list_note($resource, $uuid, $file);
 
-            if (isset($meta['index']) && is_array($meta['index'])) {
+            if (is_array($meta)) {
                 load_library('util');
-                foreach ($meta['index'] as $index_name) {
+                foreach (_data_index_fields($meta) as $index_name) {
                     if (empty($data_ls[$index_name])) {
                         continue;
                     }
@@ -989,11 +989,8 @@ function _data_store($resource, $uuid, $data_ls)
 function _data_delete_stale_indexes($resource, $uuid, $old_ls, $new_ls)
 {
     $meta = data_meta($resource);
-    if (!isset($meta['index']) || !is_array($meta['index'])) {
-        return;
-    }
     $file = data_path($resource, $uuid);
-    foreach ($meta['index'] as $index_name) {
+    foreach (_data_index_fields($meta) as $index_name) {
         if (empty($old_ls[$index_name])) {
             continue;
         }
@@ -1036,6 +1033,66 @@ function _data_history_all($resource)
     foreach (data_list($resource) ?: [] as $uuid) {
         _data_history('delete', $resource, $uuid, $meta);
     }
+}
+
+/**
+ * The fields of a resource that have an index: the ones `.meta` lists under
+ * `index`, and every `unique` field, so that its check is a lookup.
+ */
+function _data_index_fields($meta)
+{
+    $fields = isset($meta['index']) && is_array($meta['index']) ? $meta['index'] : [];
+    foreach (isset($meta['unique']) && is_array($meta['unique']) ? $meta['unique'] : [] as $field) {
+        // A field is a folder name in the index
+        if (is_string($field) && preg_match('/^[A-Za-z0-9_][A-Za-z0-9_.-]*$/', $field) === 1 && !in_array($field, $fields, true)) {
+            $fields[] = $field;
+        }
+    }
+    return $fields;
+}
+
+/**
+ * Makes sure the index of a `unique` field knows every record. A field that
+ * `.meta` lists under `index` has had its entries from the start. Any other is
+ * indexed once, from the values of the records that exist, and marked. Called
+ * inside the write lock.
+ *
+ * @return bool False when the field has no index that can be relied on.
+ */
+function _data_unique_index_ready($resource, $field, $meta)
+{
+    if (!in_array($field, _data_index_fields($meta), true)) {
+        return false;
+    }
+    if (isset($meta['index']) && is_array($meta['index']) && in_array($field, $meta['index'], true)) {
+        return true;
+    }
+    $base = data_path($resource);
+    $mark = $base . '/.index/' . $field . '/.unique';
+    if (file_exists($mark)) {
+        return true;
+    }
+    if (!is_dir($base)) {
+        return false;
+    }
+
+    require_once __DIR__ . '/data-list.php';
+    $column = _data_list_columns($resource, [$field]);
+    if ($column === false) {
+        return false;
+    }
+    foreach ($column[$field] as $key => $value) {
+        if (empty($value)) {
+            continue;
+        }
+        foreach (data_index_uuids($value) as $index_uuid) {
+            _data_create_index($resource, $base . '/' . $key, $field, $index_uuid);
+        }
+    }
+    if (!is_dir(dirname($mark))) {
+        @mkdir(dirname($mark), 0750, true);
+    }
+    return @touch($mark);
 }
 
 function _data_index_path($resource, $index_name, $index_uuid)
@@ -1120,10 +1177,10 @@ function data_delete($resource, $uuid = null)
                 return $result;
             }
             $meta = data_meta($resource);
-            if (isset($meta['index']) && is_array($meta['index'])) {
+            if (_data_index_fields($meta) !== []) {
                 $data_ls = data_read($resource, $uuid);
                 load_library('util');
-                foreach ($meta['index'] as $index_name) {
+                foreach (_data_index_fields($meta) as $index_name) {
                     if (empty($data_ls[$index_name])) {
                         continue;
                     }
@@ -1617,9 +1674,11 @@ function _data_validate_unique($resource, $uuid, $data_ls, $fields)
     }
 
     $meta = data_meta($resource);
-    $indexed_fields = isset($meta['index']) && is_array($meta['index']) ? $meta['index'] : [];
 
     foreach ($fields as $field) {
+        // Before anything else: also a record without a value leaves the index complete
+        $indexed = _data_unique_index_ready($resource, $field, $meta);
+
         if (!array_key_exists($field, $data_ls) || !is_scalar($data_ls[$field])) {
             continue;
         }
@@ -1629,20 +1688,14 @@ function _data_validate_unique($resource, $uuid, $data_ls, $fields)
             continue;
         }
 
-        if (in_array($field, $indexed_fields, true)) {
+        if ($indexed) {
             load_library('util');
             $matches = data_read_index($resource, $field, md5_uuid($value));
         } else {
-            // The values of this one field, from its list file, not every record
-            require_once __DIR__ . '/data-list.php';
             $matches = [];
-            $column = is_dir(data_path($resource)) ? _data_list_columns($resource, [$field]) : [$field => []];
-            if ($column === false) {
-                $column = [$field => array_map(fn($record) => $record[$field] ?? null, data_read($resource) ?: [])];
-            }
-            foreach ($column[$field] as $key => $existing) {
-                if (is_scalar($existing) && (string)$existing === $value) {
-                    $matches[basename((string)$key)] = true;
+            foreach (data_read($resource) ?: [] as $record_uuid => $record) {
+                if (isset($record[$field]) && is_scalar($record[$field]) && (string)$record[$field] === $value) {
+                    $matches[$record_uuid] = $record;
                 }
             }
         }

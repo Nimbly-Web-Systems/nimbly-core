@@ -1567,7 +1567,7 @@ These rules are mandatory for all resources unless explicitly stated otherwise.
 - Does this resource need a `published` field?
 - Does ordering matter? Add `sort_order` + `sort`
 - Is this linked from a URL? Add a slug field and list it in `index`
-- Does any field need to be unique? Add it to `unique` and usually to `index`
+- Does any field need to be unique? Add it to `unique`; a unique field is indexed by itself
 - Does the admin overview need a specific column order? Use `admin_columns`, including `_modified` and `_created` when useful
 - Does content need to be translated? Add `languages` and `i18n` per field
 - Can this be smaller while still fully solving the current requirement?
