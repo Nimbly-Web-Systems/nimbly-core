@@ -152,14 +152,16 @@ api_list_assert(!file_exists($fixture . '/ext/data/.tmp/cache/_data/list/members
 // The value for If-Modified-Since: from a list file, moving with every write
 $list_file = $fixture . '/ext/data/.tmp/cache/_data/list/members/city';
 api_list_assert(is_file($list_file), 'the page built a list file');
+$then = time() - 500;
+touch($fixture . '/ext/data/members/.meta', $then - 100);
 foreach (scandir(dirname($list_file)) as $entry) {
     if ($entry[0] !== '.') {
-        touch(dirname($list_file) . '/' . $entry, time() - 500);
+        touch(dirname($list_file) . '/' . $entry, $then);
     }
 }
 clearstatcache();
-api_list_assert(data_list_modified('members') === time() - 500 || data_list_modified('members') === filemtime($fixture . '/ext/data/members/.meta'), 'the list files tell when the list changed');
-$before = data_list_modified('members');
+api_list_assert(data_list_modified('members') === $then, 'the list files tell when the list changed');
+api_list_assert(data_modified('members') > $then, 'which is not what the folders say');
 data_update('members', 'm003', ['city' => 'Gouda']);
 clearstatcache();
 api_list_assert(data_list_modified('members') >= time() - 2, 'a write moves that time');

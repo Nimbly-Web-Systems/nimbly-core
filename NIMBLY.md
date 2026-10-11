@@ -3438,12 +3438,10 @@ DELETE /api/v1/{resource}          → delete all records (requires `api_delete_
 
 A list takes these query parameters:
 
-| Parameter | Meaning |
-|---|---|
-| `limit`, `offset` | One page of the list: `?limit=20&offset=40`. |
-| `sort` | As in `[#data#]`: `date|desc`, `title|text|asc`, several separated by commas. |
-| `filter` | As in `[#data#]`: `status:new||todo,published:1`. |
-| `search` | Records whose title contains the text; in a resource without a title field, records with the text in any field. |
+- `limit`, `offset`: one page of the list, `?limit=20&offset=40`.
+- `sort`: as in `[#data#]`, e.g. `date|desc` or `title|text|asc`, several separated by commas.
+- `filter`: as in `[#data#]`, e.g. `status:new||todo,published:1`.
+- `search`: records whose title contains the text; in a resource without a title field, records with the text in any field.
 
 With any of the first four the answer has `total`, the number of records before the cut, next to `count`, the number returned. A page is answered without reading every record. Sorting or filtering on a field the API never returns (`hidden`, `encrypt`) is refused with HTTP 400.
 
