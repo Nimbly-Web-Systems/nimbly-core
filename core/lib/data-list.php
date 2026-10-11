@@ -72,6 +72,37 @@ function data_query($resource, $options = [])
     return ['records' => $records, 'total' => $total];
 }
 
+/**
+ * When the lists of a resource last changed, without walking its folders:
+ * every write adds a line to every list file, so the time of one tells. While
+ * the resource has no list file this is data_modified().
+ *
+ * @return int Unix timestamp.
+ */
+function data_list_modified($resource)
+{
+    $dir = _data_list_dir($resource);
+    foreach (@scandir($dir) ?: [] as $field) {
+        $file = $dir . '/' . $field;
+        if ($field[0] !== '.' && is_writable($file) && _data_list_is_current($file)) {
+            return max((int)filemtime($file), (int)@filemtime(data_path($resource) . '/.meta'));
+        }
+    }
+    return data_modified($resource);
+}
+
+/** Whether a list file was built on the commit the project is on now. */
+function _data_list_is_current($file)
+{
+    $handle = @fopen($file, 'r');
+    if ($handle === false) {
+        return false;
+    }
+    $header = explode(' ', rtrim((string)fgets($handle)));
+    fclose($handle);
+    return count($header) === 3 && $header[0] === '#1' && $header[1] === _data_list_signature();
+}
+
 /** Sort, search and filter in the order `[#data#]` applies them. */
 function _data_list_apply($records, $sort, $search, $filter)
 {
@@ -521,12 +552,7 @@ function _data_list_note($resource, $uuid, $file, $removed = false)
             continue;
         }
         $list = $dir . '/' . $field;
-        $handle = @fopen($list, 'r');
-        $header = $handle === false ? [] : explode(' ', rtrim((string)fgets($handle)));
-        if ($handle !== false) {
-            fclose($handle);
-        }
-        if (count($header) !== 3 || $header[0] !== '#1' || $header[1] !== _data_list_signature()) {
+        if (!_data_list_is_current($list)) {
             @unlink($list);
             continue;
         }

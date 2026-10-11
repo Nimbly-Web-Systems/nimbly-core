@@ -356,25 +356,107 @@ function resource_get($resource) { // get all
         load_library('api_export_resource');
         return api_export_resource($resource, $export);
     }
-    $modified = data_modified($resource);
+    $options = [
+        'search' => filter_input(INPUT_GET, 'search', FILTER_SANITIZE_SPECIAL_CHARS),
+        'sort' => filter_input(INPUT_GET, 'sort'),
+        'filter' => filter_input(INPUT_GET, 'filter'),
+        'limit' => filter_input(INPUT_GET, 'limit', FILTER_VALIDATE_INT),
+        'offset' => filter_input(INPUT_GET, 'offset', FILTER_VALIDATE_INT),
+    ];
+    if (api_list_is_page($options)) {
+        // A page does not walk the resource to see whether it changed
+        load_library('data-list');
+        $modified = data_list_modified($resource);
+    } else {
+        $modified = data_modified($resource);
+    }
     http_header_not_modified($modified);
+    $result = api_list($resource, $options);
+    if ($result === false) {
+        return json_result(array('message' => 'INVALID_DATA'), 400);
+    }
+    return json_result($result, 200, $modified);
+}
+
+/** Whether a list request asks for a part of the resource that the list files answer. */
+function api_list_is_page($options) {
+    return trim((string)($options['search'] ?? '')) === '' && (
+        trim((string)($options['sort'] ?? '')) !== ''
+        || trim((string)($options['filter'] ?? '')) !== ''
+        || (int)($options['limit'] ?? 0) > 0
+        || (int)($options['offset'] ?? 0) > 0
+    );
+}
+
+/**
+ * The list of a resource as the API answers it.
+ *
+ * Without options: every record. `search` looks in the title field, or in
+ * every field when the resource has none. `sort` and `filter` take what
+ * `[#data#]` takes; `limit` and `offset` cut a page. With any of the last four
+ * the answer has `total`, the number of records before the cut.
+ *
+ * @return array|false False when sort or filter names a field the API never returns.
+ */
+function api_list($resource, $options) {
+    $search = trim((string)($options['search'] ?? ''));
+    $sort = trim((string)($options['sort'] ?? ''));
+    $filter = trim((string)($options['filter'] ?? ''));
+    $limit = max(0, (int)($options['limit'] ?? 0));
+    $offset = max(0, (int)($options['offset'] ?? 0));
+
+    // A hidden value could be found by sorting or filtering on it
+    $asked = [];
+    foreach (explode(',', $filter) as $part) {
+        $asked[] = trim(explode(':', $part, 2)[0]);
+    }
+    if ($sort !== '') {
+        load_library('data-sort');
+        foreach (data_sort_rules($sort) as $rule) {
+            $asked[] = trim($rule['field']);
+        }
+    }
+    if (array_intersect($asked, api_hidden_fields($resource)) !== []) {
+        return false;
+    }
+
+    if (api_list_is_page($options)) {
+        load_library('data-list');
+        $page = data_query($resource, [
+            'sort' => $sort !== '' ? $sort : false,
+            'filter' => $filter !== '' ? $filter : false,
+            'limit' => $limit,
+            'offset' => $offset,
+        ]);
+        $result = api_hide_fields_all($resource, $page['records']);
+        return [$resource => $result, 'count' => count($result), 'total' => $page['total']];
+    }
+
     $result = api_hide_fields_all($resource, data_read($resource));
-
-    $search = trim((string)filter_input(INPUT_GET, 'search', FILTER_SANITIZE_SPECIAL_CHARS));
-    if ($search !== '') {
-        load_library('resource-title');
-        $title_field = resource_title_field($resource);
-        $result = $title_field !== null
-            ? array_filter($result, fn($record) => stripos((string)($record[$title_field] ?? ''), $search) !== false)
-            : data_search($result, $search);
+    if ($search === '') {
+        return [$resource => $result, 'count' => count($result)];
     }
 
-    $limit = (int)filter_input(INPUT_GET, 'limit', FILTER_VALIDATE_INT);
-    if ($limit > 0 && count($result) > $limit) {
-        $result = array_slice($result, 0, $limit, true);
+    load_library('resource-title');
+    $title_field = resource_title_field($resource);
+    $result = $title_field !== null
+        ? array_filter($result, fn($record) => stripos((string)($record[$title_field] ?? ''), $search) !== false)
+        : data_search($result, $search);
+    if ($sort !== '') {
+        $result = data_sort_param($result, $sort);
     }
-
-    return json_result([$resource => $result, 'count' => count($result)], 200, $modified);
+    if ($filter !== '') {
+        $result = data_filter($result, $filter);
+    }
+    $total = count($result);
+    if ($limit > 0 || $offset > 0) {
+        $result = array_slice($result, $offset, $limit > 0 ? $limit : null, true);
+    }
+    $answer = [$resource => $result, 'count' => count($result)];
+    if ($sort !== '' || $filter !== '' || $limit > 0 || $offset > 0) {
+        $answer['total'] = $total;
+    }
+    return $answer;
 }
 
 /**
