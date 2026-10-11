@@ -170,6 +170,13 @@ $queries = [
     ['filter' => 'type:!cluster', 'sort' => 'name|text|desc'],
     ['sort' => 'date,text,desc'],
     ['sort' => 'date|desc'],
+    ['sort' => 'date,desc'],
+    ['sort' => 'date|asc,type|text|asc', 'filter' => 'published:1'],
+    ['sort' => 'amount|desc'],
+    ['sort' => 'amount|asc', 'filter' => 'lang:nl'],
+    ['sort' => 'order|desc'],
+    ['sort' => 'title|desc', 'filter' => 'type:cluster'],
+    ['sort' => 'date|unknown|desc'],
     ['sort' => 'missing_field|text|asc'],
     ['sort' => '_created|num|desc', 'filter' => 'lang:en'],
     ['filter' => 'published:1', 'fields' => 'uuid,date,published,title'],
@@ -230,6 +237,16 @@ $page = data_query('flat', ['filter' => 'date:1999-01-01']);
 data_list_assert(array_keys($page['records']) === ['r0003'], 'an updated value is found');
 $page = data_query('flat', ['sort' => 'date|text|asc', 'limit' => 1]);
 data_list_assert(array_keys($page['records']) === ['r0003'] && $page['total'] === 128, 'the first page starts with the oldest');
+
+// A rule of field and order sorts without a type: numbers as numbers.
+$page = data_query('flat', ['sort' => 'date|desc', 'limit' => 2]);
+$dates = array_column(data_read('flat'), 'date');
+rsort($dates);
+data_list_assert(array_column($page['records'], 'date') === array_slice($dates, 0, 2), 'field|desc starts with the newest');
+$page = data_query('flat', ['sort' => 'amount|desc', 'limit' => 1]);
+data_list_assert((string)current($page['records'])['amount'] === '100', 'field|desc puts 100 before 12 and 7');
+$sorted = data_sort_param(data_read('flat'), 'amount,asc');
+data_list_assert((string)current($sorted)['amount'] === '0', 'field,asc starts with the smallest number');
 
 // Many writes: the file is written compact again and still right.
 for ($round = 0; $round < 3; $round++) {

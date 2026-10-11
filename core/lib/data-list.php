@@ -92,35 +92,36 @@ function _data_list_apply($records, $sort, $search, $filter)
  * Filters and sorts reduced records, with the result data_sort_param() and
  * data_filter() give on the full list.
  *
- * Text sorts, and number sorts over whole numbers, compare the same way on any
- * part of the list, so the filter goes first and the sort compares plain
- * values. Other sorts (no type given, or numbers with fractions, which the
- * sort functions compare by whole difference) are left to those functions on
- * the whole list.
+ * Text sorts, number sorts over whole numbers, and sorts without a type over
+ * values that are all numbers or all text, compare the same way on any part of
+ * the list, so the filter goes first and the sort compares plain values. Other
+ * sorts (numbers with fractions, which the sort functions compare by whole
+ * difference, or numbers and text mixed) are left to those functions on the
+ * whole list.
  */
 function _data_list_rows_apply($rows, $sort, $filter)
 {
     $rules = [];
     if ($sort) {
         load_library('data-sort');
-        $separator = strpos((string)$sort, '|') === false ? null : '|';
-        foreach ($separator === null ? [(string)$sort] : explode(',', (string)$sort) as $rule) {
-            $parts = explode($separator ?? ',', $rule);
-            if (count($parts) < 2) {
-                continue;
+        foreach (data_sort_rules($sort) as $rule) {
+            $type = trim(strtolower($rule['flags']));
+            if (in_array($type, ['num', 'int', 'numeric'], true)) {
+                $type = 'number';
+            } elseif ($type === 'text' || $type === 'string') {
+                $type = 'text';
+            } else {
+                $type = 'plain';
             }
-            $type = trim(strtolower($parts[1]));
-            if (!in_array($type, ['num', 'int', 'numeric', 'text', 'string'], true)) {
-                return _data_list_apply($rows, $sort, false, $filter);
-            }
-            $rules[] = [$parts[0], $type[0] !== 't' && $type[0] !== 's', trim(strtolower($parts[2] ?? '')) === 'desc'];
+            $rules[] = [$rule['field'], $type, trim(strtolower($rule['order'])) === 'desc'];
         }
     }
 
     $language = null;
     $keys = [];
-    foreach ($rules as $number => [$field, $numeric, $descending]) {
+    foreach ($rules as $number => [$field, $type, $descending]) {
         $keys[$number] = [];
+        $kinds = [];
         foreach ($rows as $key => $row) {
             // As _get_key() reads a value
             $value = $row[$field] ?? '-';
@@ -133,9 +134,15 @@ function _data_list_rows_apply($rows, $sort, $filter)
                     $value = is_scalar($first) ? (string)$first : '';
                 }
             }
-            if ($numeric) {
+            if ($type === 'number') {
                 $value = floatval($value);
                 if (!is_finite($value) || floor($value) !== $value) {
+                    return _data_list_apply($rows, $sort, false, $filter);
+                }
+            } elseif ($type === 'plain') {
+                // Numbers among themselves and texts among themselves have one order
+                $kinds[is_numeric($value)] = true;
+                if (count($kinds) > 1 || !(is_string($value) || is_int($value) || is_float($value))) {
                     return _data_list_apply($rows, $sort, false, $filter);
                 }
             } else {
@@ -153,12 +160,12 @@ function _data_list_rows_apply($rows, $sort, $filter)
     }
 
     $order = array_fill_keys(array_keys($rows), true);
-    foreach ($rules as $number => [$field, $numeric, $descending]) {
+    foreach ($rules as $number => [$field, $type, $descending]) {
         $values = [];
         foreach ($order as $key => $ignored) {
             $values[$key] = $keys[$number][$key];
         }
-        if ($numeric) {
+        if ($type !== 'text') {
             uasort($values, $descending ? fn($a, $b) => $b <=> $a : fn($a, $b) => $a <=> $b);
         } else {
             uasort($values, $descending ? fn($a, $b) => strcasecmp($b, $a) : fn($a, $b) => strcasecmp($a, $b));
@@ -195,12 +202,9 @@ function _data_list_rows($resource, $filter, $sort)
         }
     }
     if ($sort) {
-        $separator = strpos((string)$sort, '|') === false ? null : '|';
-        foreach ($separator === null ? [(string)$sort] : explode(',', (string)$sort) as $rule) {
-            $parts = explode($separator ?? ',', $rule);
-            if (count($parts) >= 2) {
-                $fields[$parts[0]] = true;
-            }
+        load_library('data-sort');
+        foreach (data_sort_rules($sort) as $rule) {
+            $fields[$rule['field']] = true;
         }
     }
     $fields = array_map('strval', array_keys($fields));

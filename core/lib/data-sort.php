@@ -23,28 +23,35 @@ function data_sort_param($data, $sort_rules) {
     if (empty($data)) {
         return $data;
     }
-    if (strpos($sort_rules, '|') === false) {
-        return data_sort_param_separator($data, $sort_rules);
-    }
-    $sorts = explode(",", $sort_rules);
-    foreach ($sorts as $sort) {
-        $data = data_sort_param_separator($data, $sort, '|');
+    foreach (data_sort_rules($sort_rules) as $rule) {
+        $data = data_sort_meta($data, $rule);
     }
     return $data;
 }
 
-function data_sort_param_separator($data, $sort_csv, $sep = ',') {
-    $parts = explode($sep, $sort_csv);
-    $len = count($parts);
-    if ($len < 2) {
-        return $data;
+/**
+ * Reads the sort rules of a `sort=` parameter: `field|type|order` rules
+ * separated by commas, or one rule written as `field,type,order`. A rule of
+ * two parts that ends in `asc` or `desc` is a field and an order, compared
+ * without a type.
+ *
+ * @return array A list of ['field' => , 'flags' => , 'order' => ].
+ */
+function data_sort_rules($sort_rules) {
+    $sort_rules = (string)$sort_rules;
+    $sep = strpos($sort_rules, '|') === false ? ',' : '|';
+    $rules = [];
+    foreach ($sep === ',' ? [$sort_rules] : explode(',', $sort_rules) as $rule) {
+        $parts = explode($sep, $rule);
+        if (count($parts) < 2) {
+            continue;
+        }
+        if (count($parts) === 2 && in_array(trim(strtolower($parts[1])), ['asc', 'desc'], true)) {
+            $parts = [$parts[0], 'default', $parts[1]];
+        }
+        $rules[] = ['field' => $parts[0], 'flags' => $parts[1], 'order' => $parts[2] ?? 'default'];
     }
-    $meta = array(
-        "field" => $parts[0],
-        "flags" => $len > 1? $parts[1] : 'default',
-        "order" => $len > 2? $parts[2] : 'default'
-    );
-    return data_sort_meta($data, $meta);
+    return $rules;
 }
 
 function data_sort_meta($data, $meta) {
@@ -92,8 +99,8 @@ function data_sort($data, $key, $sort_flags = SORT_REGULAR, $sort_order = SORT_A
 
 function data_sort_regular($data, $key, $sort_order = SORT_ASC) {
     uasort($data, $sort_order === SORT_ASC?
-            function($a, $b) use ($key) { return _get_key($a, $key) ?? '' - _get_key($b, $key) ?? ''; }
-        :   function($b, $a) use ($key) { return _get_key($a, $key) ?? '' - _get_key($b, $key) ?? ''; });
+            function($a, $b) use ($key) { return (_get_key($a, $key) ?? '') <=> (_get_key($b, $key) ?? ''); }
+        :   function($b, $a) use ($key) { return (_get_key($a, $key) ?? '') <=> (_get_key($b, $key) ?? ''); });
     return $data;
 }
 
