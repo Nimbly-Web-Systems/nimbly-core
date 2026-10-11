@@ -243,12 +243,6 @@ function _data_list_rows($resource, $filter, $sort)
     if ($fields === []) {
         $fields = ['uuid'];
     }
-    foreach ($fields as $field) {
-        if (preg_match('/^[A-Za-z0-9_][A-Za-z0-9_.-]*$/', $field) !== 1) {
-            return false;
-        }
-    }
-
     $columns = _data_list_columns($resource, $fields);
     if ($columns === false) {
         return false;
@@ -272,10 +266,17 @@ function _data_list_rows($resource, $filter, $sort)
  * Loads the list files of some fields, building the ones that are missing or
  * were built on another commit.
  *
- * @return array|false field => (record path => value), or false when a record id cannot be kept in a line.
+ * @return array|false field => (record path => value), or false when a field name or a record id cannot be kept in a file.
  */
 function _data_list_columns($resource, $fields)
 {
+    foreach ($fields as $field) {
+        // A field is a file name in the list folder
+        if (preg_match('/^[A-Za-z0-9_][A-Za-z0-9_.-]*$/', (string)$field) !== 1) {
+            return false;
+        }
+    }
+
     $columns = [];
     $missing = [];
     foreach ($fields as $number => $field) {

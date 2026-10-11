@@ -1633,19 +1633,22 @@ function _data_validate_unique($resource, $uuid, $data_ls, $fields)
             load_library('util');
             $matches = data_read_index($resource, $field, md5_uuid($value));
         } else {
+            // The values of this one field, from its list file, not every record
+            require_once __DIR__ . '/data-list.php';
             $matches = [];
-            foreach (data_read($resource) as $record_uuid => $record) {
-                if (!isset($record[$field]) || !is_scalar($record[$field])) {
-                    continue;
-                }
-                if ((string)$record[$field] === $value) {
-                    $matches[$record_uuid] = $record;
+            $column = is_dir(data_path($resource)) ? _data_list_columns($resource, [$field]) : [$field => []];
+            if ($column === false) {
+                $column = [$field => array_map(fn($record) => $record[$field] ?? null, data_read($resource) ?: [])];
+            }
+            foreach ($column[$field] as $key => $existing) {
+                if (is_scalar($existing) && (string)$existing === $value) {
+                    $matches[basename((string)$key)] = true;
                 }
             }
         }
 
         foreach ($matches as $match_uuid => $record) {
-            if ($match_uuid !== $uuid) {
+            if ((string)$match_uuid !== (string)$uuid) {
                 return false;
             }
         }
