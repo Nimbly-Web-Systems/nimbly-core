@@ -44,7 +44,7 @@ nb_edit.init_editor = function (ed, as_form_field = false) {
             if (e.dataTransfer?.files.length) e.preventDefault();
         });
         ed.addEventListener('paste', e => {
-            if (e.clipboardData?.files.length) e.preventDefault();
+            if (e.clipboardData?.files.length && e.clipboardData.getData('text/plain').trim() === '') e.preventDefault();
         });
     } else {
         window.nb.bubble_editor.init(ed, {

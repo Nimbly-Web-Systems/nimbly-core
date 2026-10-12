@@ -435,14 +435,16 @@ nb_bubble_editor.on_paste = async function (e) {
             }
         }
     }
+    // Word and Excel add a picture of the copied text; text on the clipboard means a text paste.
+    const text = data.getData('text/plain');
     const files = Array.from(data.files || []);
-    if (files.length) {
+    if (files.length && text.trim() === '') {
         if (media) nb.edit.upload_images(ed, files, nb_bubble_editor.insertion_range(ed));
         return;
     }
     const out = html ?
         nb_bubble_editor.clean_html(html)
-        : nb_bubble_editor.plain_to_html(data.getData('text/plain'));
+        : nb_bubble_editor.plain_to_html(text);
     if (out) {
         nb_bubble_editor.doc.insert_html(out);
     }
@@ -609,6 +611,12 @@ nb_bubble_editor.clean_html = function (html) {
             el.replaceWith(replacement);
         } else {
             el.replaceWith(...el.childNodes);
+        }
+    });
+    // Word points its pictures at files on the writer's own computer
+    root.querySelectorAll('*').forEach((el) => {
+        if (el.tagName.startsWith('V:') || (el.tagName === 'IMG' && !/^(https?:|\/|data:)/i.test(el.getAttribute('src') || ''))) {
+            el.remove();
         }
     });
     // keep only attributes content needs; drops Word/Docs class, style, lang, align, ...

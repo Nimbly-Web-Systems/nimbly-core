@@ -339,6 +339,23 @@ test('paste_html cleans Word markup', async ({ page }) => {
   expect(result).toBe('<p>Word <b>bold</b> text</p><p><a href="https://example.com">link</a></p>');
 });
 
+test('a Word paste with a picture of the text inserts the text', async ({ page }) => {
+  await editor_page(page, { paste_html: true });
+  const result = await page.evaluate(() => {
+    const ed = document.querySelector('[data-nb-edit]');
+    ed._nb_editor_options = { media: true };
+    ed.focus();
+    ed.innerHTML = '';
+    const dt = new DataTransfer();
+    dt.setData('text/html', '<p class="MsoNormal">Word text<img src="file:///C:/Temp/clip_image001.png"></p>');
+    dt.setData('text/plain', 'Word text');
+    dt.items.add(new File([new Uint8Array([137, 80, 78, 71])], 'image.png', { type: 'image/png' }));
+    nb_bubble_editor.on_paste({ currentTarget: ed, clipboardData: dt, preventDefault() {} });
+    return ed.innerHTML;
+  });
+  expect(result).toBe('<p>Word text</p>');
+});
+
 /* field bar */
 
 // inline page editing: fields outside a form, edit mode on, saves stubbed
