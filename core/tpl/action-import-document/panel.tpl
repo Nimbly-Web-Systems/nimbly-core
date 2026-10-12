@@ -17,12 +17,12 @@
         </svg>
         <span x-show="!busy" class="inline-flex">[#include file=[#base-path#]core/modules/forms/lib/field-actions/icon-sparkles.tpl#]</span>
         <span x-show="!busy">[#text Import from document#]</span>
-        <span x-show="busy && step === 0">[#text Reading the document…#]</span>
-        <span x-show="busy && step === 1">[#text Understanding the text…#]</span>
-        <span x-show="busy && step === 2">[#text Laying out the body text…#]</span>
-        <span x-show="busy && step === 3">[#text Looking up the location…#]</span>
-        <span x-show="busy && step === 4">[#text Choosing the options that fit…#]</span>
-        <span x-show="busy && step === 5">[#text Almost there, hold on…#]</span>
+        <span data-import-step x-show="shows($el)">[#text Reading the document…#]</span>
+        <span data-import-step x-show="shows($el)">[#text Understanding the text…#]</span>
+        <span data-import-step x-show="shows($el)">[#text Laying out the text…#]</span>
+        [#if import_document_has_location=(not-empty) tpl=step-location#]
+        [#if import_document_has_options=(not-empty) tpl=step-options#]
+        <span data-import-step x-show="shows($el)">[#text Almost there, hold on…#]</span>
     </button>
     <p x-cloak x-show="busy" class="text-xs text-neutral-500">
         [#text This takes about a minute.#]

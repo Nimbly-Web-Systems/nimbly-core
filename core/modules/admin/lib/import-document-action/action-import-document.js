@@ -14,6 +14,14 @@ document.addEventListener("alpine:init", () => {
     step: 0,
     timer: null,
 
+    // The busy texts the panel rendered for this resource, in order.
+    steps() {
+      return Array.from(this.$root.querySelectorAll("[data-import-step]"));
+    },
+    shows(el) {
+      return this.busy && this.steps().indexOf(el) === this.step;
+    },
+
     import_document(file) {
       if (!file) {
         return;
@@ -23,8 +31,9 @@ document.addEventListener("alpine:init", () => {
       this.filled = [];
       // The button text moves on while the document is read, so the wait shows life.
       this.step = 0;
+      const last = this.steps().length - 1;
       this.timer = setInterval(() => {
-        if (this.step < 5) {
+        if (this.step < last) {
           this.step++;
         }
       }, 8000);
