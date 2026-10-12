@@ -1849,9 +1849,10 @@ function host_audit_install(array $argv): void
     host_audit_write_file(dirname($lib_path) . '/nimbly-maintenance.php', $maintenance_source, 0644);
     host_audit_write_file($lib_path, $source, 0644);
 
+    // The wrapper starts the server's `php`, not the version that happens to install it
     $script = "#!/bin/sh\n"
         . 'exec env NIMBLY_HOST_AUDIT_CONFIG=' . escapeshellarg($config_path)
-        . ' ' . escapeshellarg(PHP_BINARY)
+        . ' ' . escapeshellarg(is_executable('/usr/bin/php') ? '/usr/bin/php' : PHP_BINARY)
         . ' ' . escapeshellarg($lib_path)
         . " host:audit \"\$@\"\n";
     host_audit_write_file($bin_path, $script, 0755);
