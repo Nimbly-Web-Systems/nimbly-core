@@ -2647,16 +2647,36 @@ function host_audit_parse_access_line(string $line): ?array
     $vhost = count($prefix_parts) >= 2
         ? host_audit_normalize_vhost((string)$prefix_parts[0])
         : null;
-    // The site check asks over the loopback address: those are our own requests, not traffic
     $client = (string)($prefix_parts[max(0, count($prefix_parts) - 3)] ?? '');
     return [
-        'own_check' => in_array($client, ['127.0.0.1', '::1'], true),
+        'own_check' => in_array($client, host_audit_own_addresses(), true),
         'timestamp' => $timestamp,
         'method' => $match['method'],
         'path' => $path,
         'status' => (int)$match['status'],
         'vhost' => $vhost,
     ];
+}
+
+/**
+ * The addresses of this server. The site check asks over the loopback address and a redirect to
+ * another host name comes back in over the public one: those are our own requests, not traffic.
+ */
+function host_audit_own_addresses(): array
+{
+    static $addresses = null;
+    if ($addresses === null) {
+        $addresses = ['127.0.0.1', '::1'];
+        foreach (function_exists('net_get_interfaces') ? (net_get_interfaces() ?: []) : [] as $interface) {
+            foreach ((array)($interface['unicast'] ?? []) as $unicast) {
+                if (isset($unicast['address'])) {
+                    $addresses[] = (string)$unicast['address'];
+                }
+            }
+        }
+        $addresses = array_values(array_unique($addresses));
+    }
+    return $addresses;
 }
 
 function host_audit_normalize_vhost(string $value, bool $allow_wildcard = false): ?string
