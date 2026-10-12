@@ -27,11 +27,8 @@ $GLOBALS['SYSTEM'] = [
     'variables' => [],
     'data_error' => null,
 ];
-file_put_contents($fixture . '/.config/.meta', json_encode([
-    'fields' => false,
-    'validate_library' => 'site-settings',
-    'validate_function' => 'site_settings_validate_config',
-]));
+// The .meta names no validator: core applies its own to .config.
+file_put_contents($fixture . '/.config/.meta', json_encode(['fields' => false]));
 file_put_contents($fixture . '/.config/site', json_encode([
     'uuid' => 'site',
     'languages' => ['en', 'nl', 'pt'],
@@ -64,6 +61,13 @@ data_update('.config', 'site', ['name' => 'Plain name', 'description' => 'Plain 
 $plain = data_update('.config', 'site', ['languages' => ['en', 'nl', 'pt', 'de']]);
 site_settings_data_assert(is_array($plain) && $plain['name'] === ['en' => 'Plain name', 'nl' => 'Plain name', 'pt' => 'Plain name', 'de' => 'Plain name'], 'Plain-text name was not kept visible in every language.');
 site_settings_data_assert($plain['description'] === ['en' => 'Plain description', 'nl' => 'Plain description', 'pt' => 'Plain description', 'de' => 'Plain description'], 'Plain-text description was not kept visible in every language.');
+
+// A site that never stored its languages keeps saving its other settings.
+unlink($fixture . '/.config/site');
+file_put_contents($fixture . '/.config/site', json_encode(['uuid' => 'site', 'name' => 'Old site']));
+$unlisted = data_update('.config', 'site', ['name' => 'Renamed']);
+site_settings_data_assert(is_array($unlisted) && $unlisted['name'] === 'Renamed' && !isset($unlisted['languages']), 'A site without stored languages could not save its name.');
+site_settings_data_assert(data_update('.config', 'site', ['languages' => []]) === false, 'An empty language list was accepted.');
 
 site_settings_data_remove_fixture($fixture);
 echo "Site settings data tests passed.\n";

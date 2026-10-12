@@ -47,13 +47,14 @@ function site_settings_validate_config($resource, $uuid, &$record): bool
     if ($resource !== '.config' || !is_array($record)) {
         return true;
     }
-    if ($uuid === 'site') {
+    $existing = $uuid === 'site' && data_exists('.config', 'site') ? data_read('.config', 'site') : [];
+    // A site that never stored its languages has none to judge until a record names them.
+    if ($uuid === 'site' && (array_key_exists('languages', $record) || !empty($existing['languages']))) {
         $languages = $record['languages'] ?? null;
         if (!is_array($languages) || $languages === [] || count($languages) !== count(array_unique($languages))) {
             data_error_set('VALIDATION_FAILED', 'languages:list');
             return false;
         }
-        $existing = data_exists('.config', 'site') ? data_read('.config', 'site') : [];
         $old_languages = is_array($existing['languages'] ?? null) ? array_values($existing['languages']) : [];
         $languages = array_values($languages);
         // A language may be added, or the same languages put in a new order
@@ -91,6 +92,8 @@ function site_settings_validate_config($resource, $uuid, &$record): bool
         }
         $record['direction'] = $direction;
         $record['nimblybar'] = array_merge(is_array($record['nimblybar'] ?? null) ? $record['nimblybar'] : [], ['side' => $side]);
+    }
+    if ($uuid === 'site') {
         // `chat` holds `enabled` for the whole chat and one switch per agent id.
         if (array_key_exists('chat', $record) && !is_array($record['chat'])) {
             data_error_set('VALIDATION_FAILED', 'chat:object');

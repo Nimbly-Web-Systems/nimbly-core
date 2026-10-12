@@ -1597,9 +1597,13 @@ function _data_validate($resource, $uuid, &$data_ls)
         return false;
     }
 
+    // Core's own settings are validated by core, whatever the site's .meta names.
+    $validators = $resource === '.config' ? ['site_settings_validate_config' => 'site-settings'] : [];
     if (!empty($meta['validate_library']) && !empty($meta['validate_function'])) {
-        load_library((string)$meta['validate_library']);
-        $validator = (string)$meta['validate_function'];
+        $validators[(string)$meta['validate_function']] = (string)$meta['validate_library'];
+    }
+    foreach ($validators as $validator => $library) {
+        load_library($library);
         if (!function_exists($validator) || $validator($resource, $uuid, $data_ls) !== true) {
             if (data_error_get() === null) {
                 data_error_set('VALIDATION_FAILED', 'custom');
