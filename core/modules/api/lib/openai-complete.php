@@ -3,6 +3,9 @@
 load_library('api');
 load_libraries(['get', 'set', 'data', 'curl', 'env']);
 
+// The model behind Translate and Import from document.
+const OPENAI_TEXT_MODEL = 'gpt-6-luna';
+
 function openai_complete_sc()
 {
     api_method_switch('openai_complete');
@@ -154,7 +157,7 @@ function openai_get_record_completion(string $api_key, array $fields, string $ta
         "Content-Type: application/json",
         "Authorization: Bearer " . $api_key
     ], json_encode([
-        "model" => "gpt-4o-mini",
+        "model" => OPENAI_TEXT_MODEL,
         "response_format" => ["type" => "json_object"],
         "messages" => [
             [
@@ -218,7 +221,7 @@ function openai_get_completion($api_key, $messages)
         "Content-Type: application/json",
         "Authorization: Bearer " . $api_key
     ], json_encode([
-        "model" => "gpt-4o-mini",
+        "model" => OPENAI_TEXT_MODEL,
         "messages" => $messages
     ]));
 

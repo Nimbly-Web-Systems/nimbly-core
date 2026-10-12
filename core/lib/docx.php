@@ -127,3 +127,30 @@ function docx_markdown_links_to_html(string $html): string
         $html
     ) ?? $html;
 }
+
+/**
+ * True when $html, taken from the text of docx_extract_text(), leaves out a
+ * large part of the stretch it covers: it starts at one place in the document
+ * and ends at another, but holds far less text than lies between them. A
+ * field that only takes a part of the document, or text that is not found in
+ * it at all, is not judged.
+ */
+function docx_html_skips_text(string $document_text, string $html): bool
+{
+    $flat = fn(string $text) => preg_replace('/\s+/u', '', html_entity_decode($text, ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+    $document = $flat(preg_replace('~\[([^\]\r\n]+)\]\((?:[^()\s]+|\([^()\r\n]*\))+?\)~u', '$1', $document_text));
+    $blocks = array_values(array_filter(array_map(
+        fn($block) => $flat(strip_tags($block)),
+        preg_split('~</(?:p|h[1-6]|li)>~i', $html)
+    ), fn($block) => $block !== ''));
+    if (count($blocks) < 2) {
+        return false;
+    }
+    $last = mb_substr($blocks[count($blocks) - 1], -40);
+    $start = mb_strpos($document, mb_substr($blocks[0], 0, 40));
+    $end = mb_strrpos($document, $last);
+    if ($start === false || $end === false) {
+        return false;
+    }
+    return mb_strlen(implode('', $blocks)) < 0.8 * ($end + mb_strlen($last) - $start);
+}

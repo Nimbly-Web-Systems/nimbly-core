@@ -200,6 +200,13 @@ function openai_import_document($resource)
 
     $extra_keys = $detect_language ? ['_detected_language'] : [];
     $result = openai_get_record_completion($api_key, $fields, '', $system_prompt, $extra_keys, $text);
+    // Once in a while a long text comes back with its middle left out; ask once more.
+    if ($result !== false && openai_import_document_skips_text($result, $meta, $text)) {
+        $result = openai_get_record_completion($api_key, $fields, '', $system_prompt, $extra_keys, $text);
+        if ($result !== false && openai_import_document_skips_text($result, $meta, $text)) {
+            return json_result(['message' => 'The document was not read completely. Please try again.'], 502);
+        }
+    }
     if ($result === false) {
         return json_result(['message' => 'OPENAI_FAIL'], 500);
     }
@@ -283,6 +290,17 @@ function openai_import_document($resource)
     }
 
     return json_result(['values' => $result, 'labels' => $labels, 'detected_language' => $detected_language]);
+}
+
+function openai_import_document_skips_text(array $result, array $meta, string $text): bool
+{
+    foreach ($result as $field => $value) {
+        if (($meta['fields'][$field]['type'] ?? '') === 'html' && is_string($value)
+            && docx_html_skips_text($text, html_entity_decode($value, ENT_QUOTES, 'UTF-8'))) {
+            return true;
+        }
+    }
+    return false;
 }
 
 /**

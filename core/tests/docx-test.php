@@ -42,7 +42,19 @@ docx_test_build_fixture($fixture_path);
 $text = docx_extract_text($fixture_path);
 unlink($fixture_path);
 
+$document = implode("\n", array_map(fn($i) => "Paragraph {$i} tells its own part of the story at some length.", range(1, 12)));
+$as_html = fn(array $numbers) => implode('', array_map(
+    fn($i) => "<p>Paragraph {$i} tells its own part of the story at some length.</p>",
+    $numbers
+));
+
 $checks = [
+    'a complete body is accepted'
+        => !docx_html_skips_text($document, $as_html(range(1, 12))),
+    'a body that leaves out the middle is refused'
+        => docx_html_skips_text($document, $as_html([1, 2]) . '<p>(...)</p>' . $as_html([12])),
+    'a field that takes only the opening paragraphs is accepted'
+        => !docx_html_skips_text($document, $as_html([1, 2, 3])),
     'external hyperlink becomes a Markdown link'
         => str_contains($text, 'Visit [Amsterdam](https://example.com/amsterdam) for the canals.'),
     'plain paragraph is untouched'

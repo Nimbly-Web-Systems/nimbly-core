@@ -2,6 +2,7 @@
 
 load_library('api');
 load_libraries(['get', 'set', 'data', 'curl', 'env']);
+load_library('openai-complete');
 
 function openai_translate_sc()
 {
@@ -112,7 +113,7 @@ function openai_get_completion($api_key, $messages)
         "Content-Type: application/json",
         "Authorization: Bearer " . $api_key
     ], json_encode([
-        "model" => "gpt-4o-mini",
+        "model" => OPENAI_TEXT_MODEL,
         "messages" => $messages
     ]));
 
