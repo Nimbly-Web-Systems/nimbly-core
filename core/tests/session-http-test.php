@@ -45,8 +45,11 @@ function session_http_assert($condition, $message): void {
 }
 function session_http_request(string $address, string $action, string $cookie = ''): array {
     $context = stream_context_create(['http' => ['header' => $cookie ? "Cookie: $cookie\r\n" : '', 'timeout' => 5]]);
-    $body = file_get_contents('http://' . $address . '/app/?action=' . $action, false, $context);
-    $cookies = array_values(array_filter($http_response_header, fn($line) => str_starts_with(strtolower($line), 'set-cookie:')));
+    $stream = fopen('http://' . $address . '/app/?action=' . $action, 'r', false, $context);
+    $response_headers = stream_get_meta_data($stream)['wrapper_data'];
+    $body = stream_get_contents($stream);
+    fclose($stream);
+    $cookies = array_values(array_filter($response_headers, fn($line) => str_starts_with(strtolower($line), 'set-cookie:')));
     return [json_decode($body, true, 512, JSON_THROW_ON_ERROR), $cookies];
 }
 try {

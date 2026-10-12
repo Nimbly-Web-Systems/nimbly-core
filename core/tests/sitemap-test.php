@@ -6,6 +6,7 @@ mkdir($fixture . '/ext/uri/api/v1', 0755, true);
 mkdir($fixture . '/ext/uri/article/(slug)', 0755, true);
 mkdir($fixture . '/ext/uri/private', 0755, true);
 mkdir($fixture . '/ext/uri/watchdog', 0755, true);
+file_put_contents($fixture . '/.env', '');
 file_put_contents($fixture . '/ext/uri/index.tpl', 'home');
 file_put_contents($fixture . '/ext/uri/about/index.tpl', '[#html#]');
 file_put_contents($fixture . '/ext/uri/api/v1/index.tpl', 'api');

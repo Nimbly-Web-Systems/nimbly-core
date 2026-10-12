@@ -376,7 +376,7 @@ function schedule_run_command($command)
 
 function schedule_command_parts($command)
 {
-    $parts = str_getcsv($command, ' ');
+    $parts = str_getcsv($command, ' ', escape: "\\");
     $parts = array_values(array_filter(array_map('trim', $parts), fn($part) => $part !== ''));
     if (in_array('schedule:run', $parts, true)) {
         return [];

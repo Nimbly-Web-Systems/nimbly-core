@@ -56,7 +56,7 @@ function api_export_resource_delimited($resource, $records, $format)
 
     $out = fopen('php://output', 'w');
     $columns = api_export_resource_columns($records);
-    fputcsv($out, $columns, $delimiter);
+    fputcsv($out, $columns, $delimiter, escape: "\\");
 
     foreach ($records as $uuid => $record) {
         if (!isset($record['uuid'])) {
@@ -66,7 +66,7 @@ function api_export_resource_delimited($resource, $records, $format)
         foreach ($columns as $column) {
             $row[] = api_export_resource_column_value($record[$column] ?? '');
         }
-        fputcsv($out, $row, $delimiter);
+        fputcsv($out, $row, $delimiter, escape: "\\");
     }
     fclose($out);
     exit();

@@ -41,13 +41,16 @@ function tripwire_assert($condition, string $message): void {
 // Returns the status code, lower-cased response headers and body.
 function tripwire_fetch(string $address, array $query): array {
     $http = ['timeout' => 5, 'ignore_errors' => true];
-    $body = (string)file_get_contents('http://' . $address . '/?' . http_build_query($query), false, stream_context_create(['http' => $http]));
+    $stream = fopen('http://' . $address . '/?' . http_build_query($query), 'r', false, stream_context_create(['http' => $http]));
+    $response_headers = stream_get_meta_data($stream)['wrapper_data'];
+    $body = (string)stream_get_contents($stream);
+    fclose($stream);
     $headers = [];
-    foreach (array_slice($http_response_header, 1) as $line) {
+    foreach (array_slice($response_headers, 1) as $line) {
         [$name, $value] = explode(':', $line, 2);
         $headers[strtolower($name)] = trim($value);
     }
-    return ['status' => (int)explode(' ', $http_response_header[0])[1], 'headers' => $headers, 'body' => $body];
+    return ['status' => (int)explode(' ', $response_headers[0])[1], 'headers' => $headers, 'body' => $body];
 }
 
 try {

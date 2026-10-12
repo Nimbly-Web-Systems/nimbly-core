@@ -356,7 +356,7 @@ function api_import_resource($resource)
         return json_result(['message' => 'INVALID_DATA'], 400);
     }
 
-    $raw_headers = fgetcsv($fh, 0, $delimiter);
+    $raw_headers = fgetcsv($fh, 0, $delimiter, escape: "\\");
     $headers = sanitize_headers($raw_headers);
 
     if (count($headers) < 1) {
@@ -374,7 +374,7 @@ function api_import_resource($resource)
 
     set_time_limit(0);
 
-    while (($line = fgetcsv($fh, 0, $delimiter)) !== false) {
+    while (($line = fgetcsv($fh, 0, $delimiter, escape: "\\")) !== false) {
         $import_results['count']++;
         if (count($line) !== count($raw_headers)) {
             $import_results['errors']++;
