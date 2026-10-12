@@ -67,4 +67,23 @@ test.describe('admin add form — import from document (test-records)', () => {
 
     expect(console_errors).toEqual([]);
   });
+
+  test('a document dropped on the panel is imported', async ({ page }) => {
+    await page.route('**/api/v1/test-records/import-document', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ success: true, values: { title: 'Dropped title' }, labels: ['Title'], detected_language: null }),
+      });
+    });
+    await page.goto('/nb-admin/test-records/add');
+    const transfer = await page.evaluateHandle(() => {
+      const dt = new DataTransfer();
+      dt.items.add(new File(['x'], 'story.docx'));
+      return dt;
+    });
+    await page.getByRole('heading', { name: 'Import from document' }).dispatchEvent('drop', { dataTransfer: transfer });
+    await expect(page.locator('text=Filled in:')).toBeVisible({ timeout: 15000 });
+    await expect(page.locator('[name=title]')).toHaveValue('Dropped title');
+  });
 });

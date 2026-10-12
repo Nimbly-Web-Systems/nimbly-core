@@ -8,6 +8,7 @@
 document.addEventListener("alpine:init", () => {
   Alpine.data("nb_import_document_action", (resource) => ({
     busy: false,
+    over: false,
     attempted: false,
     filled: [],
 

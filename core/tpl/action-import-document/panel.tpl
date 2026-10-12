@@ -1,4 +1,7 @@
-<section x-data="nb_import_document_action('[#get import_document_resource#]')" class="space-y-3">
+<section x-data="nb_import_document_action('[#get import_document_resource#]')" class="space-y-3 rounded-md"
+    :class="over && 'outline outline-2 outline-offset-8 outline-primary'"
+    @dragover.prevent="over = true" @dragleave="over = false"
+    @drop.prevent="over = false; if (!busy) import_document($event.dataTransfer.files[0])">
     <h3 class="font-semibold text-neutral-800">[#text Import from document#]</h3>
     <p class="text-sm text-neutral-600">[#text Upload a Word document and AI will fill in the empty fields for you.#]</p>
 
