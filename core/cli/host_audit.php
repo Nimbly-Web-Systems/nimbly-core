@@ -333,7 +333,7 @@ function host_audit_default_config(): array
         'php_fpm_log_glob' => '/var/log/php*-fpm.log',
         'php_fpm_slow_log_glob' => '/var/log/php*-fpm-slow.log',
         'apache_sites_enabled' => '/etc/apache2/sites-enabled',
-        'project_inventory' => '/var/www/nimbly-site/ext/data/projects',
+        'project_inventory' => '/etc/nimbly/projects',
         'project_alias_overrides' => [],
         'runtime_policy' => [
             'ubuntu_release' => 'current-lts',
