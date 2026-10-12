@@ -51,7 +51,7 @@ cli_section('test:setup', true);
 // ── Role ─────────────────────────────────────────────────────────────────────
 $test_role_features = [
     'view-admin-dashboard', 'view-nimblybar', 'edit-inline-content', 'view-.files', 'edit-.files',
-    'manage-test-records', 'manage-test-i18n-records', 'test',
+    'manage-test-records', 'manage-test-i18n-records', 'test', 'edit-.config',
 ];
 // Lets a project's own ext/tests add features the base fixtures above don't
 // cover (e.g. access to a real project resource like 'articles') without
