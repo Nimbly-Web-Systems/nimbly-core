@@ -30,7 +30,7 @@ test.describe('mobile admin', () => {
     await expect(page.locator('#nb-bar')).toBeVisible();
     const data_panel = page.getByRole('heading', { name: 'Your data' }).locator('..');
     await expect(data_panel.locator('a[href$="/nb-admin/test-records/add"]')).toBeVisible();
-    const data_layout = await data_panel.locator('ul').evaluate((list) => ({
+    const data_layout = await data_panel.locator(':scope > ul').evaluate((list) => ({
       justify_content: getComputedStyle(list).justifyContent,
       item_flex_grow: getComputedStyle(list.querySelector('li')).flexGrow,
     }));
