@@ -660,7 +660,7 @@ function host_audit_apache(array $context, array &$findings): array
             if ($entry === null) {
                 return;
             }
-            if ($entry['timestamp'] < $context['since']) {
+            if ($entry['timestamp'] < $context['since'] || $entry['own_check']) {
                 return;
             }
             $requests++;
@@ -2647,7 +2647,10 @@ function host_audit_parse_access_line(string $line): ?array
     $vhost = count($prefix_parts) >= 2
         ? host_audit_normalize_vhost((string)$prefix_parts[0])
         : null;
+    // The site check asks over the loopback address: those are our own requests, not traffic
+    $client = (string)($prefix_parts[max(0, count($prefix_parts) - 3)] ?? '');
     return [
+        'own_check' => in_array($client, ['127.0.0.1', '::1'], true),
         'timestamp' => $timestamp,
         'method' => $match['method'],
         'path' => $path,

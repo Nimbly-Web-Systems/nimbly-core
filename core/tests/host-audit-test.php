@@ -253,6 +253,9 @@ audit_assert($access !== null, 'parses vhost access line');
 audit_assert($access['status'] === 503, 'parses HTTP status');
 audit_assert($access['path'] === '/nimbly-site/api', 'parses request path');
 audit_assert($access['vhost'] === 'stage.example', 'parses logged Apache vhost');
+audit_assert($access['own_check'] === false, 'a visitor is not our own check');
+$own = host_audit_parse_access_line('127.0.0.1 - - [24/Jul/2026:20:30:00 +0000] "GET /zz-unknown-page-x HTTP/2.0" 404 9021');
+audit_assert($own !== null && $own['own_check'] === true, 'a request over the loopback address is our own check');
 audit_assert(
     host_audit_project_from_path($access['path'], ['nimbly-site']) === 'nimbly-site',
     'attributes request path to project'
