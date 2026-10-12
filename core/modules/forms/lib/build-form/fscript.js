@@ -193,6 +193,9 @@ Alpine.data("[#_bf_js_name#]_form", (resource_id = "(empty)", record_id = "") =>
             return;
           }
           editor_el.innerHTML = value;
+          if (editor_el._nb_bubble) {
+            nb.bubble_editor.update_empty(editor_el);
+          }
           return;
         }
         if (!this.form_data) {
