@@ -183,8 +183,6 @@ function thumbnail_create($uuid, $size, $ratio = 0, $mode = 'h', $format = '')
 
     $write_path = tempnam(dirname($static_path), basename($static_path) . '.tmp.');
     if ($write_path === false) {
-        imagedestroy($org_img);
-        imagedestroy($thumb_img);
         return $result;
     }
 
@@ -230,7 +228,6 @@ function thumbnail_create($uuid, $size, $ratio = 0, $mode = 'h', $format = '')
                 if (imagejpeg($flat_img, $write_path, 85)) {
                     $result = $write_path;
                 }
-                imagedestroy($flat_img);
             } else if ($format === 'png') {
                 if (imagepng($thumb_img, $write_path, 6)) {
                     $result = $write_path;
@@ -252,7 +249,6 @@ function thumbnail_create($uuid, $size, $ratio = 0, $mode = 'h', $format = '')
                 if (imagejpeg($flat_img, $write_path, 85)) {
                     $result = $write_path;
                 }
-                imagedestroy($flat_img);
             } else if ($format === 'png') {
                 if (imagepng($thumb_img, $write_path, 6)) {
                     $result = $write_path;
@@ -263,9 +259,7 @@ function thumbnail_create($uuid, $size, $ratio = 0, $mode = 'h', $format = '')
             break;
     }
 
-    //4: clean up and return result
-    imagedestroy($org_img);
-    imagedestroy($thumb_img);
+    //4: return result
 
     if ($result === $write_path) {
         @chmod($write_path, 0644);

@@ -137,7 +137,6 @@ function agent_openai_request(array $request, array $context): array
         $body = curl_exec($handle);
         $status = (int)curl_getinfo($handle, CURLINFO_RESPONSE_CODE);
         $transport_error = curl_error($handle);
-        curl_close($handle);
         if ($transport_error === '' && $status >= 200 && $status < 300) {
             $response = json_decode((string)$body, true);
             if (is_array($response)) {

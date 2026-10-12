@@ -55,7 +55,6 @@ function agent_remote_http(string $url, array $payload, string $token = ''): arr
     $response = curl_exec($request);
     $status = (int)curl_getinfo($request, CURLINFO_HTTP_CODE);
     $error = curl_error($request);
-    curl_close($request);
     $answer = is_string($response) ? json_decode($response, true) : null;
     if ($status !== 200 || !is_array($answer)) {
         throw new RuntimeException('The agent\'s home site did not answer (' . ($error ?: 'HTTP ' . $status) . ')');

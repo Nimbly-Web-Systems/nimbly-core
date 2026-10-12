@@ -52,7 +52,6 @@ $accent = imagecolorallocate($source, 212, 63, 43);
 imagefill($source, 0, 0, $background);
 imagefilledrectangle($source, 0, 0, 127, 31, $accent);
 imagejpeg($source, $source_directory . '/' . $uuid, 90);
-imagedestroy($source);
 
 $GLOBALS['SYSTEM'] = [
     'data_base' => $fixture . '/data',

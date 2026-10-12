@@ -25,7 +25,6 @@ function _curl_exec($ch)
             log_system('cURL Response: ' . $response);
         }
     }
-    curl_close($ch);
     return $response;
 }
 
