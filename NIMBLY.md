@@ -2184,6 +2184,7 @@ remove or reschedule these mandatory invocations:
 | `jobs-run` | `jobs:run 10` | 1 minute |
 | `jobs-prune` | `jobs:prune --days=30` | 24 hours |
 | `history-prune` | `history:prune --days=90` | 24 hours |
+| `agent-prune` | `agent:prune --days=30` | 24 hours |
 | `stats-rollup` | `stats:rollup` | 1 hour |
 
 Existing application entries with these IDs or commands are deduplicated.

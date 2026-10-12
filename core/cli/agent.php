@@ -8,6 +8,7 @@
  *   php core/cli/nimbly.php agent:run <run-uuid>
  *   php core/cli/nimbly.php agent:retry <failed-run-uuid>
  *   php core/cli/nimbly.php agent:recover
+ *   php core/cli/nimbly.php agent:prune [--days=30] [--dry-run]
  *   php core/cli/nimbly.php agent:chat
  *   php core/cli/nimbly.php agent:follow-up <agent-id> --conversation=<uuid> --message=<text>
  *   php core/cli/nimbly.php agent:evidence <agent-id> --run=<run-uuid> [--out=<path>]
@@ -128,6 +129,25 @@ if ($command === 'agent:recover') {
     echo "Recovered agent runs: {$count}\n";
     exit(0);
 }
+if ($command === 'agent:prune') {
+    $days = 30;
+    foreach ($argv as $arg) {
+        if (preg_match('/^--days=(\d+)$/', $arg, $m)) {
+            $days = (int)$m[1];
+            break;
+        }
+    }
+    $dry_run = in_array('--dry-run', $argv, true);
+    $pruned = agent_prune($days, $dry_run);
+    if ($dry_run) {
+        printf("%-12s %s  (finished runs older than %d days)\n", 'Mode:', 'dry run', $days);
+    }
+    foreach ($pruned as $kind => $count) {
+        printf("%-12s %d\n", ucfirst($kind) . ':', $count);
+    }
+    exit(0);
+}
+
 if ($command === 'agent:chat') {
     // Chat has its own worker lane so a long daily run never delays a reply. The scheduler runs
     // its commands one after another, so the worker is detached and outlives a daily run (max 1 h).

@@ -712,6 +712,60 @@ function agent_recover_expired_runs(?int $now = null): int
     return $count;
 }
 
+/**
+ * Removes finished runs older than a number of days together with what they
+ * own: their events, steps and actions. The run itself goes last, so a prune
+ * that stops halfway leaves nothing behind without its run.
+ */
+function agent_prune(int $days, bool $dry_run = false, ?int $now = null): array
+{
+    load_library('data');
+    $pruned = ['runs' => 0, 'events' => 0, 'steps' => 0, 'actions' => 0];
+    if (!data_exists('.agent_runs', '.meta')) {
+        return $pruned;
+    }
+    $cutoff = ($now ?? time()) - $days * 86400;
+    $run_uuids = [];
+    foreach (data_read('.agent_runs') ?: [] as $run) {
+        if (!is_array($run) || !in_array(($run['status'] ?? ''), AGENT_TERMINAL_STATUSES, true)) {
+            continue;
+        }
+        $ended_at = (int)($run['completed_at'] ?? 0) ?: (int)($run['_modified'] ?? 0);
+        if ($ended_at > 0 && $ended_at <= $cutoff) {
+            $run_uuids[] = (string)$run['uuid'];
+        }
+    }
+    $actions = [];
+    foreach ($run_uuids === [] ? [] : (data_read('.agent_actions') ?: []) as $action) {
+        if (is_array($action)) {
+            $actions[(string)($action['run_uuid'] ?? '')][] = $action;
+        }
+    }
+    foreach ($run_uuids as $run_uuid) {
+        $owned = [
+            'events' => agent_run_events($run_uuid),
+            'steps' => array_filter(
+                data_read_index('.agent_steps', 'run_uuid', data_index_uuids($run_uuid)[0]),
+                fn($step) => is_array($step) && ($step['run_uuid'] ?? '') === $run_uuid
+            ),
+            'actions' => $actions[$run_uuid] ?? [],
+        ];
+        foreach ($owned as $kind => $records) {
+            foreach ($records as $record) {
+                if (!$dry_run) {
+                    data_delete('.agent_' . $kind, (string)$record['uuid']);
+                }
+                $pruned[$kind]++;
+            }
+        }
+        if (!$dry_run) {
+            data_delete('.agent_runs', $run_uuid);
+        }
+        $pruned['runs']++;
+    }
+    return $pruned;
+}
+
 function agent_watchdog_status(string $agent_id, ?int $now = null): array
 {
     $definition = agent_definition($agent_id);

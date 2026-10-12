@@ -10,6 +10,7 @@ function maintenance_tasks(): array
         ['id' => 'jobs-run', 'command' => 'jobs:run 10', 'every_minutes' => 1],
         ['id' => 'jobs-prune', 'command' => 'jobs:prune --days=30', 'every_minutes' => 1440],
         ['id' => 'history-prune', 'command' => 'history:prune --days=90', 'every_minutes' => 1440],
+        ['id' => 'agent-prune', 'command' => 'agent:prune --days=30', 'every_minutes' => 1440],
         ['id' => 'stats-rollup', 'command' => 'stats:rollup', 'every_minutes' => 60],
     ];
 }

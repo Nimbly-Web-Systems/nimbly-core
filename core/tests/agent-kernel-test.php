@@ -52,6 +52,12 @@ function data_read($resource, $selector = null)
     $records = array_filter($records, fn($_record, $uuid) => $uuid !== '.meta', ARRAY_FILTER_USE_BOTH);
     return array_values($records);
 }
+function data_delete($resource, $uuid): int
+{
+    $found = isset($GLOBALS['agent_test_data'][$resource][$uuid]);
+    unset($GLOBALS['agent_test_data'][$resource][$uuid]);
+    return (int)$found;
+}
 function data_index_uuids($value): array
 {
     return [md5((string)$value)];
@@ -308,5 +314,26 @@ agent_test_assert(agent_canonical_json(['value' => (object)[]]) !== agent_canoni
     'canonical identity preserves empty objects versus arrays');
 agent_test_assert(agent_redact((object)['password' => 'private'])->password === '[REDACTED]',
     'nested JSON objects retain redaction');
+
+// A finished run older than the limit goes with its events, steps and actions; the rest stays.
+$agent_test_data = ['.agent_runs' => ['.meta' => []]];
+$prune_now = 2000000000;
+foreach (['old-done' => ['completed', 40], 'old-failed' => ['failed', 40], 'old-open' => ['running', 40],
+    'new-done' => ['completed', 2]] as $prune_run => [$prune_status, $prune_age]) {
+    data_create('.agent_runs', $prune_run, ['status' => $prune_status,
+        ($prune_status === 'completed' ? 'completed_at' : '_modified') => $prune_now - $prune_age * 86400]);
+    data_create('.agent_events', 'event-' . $prune_run, ['run_uuid' => $prune_run, 'sequence' => 1]);
+    data_create('.agent_steps', 'step-' . $prune_run, ['run_uuid' => $prune_run]);
+    data_create('.agent_actions', 'action-' . $prune_run, ['run_uuid' => $prune_run]);
+}
+$prune_before = $agent_test_data;
+agent_test_assert(agent_prune(30, true, $prune_now) === ['runs' => 2, 'events' => 2, 'steps' => 2, 'actions' => 2]
+    && $agent_test_data === $prune_before, 'a dry run counts and deletes nothing');
+agent_prune(30, false, $prune_now);
+foreach (['.agent_runs' => '', '.agent_events' => 'event-', '.agent_steps' => 'step-', '.agent_actions' => 'action-'] as $prune_resource => $prune_prefix) {
+    $prune_left = array_values(array_diff(array_keys($agent_test_data[$prune_resource]), ['.meta']));
+    agent_test_assert($prune_left === [$prune_prefix . 'old-open', $prune_prefix . 'new-done'],
+        $prune_resource . ' keeps only the open run and the recent one');
+}
 
 echo "Agent kernel tests passed.\n";

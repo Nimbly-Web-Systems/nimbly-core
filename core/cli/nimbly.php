@@ -36,6 +36,7 @@ $commands = [
     'agent:run'         => ['file' => 'core/cli/agent.php',          'desc' => 'Run or resume an agent run', 'public' => false],
     'agent:retry'       => ['file' => 'core/cli/agent.php',          'desc' => 'Retry a failed scheduled agent run', 'public' => false],
     'agent:recover'     => ['file' => 'core/cli/agent.php',          'desc' => 'Recover expired agent run leases', 'public' => false],
+    'agent:prune'       => ['file' => 'core/cli/agent.php',          'desc' => 'Delete finished agent runs older than N days with their events, steps and actions (--days=30, --dry-run)', 'public' => false],
     'agent:chat'        => ['file' => 'core/cli/agent.php',          'desc' => 'Start the chat worker if it is not running (run every minute)', 'public' => false],
     'agent:follow-up'   => ['file' => 'core/cli/agent.php',          'desc' => 'Queue an operator follow-up in an existing conversation', 'public' => false],
     'agent:evidence'    => ['file' => 'core/cli/agent.php',          'desc' => 'Print a past run\'s stored evidence and instructions for manual prompt testing', 'public' => false],
