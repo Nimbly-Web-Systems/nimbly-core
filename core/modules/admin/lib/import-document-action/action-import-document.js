@@ -11,6 +11,8 @@ document.addEventListener("alpine:init", () => {
     over: false,
     attempted: false,
     filled: [],
+    step: 0,
+    timer: null,
 
     import_document(file) {
       if (!file) {
@@ -19,6 +21,13 @@ document.addEventListener("alpine:init", () => {
       this.busy = true;
       this.attempted = false;
       this.filled = [];
+      // The button text moves on while the document is read, so the wait shows life.
+      this.step = 0;
+      this.timer = setInterval(() => {
+        if (this.step < 5) {
+          this.step++;
+        }
+      }, 8000);
 
       const form_el = document.querySelector("form[x-data]");
       const current_values = {};
@@ -40,6 +49,7 @@ document.addEventListener("alpine:init", () => {
       })
         .then((res) => res.json())
         .then((result) => {
+          clearInterval(this.timer);
           this.busy = false;
           this.attempted = true;
           if (!result.success) {
@@ -54,6 +64,7 @@ document.addEventListener("alpine:init", () => {
           }
         })
         .catch((err) => {
+          clearInterval(this.timer);
           this.busy = false;
           this.attempted = true;
           nb.notify(err.message || "Could not import document");
