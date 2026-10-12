@@ -383,14 +383,22 @@ function agent_resource_keeps_text(string $resource): void
     }
 }
 
+/** The events of one run, read through the `run_uuid` index. */
+function agent_run_events(string $run_uuid): array
+{
+    $index_uuid = data_index_uuids($run_uuid)[0] ?? null;
+    return $index_uuid === null ? [] : array_filter(
+        data_read_index('.agent_events', 'run_uuid', $index_uuid),
+        fn($event) => is_array($event) && ($event['run_uuid'] ?? '') === $run_uuid
+    );
+}
+
 function agent_append_event(string $run_uuid, string $type, array $payload): string
 {
     $uuid = substr(hash('sha256', $run_uuid . ':' . microtime(true) . ':' . random_bytes(8)), 0, 16);
     $sequence = 1;
-    foreach (data_read('.agent_events') ?: [] as $event) {
-        if (is_array($event) && ($event['run_uuid'] ?? '') === $run_uuid) {
-            $sequence = max($sequence, (int)($event['sequence'] ?? 0) + 1);
-        }
+    foreach (agent_run_events($run_uuid) as $event) {
+        $sequence = max($sequence, (int)($event['sequence'] ?? 0) + 1);
     }
     data_create('.agent_events', $uuid, [
         'run_uuid' => $run_uuid,
@@ -869,8 +877,7 @@ function agent_inspection_identity(string $run_uuid, string $tool, array $argume
 // Return the latest successful observation per target; the event log retains history.
 function agent_latest_tool_results(string $run_uuid, string $tool): array
 {
-    $events = array_filter(data_read('.agent_events') ?: [], fn($event) => is_array($event)
-        && ($event['run_uuid'] ?? '') === $run_uuid && ($event['type'] ?? '') === 'tool_completed'
+    $events = array_filter(agent_run_events($run_uuid), fn($event) => ($event['type'] ?? '') === 'tool_completed'
         && ($event['payload']['tool'] ?? '') === $tool);
     usort($events, fn($a, $b) => (int)($a['sequence'] ?? 0) <=> (int)($b['sequence'] ?? 0));
     $results = [];
@@ -938,9 +945,8 @@ function agent_store_action(string $identity, string $run_uuid, string $tool, ar
 
 function agent_tool_result(string $run_uuid, string $identity): ?array
 {
-    foreach (data_read('.agent_events') ?: [] as $event) {
-        if (is_array($event) && ($event['run_uuid'] ?? '') === $run_uuid
-            && ($event['type'] ?? '') === 'tool_completed'
+    foreach (agent_run_events($run_uuid) as $event) {
+        if (($event['type'] ?? '') === 'tool_completed'
             && ($event['payload']['tool_key'] ?? '') === $identity) {
             return is_array($event['payload']['result'] ?? null) ? $event['payload']['result'] : [];
         }

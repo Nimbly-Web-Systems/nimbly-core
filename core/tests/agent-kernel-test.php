@@ -52,6 +52,17 @@ function data_read($resource, $selector = null)
     $records = array_filter($records, fn($_record, $uuid) => $uuid !== '.meta', ARRAY_FILTER_USE_BOTH);
     return array_values($records);
 }
+function data_index_uuids($value): array
+{
+    return [md5((string)$value)];
+}
+function data_read_index($resource, $index_name, $index_uuid): array
+{
+    return array_values(array_filter(
+        data_read($resource),
+        fn($record) => md5((string)($record[$index_name] ?? '')) === $index_uuid
+    ));
+}
 
 require_once BASE_DIR . 'core/modules/agent/lib/agent.php';
 
