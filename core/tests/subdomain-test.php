@@ -45,4 +45,12 @@ assert_same('example.com', subdomain_sibling_host('example.com', false, ''), 'th
 assert_same('docs.localhost:8081', subdomain_sibling_host('localhost:8081', false, 'docs'), 'a port is kept');
 assert_same('localhost:8081', subdomain_sibling_host('docs.localhost:8081', true, ''), 'a port is kept on the way back');
 
+// the login cookie is shared with subdomains only where the site has subdomain folders
+assert_same('', subdomain_cookie_domain('example.com', false, false), 'a site without subdomain folders keeps its cookie on the host');
+assert_same('example.com', subdomain_cookie_domain('example.com:8081', true, false), 'the main site shares its cookie');
+assert_same('example.com', subdomain_cookie_domain('docs.example.com', true, true), 'a subdomain uses the main site\'s cookie');
+assert_same('', subdomain_cookie_domain('localhost', true, false), 'a single-label host keeps its cookie');
+assert_same('', subdomain_cookie_domain('docs.localhost', true, true), 'a subdomain of a single-label host keeps its cookie');
+assert_same('', subdomain_cookie_domain('127.0.0.1', true, false), 'an IP address keeps its cookie');
+
 echo "subdomain tests passed\n";

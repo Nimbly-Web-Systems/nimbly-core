@@ -1925,6 +1925,7 @@ The name is the first label of the request host, so `docs.localhost` reaches the
 - A dynamic route is written like any other; `router_match(__FILE__)` leaves the subdomain folder out, and the route only answers on its own subdomain.
 - The folder is not reachable as a path on any host, and its pages are left out of the main sitemap. The subdomain has its own `sitemap.xml` with its static pages.
 - Templates in `ext/tpl/`, resources, users and the admin are shared with the main site.
+- The login is shared too: on a site with subdomain folders the session cookie is set for the main domain, so it also reaches its subdomains. A single-label host such as `localhost` keeps one login per host.
 - Link between the site and its subdomains with `[#subdomain-url docs#]/guide` (the `docs` subdomain) and `[#subdomain-url#]/contact` (the main site); both work from either side and on a local host name.
 
 ### Localized route URLs

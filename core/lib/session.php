@@ -126,13 +126,20 @@ function session_initialize() {
 
 function session_cookie_options(): array
 {
-    return [
+    $options = [
         'lifetime' => 0,
         'path' => $GLOBALS['SYSTEM']['uri_base'] ?? '/',
         'secure' => !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off',
         'httponly' => true,
         'samesite' => 'Lax',
     ];
+    // a site with subdomain folders shares its login with them
+    load_library('subdomain');
+    $domain = subdomain_cookie_domain((string)($_SERVER['HTTP_HOST'] ?? ''), subdomain_site_has_folders(), subdomain_folder() !== '');
+    if ($domain !== '') {
+        $options['domain'] = $domain;
+    }
+    return $options;
 }
 
 /**
@@ -142,7 +149,7 @@ function session_cookie_options(): array
 function persistent_cookie_options(int $days = 30): array
 {
     $options = session_cookie_options();
-    unset($options['lifetime']);
+    unset($options['lifetime'], $options['domain']);
     $options['expires'] = time() + $days * 86400;
     return $options;
 }
@@ -155,6 +162,10 @@ function session_refresh_cookie(): void
     $options = session_cookie_options();
     unset($options['lifetime']);
     $options['expires'] = session_authenticated($_SESSION) ? time() + session_idle_lifetime($_SESSION) : 0;
+    if (isset($options['domain'])) {
+        // the cookie this host set before it shared its login would shadow the shared one
+        setcookie(session_name(), '', ['expires' => 1, 'domain' => ''] + $options);
+    }
     setcookie(session_name(), session_id(), $options);
 }
 

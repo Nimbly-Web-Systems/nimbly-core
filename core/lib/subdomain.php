@@ -99,3 +99,36 @@ function subdomain_sibling_host(string $host, bool $on_subdomain, string $name):
     }
     return $name === '' ? $host : $name . '.' . $host;
 }
+
+/** True when the site has a route folder for at least one subdomain. */
+function subdomain_site_has_folders(): bool
+{
+    static $has = null;
+    if ($has === null) {
+        $has = false;
+        $root = $GLOBALS['SYSTEM']['file_base'] . 'ext/';
+        find_exists($root, 'uri/' . SUBDOMAIN_PREFIX); // reads the folder listing once per request
+        foreach (array_keys($GLOBALS['SYSTEM']['find_listings'][$root . 'uri'] ?: []) as $name) {
+            if (subdomain_is_folder_path((string)$name)) {
+                $has = true;
+                break;
+            }
+        }
+    }
+    return $has;
+}
+
+/**
+ * The cookie domain that the site shares with its subdomains, so a login on
+ * one is a login on all. '' keeps the cookie on the request host: a site
+ * without subdomain folders, an IP address, a single-label host (localhost).
+ */
+function subdomain_cookie_domain(string $host, bool $has_folders, bool $on_subdomain): string
+{
+    $host = explode(':', strtolower(trim($host)), 2)[0];
+    if (!$has_folders || $host === '' || $host[0] === '[' || filter_var($host, FILTER_VALIDATE_IP) !== false) {
+        return '';
+    }
+    $main = subdomain_sibling_host($host, $on_subdomain, '');
+    return str_contains($main, '.') ? $main : '';
+}
