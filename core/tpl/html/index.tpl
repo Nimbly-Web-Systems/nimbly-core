@@ -45,6 +45,6 @@
 
 <!--
 ██▄  ██  Nimbly
-██ ▀▄██  [#app-modified#]
+██ ▀▄██  Updated [#app-modified-date#]
 ██   ██  Generated in [#fmt [#execution-time#] type=number decimals=2#]s
 -->
