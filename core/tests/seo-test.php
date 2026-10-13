@@ -18,7 +18,9 @@ $_SERVER['HTTPS'] = 'on';
 function load_library($name) {}
 function data_lookup($resource, $uuid, $field, $default = null) { return $default; }
 
+function find_exists($root, $rel) { return file_exists($root . $rel); }
 require_once __DIR__ . '/../lib/env.php';
+require_once __DIR__ . '/../lib/subdomain.php';
 require_once __DIR__ . '/../lib/seo-page.php';
 
 function seo_test_same($expected, $actual, $message): void

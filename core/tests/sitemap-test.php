@@ -6,6 +6,7 @@ mkdir($fixture . '/ext/uri/api/v1', 0755, true);
 mkdir($fixture . '/ext/uri/article/(slug)', 0755, true);
 mkdir($fixture . '/ext/uri/private', 0755, true);
 mkdir($fixture . '/ext/uri/watchdog', 0755, true);
+mkdir($fixture . '/ext/uri/(subdomain-docs)/guide', 0755, true);
 file_put_contents($fixture . '/.env', '');
 file_put_contents($fixture . '/ext/uri/index.tpl', 'home');
 file_put_contents($fixture . '/ext/uri/about/index.tpl', '[#html#]');
@@ -13,11 +14,14 @@ file_put_contents($fixture . '/ext/uri/api/v1/index.tpl', 'api');
 file_put_contents($fixture . '/ext/uri/article/(slug)/index.tpl', 'article');
 file_put_contents($fixture . '/ext/uri/private/index.tpl', '[#access feature=view-private#][#html#]');
 file_put_contents($fixture . '/ext/uri/watchdog/index.tpl', '[#watchdog#]');
+file_put_contents($fixture . '/ext/uri/(subdomain-docs)/guide/index.tpl', '[#html#]');
 
 $GLOBALS['SYSTEM'] = ['file_base' => $fixture . '/', 'request_uri' => '', 'uri_base' => '/', 'variables' => []];
 function load_library($name) {}
 function data_lookup($resource, $uuid, $field, $default = null) { return $default; }
+function find_exists($root, $rel) { return file_exists($root . $rel); }
 require_once __DIR__ . '/../lib/env.php';
+require_once __DIR__ . '/../lib/subdomain.php';
 require_once __DIR__ . '/../lib/seo-page.php';
 require_once __DIR__ . '/../lib/sitemap.php';
 

@@ -122,7 +122,7 @@ foreach ($route_files as $route_file) {
         echo "Warning: could not resolve route for $route_file\n";
         continue;
     }
-    if (!str_contains($route, '(')) {
+    if (!str_contains(preg_replace('/^\(subdomain-[^\/]*\)/', '', $route), '(')) {
         $warnings++;
         echo "Warning: static route has route.inc, skipped: $route\n";
         continue;

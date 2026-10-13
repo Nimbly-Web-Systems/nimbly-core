@@ -78,12 +78,25 @@ function run_uri($uri) {
         }
     }
 
-    $routed = find_uri($uri, 'route.inc');
-    if ($routed === false) {
-        $file = find_uri($uri);
+    /*
+     * A subdomain folder is never an address of its own; on its subdomain it
+     * is looked up before the site's normal routes
+     */
+    load_library('subdomain');
+    if (subdomain_is_folder_path((string)$uri)) {
+        run_uri('errors/404');
+    }
+    $subdomain = subdomain_folder();
+    $lookups = $subdomain !== '' ? [subdomain_uri($subdomain, (string)$uri), $uri] : [$uri];
+
+    foreach ($lookups as $lookup) {
+        if (find_uri($lookup, 'route.inc') !== false) {
+            continue;
+        }
+        $file = find_uri($lookup);
         if ($file !== false) {
-            $GLOBALS['SYSTEM']['uri'] = $uri;
-            $GLOBALS['SYSTEM']['uri_key'] = preg_replace("/[^ \w]+/", "_", $uri);
+            $GLOBALS['SYSTEM']['uri'] = $lookup;
+            $GLOBALS['SYSTEM']['uri_key'] = preg_replace("/[^ \w]+/", "_", $lookup);
             $GLOBALS['SYSTEM']['uri_path'] = dirname($file);
             run($file);
             exit();

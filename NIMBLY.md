@@ -1907,6 +1907,25 @@ Rules for HTML translation:
 
 ## 6. Routing
 
+### Subdomain folders
+
+A subdomain is part of the site, not a separate installation. Its routes live in a folder named after it:
+
+```text
+ext/uri/(subdomain-docs)/index.tpl             → docs.example.com/
+ext/uri/(subdomain-docs)/guide/index.tpl       → docs.example.com/guide
+ext/uri/(subdomain-docs)/nl/index.tpl          → docs.example.com/nl
+ext/uri/(subdomain-docs)/article/(slug)/       → docs.example.com/article/my-post
+```
+
+The name is the first label of the request host, so `docs.localhost` reaches the same folder during development. There is nothing to configure; point the subdomain at the same document root.
+
+- The folder is looked up first. What it does not have (admin, API, login, media) comes from the site's normal routes.
+- The request URI stays what the visitor asked for. Links, language detection and canonical URLs need no translation: write `[#base-url#]/guide`.
+- A dynamic route is written like any other; `router_match(__FILE__)` leaves the subdomain folder out, and the route only answers on its own subdomain.
+- The folder is not reachable as a path on any host, and its pages are left out of the main sitemap. The subdomain has its own `sitemap.xml` with its static pages.
+- Templates in `ext/tpl/`, resources, users and the admin are shared with the main site.
+
 ### Localized route URLs
 
 Add `i18n-url.json` beside a route's `index.tpl` or `route.inc` to declare the

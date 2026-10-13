@@ -11,7 +11,12 @@ function router_run($uri) {
     if (empty($routes)) {
         return false;
     }
+    load_library('subdomain');
+    $subdomain = subdomain_folder();
     foreach ($routes as $r) {
+        if (!subdomain_route_allowed((string)$r['route'], $subdomain)) {
+            continue;
+        }
         if (router_handle($r['route'])) {
             return true;
         }
@@ -22,7 +27,8 @@ function router_run($uri) {
 function router_match($path) {
     $parts = $GLOBALS['SYSTEM']['uri_parts'];
     $path_parts = explode(DIRECTORY_SEPARATOR . "uri" . DIRECTORY_SEPARATOR, dirname($path));
-    $file_parts = explode(DIRECTORY_SEPARATOR, $path_parts[1]);
+    load_library('subdomain');
+    $file_parts = subdomain_route_parts(explode(DIRECTORY_SEPARATOR, $path_parts[1]));
     if (count($file_parts) !== count($parts)) {
         router_deny();
         return false;

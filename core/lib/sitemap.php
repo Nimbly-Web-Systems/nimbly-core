@@ -7,9 +7,12 @@ function sitemap_sc($params = null): string
     load_library('data');
     load_library('seo-page');
     load_library('set');
+    load_library('subdomain');
 
     $state = sitemap_source_state();
-    $cache_dir = $GLOBALS['SYSTEM']['file_base'] . 'ext/data/.tmp/cache/_sitemap';
+    // a subdomain lists its own pages and keeps its own cache
+    $cache_dir = $GLOBALS['SYSTEM']['file_base'] . 'ext/data/.tmp/cache/_sitemap'
+        . (subdomain_folder() !== '' ? '-' . subdomain_label((string)$_SERVER['HTTP_HOST']) : '');
     $manifest_file = $cache_dir . '/manifest.json';
     $xml_file = $cache_dir . '/sitemap.xml';
     $manifest = sitemap_read_json($manifest_file);
@@ -58,7 +61,9 @@ function sitemap_source_state(): array
     $routes = sitemap_static_route_files();
     $resources = [];
     $data_root = $GLOBALS['SYSTEM']['file_base'] . 'ext/data';
-    foreach (glob($data_root . '/*/.meta') ?: [] as $meta_file) {
+    // resource pages belong to the main site, not to a subdomain
+    $meta_files = subdomain_folder() === '' ? (glob($data_root . '/*/.meta') ?: []) : [];
+    foreach ($meta_files as $meta_file) {
         $meta = sitemap_read_json($meta_file);
         if (!is_array($meta['sitemap'] ?? null)
             || (empty($meta['sitemap']['url']) && empty($meta['sitemap']['localized_path']))) {
@@ -91,7 +96,7 @@ function sitemap_source_state(): array
 
 function sitemap_static_route_files(): array
 {
-    $uri_root = $GLOBALS['SYSTEM']['file_base'] . 'ext/uri';
+    $uri_root = rtrim($GLOBALS['SYSTEM']['file_base'] . 'ext/uri/' . subdomain_folder(), '/');
     if (!is_dir($uri_root)) {
         return [];
     }

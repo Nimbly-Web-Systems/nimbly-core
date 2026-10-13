@@ -19,9 +19,13 @@ function seo_site_root(): string
 {
     load_library('data');
     load_library('env');
+    load_library('subdomain');
 
-    $configured = trim((string)env('SITE_URL', ''));
-    if ($configured === '') {
+    // a subdomain with its own route folder is its own address
+    $configured = subdomain_folder() !== '' ? null : trim((string)env('SITE_URL', ''));
+    if ($configured === null) {
+        $configured = '';
+    } else if ($configured === '') {
         $configured = trim((string)data_lookup('.config', 'site', 'site_url', ''));
     }
     if ($configured !== '') {
