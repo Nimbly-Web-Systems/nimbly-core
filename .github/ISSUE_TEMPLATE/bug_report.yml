@@ -37,8 +37,8 @@ body:
   - type: input
     id: version
     attributes:
-      label: Nimbly version or commit
-      placeholder: "v1.1.0 or git commit"
+      label: Nimbly commit
+      placeholder: "git rev-parse --short HEAD"
     validations:
       required: true
   - type: dropdown

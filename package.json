@@ -1,6 +1,5 @@
 {
   "name": "nimbly",
-  "version": "1.1.0",
   "description": "Nimbly Web App Framework",
   "type": "module",
   "main": "index.php",

@@ -578,7 +578,7 @@ first. Only add `overwrite` when you explicitly want to replace an existing
 value (e.g. when passing data into a reusable template component).
 
 #### `[#get varname#]`
-Outputs a value. `[#get#]` is the unified value accessor in Nimbly 1.1.0.
+Outputs a value. `[#get#]` is the unified value accessor.
 
 Resolution order:
 1. Flat variable lookup: session variables, then system variables. The URL and cookies are read only when the template asks for them with `from` (see below)
@@ -1232,8 +1232,7 @@ A project's editing tools (the modal and script behind an `event` button) go in 
 
 **Slug fields:**
 
-Slugs are explicit fields. Do not add `"slug": true` to another field in
-1.1.0. Define a separate field with `"type": "slug"` and a `source` that points
+Slugs are explicit fields. Do not add `"slug": true` to another field. Define a separate field with `"type": "slug"` and a `source` that points
 to the field or fields it is derived from.
 
 The admin form computes the slug in the browser from its source fields before
@@ -1362,7 +1361,7 @@ the resource retains simple scalar coordinates:
 
 ### Resource lifecycle events
 
-Nimbly 1.1.0 uses `.meta` event declarations for resource lifecycle side effects. A resource can declare what should happen after a record is created, updated, or deleted:
+Nimbly uses `.meta` event declarations for resource lifecycle side effects. A resource can declare what should happen after a record is created, updated, or deleted:
 
 ```json
 {
@@ -1735,7 +1734,7 @@ Once a user is inside a language scope, it persists automatically across navigat
 
 ### Step 3 — Configure resources for translation
 
-Core 1.1.0 uses field-level i18n. Add `languages` to every resource `.meta`
+Core uses field-level i18n. Add `languages` to every resource `.meta`
 that stores translated values in the same record:
 
 ```json
@@ -1772,7 +1771,7 @@ Older Nimbly projects may still use record-level i18n:
 - Each language is a separate record
 - Records are linked through a `translations` object in the record data
 
-Core 1.1.0 field-level i18n is different:
+Core's field-level i18n is different:
 
 - Resource `.meta` has `languages`
 - Individual fields opt in with `"i18n": true`
@@ -2109,7 +2108,7 @@ php core/cli/nimbly.php user:email-index:rebuild
 php core/cli/nimbly.php user:email-index:rebuild --yes
 ```
 
-This migration supports the Nimbly 1.1 user identity model, where the user
+This migration supports the user identity model, where the user
 record UUID is stable and email is an indexed lookup field. It adds `email` to
 `users/.meta.index`, adds `email` to `users/.meta.unique` when no duplicate
 emails exist, and creates index entries for all existing users, including
@@ -3395,7 +3394,7 @@ Both attributes only activate for logged-in admins. The value format is `resourc
 
 The built-in admin is available at `/nb-admin/`.
 
-The admin (1.1.0+) uses DaisyUI components. The following shortcodes from `core/modules/admin/lib/` handle data loading for admin views:
+The admin uses DaisyUI components. The following shortcodes from `core/modules/admin/lib/` handle data loading for admin views:
 
 - `[#get-resource-records resource=users role=table#]` — loads all records + table-filtered fields into `data.records` and `data.fields`
 - `[#get-resource-record resource=users uuid=abc123#]` — loads a single record for editing, with i18n and encryption handling

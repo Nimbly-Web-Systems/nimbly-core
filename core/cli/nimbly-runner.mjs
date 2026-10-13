@@ -58,7 +58,7 @@ function banner(label) {
   }
 
   console.log('');
-  console.log(`${color.cyan('██▄  ██')}  ${color.bold('Nimbly 1.1.0')}`);
+  console.log(`${color.cyan('██▄  ██')}  ${color.bold('Nimbly')}`);
   console.log(`${color.cyan('██ ▀▄██')}  ${color.green(label)}`);
   console.log(`${color.cyan('██   ██')}  ${color.dim(pretty_cwd())}`);
   console.log('');
