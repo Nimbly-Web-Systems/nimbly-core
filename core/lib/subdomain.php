@@ -85,3 +85,17 @@ function subdomain_route_parts(array $parts): array
     }
     return $parts;
 }
+
+/**
+ * The host of a sibling: the main site ('' as name) or one of its subdomains.
+ * docs.example.com → example.com, example.com + docs → docs.example.com. A
+ * port in the host is kept.
+ */
+function subdomain_sibling_host(string $host, bool $on_subdomain, string $name): string
+{
+    $host = strtolower(trim($host));
+    if ($on_subdomain && str_contains($host, '.')) {
+        $host = explode('.', $host, 2)[1];
+    }
+    return $name === '' ? $host : $name . '.' . $host;
+}

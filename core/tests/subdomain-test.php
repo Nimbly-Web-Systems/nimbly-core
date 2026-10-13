@@ -37,4 +37,12 @@ assert_same(false, subdomain_route_allowed('(subdomain-docs)/article/(slug)', '(
 assert_same(['article', '(slug)'], subdomain_route_parts(['(subdomain-docs)', 'article', '(slug)']), 'matching leaves the folder out');
 assert_same(['article', '(slug)'], subdomain_route_parts(['article', '(slug)']), 'a normal route keeps its parts');
 
+// addresses of the main site and its subdomains
+assert_same('example.com', subdomain_sibling_host('docs.example.com', true, ''), 'a subdomain finds the main site');
+assert_same('wiki.example.com', subdomain_sibling_host('docs.example.com', true, 'wiki'), 'a subdomain finds another subdomain');
+assert_same('docs.example.com', subdomain_sibling_host('example.com', false, 'docs'), 'the main site finds a subdomain');
+assert_same('example.com', subdomain_sibling_host('example.com', false, ''), 'the main site finds itself');
+assert_same('docs.localhost:8081', subdomain_sibling_host('localhost:8081', false, 'docs'), 'a port is kept');
+assert_same('localhost:8081', subdomain_sibling_host('docs.localhost:8081', true, ''), 'a port is kept on the way back');
+
 echo "subdomain tests passed\n";
