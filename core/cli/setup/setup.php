@@ -634,9 +634,9 @@ if ($routes_created > 0) {
 
 // Before the first role, or the data layer writes a .meta without fields
 $roles_fields = [
-    'name'        => ['type' => 'text', 'required' => true, 'name' => 'name'],
-    'description' => ['type' => 'text', 'name' => 'description'],
-    'features'    => ['type' => 'text', 'name' => 'permissions'],
+    'name'        => ['type' => 'text', 'required' => true, 'name' => 'Name'],
+    'description' => ['type' => 'text', 'name' => 'Description'],
+    'features'    => ['type' => 'text', 'name' => 'Permissions'],
 ];
 if (!data_exists('roles', '.meta')) {
     data_create('roles', '.meta', ['fields' => $roles_fields]);
@@ -673,10 +673,10 @@ cli_section('Users', true);
 if (!data_exists('users', '.meta')) {
     data_create('users', '.meta', [
         'fields' => [
-            'email'    => ['type' => 'text',     'required' => true,  'name' => 'email'],
-            'password' => ['type' => 'password', 'required' => true,  'name' => 'password', 'admin_col' => false],
-            'roles'    => ['type' => 'select',   'multi'    => true,  'name' => 'roles', 'resource' => 'roles'],
-            'name'     => ['type' => 'text',                          'name' => 'name'],
+            'email'    => ['type' => 'text',     'required' => true,  'name' => 'Email'],
+            'password' => ['type' => 'password', 'required' => true,  'name' => 'Password', 'admin_col' => false],
+            'roles'    => ['type' => 'select',   'multi'    => true,  'name' => 'Roles', 'resource' => 'roles'],
+            'name'     => ['type' => 'text',                          'name' => 'Name'],
         ],
         'encrypt' => 'password',
         'index' => ['email'],
