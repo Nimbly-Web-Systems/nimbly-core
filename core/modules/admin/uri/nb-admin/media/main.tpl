@@ -1,3 +1,4 @@
+<div class="min-h-screen bg-neutral-100">
 <div x-data="media_library">
   <section class="bg-neutral-100 p-2 sm:p-4 md:p-6 lg:p-8 font-primary">
     <nav class="mb-2 flex items-center gap-1.5 text-xs font-medium text-neutral-500" aria-label="Breadcrumb">
@@ -28,4 +29,5 @@
     </div>
 
   </section>
+</div>
 </div>

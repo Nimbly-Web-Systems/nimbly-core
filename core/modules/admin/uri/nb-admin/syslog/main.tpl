@@ -1,3 +1,4 @@
+<div class="min-h-screen bg-neutral-100">
 [#get-system-log#]
 <script>
     var _system_log_records=[#fmt var=system_log empty=[] json#];
@@ -92,3 +93,4 @@
 		</div>
 	</div>
 </section>
+</div>
