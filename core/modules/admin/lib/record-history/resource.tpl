@@ -1,4 +1,4 @@
-<section class="bg-neutral-100 p-3 sm:p-4 md:p-6 lg:p-8 font-primary"
+<section class="min-h-screen bg-neutral-100 p-3 sm:p-4 md:p-6 lg:p-8 font-primary"
     x-data="{ term: '', only: '', shows(row) { return (this.only === '' || row.dataset.deleted === '1') && row.dataset.search.includes(this.term.toLowerCase()); } }">
     <nav class="mb-2 flex items-center gap-1.5 text-xs font-medium text-neutral-500" aria-label="Breadcrumb">
         [#breadcrumb-home#]

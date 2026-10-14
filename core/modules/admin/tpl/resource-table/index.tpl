@@ -1,5 +1,5 @@
 [#init-resource-table#]
-<section class="bg-neutral-100 p-3 sm:p-4 md:p-6 lg:p-8 font-primary"
+<section class="min-h-screen bg-neutral-100 p-3 sm:p-4 md:p-6 lg:p-8 font-primary"
     x-data="data_table()"
     @search.window="search($event.detail || '')">
 
