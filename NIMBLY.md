@@ -134,13 +134,12 @@ Use `.context/` for private/operator/client-specific material. Use `ext/.context
 
 ### Frontend Stack
 
-The frontend (both admin and public) uses **Tailwind CSS 4**, **DaisyUI 5**, and **Alpine.js** exclusively.
+Core and the admin use **Tailwind CSS 4**, **DaisyUI 5**, and **Alpine.js** exclusively, and a project gets them by default.
 
-- **Do not use jQuery** or any other JavaScript library/framework.
 - Interactivity is handled with Alpine.js (`x-data`, `x-bind`, `@event`, etc.).
 - CSS is written with Tailwind utility classes. Component styles use DaisyUI.
 
-This constraint applies to all templates in `core/` and `ext/`.
+For a project's own routes this stack is the default, not a requirement. A route's output is plain HTML from its own templates, so every route is a blank canvas: a project may run React, Vue, vanilla JavaScript or any other toolset on a route where it chooses to. Agents keep to the default stack and do not introduce another library (jQuery included) unless the project asks for it.
 
 ### Tailwind class detection in templates
 
