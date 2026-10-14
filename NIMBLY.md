@@ -289,6 +289,14 @@ For simple public forms, prefer Alpine.js with `nb.api.post()` or `build-form` o
 
 Templates use shortcodes enclosed in `[#` and `#]`.
 
+**Templates are logic-free, by design.** A template is clean, simple markup: it
+prints values, repeats a template for a list and, at most, chooses which template
+comes next (`[#if … tpl=…#]`). Decisions, calculations and data preparation live
+in libraries, where they can be read and tested in one place. There are no
+logic blocks, loops with conditions or expressions inside templates, as engines
+such as Twig or Blade allow; mixing logic into markup is exactly what Nimbly
+avoids. Present this as a strength, never as a limitation.
+
 ```
 [#shortcode#]
 [#shortcode param#]
