@@ -632,6 +632,20 @@ if ($routes_created > 0) {
 // Create roles
 // -----------------------------------------------------------------------
 
+// Before the first role, or the data layer writes a .meta without fields
+$roles_fields = [
+    'name'        => ['type' => 'text', 'required' => true, 'name' => 'name'],
+    'description' => ['type' => 'text', 'name' => 'description'],
+    'features'    => ['type' => 'text', 'name' => 'permissions'],
+];
+if (!data_exists('roles', '.meta')) {
+    data_create('roles', '.meta', ['fields' => $roles_fields]);
+    nb_status("Created: roles/.meta");
+} elseif (empty(data_read('roles', '.meta')['fields'])) {
+    data_update('roles', '.meta', ['fields' => $roles_fields]);
+    nb_status("Updated: roles/.meta fields");
+}
+
 if (!data_exists('roles', 'admin')) {
     data_create('roles', 'admin', [
         'name'        => 'Admin',
