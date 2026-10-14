@@ -3,7 +3,7 @@
     @keydown.escape.window="open && toggle()">
 
     <div x-show="open" x-transition.opacity role="dialog" aria-label="[#text Talk with Nimbly#]"
-        class="nb-chat-panel absolute bottom-16 flex h-[36rem] max-h-[calc(100vh-8rem)] w-[25rem] max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-2xl border border-base-300 bg-base-100 shadow-xl max-md:fixed max-md:inset-x-0 max-md:bottom-auto max-md:top-0 max-md:h-dvh max-md:max-h-none max-md:w-auto max-md:max-w-none max-md:rounded-none max-md:border-0 max-md:shadow-none"
+        class="nb-chat-panel absolute bottom-16 flex h-[36rem] max-h-[calc(100vh-8rem)] w-[25rem] max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-2xl border border-base-300 bg-base-100 text-base-content shadow-xl max-md:fixed max-md:inset-x-0 max-md:bottom-auto max-md:top-0 max-md:h-dvh max-md:max-h-none max-md:w-auto max-md:max-w-none max-md:rounded-none max-md:border-0 max-md:shadow-none"
         :class="side === 'left' ? 'left-0' : 'right-0'" :style="panel_style()">
 
         <div class="flex h-14 shrink-0 items-center gap-1 px-3">
