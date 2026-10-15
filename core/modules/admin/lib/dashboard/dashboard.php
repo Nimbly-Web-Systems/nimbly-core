@@ -105,14 +105,15 @@ function dashboard_site_status_section(bool $can_pull_ext, bool $can_pull_core):
         );
     }
 
+    // data freshness alone does not need a panel: the data section shows it
+    if (empty($items)) {
+        return '';
+    }
+
     $resources = get_variable('data.user-resources', []);
     if (!empty($resources)) {
         [$data_ts, $data_label] = dashboard_data_freshness($resources);
         $items[] = dashboard_data_status_item($data_label ?? '', $data_ts);
-    }
-
-    if (empty($items)) {
-        return '';
     }
 
     set_variable('_dash.status_items', implode('', $items));
