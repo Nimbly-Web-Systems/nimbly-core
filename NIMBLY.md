@@ -3189,13 +3189,13 @@ forms. The value is treated as a class suffix, not a full class list:
 ```json
 {
   "name": "contact",
-  "class_name": "truesim",
+  "class_name": "site",
   "resource": "leads",
   "fields": {}
 }
 ```
 
-This renders `nb-form-truesim` on the form and `nb-form-field-truesim` on each
+This renders `nb-form-site` on the form and `nb-form-field-site` on each
 field wrapper. The default field wrapper style remains `relative my-10`.
 
 To add classes for a specific render, set `form-field-wrapper-class` before
