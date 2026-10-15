@@ -87,7 +87,10 @@ function openai_import_document($resource)
                 . 'marking where an image belongs, such as "[stadsplattegrond Görlitz]" or '
                 . '"[photo: the market square]" — keep every one of these verbatim as its own '
                 . 'paragraph, exactly where it appears; never drop, summarize, or rewrite them, '
-                . 'since an editor uses them afterward to place the actual image.'
+                . 'since an editor uses them afterward to place the actual image. '
+                . 'The page shows the title above the body and styles the text itself, so leave the '
+                . 'title out and keep all of the text that follows it, the opening paragraph a plain '
+                . '<p> like the rest.'
             : "Extract the value for the field \"{$label}\". Return plain text only, no HTML tags."];
         foreach ($definition['ai_prompts']['_all'] ?? [] as $extra) {
             $instructions[] = openai_import_document_extraction_instruction($extra);
