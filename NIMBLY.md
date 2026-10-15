@@ -3500,6 +3500,8 @@ Any client that sends the session cookie (`credentials: 'same-origin'`) works th
 
 > **Use this for all external API access.** Any site, script or service that reads or writes through the API signs in as a Nimbly user with API access and gets a token here. Don't invent shared secrets, per-record keys or other parallel auth. Give the calling party its own user, with a role holding only the feature it needs. In a custom endpoint, check that feature with `api_access('<feature>')` (core/modules/api/lib/api.php), then scope the data to the signed-in user (`$_SESSION['username']`).
 
+The user needs API access: the **API access** switch in the user's action panel at `/nb-admin/users/<uuid>` (for roles with `edit-users`) sets `api.access` on the user record; off, the token endpoint and existing tokens are refused.
+
 Obtain a Bearer token by posting credentials:
 
 ```bash

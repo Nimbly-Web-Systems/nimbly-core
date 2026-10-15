@@ -63,6 +63,12 @@ function resource_record_actions_sc()
         }
     }
     if ($current_scope !== 'add') {
+        // A user's API access is switched on where the user is edited
+        load_library('record-api-access');
+        $api_access = record_api_access_panel($resource, (string)(get_variable('uuid', '') ?: get_variable('_bf_uuid', '')));
+        if ($api_access !== '') {
+            $rendered[] = $api_access;
+        }
         // Every record of a resource with history shows its latest changes
         load_library('record-history');
         $history = record_history_panel($resource, (string)(get_variable('uuid', '') ?: get_variable('_bf_uuid', '')));
