@@ -3483,6 +3483,19 @@ permissions such as `api_delete_{resource}`, API wildcards, ordinary
 deletion returns HTTP 403 and names the required
 `api_delete_resource_{resource}` permission in `needs`.
 
+### From the site's own scripts
+
+Code on the site needs no token: the browser sends the signed-in user's session and the API applies that user's permissions. `nb.api` (core `js/nb_api.jsx`, loaded with `app.js`) wraps `fetch` with the session cookie and returns the parsed JSON, also for errors:
+
+```js
+const list = await nb.api.get(nb.base_url + '/api/v1/projects?limit=12');
+const created = await nb.api.post(nb.base_url + '/api/v1/projects', { title: 'Harbour Atlas' });
+await nb.api.put(nb.base_url + '/api/v1/projects/' + uuid, { published: true });
+await nb.api.delete(nb.base_url + '/api/v1/projects/' + uuid);
+```
+
+Any client that sends the session cookie (`credentials: 'same-origin'`) works the same way.
+
 ### Authentication
 
 > **Use this for all external API access.** Any site, script or service that reads or writes through the API signs in as a Nimbly user with API access and gets a token here. Don't invent shared secrets, per-record keys or other parallel auth. Give the calling party its own user, with a role holding only the feature it needs. In a custom endpoint, check that feature with `api_access('<feature>')` (core/modules/api/lib/api.php), then scope the data to the signed-in user (`$_SESSION['username']`).
@@ -3581,12 +3594,15 @@ Common error codes:
 
 | Code | Message | Description |
 |---|---|---|
-| 400 | `INVALID_DATA` | Missing required fields or invalid data |
-| 401 | `UNAUTHORIZED` | Missing or invalid token |
-| 403 | `ACCESS_DENIED` | Role lacks the required permission |
+| 400 | `INVALID_DATA` | Malformed request, or a filter or sort on a hidden field |
+| 401 | `INVALID_CREDENTIALS` | Wrong email or password at `auth/token` |
+| 403 | `ACCESS_DENIED` | No session, token or allowance with the required permission; `needs` lists them |
 | 404 | `RESOURCE_NOT_FOUND` | Record or resource does not exist |
-| 409 | `CONFLICT` | Record already exists |
-| 500 | `INTERNAL_ERROR` | Server-side failure |
+| 405 | `METHOD_NOT_ALLOWED` | The method has no handler |
+| 409 | `RESOURCE_EXISTS` | A record with this identifier already exists |
+| 413 | `UPLOAD_TOO_LARGE` | The upload exceeds the server limit |
+| 422 | `INVALID_DATA` | A value fails the resource's validation |
+| 500 | `RESOURCE_CREATE_FAILED`, `RESOURCE_UPDATE_FAILED`, `RESOURCE_DELETE_FAILED` | The write failed |
 
 ### Authorization
 
