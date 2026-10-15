@@ -1436,6 +1436,10 @@ function application_email_created_job($job) {}
 
 The queue stores intent and payload, not shell commands. Handlers may send email, call APIs, or perform other side effects.
 
+### Record ids
+
+`generate_uuid()` (`core/lib/util.php`) gives every record 80 random bits in base 36, up to 16 characters (`1ztuvo56o5vze6t0`): unique within Nimbly, not an RFC 4122 UUID. The id is the file name and never changes, so a record keeps its id across development, staging, production, Git, exports and imports, and `select` references stay valid wherever data moves; there are no auto-increment numbers to renumber. A create with an existing id answers `RESOURCE_EXISTS`. A caller may set its own id (`POST /api/v1/<resource>/<id>`). Public URLs use an indexed slug, not the id.
+
 ### System fields (auto-managed)
 
 Every record automatically has: `uuid`, `_created`, `_modified`, `_created_by`, `_modified_by`. Never define these in `.meta`.
