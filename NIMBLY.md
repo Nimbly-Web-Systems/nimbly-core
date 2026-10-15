@@ -229,12 +229,15 @@ Keep content server-rendered when the browser only needs to show, hide, sort, or
 Use `[#fmt var=data.records json#]` when the client genuinely needs structured records for reactive creation, transformation, editing, or state changes:
 
 ```html
-<div x-data='{ records: [#fmt var=data.articles empty=[] type=json#] }'>
+<script type="application/json" id="articles-data">[#fmt var=data.articles empty={} type=json#]</script>
+<div x-data="{ records: Object.values(JSON.parse(document.getElementById('articles-data').textContent)) }">
     <template x-for="item in records" :key="item.uuid">
         <div x-text="item.title"></div>
     </template>
 </div>
 ```
+
+Pass the JSON in a `<script type="application/json">` block, not inside a single-quoted attribute: `json_encode` leaves `'` as it is, so an apostrophe in a record ends the attribute.
 
 For hybrid interfaces, server-render reusable markup inside a native `<template>` and let Alpine clone or populate it. This keeps the HTML structure in templates instead of duplicating it in JavaScript while still allowing client-side creation:
 
@@ -1359,8 +1362,8 @@ the resource retains simple scalar coordinates:
 | `nimblybar` | Boolean controlling whether the resource appears in the Nimbly-bar Resources menu. Regular resources are visible by default; `users` and `roles` are hidden by default. Set `true` to include or `false` to hide explicitly. The current user still needs `view-<resource>`. |
 | `actions` | Object with optional `view_url` and `url` keys. `view_url` overrides the generic admin View action (default `/nb-admin/{resource}/{uuid}?view=1`); `url` adds the separate “View on site” action. Both support `[#record.<field>#]` substitutions. Example: `{"view_url": "/review/?id=[#record.uuid#]", "url": "[#base-url#]/articles/[#record.title_slug#]"}`. |
 | `events` | Resource lifecycle event declarations. Supported keys: `create`, `update`, `delete`. Values are arrays of named events or `job:<type>` queue entries. See below. |
-| `splitdir` | Boolean. When `true`, records are stored in a two-level subdirectory tree by UUID prefix for filesystem performance at scale (> ~10,000 records). See §12 API — Scalability. |
-| `index` | Array of field names to index. Creates fast lookup paths for those fields. See §4 Indexes below. |
+| `splitdir` | Boolean. When `true`, records are stored in a two-level subdirectory tree by UUID prefix for filesystem performance at scale (> ~10,000 records). See API > Scalability. |
+| `index` | Array of field names to index. Creates fast lookup paths for those fields. See Indexes below. |
 | `upsert` | Boolean. When `true`, `data_update()` (and therefore `PUT /api/v1/{resource}/{uuid}`) creates a missing record instead of failing. Use only for key-value-style resources where "record may not exist yet" is the normal, expected state (e.g. core's `.config`, used for per-page settings) — not for regular content resources, where updating a non-existent record should stay an error. |
 | `self_edit` | `users` only. Comma-separated fields a user may save on their own record through `PUT /api/v1/users/{uuid}`. Default: `name`. Anyone who may edit users (`edit-users`, `manage-users`, admin) saves every field. |
 | `hidden` | Comma-separated fields the API never returns: not in a list, a single record, the answer to a create or update, or an export. They are still stored and saved as usual; read them in PHP with `data_read()`. Fields named in `encrypt` are always hidden. For `users`, `password`, `salt`, `api`, `password_reset_token` and `change_email_token` are hidden by core, whatever the `.meta` says. |
@@ -2271,9 +2274,7 @@ Projects can configure durations in seconds under `session` in `.config/site`:
 
 The longest matching assigned-role override wins; otherwise the authenticated
 default applies. Temporary role switching does not change the assigned-role
-snapshot. Legacy sessions retain their original 24-hour validity until their
-first valid live request upgrades them; an already-expired session is never
-revived. Login, cookies, and cleanup use the same policy. Core disables PHP's
+snapshot. Login, cookies, and cleanup use the same policy. Core disables PHP's
 request-triggered garbage collection for its private session directory.
 
 `./nimbly sessions:prune --dry-run` reports aggregate counts without changing
@@ -3229,11 +3230,10 @@ Contact forms, questionnaires, signup forms, and lead forms all use the same res
 
 1. Create a target resource for submitted records, e.g. `ext/data/questionnaire_entries/.meta`.
 2. Create the form definition JSON next to the route, e.g. `questionnaire.json`.
-3. Render it with `[#module forms#]` and `[#build-form questionnaire#]`.
+3. Render it with `[#build-form questionnaire#]`.
 4. Open only anonymous `POST` for the target resource:
 
 ```html
-[#module api#]
 [#api-allow post questionnaire_entries#]
 ```
 
@@ -4045,7 +4045,7 @@ Rules for components:
 - **No side effects** — a component should not assume what page it is on, what other components are present, or what CSS classes the parent defines.
 - **Portable** — a well-built component can be copied to another `ext/` repo and used immediately without modification.
 
-For most UI components a template is sufficient. Promote to a module (§14) only when you need to install a resource (e.g. an event system that creates an `events` resource on install) or register dedicated routes (e.g. `/event/(slug)/`). A photo collage, an interactive map, a countdown timer, a newsletter block — none of these need a module.
+For most UI components a template is sufficient. Promote to a module (see Modules) only when you need to install a resource (e.g. an event system that creates an `events` resource on install) or register dedicated routes (e.g. `/event/(slug)/`). A photo collage, an interactive map, a countdown timer, a newsletter block — none of these need a module.
 
 ### Commit messages
 
