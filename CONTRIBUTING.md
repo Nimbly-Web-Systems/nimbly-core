@@ -13,9 +13,9 @@ in an `ext/` repository. See `NIMBLY.md` for a full description of the stack.
 The Nimbly core in this repository is open source under the ISC license
 (`LICENSE.txt`).
 
-Every `ext/` application repository is proprietary: copyright Nimbly Web
-Systems, all rights reserved, and confidential. Each one ships its own
-`ext/LICENSE.txt`. Application code is not covered by the core ISC license.
+An `ext/` application repository belongs to the application's owner, who
+chooses its license and keeps it in `ext/LICENSE.txt`. Application code is not
+covered by the core ISC license.
 
 ## Reporting Bugs
 
