@@ -94,6 +94,11 @@ function files_id_put($resource, $uuid)
     return resource_id_put($resource, $uuid);
 }
 
+function files_id_patch($resource, $uuid)
+{ // update one, as PUT
+    return files_id_put($resource, $uuid);
+}
+
 function files_id_delete($resource, $uuid)
 { // delete one
     if (data_delete($resource, $uuid)) {

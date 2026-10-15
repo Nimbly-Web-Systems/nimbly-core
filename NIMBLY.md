@@ -3466,6 +3466,7 @@ GET    /api/v1/{resource}          → list all records
 POST   /api/v1/{resource}          → create a new record
 GET    /api/v1/{resource}/{uuid}   → get a single record
 PUT    /api/v1/{resource}/{uuid}   → update a record (partial update — only supplied fields are changed)
+PATCH  /api/v1/{resource}/{uuid}   → same as PUT
 DELETE /api/v1/{resource}/{uuid}   → delete a record
 DELETE /api/v1/{resource}          → delete all records (requires `api_delete_resource_{resource}` or `(all)`)
 ```

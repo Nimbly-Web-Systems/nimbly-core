@@ -53,6 +53,9 @@ $GLOBALS['meta'] = [
 $_SESSION = ['features' => ['view-projects' => true]];
 api_openapi_assert(api_openapi_operations('projects') === ['get'], 'a reader may only get');
 api_openapi_assert(api_openapi_operations('users') === [], 'a resource without permission is described');
+$_SESSION = ['features' => ['edit-projects' => true]];
+api_openapi_assert(api_openapi_operations('projects') === ['put', 'patch'], 'an editor may not put and patch');
+$_SESSION = ['features' => ['view-projects' => true]];
 
 $projects = api_openapi_record_schema('projects')['properties'];
 api_openapi_assert(!isset($projects['notes']), 'a hidden field is described');

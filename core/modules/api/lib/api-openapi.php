@@ -36,7 +36,7 @@ function api_openapi_sc($params)
 function api_openapi_operations(string $resource): array
 {
     $operations = [];
-    foreach (['get', 'post', 'put', 'delete'] as $method) {
+    foreach (['get', 'post', 'put', 'patch', 'delete'] as $method) {
         if (api_access(_api_access_str($method, $resource, ''), $resource)) {
             $operations[] = $method;
         }
@@ -169,6 +169,10 @@ function api_openapi_resource_paths(string $resource, array $operations): array
     if (in_array('put', $operations, true)) {
         $list['put'] = ['operationId' => 'update_' . $id . '_many', 'summary' => 'Update several records, keyed by UUID', 'requestBody' => ['required' => true, 'content' => ['application/json' => ['schema' => ['type' => 'object', 'additionalProperties' => $record]]]], 'responses' => ['200' => $answer, '400' => $error, '403' => $error]];
         $item['put'] = ['operationId' => 'update_' . $id, 'summary' => 'Update the fields sent', 'requestBody' => $body, 'responses' => ['200' => $answer, '403' => $error, '422' => $error]];
+    }
+    if (in_array('patch', $operations, true)) {
+        $list['patch'] = ['operationId' => 'patch_' . $id . '_many', 'summary' => 'Update several records, keyed by UUID (same as PUT)', 'requestBody' => ['required' => true, 'content' => ['application/json' => ['schema' => ['type' => 'object', 'additionalProperties' => $record]]]], 'responses' => ['200' => $answer, '400' => $error, '403' => $error]];
+        $item['patch'] = ['operationId' => 'patch_' . $id, 'summary' => 'Update the fields sent (same as PUT)', 'requestBody' => $body, 'responses' => ['200' => $answer, '403' => $error, '404' => $error, '422' => $error]];
     }
     if (in_array('delete', $operations, true)) {
         $item['delete'] = ['operationId' => 'delete_' . $id, 'summary' => 'Delete one record', 'responses' => ['200' => api_openapi_json('Deleted', ['$ref' => '#/components/schemas/Answer']), '403' => $error, '404' => $error]];

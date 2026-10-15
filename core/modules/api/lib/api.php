@@ -542,6 +542,11 @@ function resource_put($resource) { // update multiple
     return json_result(array('message' => 'RESOURCE_UPDATE_FAILED'), 500);
 }
 
+/** PATCH is the same partial update as PUT: only the fields sent change. */
+function resource_patch($resource) {
+    return resource_put($resource);
+}
+
 function resource_delete($resource) { // delete all
     $delete_count = data_delete($resource);
     if ($delete_count !== false) {
@@ -625,6 +630,10 @@ function resource_id_put($resource, $uuid) { // update one
         return json_result(array('message' => 'INVALID_DATA', 'detail' => $detail), 422);
     }
     return json_result(array('message' => 'RESOURCE_UPDATE_FAILED'), 500);
+}
+
+function resource_id_patch($resource, $uuid) {
+    return resource_id_put($resource, $uuid);
 }
 
 function resource_id_delete($resource, $uuid) { // delete one
