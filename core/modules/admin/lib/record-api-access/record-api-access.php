@@ -10,7 +10,7 @@ load_library('access');
  */
 function record_api_access_panel(string $resource, string $uuid): string
 {
-    if ($resource !== 'users' || $uuid === '' || !access_by_feature('edit-users')) {
+    if ($resource !== 'users' || $uuid === '' || !access_by_feature('edit-users,manage-users')) {
         return '';
     }
     $user = data_read('users', $uuid);
