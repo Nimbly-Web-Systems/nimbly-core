@@ -9,7 +9,7 @@
     <div class="flex justify-between flex-wrap gap-2">
       <h1 class="text-2xl md:text-3xl font-semibold text-neutral-800 ">[#text Media Library#]</h1>
       <div>
-        [#feature-cond features="delete-.files" tpl=btn_delete_all#]
+        [#feature-cond features="api_delete_resource_.files" tpl=btn_delete_all#]
       </div>
     </div>
     <div class="pt-4">
