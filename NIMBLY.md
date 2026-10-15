@@ -1067,7 +1067,7 @@ The inventory below is generated from `*_sc()` implementations in `core/lib` and
 
 Resources are structured data collections defined in `ext/data/`.
 
-Data is files by design: there is no database server. Each record is a JSON file in the `ext/` repository, so content is versioned, branched and reverted with the code, a clone brings every record and media file, and a resource gets admin, API, OpenAPI, permissions and history from its `.meta` without migrations. User accounts, sessions, jobs, history, caches and `.env` stay out of Git (setup's `ext/.gitignore`). Indexes, list caches and paged queries keep a resource fast up to around 100,000 records; design resources as one kind of thing each, index what is looked up, and keep records focused. Very large relational or high-write workloads belong in a database that a library talks to.
+Data is files by design: there is no database server. Each record is a JSON file in the `ext/` repository, so content is versioned, branched and reverted with the code, a clone brings every record and media file, and a resource gets admin, API, OpenAPI, permissions and history from its `.meta` without migrations. User accounts, sessions, jobs, history, caches and `.env` stay out of Git (setup's `ext/.gitignore`). Indexes, list caches, paged queries and `splitdir` (above about 10,000 records) keep a resource fast up to around 100,000 records; design resources as one kind of thing each, index what is looked up, and keep records focused.
 
 ### Structure
 
