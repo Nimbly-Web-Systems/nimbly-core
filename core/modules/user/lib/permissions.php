@@ -12,6 +12,7 @@ function permission_editor_static_features(): array
     return [
         'view-admin-dashboard',
         'view-nimblybar',
+        'view-stats',
         'edit-inline-content',
         'view-.content',
         'create-.content',
@@ -71,7 +72,6 @@ function permission_any_features(): array
         'export-roles',
         'view-system-log',
         'clear-system-log',
-        'view-stats',
         'view-debug',
         'clear-cache',
         'pull-core-updates',
