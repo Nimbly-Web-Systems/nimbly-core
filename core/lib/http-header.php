@@ -28,7 +28,9 @@ function http_header_sent($type, $cached=false, $modified=0) {
         '403' => 'HTTP/1.0 403 Forbidden',
         '404' => 'HTTP/1.0 404 Not Found',
         '500' => 'HTTP/1.1 500 Internal Server Error',
-        'csv' => 'Content-type: application/csv; charset=UTF-8'
+        'csv' => 'Content-type: application/csv; charset=UTF-8',
+        'xml' => 'Content-type: application/xml; charset=UTF-8',
+        'txt' => 'Content-type: text/plain; charset=UTF-8',
     ];
     if (isset($types[$type])) {
         header($types[$type]);

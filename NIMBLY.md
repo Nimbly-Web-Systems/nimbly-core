@@ -229,7 +229,7 @@ Keep content server-rendered when the browser only needs to show, hide, sort, or
 Use `[#fmt var=data.records json#]` when the client genuinely needs structured records for reactive creation, transformation, editing, or state changes:
 
 ```html
-<div x-data='{ records: [#fmt var=data.articles json empty=[]#] }'>
+<div x-data='{ records: [#fmt var=data.articles empty=[] type=json#] }'>
     <template x-for="item in records" :key="item.uuid">
         <div x-text="item.title"></div>
     </template>
@@ -614,18 +614,20 @@ Formats a variable for output.
 ```
 [#fmt var=data.records json#]              → JSON encode
 [#fmt var=myvar empty={} json#]            → JSON with fallback
-[#fmt val=item.date type=date fmt="d-m-Y"#]
-[#fmt val=item.body type=html#]            → strips all tags
-[#fmt val=item.body type=plain#]           → strips tags and decodes entities
-[#fmt val=item.size type=bytes#]           → human-readable bytes
-[#fmt val=item.hours type=hours#]          → 3h 30m, 6m, 37h (whole minutes)
-[#fmt val=item.created type=ago#]          → "3 days ago"
+[#fmt var=item.date type=date fmt="d-m-Y"#]
+[#fmt var=item.body type=html#]            → strips all tags
+[#fmt var=item.body type=plain#]           → strips tags and decodes entities
+[#fmt var=item.size type=bytes#]           → human-readable bytes
+[#fmt var=item.hours type=hours#]          → 3h 30m, 6m, 37h (whole minutes)
+[#fmt var=item.created type=ago#]          → "3 days ago"
 [#fmt val=[#data-count users#] type=number round=-2 round_mode=floor#]
-[#fmt val=item.invoice type=file#]         → file download markup
-[#fmt val=item.order type=pad length=4#]   → zero-padded number
+[#fmt var=item.invoice type=file#]         → file download markup
+[#fmt var=item.order type=pad length=4#]   → zero-padded number
 ```
 
 Types: `text`, `plain`, `html`, `date`, `ago`, `json`, `bytes`, `hours`, `number`, `boolean`, `image`, `file`, `pad`
+
+`var=` reads a variable; `val=` takes the value itself, usually a nested shortcode. The type is `type=`, or a bare word as the last parameter: `[#fmt var=list empty={} json#]` encodes, `[#fmt var=list json empty={}#]` does not.
 
 #### `[#count varname#]`
 Outputs the number of items in an array variable.
@@ -988,7 +990,7 @@ Outputs a response Content-Type header. Use at the top of non-HTML routes.
 [#http-header csv#]
 ```
 
-Types: `css`, `js`, `json`, `woff`, `csv`, `403`, `404`, `500`.
+Types: `css`, `js`, `json`, `xml`, `txt`, `woff`, `csv`, `403`, `404`, `500`.
 
 A second parameter also sends long-lived cache headers (`Cache-Control: private`, `Expires`, `Last-Modified`) and answers `304` to a conditional request: `[#http-header css cached#]`.
 
@@ -4029,13 +4031,17 @@ Called from any page template with its shortcode name:
 
 ```
 [#photo-collage#]
-[#interactive-map location="Amsterdam"#]
+
+[#set map_location=Amsterdam overwrite#]
+[#interactive-map#]
 ```
+
+A template takes no parameters: a call with parameters, such as `[#interactive-map location=Amsterdam#]`, is not rendered. Set the variables the template reads before calling it. A library shortcode does take parameters.
 
 Rules for components:
 
 - **Self-contained** — all markup, logic, and scoped styles live inside the component directory. The page template only calls the shortcode.
-- **Configurable via parameters** — use shortcode params for anything that varies per use (`[#map location="..." zoom="12"#]`). Do not hardcode values that belong to the caller.
+- **Configurable by the caller** — read anything that varies per use from variables the caller sets (`[#set map_zoom=12 overwrite#]`). Do not hardcode values that belong to the caller.
 - **No side effects** — a component should not assume what page it is on, what other components are present, or what CSS classes the parent defines.
 - **Portable** — a well-built component can be copied to another `ext/` repo and used immediately without modification.
 
@@ -4150,11 +4156,11 @@ On submit, `form_data` is spread into the API payload and POSTed to `/api/v1/{re
 
 4. If the field manages complex state (e.g. a file picker, a media browser trigger), nest its own `x-data` inside the form's `x-data`. The outer `form_data` remains accessible from nested scopes.
 
-1.1 custom fields must use the `field-{type}` template convention and the
-`_f.*` context (`_f.model`, `_f.key`, `_f.title`, `_f.bg`, etc.). Older
-templates that use `_fmodel`, `_fid`, `_ftitle`, `_fbg`,
-`_bf_render_field()`, or Tailwind Elements `data-te-*` attributes are legacy
-and should be rebuilt instead of carried forward.
+Custom fields use the `field-{type}` template convention and the `_f.*`
+context (`_f.model`, `_f.key`, `_f.title`, `_f.bg`, etc.). Field templates
+from an older generation, with `_fmodel`, `_fid`, `_ftitle`, `_fbg`,
+`_bf_render_field()` or Tailwind Elements `data-te-*` attributes, are rebuilt
+in this form rather than carried forward.
 
 Nested and repeater fields must explicitly manage nested Alpine model paths.
 For example, a `group` field that stores `locations` should bind child fields
