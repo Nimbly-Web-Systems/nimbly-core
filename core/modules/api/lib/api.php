@@ -514,6 +514,11 @@ function resource_put($resource) { // update multiple
     }
     load_library('html-sanitize');
     $meta = data_meta($resource);
+    // The body is an object of records; json_input() adds a uuid of its own at the top
+    $data = array_filter($data, 'is_array');
+    if ($data === []) {
+        return json_result(array('message' => 'INVALID_DATA'), 400);
+    }
     foreach ($data as $pk => $updates) {
         if (is_array($updates)) {
             if (!api_uuid_valid(empty($pk) ? ($updates['uuid'] ?? '') : $pk)) {
@@ -566,10 +571,9 @@ function resource_id_post($resource, $uuid) { // create new with uuid
     }
     $data = api_sanitize_html_fields($resource, $data);
     $data['uuid'] = $uuid;
-    $result = data_create($resource, $uuid, $data);
-    if ($result) {
+    if (data_create($resource, $uuid, $data)) {
         return json_result(array(
-            $resource => array($uuid => api_hide_fields($resource, $result)),
+            $resource => array($uuid => api_hide_fields($resource, $data)),
             'count' => 1,
             'message' => 'RESOURCE_CREATED'
         ), 201);
