@@ -27,7 +27,7 @@
     "type": "git",
     "url": "git+https://github.com/Nimbly-Web-Systems/nimbly-core.git"
   },
-  "author": "The Nimbly authors",
+  "author": "Nimbly Web Systems",
   "license": "ISC",
   "bugs": {
     "url": "https://github.com/Nimbly-Web-Systems/nimbly-core/issues"
