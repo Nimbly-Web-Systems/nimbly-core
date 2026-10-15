@@ -384,9 +384,9 @@ Types and examples:
 
 | Type | Used for | Example |
 |------|----------|---------|
-| `page-` | Full-page template (one per route) | `page-community-gamechangers`, `page-accelerator` |
+| `page-` | Full-page template (one per route) | `page-about`, `page-projects` |
 | `section-` | A section or block rendered inside a page | `section-home-header`, `section-page-header` |
-| `card-` | A repeatable card component | `card-alumni`, `card-network-partner` |
+| `card-` | A repeatable card component | `card-project`, `card-team-member` |
 | `logo-` | A logo display component | `logo-partner`, `logo-partner-image` |
 | `icon-` | An inline icon snippet | `icon-arrow-right`, `icon-chevron-right` |
 | `form-` | A form component | `form-registration` |
@@ -394,13 +394,13 @@ Types and examples:
 Sub-templates inside a page directory follow the same rule — type first:
 
 ```
-ext/tpl/page-community-networkpartners/
-  card-cluster.tpl
-  card-network-partner.tpl
-  card-network-partner-logo.tpl
+ext/tpl/page-projects/
+  section-project-list.tpl
+  card-project.tpl
+  card-project-image.tpl
 ```
 
-**Never** put the type at the end (`alumni-card`, `coalition-page`). Type-first keeps all cards, all sections, and all page templates sorted together in the filesystem.
+**Never** put the type at the end (`project-card`, `about-page`). Type-first keeps all cards, all sections, and all page templates sorted together in the filesystem.
 
 ### URI-scoped templates
 
