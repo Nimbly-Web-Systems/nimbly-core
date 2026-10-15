@@ -3483,6 +3483,10 @@ permissions such as `api_delete_{resource}`, API wildcards, ordinary
 deletion returns HTTP 403 and names the required
 `api_delete_resource_{resource}` permission in `needs`.
 
+### OpenAPI
+
+`GET /api/v1/openapi.json` (`core/modules/api/lib/api-openapi.php`) answers this site's API as an OpenAPI 3.0.3 document generated from the resource `.meta` files: per resource the operations the caller may use (`_api_access_str()`, the same check as the API) and a record schema with field types, `required`, select options as `enum`, and i18n fields as objects keyed by language. Hidden and encrypted fields and the users' sign-in values are left out; dot-resources other than `.files` are not listed. Without a session or token it answers 403.
+
 ### From the site's own scripts
 
 Code on the site needs no token: the browser sends the signed-in user's session and the API applies that user's permissions. `nb.api` (core `js/nb_api.jsx`, loaded with `app.js`) wraps `fetch` with the session cookie and returns the parsed JSON, also for errors:
