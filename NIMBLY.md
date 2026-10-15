@@ -1944,6 +1944,8 @@ The name is the first label of the request host, so `docs.localhost` reaches the
 - Templates in `ext/tpl/`, resources, users and the admin are shared with the main site.
 - The login is shared too: on a site with subdomain folders the session cookie is set for the main domain, so it also reaches its subdomains. A single-label host such as `localhost` keeps one login per host.
 - Link between the site and its subdomains with `[#subdomain-url docs#]/guide` (the `docs` subdomain) and `[#subdomain-url#]/contact` (the main site); both work from either side and on a local host name.
+- A site served from a subfolder, such as a shared staging host (`staging.example.com/site/`), has no host its subdomains can hang off, and its subdomain folders are not reachable there. Set `SUBDOMAIN_HOST=example.com` in that environment's `.env` and `[#subdomain-url docs#]` links to `https://docs.example.com` instead.
+- A page from the site's normal routes that is reached on a subdomain (the fallback above) keeps the main site as its canonical address, so search engines see one address per page.
 
 ### Localized route URLs
 

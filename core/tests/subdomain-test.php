@@ -53,4 +53,23 @@ assert_same('', subdomain_cookie_domain('localhost', true, false), 'a single-lab
 assert_same('', subdomain_cookie_domain('docs.localhost', true, true), 'a subdomain of a single-label host keeps its cookie');
 assert_same('', subdomain_cookie_domain('127.0.0.1', true, false), 'an IP address keeps its cookie');
 
+// SUBDOMAIN_HOST: a site in a subfolder links to its subdomains on the named host
+if (!function_exists('load_library')) {
+    function load_library($name) {}
+}
+if (!function_exists('find_exists')) {
+    function find_exists($base, $path) { return false; }
+}
+if (!function_exists('env')) {
+    function env($key, $default = '') { return $GLOBALS['test_env'][$key] ?? $default; }
+}
+require_once __DIR__ . '/../lib/subdomain-url.php';
+$_SERVER['HTTP_HOST'] = 'staging.example.com';
+$GLOBALS['SYSTEM']['uri_base'] = '/site/';
+$GLOBALS['SYSTEM']['file_base'] = sys_get_temp_dir() . '/';
+$GLOBALS['test_env'] = ['SUBDOMAIN_HOST' => 'example.com'];
+assert_same('https://docs.example.com', subdomain_url_sc(['docs']), 'a named subdomain uses SUBDOMAIN_HOST');
+$GLOBALS['test_env'] = [];
+assert_same('http://docs.staging.example.com/site', subdomain_url_sc(['docs']), 'without SUBDOMAIN_HOST the current host is used');
+
 echo "subdomain tests passed\n";

@@ -11,8 +11,34 @@ function seo_page_sc($params = null)
     }
 
     $override = get_variable('page-canonical-url');
+    if (!$override && seo_page_from_main_site()) {
+        // a main-site page reached on a subdomain belongs to the main site
+        $override = seo_main_site_root() . '/' . ltrim((string)($GLOBALS['SYSTEM']['request_uri'] ?? ''), '/');
+    }
     set_variable('page-canonical-url', seo_canonical_url($override ?: null));
     return '';
+}
+
+/** True on a subdomain when the page comes from the site's normal routes, not from the subdomain folder. */
+function seo_page_from_main_site(): bool
+{
+    load_library('subdomain');
+    return subdomain_folder() !== '' && !subdomain_is_folder_path((string)($GLOBALS['SYSTEM']['uri'] ?? ''));
+}
+
+/** The main site's address: SITE_URL, or the host without the subdomain. */
+function seo_main_site_root(): string
+{
+    load_library('env');
+    load_library('subdomain');
+    $configured = trim((string)env('SITE_URL', ''));
+    if ($configured !== '') {
+        return rtrim(preg_match('#^https?://#i', $configured) ? $configured : 'https://' . ltrim($configured, '/'), '/');
+    }
+    $https = !empty($_SERVER['HTTPS']) && strtolower((string)$_SERVER['HTTPS']) !== 'off';
+    $host = subdomain_sibling_host((string)($_SERVER['HTTP_HOST'] ?? ''), true, '');
+    $base = '/' . trim((string)($GLOBALS['SYSTEM']['uri_base'] ?? '/'), '/');
+    return rtrim(($https ? 'https' : 'http') . '://' . $host . ($base === '/' ? '' : $base), '/');
 }
 
 function seo_site_root(): string
