@@ -55,7 +55,7 @@ my-project/          ← core repo root
 
 This means `git status` at the project root reflects core changes; `git status` inside `ext/` reflects application changes. They are independent repos with independent histories, branches, and remotes.
 
-They are also licensed separately: core is open source under the ISC license, while every ext repo is proprietary — copyright Nimbly Web Systems, all rights reserved — and carries its own `ext/LICENSE.txt`.
+They are also licensed separately: core is open source under the ISC license, and each ext repo belongs to the application's owner, who chooses its license and keeps it in `ext/LICENSE.txt`. Applications built by Nimbly Web Systems are proprietary, all rights reserved.
 
 ### Deciding core vs. ext
 
