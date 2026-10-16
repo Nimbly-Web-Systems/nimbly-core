@@ -556,6 +556,7 @@ chat_test_site('home');
 $home_runs = array_filter($agent_test_data['.agent_runs'], fn($run) => !empty($run['event_context']['hub_run']));
 $home_run = array_key_last($home_runs);
 chat_test_assert(agent_chat_check_back('x', $home_run, 'coder', 2, 'too soon')['scheduled'] === false, 'a check-back has a time window');
+chat_test_assert(agent_chat_check_back('', $home_run, 'coder', 30, 'daily')['scheduled'] === false, 'outside a chat there is no check-back');
 agent_chat_check_back($home_runs[$home_run]['event_context']['conversation'], $home_run, 'coder', 30, 'Verify the upgrade');
 chat_test_site('hub');
 $agent_test_jobs = [];

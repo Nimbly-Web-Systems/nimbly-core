@@ -291,8 +291,11 @@ function agent_chat_check_back(string $uuid, string $run_uuid, string $agent_id,
         return ['scheduled' => false, 'reason' => 'Choose between ' . implode(' and ', AGENT_CHECK_BACK_MINUTES) . ' minutes.'];
     }
     $note = mb_substr(trim($note), 0, 1000);
-    $mirror = data_read('.agent_conversations', $uuid);
-    if (is_array($mirror) && !empty($mirror['hub_user'])) {
+    $mirror = preg_match('/^[a-f0-9]{16}$/', $uuid) === 1 ? data_read('.agent_conversations', $uuid) : null;
+    if (!is_array($mirror)) {
+        return ['scheduled' => false, 'reason' => 'A check-back works only in a chat; outside one, look again on your next run.'];
+    }
+    if (!empty($mirror['hub_user'])) {
         load_library('agent-remote');
         agent_remote_outbox($uuid, ['type' => 'check_back', 'agent' => $agent_id, 'minutes' => $minutes, 'note' => $note,
             'run' => (string)(data_read('.agent_runs', $run_uuid)['event_context']['hub_run'] ?? '')]);
