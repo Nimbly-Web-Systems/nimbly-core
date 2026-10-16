@@ -2760,7 +2760,12 @@ input connector, answers with a model step whose `output_schema` has at
 least `reply` (optionally `link_path`, `link_label`, and `open_now` to offer
 or open a page), and delivers with the `chat-reply` output connector. Give
 agents the `hand_over` tool (connector `chat-hand-over`) so they can bring a
-colleague agent into the conversation. The Nimbly agent's tools act with the
+colleague agent into the conversation, and the `check_back` tool (connector
+`chat-check-back`, arguments `minutes` 5–240 and `note`) for work that runs on
+after the reply: when due, the `agent-check-back` job gives the agent a new turn
+in the same chat, with its note as the occasion. One check-back per agent and
+chat; a new one replaces it. For an agent living on another site, the hub keeps
+the time. The Nimbly agent's tools act with the
 asking user's own rights; `save_record` is governed and authorized per user.
 
 **Agents living on another site.** A hub site can include agents whose home is

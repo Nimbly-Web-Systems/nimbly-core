@@ -551,6 +551,21 @@ $remote_follow = agent_chat_follow_up('coder', $act_chat, 'Operator verified rec
 chat_test_assert($remote_follow['queued'] && $act_run() === false, 'remote follow-ups retain existing authority');
 chat_test_assert(str_contains(json_encode($chat_test_seen['coder']), 'Operator verified recovery'),
     'the remote agent receives the operator context through the chat mechanism');
+// A check-back asked for at home is timed by the hub, which then starts a new turn in the same chat.
+chat_test_site('home');
+$home_runs = array_filter($agent_test_data['.agent_runs'], fn($run) => !empty($run['event_context']['hub_run']));
+$home_run = array_key_last($home_runs);
+chat_test_assert(agent_chat_check_back('x', $home_run, 'coder', 2, 'too soon')['scheduled'] === false, 'a check-back has a time window');
+agent_chat_check_back($home_runs[$home_run]['event_context']['conversation'], $home_run, 'coder', 30, 'Verify the upgrade');
+chat_test_site('hub');
+$agent_test_jobs = [];
+agent_remote_pull(true);
+$check_back = end($agent_test_jobs);
+chat_test_assert($check_back['type'] === 'agent-check-back' && $check_back['payload']['conversation'] === $act_chat
+    && abs($check_back['options']['available_at'] - (time() + 1800)) < 200, 'the hub queues the check-back for the original chat');
+require_once BASE_DIR . 'core/modules/agent/lib/agent-check-back.php';
+chat_test_assert(agent_check_back_job($check_back)['queued'] && $act_run() === false
+    && str_contains(json_encode($chat_test_seen['coder']), 'Verify the upgrade'), 'when due the agent gets its turn with its own note');
 $chat_test_user_features = [];
 $chat_test_env = [];
 

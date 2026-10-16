@@ -9,6 +9,7 @@
  */
 
 const AGENT_CHAT_MAX_TEXT = 8000;
+const AGENT_CHECK_BACK_MINUTES = [5, 240];
 
 function agent_chat_owner(): string
 {
@@ -230,6 +231,12 @@ function agent_chat_follow_up(string $agent_id, string $uuid, string $text): arr
     if ($text === '' || mb_strlen($text) > AGENT_CHAT_MAX_TEXT) {
         throw new InvalidArgumentException('Message is empty or too long');
     }
+    return agent_chat_occasion_turn($agent_id, $uuid, 'Operator follow-up: ' . $text, 'operator');
+}
+
+/** A new turn for an agent in an existing chat, started by an occasion rather than a message, with the colleague's rights. */
+function agent_chat_occasion_turn(string $agent_id, string $uuid, string $occasion, string $channel): array
+{
     if (preg_match('/^[a-f0-9]{16}$/', $uuid) !== 1) {
         throw new InvalidArgumentException('Conversation not found');
     }
@@ -262,7 +269,7 @@ function agent_chat_follow_up(string $agent_id, string $uuid, string $text): arr
         }
         $message_id = substr(md5(generate_uuid()), 0, 12);
         $conversation['messages'][] = ['id' => $message_id, 'from' => 'occasion',
-            'text' => 'Operator follow-up: ' . $text, 'at' => time(), 'channel' => 'operator',
+            'text' => $occasion, 'at' => time(), 'channel' => $channel,
             'asker' => $asker, 'runs' => []];
         $last = array_key_last($conversation['messages']);
         $run_uuid = agent_chat_start_turn($uuid, $conversation, $agent_id, $message_id, $team, ['conversation' => $uuid]);
@@ -272,6 +279,41 @@ function agent_chat_follow_up(string $agent_id, string $uuid, string $text): arr
     } finally {
         agent_unlock($lock);
     }
+}
+
+/**
+ * An agent asks to be woken in this conversation after some minutes, to finish and report work that
+ * runs on. In a conversation from another site, that site keeps the time. One per agent and chat.
+ */
+function agent_chat_check_back(string $uuid, string $run_uuid, string $agent_id, int $minutes, string $note): array
+{
+    if ($minutes < AGENT_CHECK_BACK_MINUTES[0] || $minutes > AGENT_CHECK_BACK_MINUTES[1]) {
+        return ['scheduled' => false, 'reason' => 'Choose between ' . implode(' and ', AGENT_CHECK_BACK_MINUTES) . ' minutes.'];
+    }
+    $note = mb_substr(trim($note), 0, 1000);
+    $mirror = data_read('.agent_conversations', $uuid);
+    if (is_array($mirror) && !empty($mirror['hub_user'])) {
+        load_library('agent-remote');
+        agent_remote_outbox($uuid, ['type' => 'check_back', 'agent' => $agent_id, 'minutes' => $minutes, 'note' => $note,
+            'run' => (string)(data_read('.agent_runs', $run_uuid)['event_context']['hub_run'] ?? '')]);
+    } else {
+        agent_chat_schedule_check_back($uuid, $agent_id, time() + $minutes * 60, $note);
+    }
+    return ['scheduled' => true, 'note' => 'You will be woken in this chat in about ' . $minutes . ' minutes.'];
+}
+
+function agent_chat_schedule_check_back(string $uuid, string $agent_id, int $due, string $note): void
+{
+    load_libraries(['data', 'job']);
+    $job_uuid = md5('agent-check-back:' . $uuid . ':' . $agent_id);
+    $payload = ['conversation' => $uuid, 'agent' => $agent_id, 'note' => $note];
+    if (data_exists('.jobs', $job_uuid)) {
+        data_update('.jobs', $job_uuid, ['status' => 'queued', 'payload' => $payload, 'attempts' => 0,
+            'available_at' => $due, 'last_error' => '']);
+        return;
+    }
+    job_enqueue('agent-check-back', $payload, ['uuid' => $job_uuid, 'available_at' => $due,
+        'max_attempts' => 10, 'omit_request_context' => true]);
 }
 
 function agent_chat_post(string $uuid, string $owner, string $text, string $channel = 'web'): array

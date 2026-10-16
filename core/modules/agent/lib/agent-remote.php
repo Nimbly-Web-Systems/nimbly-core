@@ -153,7 +153,7 @@ function agent_remote_pull(bool $now = false): int
     return $count;
 }
 
-/** One thing an agent at home said: a reply, a hand-over, a failed turn, or a notice to someone. */
+/** One thing an agent at home said: a reply, a hand-over, a check-back, a failed turn, or a notice to someone. */
 function agent_remote_take(array $update): bool
 {
     $agent_id = (string)($update['agent'] ?? '');
@@ -178,6 +178,11 @@ function agent_remote_take(array $update): bool
         })(),
         'hand_over' => !empty(agent_chat_hand_over($uuid, $run_uuid, $agent_id,
             (string)($update['to'] ?? ''), (string)($update['note'] ?? ''))['handed_over']),
+        'check_back' => (function () use ($uuid, $agent_id, $update) {
+            agent_chat_schedule_check_back($uuid, $agent_id,
+                (int)($update['at'] ?? time()) + 60 * max(0, (int)($update['minutes'] ?? 0)), (string)($update['note'] ?? ''));
+            return true;
+        })(),
         'failed' => ($run['status'] ?? '') === 'waiting'
             && data_update('.agent_runs', $run_uuid, ['status' => 'failed', 'failure_reason' => 'The agent could not answer']),
         default => false,
