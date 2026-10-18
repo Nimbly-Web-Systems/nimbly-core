@@ -61,6 +61,18 @@ $ran = 0;
 $skipped = 0;
 $failed = 0;
 
+// The health route reports what this PHP lacks; it can differ from the web PHP.
+load_library('health');
+$php_missing = health_missing_extensions();
+if (!$dry_run && $php_missing !== ($state['php_missing'] ?? [])) {
+    $state['php_missing'] = $php_missing;
+    schedule_state_write($state);
+}
+if ($php_missing !== []) {
+    printf("PHP is missing: %s\n", implode(', ', $php_missing));
+    $failed++;
+}
+
 foreach ($schedule as $index => $task) {
     $task = schedule_normalize_task($task, $index);
     if ($task === null) {

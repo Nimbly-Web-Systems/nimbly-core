@@ -1,15 +1,18 @@
 <?php
 
 // The health route answers 200 "ok" when the data folder can be written
-// and 503 when it cannot; it is never cached and starts no session.
+// and 503 when it cannot, or when the scheduler's PHP lacked an extension
+// on its last run; it is never cached and starts no session.
 
 $root = dirname(__DIR__, 2) . '/';
 $tmp = sys_get_temp_dir() . '/nimbly-health-' . bin2hex(random_bytes(6));
 mkdir($tmp . '/data', 0700, true);
+mkdir($tmp . '/scheduler/.state', 0700, true);
+file_put_contents($tmp . '/scheduler/.state/schedule', json_encode(['tasks' => [], 'php_missing' => ['curl']]));
 $router = <<<'ROUTER'
 <?php
 $root = ROOT_PATH;
-$data = ['ok' => TMP_PATH . '/data', 'missing' => TMP_PATH . '/missing'];
+$data = ['ok' => TMP_PATH . '/data', 'missing' => TMP_PATH . '/missing', 'scheduler' => TMP_PATH . '/scheduler'];
 $GLOBALS['SYSTEM'] = ['file_base' => $root, 'data_base' => $data[$_GET['d']], 'env_paths' => ['core'], 'modules' => ['root' => '/'], 'uri_base' => '/', 'request_uri' => '', 'variables' => [], 'request_time' => time()];
 $_SERVER['PEPPER'] = 'fixture-pepper';
 require $root . 'core/lib/find.php';
@@ -59,6 +62,9 @@ try {
     $response = health_fetch($address, 'missing');
     health_assert($response['status'] === 503 && trim($response['body']) === 'unavailable', 'missing data folder answers 503');
     health_assert(($response['headers']['cache-control'] ?? '') === 'no-store', 'failure is not cached');
+
+    $response = health_fetch($address, 'scheduler');
+    health_assert($response['status'] === 503, 'scheduler PHP without curl answers 503');
 
     echo "health tests passed\n";
 } finally {
