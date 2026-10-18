@@ -32,6 +32,17 @@
             </label>
           </div>
 
+          <div class="relative my-6">
+            <textarea name="page_description" rows="3" placeholder=" "
+              x-init="settings.page_description=$el.value" x-model="settings.page_description" class="
+                  peer block min-h-[auto] w-full rounded border border-neutral-300 bg-transparent px-2 py-[0.45rem]
+                  leading-[1.6] outline-none transition-all duration-200 ease-linear
+                  focus:border-primary focus:ring-0">[#get page_settings.page_description#]</textarea>
+            <label for="page_description" class="pointer-events-none absolute left-3 top-0 mb-0 max-w-[90%] -translate-y-1/2 truncate bg-white px-1 text-sm leading-tight text-neutral-600">
+              [#text Page description#]
+            </label>
+          </div>
+
           [#set page-settings-fields=#]
           [#page-settings-fields#]
         </form>
