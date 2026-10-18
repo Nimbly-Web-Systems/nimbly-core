@@ -15,6 +15,7 @@ function agent_chat_widget(nimblybar_side) {
         busy: false,
         unread: 0,
         waiting: false,
+        at_end: true,
         timer: null,
         delay: 2000,
         phone: false,
@@ -32,7 +33,7 @@ function agent_chat_widget(nimblybar_side) {
                     // Only follow the visible area while the keyboard takes part of the screen.
                     const keyboard = window.innerHeight - viewport.height > 80;
                     this.visible = keyboard ? { top: Math.max(0, viewport.offsetTop), height: viewport.height } : null;
-                    if (this.open && this.phone) this.$nextTick(() => { this.$refs.messages.scrollTop = this.$refs.messages.scrollHeight; });
+                    if (this.open && this.phone) this.to_latest();
                 };
                 viewport.addEventListener("resize", this.fit);
                 viewport.addEventListener("scroll", this.fit);
@@ -76,10 +77,12 @@ function agent_chat_widget(nimblybar_side) {
             if (this.open) {
                 this.delay = 2000;
                 this.fit?.();
-                // Someone (an agent) started a conversation, or is still writing it: open it right away.
-                const waiting = this.conversations.find(item => item.unread || item.waiting);
-                if (!this.conversation && waiting) this.open_conversation(waiting.uuid);
+                // A conversation with a new reply, or one an agent is still writing, opens right away.
+                const waiting = this.conversations.find(item => item.unread) || this.conversations.find(item => item.waiting);
+                if (waiting && waiting.uuid !== this.conversation?.uuid) this.open_conversation(waiting.uuid);
                 else this.conversation ? this.refresh() : this.load_list();
+                // A hidden panel forgets where it was scrolled: open at the latest message.
+                this.to_latest();
                 // On a phone the keyboard waits until the input is tapped.
                 if (!this.phone) this.$nextTick(() => this.$refs.input.focus());
             }
@@ -88,6 +91,19 @@ function agent_chat_widget(nimblybar_side) {
         toggle_history() {
             this.history = !this.history;
             if (this.history) this.load_list();
+            else this.to_latest();
+        },
+        // Scroll to the newest message once the panel has drawn it.
+        to_latest() {
+            this.$nextTick(() => requestAnimationFrame(() => {
+                const messages = this.$refs.messages;
+                messages.scrollTop = messages.scrollHeight;
+                this.at_end = true;
+            }));
+        },
+        track_end() {
+            const messages = this.$refs.messages;
+            this.at_end = messages.scrollHeight - messages.scrollTop - messages.clientHeight < 80;
         },
         // Every 2 s after activity or while an agent is answering, doubling up to 64 s while nothing changes.
         // A hidden browser tab does not check at all.
@@ -140,7 +156,9 @@ function agent_chat_widget(nimblybar_side) {
         async open_conversation(uuid) {
             const response = await nb.api.get(url + "?operation=get&uuid=" + encodeURIComponent(uuid));
             this.history = false;
-            if (response.success) this.show(response);
+            if (!response.success) return;
+            this.show(response);
+            this.to_latest();
         },
         async refresh() {
             if (!this.conversation) return;
@@ -171,8 +189,9 @@ function agent_chat_widget(nimblybar_side) {
             if (before !== view.messages.length && this.open) {
                 nb.api.post(url, { operation: "read", uuid: view.uuid }).then(() => this.load_list());
             }
-            if (before !== view.messages.length || working !== JSON.stringify(view.working)) {
-                this.$nextTick(() => { this.$refs.messages.scrollTop = this.$refs.messages.scrollHeight; });
+            // Follow along at the end; someone reading further up keeps their place and gets the latest button.
+            if ((before !== view.messages.length || working !== JSON.stringify(view.working)) && this.at_end) {
+                this.to_latest();
             }
         },
         async send() {
@@ -185,6 +204,7 @@ function agent_chat_widget(nimblybar_side) {
                 this.draft = "";
                 this.$refs.input.style.height = "auto";
                 this.show(response);
+                this.to_latest();
             } catch (error) {
                 nb.notify(error.message || "Message not sent");
             } finally {

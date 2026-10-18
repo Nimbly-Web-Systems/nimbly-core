@@ -7,7 +7,7 @@
         :class="side === 'left' ? 'left-0' : 'right-0'" :style="panel_style()">
 
         <div class="flex h-14 shrink-0 items-center gap-1 px-3">
-            <button type="button" x-show="history" class="btn btn-ghost btn-sm gap-1 px-2" @click="history = false" aria-label="[#text Back#]">
+            <button type="button" x-show="history" class="btn btn-ghost btn-sm gap-1 px-2" @click="toggle_history()" aria-label="[#text Back#]">
                 <svg xmlns="http://www.w3.org/2000/svg" class="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
                 <span class="text-sm font-semibold">[#text Chat history#]</span>
             </button>
@@ -44,7 +44,7 @@
             </template>
         </ul>
 
-        <div x-show="!history" x-ref="messages" class="flex flex-1 flex-col overflow-y-auto px-4 py-2">
+        <div x-show="!history" x-ref="messages" @scroll.passive="track_end()" class="flex flex-1 flex-col overflow-y-auto px-4 py-2">
             <h2 x-show="!conversation?.messages?.length" class="m-auto text-center text-xl font-semibold">[#text Talk with Nimbly#]</h2>
             <template x-for="message in conversation?.messages || []" :key="message.id">
                 <div class="chat" :class="message.from === 'user' ? 'chat-end' : 'chat-start'">
@@ -69,6 +69,11 @@
         </div>
 
         <div x-show="!history" class="p-3">
+            <div x-show="!at_end && conversation?.messages?.length" class="flex justify-center pb-2">
+                <button type="button" @click="to_latest()" class="btn btn-sm btn-circle border-base-300 bg-base-100 shadow-md" aria-label="[#text Latest message#]">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 5v14m-6-6l6 6 6-6"/></svg>
+                </button>
+            </div>
             <div class="flex items-end gap-2 rounded-3xl border border-base-300 bg-base-100 py-1.5 pl-4 pr-1.5 shadow-sm focus-within:border-base-content/40">
                 <textarea x-model="draft" x-ref="input" rows="1" maxlength="8000" :placeholder="'[#text Message#] ' + (team.nimbly || team_names)"
                     @keydown.enter="if (!$event.shiftKey) { $event.preventDefault(); send(); }"
