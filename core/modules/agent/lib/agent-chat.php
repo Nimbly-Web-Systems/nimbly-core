@@ -259,6 +259,15 @@ function agent_chat_occasion_turn(string $agent_id, string $uuid, string $occasi
                 break;
             }
         }
+        // A chat an agent opened to tell someone something is theirs, also before they ever wrote in it.
+        if ($asker === '' && (string)($conversation['notice_for'] ?? '') !== '') {
+            load_library('get-user');
+            $user = find_user_by_email((string)$conversation['notice_for']);
+            $candidate = is_array($user) && !empty($user['email']) ? (string)$user['email'] : (string)$conversation['notice_for'];
+            if (hash_equals((string)$conversation['owner_uuid'], md5_uuid($candidate))) {
+                $asker = $candidate;
+            }
+        }
         if ($asker === '' || !permission_features_have(user_feature_map($asker), 'chat-' . $agent_id)) {
             throw new InvalidArgumentException('The conversation owner may not talk to this agent');
         }
@@ -531,12 +540,25 @@ function agent_chat_hand_over(string $uuid, string $run_uuid, string $from, stri
  */
 function agent_chat_notice(string $recipient, string $agent_id, string $text, string $notice_id = ''): string
 {
-    load_libraries(['util', 'get-user']);
-    $user = find_user_by_email($recipient);
     $text = trim($text);
-    if (!filter_var($recipient, FILTER_VALIDATE_EMAIL) || $text === '') {
+    if ($text === '') {
         throw new InvalidArgumentException('Nobody to tell, or nothing to say');
     }
+    $uuid = agent_chat_notice_conversation($recipient, $agent_id);
+    agent_chat_append($uuid, $agent_id, $text, $notice_id !== '' ? $notice_id : 'notice-' . substr(md5(generate_uuid()), 0, 12));
+    return $uuid;
+}
+
+/**
+ * The conversation in which an agent tells this person things on its own initiative; made the first time.
+ */
+function agent_chat_notice_conversation(string $recipient, string $agent_id): string
+{
+    load_libraries(['util', 'get-user']);
+    if (!filter_var($recipient, FILTER_VALIDATE_EMAIL)) {
+        throw new InvalidArgumentException('Nobody to tell, or nothing to say');
+    }
+    $user = find_user_by_email($recipient);
     // Kept for the recipient also without an account here: a hub may pick it up for them.
     $owner = md5_uuid(is_array($user) && !empty($user['email']) ? (string)$user['email'] : $recipient);
     $uuid = substr(hash('sha256', 'notice:' . $owner . ':' . $agent_id), 0, 16);
@@ -549,7 +571,6 @@ function agent_chat_notice(string $recipient, string $agent_id, string $text, st
     } finally {
         agent_unlock($lock);
     }
-    agent_chat_append($uuid, $agent_id, $text, $notice_id !== '' ? $notice_id : 'notice-' . substr(md5(generate_uuid()), 0, 12));
     return $uuid;
 }
 

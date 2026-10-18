@@ -570,6 +570,22 @@ chat_test_assert(agent_check_back_job($check_back)['queued'] && $act_run() === f
 $chat_test_user_features = [];
 $chat_test_env = [];
 
+// A scheduled run, outside any chat, checks back in the chat where its own messages land.
+require_once BASE_DIR . 'core/modules/agent/lib/agent-connector-chat-check-back.php';
+$chat_test_env = ['NOTE_TO' => 'hermen@example.test'];
+$agent_test_jobs = [];
+$scheduled_check = agent_connector_chat_check_back(agent_artifact('agent.tool-call', 1, ['arguments' => ['minutes' => 30, 'note' => 'Is the release upgrade still running?']]),
+    ['recipient_env' => 'NOTE_TO'], ['run' => ['agent_id' => 'coder', 'event_context' => []], 'run_uuid' => 'scheduled-run']);
+$notice_chat = agent_chat_notice_conversation('hermen@example.test', 'coder');
+chat_test_assert(agent_artifact_data($scheduled_check)['scheduled'] === true && end($agent_test_jobs)['payload']['conversation'] === $notice_chat,
+    'a scheduled run checks back in its chat with the recipient');
+$chat_test_user_features = [$chat_test_user => ['chat-coder']];
+$woken = agent_check_back_job(end($agent_test_jobs));
+chat_test_assert(!empty($woken['queued']),
+    'it wakes the agent there, also before the recipient wrote in that chat');
+$chat_test_user_features = [];
+$chat_test_env = [];
+
 // After its email went out, the agent's own chat line (if it wrote one) lands in the recipient's chat.
 $chat_test_env = ['NOTE_TO' => 'hermen@example.test'];
 $note_step = fn($note, $accepted, $shadow = false) => agent_connector_chat_note(agent_artifact('agent.artifact-set', 1, [
