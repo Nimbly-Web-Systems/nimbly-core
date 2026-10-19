@@ -24,6 +24,45 @@ function thumbnail_sharpen($img)
     imageconvolution($img, $sharpen, $divisor, 0);
 }
 
+/**
+ * Ubuntu builds GD without AVIF, so libavif's own decoder (avifdec, package
+ * libavif-bin) reads it there. '' when this server has neither.
+ */
+function thumbnail_avif_reader(): string
+{
+    if (function_exists('imagecreatefromavif')) {
+        return 'gd';
+    }
+    foreach (['/usr/bin/avifdec', '/usr/local/bin/avifdec'] as $path) {
+        if (is_executable($path)) {
+            return $path;
+        }
+    }
+    return '';
+}
+
+function thumbnail_open_avif(string $path)
+{
+    $reader = thumbnail_avif_reader();
+    if ($reader === 'gd') {
+        return imagecreatefromavif($path);
+    }
+    if ($reader === '') {
+        return false;
+    }
+    $png = tempnam(sys_get_temp_dir(), 'avif');
+    if ($png === false) {
+        return false;
+    }
+    // avifdec picks the output format from the extension
+    $process = proc_open([$reader, '--jobs', '1', $path, $png . '.png'],
+        [0 => ['file', '/dev/null', 'r'], 1 => ['file', '/dev/null', 'a'], 2 => ['file', '/dev/null', 'a']], $pipes);
+    $img = is_resource($process) && proc_close($process) === 0 ? @imagecreatefrompng($png . '.png') : false;
+    @unlink($png);
+    @unlink($png . '.png');
+    return $img;
+}
+
 function thumbnail_cache_is_valid($path, $source_mtime, $format)
 {
     if (!is_file($path) || filesize($path) <= 0 || filemtime($path) < $source_mtime) {
@@ -97,7 +136,7 @@ function thumbnail_create($uuid, $size, $ratio = 0, $mode = 'h', $format = '')
             $org_img = imagecreatefromwebp($org_path);
             break;
         case IMAGETYPE_AVIF:
-            $org_img = imagecreatefromavif($org_path);
+            $org_img = thumbnail_open_avif($org_path);
             break;
         case 'image/svg+xml':
             return $org_path;

@@ -22,13 +22,19 @@ function health_sc($params = null): string
 }
 
 /**
- * The extensions every Nimbly site needs that this PHP lacks. A release
- * upgrade can remove them while PHP itself keeps answering.
+ * The extensions every Nimbly site needs that this PHP lacks, and 'avif'
+ * when it cannot read AVIF images. A release upgrade can remove them while
+ * PHP itself keeps answering.
  */
 function health_missing_extensions(): array
 {
     $required = ['mbstring', 'curl', 'openssl', 'dom', 'gd', 'zip'];
-    return array_values(array_filter($required, fn($extension) => !extension_loaded($extension)));
+    $missing = array_values(array_filter($required, fn($extension) => !extension_loaded($extension)));
+    load_library('thumbnail');
+    if (thumbnail_avif_reader() === '') {
+        $missing[] = 'avif';
+    }
+    return $missing;
 }
 
 /**
