@@ -166,6 +166,10 @@ Before creating a new library, subsystem, persistence mechanism, API, or abstrac
 
 Do not introduce architecture merely because a local solution could theoretically be generalized.
 
+### Nimblify
+
+To **nimblify** something means to rework it the Nimbly way. The source can be a design, a prototype, a static mock-up, or an implementation in another framework. Keep its look and behavior, and rebuild it from Nimbly building blocks: resources in `ext/data/`, routes in `ext/uri/`, reusable templates in `ext/tpl/`, logic in `ext/lib/`, and existing core shortcodes, modules, and patterns. See `./nimbly docs:section "Project Structure > Nimblify"`.
+
 ## 5. Keep responsibilities separated
 
 Use the established application structure.

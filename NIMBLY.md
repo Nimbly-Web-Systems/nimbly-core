@@ -66,6 +66,19 @@ The "never modify core" rule is about not bending core's *existing* framework co
 
 Concrete example of getting it wrong: the role editor (`/nb-admin/roles/(id)` and `/nb-admin/roles/add`) was originally built entirely in `ext/uri/nb-admin/roles/`, even though every other admin resource page (users, media, jobs, ...) is served generically from `core/modules/admin/uri/nb-admin/(resource)/...` with no per-project override at all. Roles/permissions are core to Nimbly's own permission system, not app data — so that route belonged beside `debug/`, `media/`, `profile/` etc. under `core/modules/admin/uri/nb-admin/`, not in ext. Leaving it in ext meant every new project would have to hand-copy those files just to manage roles.
 
+### Nimblify
+
+To **nimblify** something means to rework it the Nimbly way. The source can be a design, a prototype, a static mock-up, or an implementation in another framework or CMS. The result keeps the source's look and behavior but is built from Nimbly building blocks:
+
+- Hard-coded content and data become resources in `ext/data/<resource>/` with a `.meta`, so they are editable in the admin.
+- Pages become routes in `ext/uri/`. Repeated markup becomes reusable templates in `ext/tpl/`, and conditional markup moves into separate templates (see [Template Syntax](#2-template-syntax)).
+- Business logic moves into `ext/lib/` or a module. Markup stays out of PHP.
+- Existing core shortcodes, modules, forms, auth, and API replace hand-rolled equivalents.
+- Styling uses Tailwind and the theme colors. Client-side behavior uses Alpine.js only where the page needs it (see [Choosing the rendering boundary](#choosing-the-rendering-boundary)).
+- Framework-level pieces go to core, following [Deciding core vs. ext](#deciding-core-vs-ext).
+
+Nimblifying is a rebuild, not a wrapper: do not embed the original as a static file or keep its own runtime alongside Nimbly.
+
 ### Setting up a new project
 
 ```bash
