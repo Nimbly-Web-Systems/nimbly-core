@@ -143,7 +143,7 @@ if ($format === 'jpg') {
 	$type = 'image/png';
 } else {
 	$type = $meta['type'] ?? 'image/jpg';
-	if ($type === 'image/jpeg' || $type === 'image/bmp' || $type === 'image/jpg') {
+	if ($type === 'image/jpeg' || $type === 'image/bmp' || $type === 'image/jpg' || $type === 'image/avif') {
 		$type = 'image/webp'; //'image/avif';
 	} else if ($type === 'image/png') {
 		$type = 'image/webp';
