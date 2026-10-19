@@ -71,7 +71,7 @@ function run_uri($uri) {
     /*
      * The bot tripwire has no page of its own and comes before any route
      */
-    if (strncmp((string)$uri, 'nb-', 3) === 0) {
+    if (strncmp((string)$uri, 'nb-', 3) === 0 || stripos((string)$uri, 'wlwmanifest.xml') !== false) {
         load_library('bot-tripwire');
         if (bot_tripwire_answer((string)$uri)) {
             exit();

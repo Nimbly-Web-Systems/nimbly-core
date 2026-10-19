@@ -17,11 +17,18 @@ function bot_tripwire_path(): string
     return 'nb-' . substr(hash('sha256', 'bot-tripwire|' . $pepper), 0, 12);
 }
 
-/** Answers a request for the tripwire path; false for any other path. */
+/** A path no Nimbly site ever serves and only scanners ask for: Windows Live Writer's manifest, anywhere. */
+function bot_tripwire_forbidden(string $uri): bool
+{
+    return strtolower(basename(rtrim($uri, '/'))) === 'wlwmanifest.xml';
+}
+
+/** Answers a request for the tripwire path or a forbidden path; false for any other path. */
 function bot_tripwire_answer(string $uri): bool
 {
     $path = bot_tripwire_path();
-    if ($path === '' || trim($uri, '/') !== $path) {
+    $tripwire = $path !== '' && trim($uri, '/') === $path;
+    if (!$tripwire && !bot_tripwire_forbidden($uri)) {
         return false;
     }
     if (!headers_sent()) {
@@ -29,6 +36,6 @@ function bot_tripwire_answer(string $uri): bool
         header('Content-Type: text/plain; charset=utf-8');
         header('Cache-Control: no-store');
     }
-    echo "Hi, bot. robots.txt asks you not to come here.\n";
+    echo $tripwire ? "Hi, bot. robots.txt asks you not to come here.\n" : "Hi, bot. Nothing here for you.\n";
     return true;
 }
