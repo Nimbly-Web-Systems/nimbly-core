@@ -318,6 +318,7 @@ function scheduler_orchestrator_run(array $argv): void
 function scheduler_orchestrator_due_lanes(string $path, int $now): array
 {
     $state = $path . '/ext/data/.state/';
+    clearstatcache();
     $schedule_due = @file_get_contents($state . 'schedule-due');
     if ($schedule_due === false) {
         return ['jobs', 'schedule'];
