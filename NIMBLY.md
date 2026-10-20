@@ -2395,18 +2395,29 @@ sudo -u www-data /usr/local/bin/nimbly-scheduler-orchestrator
 php core/cli/nimbly.php scheduler:cron:status
 ```
 
-`scheduler:run` takes a short global lock and dispatches two workers per
-registered project: one runs `jobs:run 10` for prompt queue delivery, and the
-other runs the project's `schedule:run`. Workers log their completion and exit
-code to the host scheduler log. A long application task therefore does not
-delay another project's minute tasks or its own queued alerts. Job runners use
-a per-project lock so the direct queue worker and mandatory `jobs-run` task do
-not dispatch the same job concurrently. The project scheduler retains its own
-lock, so later cron ticks do not duplicate a long schedule run. Legacy
+`scheduler:run` takes a short global lock and decides per registered project
+what to start, from small files in the project's `ext/data/.state/`:
+
+| File | Written by | The host starts |
+|---|---|---|
+| `schedule-due` | `schedule:run`: the next minute a task is due, at most 15 minutes ahead | `schedule:run` (plus `jobs:run 10`) once that time is reached |
+| `jobs-due` | `job_enqueue()`; `jobs:run` clears it and writes it again while delayed jobs remain | `jobs:run 10` once that time is reached |
+| `chat-worker.lock` | the chat worker, holding it while it runs | `agent:chat --worker` when nobody holds it |
+
+A project with nothing due starts no PHP at all that minute. A project whose
+Core does not write `schedule-due` yet gets both workers every minute. Under the
+host, `schedule:run` runs with `NIMBLY_SCHEDULER_HOST=1` and leaves the
+`agent-chat` and `jobs-run` tasks to the host. Their health then judges the
+waiting work instead of the last run: a job due for more than two minutes, or
+no chat worker for more than two minutes. Workers log their completion and exit
+code to the host scheduler log; only projects that start something are logged.
+A long application task does not delay another project's minute tasks or its
+own queued alerts. Job runners use a per-project lock so two runners never
+dispatch the same job. The project scheduler retains its own lock, so later
+cron ticks do not duplicate a long schedule run. Legacy
 `default_delay_after_seconds` values in the registry are ignored.
 
-`scheduler:run` itself always dispatches every registered project's workers
-immediately (it never waits before spawning), so a slow project cannot delay
+`scheduler:run` itself always dispatches the due workers immediately (it never waits before spawning), so a slow project cannot delay
 the next cron tick's dispatch. Concurrency is instead capped inside each
 `scheduler:worker`: before running the project's real `jobs:run`/`schedule:run`,
 a worker blocks on a shared slot semaphore, and releases it when done. This
@@ -2755,8 +2766,8 @@ belongs to one user and includes their whole team. A message goes to the
 agents named with `@<id>` or `@<name>`, otherwise to the agent most recently
 involved, otherwise to Nimbly; each addressed agent answers through one run of
 its `chat_pipeline`. Chat runs have their own
-worker, `agent:chat`, started every minute by the Core maintenance schedule,
-so a long daily run never delays a reply.
+worker, `agent:chat`, kept running by the Core maintenance schedule (or, on a
+server, by the host scheduler), so a long daily run never delays a reply.
 
 An agent is in a user's team when all of these hold:
 
