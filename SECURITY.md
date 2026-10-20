@@ -2,11 +2,8 @@
 
 ## Supported versions
 
-| Version | Supported |
-|---------|-----------|
-| 1.1.x   | ✓         |
-| 1.0.x   | security fixes only |
-| < 1.0   | ✗         |
+Nimbly has no versions: the core commit is the version. Security fixes land
+on `master`, so keep projects on current core.
 
 ## Reporting a vulnerability
 

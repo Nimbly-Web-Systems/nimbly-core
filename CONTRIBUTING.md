@@ -6,7 +6,9 @@ Nimbly uses a two-repository project model:
 - `ext/` is the application, content, templates, and project-specific code.
 
 Framework changes belong in the core repository. Project customizations belong
-in an `ext/` repository. See `NIMBLY.md` for a full description of the stack.
+in an `ext/` repository. See the documentation at
+[atomic.nimblyweb.com](https://atomic.nimblyweb.com) for a full description of
+the stack.
 
 ## Licensing
 
@@ -19,12 +21,12 @@ covered by the core ISC license.
 
 ## Reporting Bugs
 
-Before opening a bug report, please check the current documentation in
-`NIMBLY.md` and search existing issues.
+Before opening a bug report, please check the documentation at
+[atomic.nimblyweb.com](https://atomic.nimblyweb.com) and search existing issues.
 
 Useful bug reports include:
 
-- Nimbly version or git commit
+- Core commit (`git rev-parse --short HEAD`)
 - PHP version
 - Node.js version
 - Deployment style: Docker, manual VPS, or local dev
@@ -58,6 +60,8 @@ Run the usual checks before opening a pull request:
 ```bash
 ./nimbly build
 find core -name '*.php' -print0 | xargs -0 -n1 php -l
+./nimbly test:architecture --strict
+./nimbly test:run
 ```
 
 Start the local site with Docker and open [http://localhost](http://localhost):

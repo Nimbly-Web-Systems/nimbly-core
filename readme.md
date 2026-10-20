@@ -1,38 +1,30 @@
 # Nimbly
 
-Nimbly is a full-stack, atomic design system for building custom web
-applications. The routes, templates and data structures used in the first
-working prototype grow directly into the production system.
+Nimbly is a full-stack atomic design system for custom digital products.
+Resources, libraries, templates and routes are small building blocks that
+combine into features, and every route is a blank canvas.
 
 ## Why Nimbly
 
-**Atomic.** Interface patterns, data, routing and application logic are
-built as one connected system. Every piece composes into the next.
-
-**Continuous.** The first prototype and the production build are the same
-codebase. Each working version grows directly into the next.
-
-**Lean.** Almost no framework overhead or boilerplate.
-
-**Performant.** Nimbly loads application capabilities on demand, keeping
-unused middleware and backend logic out of the request path. Dynamic pages
-stay fast and transparent.
-
-**Flexible.** Nimbly's core frontend stack is Alpine.js, Tailwind CSS and
-DaisyUI, ready to use out of the box. Any route can also work with your own
-frontend instead.
-
-**Agent-friendly.** A complete implementation reference and predictable
-project structure give AI agents precise routes, resources, templates and
-conventions to work with.
-
-**Complete.** Ships with **users, roles and permissions**, an **admin
-dashboard**, **routing** and **integrated data** out of the box.
+- **Full-stack atomic composition.** Data, logic and presentation are small
+  building blocks, as granular as the project needs.
+- **Every route is a blank canvas.** The standard page shell, your own HTML,
+  JSON, XML, text, files or PDF.
+- **Any frontend.** Tailwind CSS, DaisyUI and Alpine.js by default; React, Vue
+  or any other toolset where you choose.
+- **Data defined once.** A resource definition gives the admin, forms, REST
+  API, permissions and history.
+- **Lean by design.** A request loads only the building blocks its route uses;
+  code, content and data are plain files.
+- **Integrated platform.** Routing, templates, data, users and roles, media,
+  jobs, scheduling, email and agents.
+- **AI-assisted development.** Focused files and searchable documentation for
+  coding agents.
 
 ## Try Nimbly
 
 ```bash
-git clone git@github.com:Nimbly-Web-Systems/nimbly-core.git my-project
+git clone https://github.com/Nimbly-Web-Systems/nimbly-core.git my-project
 cd my-project
 ./nimbly init
 ```
@@ -51,12 +43,16 @@ data live. The admin is at
 [http://localhost/nb-admin/](http://localhost/nb-admin/); log in with the
 admin user you just created.
 
-Nimbly requires Node 20+ and either PHP 8+ or Docker.
+Nimbly requires Git, Node.js 20 or later, and PHP 8 or Docker. See
+[Installation](https://atomic.nimblyweb.com/en/docs/learn/installation) for
+the details.
 
-## Learn more
+## Documentation
 
-Read the complete [Nimbly implementation reference](NIMBLY.md) for
-architecture, conventions and full documentation.
+The documentation is at
+[atomic.nimblyweb.com](https://atomic.nimblyweb.com). Coding agents use the
+complete reference in [NIMBLY.md](NIMBLY.md), which every project has at its
+root.
 
 ---
 
