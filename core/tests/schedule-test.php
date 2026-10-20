@@ -22,6 +22,11 @@ schedule_test_assert(!schedule_task_due(['every' => 'minute'], ['last_run_at' =>
 schedule_test_assert(schedule_task_due(['every' => 'hour'], ['last_run_at' => 3599], 3600), 'hour schedule remains compatible');
 schedule_test_assert(schedule_task_due(['every' => 'day'], ['last_run_at' => 86399], 86400), 'day schedule remains compatible');
 schedule_test_assert(schedule_task_due(['daily_at' => '08:00'], [], strtotime('2026-08-13 08:00 UTC')), 'daily-at remains compatible');
+$hour = 1800000000 - 1800000000 % 3600;
+schedule_test_assert(!schedule_task_due(['every_minutes' => 30], ['last_run_at' => $hour - 60], $hour, 7), 'a site with phase 7 does not run at :00');
+schedule_test_assert(schedule_task_due(['every_minutes' => 30], ['last_run_at' => $hour - 60], $hour + 420, 7), 'it runs seven minutes in');
+schedule_test_assert(schedule_task_due(['every' => 'hour'], ['last_run_at' => $hour + 60], $hour + 3600 + 420, 7)
+    && !schedule_task_due(['every' => 'hour'], ['last_run_at' => $hour + 420], $hour + 3600, 7), 'hourly tasks share the phase');
 schedule_test_assert(schedule_command_parts('agent:enqueue infra-expert') === ['agent:enqueue', 'infra-expert', '--scheduled'],
     'scheduled agent commands receive an explicit scheduled trigger');
 schedule_test_assert(schedule_command_parts('agent:enqueue infra-expert --operator=incident') === ['agent:enqueue', 'infra-expert', '--operator=incident'],

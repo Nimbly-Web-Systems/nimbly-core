@@ -86,7 +86,7 @@ foreach ($schedule as $index => $task) {
     $tasks[] = $task;
 
     $task_state = $state['tasks'][$task['id']] ?? [];
-    if (!schedule_task_due($task, $task_state, $now)) {
+    if (!schedule_task_due($task, $task_state, $now, schedule_site_phase())) {
         $skipped++;
         printf("skip %-24s not due\n", $task['id']);
         continue;
@@ -150,7 +150,7 @@ function schedule_next_due(array $tasks, array $state, int $now): int
     $minute = $now - $now % 60;
     for ($at = $minute + 60; $at < $minute + 900; $at += 60) {
         foreach ($tasks as $task) {
-            if (schedule_task_due($task, $state['tasks'][$task['id']] ?? [], $at)) {
+            if (schedule_task_due($task, $state['tasks'][$task['id']] ?? [], $at, schedule_site_phase())) {
                 return $at;
             }
         }
@@ -299,7 +299,17 @@ function schedule_normalize_task($task, $index)
     return $task;
 }
 
-function schedule_task_due($task, $task_state, $now)
+/**
+ * Minute of the day this site starts its periodic tasks, so the sites on one server do not all
+ * start at :00. Interval tasks run that many minutes into their interval (modulo its length);
+ * daily_at and weekly_at keep their exact time.
+ */
+function schedule_site_phase(): int
+{
+    return crc32(BASE_DIR) % 1440;
+}
+
+function schedule_task_due($task, $task_state, $now, int $phase = 0)
 {
     $last_run = (int)($task_state['last_run_at'] ?? 0);
     $timezone = schedule_task_timezone($task);
@@ -312,7 +322,8 @@ function schedule_task_due($task, $task_state, $now)
         if ($last_run <= 0) {
             return true;
         }
-        return intdiv($last_run, $minutes * 60) !== intdiv((int)$now, $minutes * 60);
+        $shift = ($phase % $minutes) * 60;
+        return intdiv($last_run - $shift, $minutes * 60) !== intdiv((int)$now - $shift, $minutes * 60);
     }
 
     if (($task['every'] ?? '') === 'minute') {
@@ -320,11 +331,13 @@ function schedule_task_due($task, $task_state, $now)
     }
 
     if (($task['every'] ?? '') === 'hour') {
-        return schedule_date('YmdH', $last_run, $timezone) !== schedule_date('YmdH', $now, $timezone);
+        $shift = ($phase % 60) * 60;
+        return schedule_date('YmdH', $last_run - $shift, $timezone) !== schedule_date('YmdH', $now - $shift, $timezone);
     }
 
     if (($task['every'] ?? '') === 'day') {
-        return schedule_date('Ymd', $last_run, $timezone) !== schedule_date('Ymd', $now, $timezone);
+        $shift = $phase * 60;
+        return schedule_date('Ymd', $last_run - $shift, $timezone) !== schedule_date('Ymd', $now - $shift, $timezone);
     }
 
     if (!empty($task['daily_at'])) {
