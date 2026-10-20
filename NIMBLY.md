@@ -4071,8 +4071,7 @@ When adding a self-contained feature to a project — a photo collage, an intera
 In Nimbly, a component is a reusable template in `ext/tpl/<name>/`:
 
 ```
-ext/tpl/photo-collage/index.tpl    ← template
-ext/tpl/photo-collage/style.css    ← optional component CSS; import it from ext/theme.css
+ext/tpl/photo-collage/index.tpl    ← template, styled with Tailwind classes
 ext/tpl/interactive-map/index.tpl
 ```
 
@@ -4089,7 +4088,7 @@ A template takes no parameters: a call with parameters, such as `[#interactive-m
 
 Rules for components:
 
-- **Self-contained** — all markup, logic, and scoped styles live inside the component directory. The page template only calls the shortcode.
+- **Self-contained** — all markup and logic live inside the component directory, styled with Tailwind classes in the template. The page template only calls the shortcode. Only CSS a class cannot express (keyframes, print rules, third-party widget overrides) goes in a stylesheet imported from `ext/theme.css`.
 - **Configurable by the caller** — read anything that varies per use from variables the caller sets (`[#set map_zoom=12 overwrite#]`). Do not hardcode values that belong to the caller.
 - **No side effects** — a component should not assume what page it is on, what other components are present, or what CSS classes the parent defines.
 - **Portable** — a well-built component can be copied to another `ext/` repo and used immediately without modification.
