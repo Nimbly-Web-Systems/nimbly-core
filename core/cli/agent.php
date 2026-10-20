@@ -161,10 +161,13 @@ if ($command === 'agent:chat') {
     if (!$worker || !flock($worker, LOCK_EX | LOCK_NB)) {
         exit(0);
     }
-    if (($argv[2] ?? '') !== '--worker') {
+    $spawn = function () use ($worker, $name): void {
         flock($worker, LOCK_UN);
         exec(implode(' ', array_map('escapeshellarg', [PHP_BINARY, BASE_DIR . 'core/cli/nimbly.php', 'agent:chat', '--worker']))
             . ' >> ' . escapeshellarg($name . '.log') . ' 2>&1 < /dev/null &');
+    };
+    if (($argv[2] ?? '') !== '--worker') {
+        $spawn();
         exit(0);
     }
     touch($lock_path);
@@ -177,6 +180,14 @@ if ($command === 'agent:chat') {
     $seen_wake = -1;
     $active_until = 0;
     $next_pass = 0;
+    // A worker that stops hands over to a fresh one at once, so a message never waits for the
+    // scheduler's next minute. One that stops within seconds leaves it to the scheduler instead.
+    $hand_over = function () use ($spawn, $started): never {
+        if (time() - $started >= 10) {
+            $spawn();
+        }
+        exit(0);
+    };
     do {
         // Idle, a tick is one stat of the wake file. A full look runs when a chat run is queued,
         // every tick for two minutes after work or while a remote answer is awaited, and once a minute.
@@ -186,14 +197,14 @@ if ($command === 'agent:chat') {
         if ($wake !== $seen_wake || $now < $active_until || $now >= $next_pass) {
             $seen_wake = $wake;
             $next_pass = $now + 60;
-            // After a deploy, stop rather than mix old code in memory with new files; the scheduler starts a fresh worker.
+            // After a deploy, stop rather than mix old code in memory with new files.
             // Likewise when .env changes (a key added), since settings are read once at startup.
             if ((int)@filemtime($env_file) !== $env_changed) {
-                exit(0);
+                $hand_over();
             }
             foreach (get_included_files() as $file) {
                 if ((int)@filemtime($file) > $started) {
-                    exit(0);
+                    $hand_over();
                 }
             }
             if (agent_chat_run_pending() + agent_remote_pull() > 0 || agent_remote_waiting()) {
@@ -202,7 +213,7 @@ if ($command === 'agent:chat') {
         }
         usleep(2000000);
     } while (time() < $until);
-    exit(0);
+    $hand_over();
 }
 if ($command === 'agent:evidence') {
     $agent_id = trim((string)($argv[2] ?? ''));

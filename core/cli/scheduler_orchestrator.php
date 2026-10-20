@@ -322,6 +322,15 @@ function scheduler_orchestrator_due_lanes(string $path, int $now): array
     if ($schedule_due === false) {
         return ['jobs', 'schedule'];
     }
+    // Line one is the due time, the rest the files the schedule comes from: a newer one makes it due now.
+    $sources = explode("\n", trim($schedule_due));
+    $written = (int)@filemtime($state . 'schedule-due');
+    foreach (array_slice($sources, 1) as $source) {
+        if ((int)@filemtime($source) > $written) {
+            $schedule_due = '0';
+            break;
+        }
+    }
     $lanes = [];
     $jobs_due = @file_get_contents($state . 'jobs-due');
     // The jobs lane also runs with each schedule run, so an interrupted jobs:run is picked up again.

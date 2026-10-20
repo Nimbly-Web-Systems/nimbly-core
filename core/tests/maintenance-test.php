@@ -36,6 +36,11 @@ try {
     $chat = fopen($state_dir . 'chat-worker.lock', 'c');
     flock($chat, LOCK_EX);
     maintenance_test_assert(scheduler_orchestrator_due_lanes($tmp, $now) === [], 'nothing due starts nothing');
+    file_put_contents($state_dir . 'schedule-due', ($now + 600) . "\n" . $state_dir . 'schedule-source' . "\n");
+    touch($state_dir . 'schedule-due', $now - 60);
+    touch($state_dir . 'schedule-source', $now);
+    maintenance_test_assert(scheduler_orchestrator_due_lanes($tmp, $now) === ['jobs', 'schedule'], 'a changed schedule file runs the schedule at once');
+    file_put_contents($state_dir . 'schedule-due', (string)($now + 600));
     file_put_contents($state_dir . 'jobs-due', (string)$now);
     maintenance_test_assert(scheduler_orchestrator_due_lanes($tmp, $now) === ['jobs'], 'due job starts the jobs lane');
     $host_state = ['host' => true, 'tasks' => $state['tasks']];

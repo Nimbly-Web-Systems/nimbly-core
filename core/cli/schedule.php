@@ -119,7 +119,9 @@ foreach ($schedule as $index => $task) {
 }
 
 if (!$dry_run) {
-    file_put_contents($lock_dir . '/schedule-due', (string)schedule_next_due($tasks, $state, $now, schedule_site_phase()), LOCK_EX);
+    // The files the schedule comes from follow the due time, so the host scheduler reruns at once when one changes.
+    $due = array_merge([schedule_next_due($tasks, $state, $now, schedule_site_phase())], schedule_source_files());
+    file_put_contents($lock_dir . '/schedule-due', implode("\n", $due) . "\n", LOCK_EX);
 }
 
 printf("Scheduled commands: ran %d, skipped %d, failed %d\n", $ran, $skipped, $failed);
@@ -172,6 +174,19 @@ function schedule_load()
 
     $schedule = require $schedule_file;
     return is_array($schedule) ? $schedule : [];
+}
+
+/** Every file that can change this site's schedule, including ones that do not exist yet. */
+function schedule_source_files(): array
+{
+    $env = schedule_env_name();
+    return array_values(array_unique(array_filter([
+        schedule_file_path(),
+        $env !== '' ? BASE_DIR . 'ext/cli/schedule.' . $env . '.inc' : '',
+        BASE_DIR . 'ext/cli/schedule.inc',
+        BASE_DIR . 'core/lib/maintenance.php',
+        BASE_DIR . '.env',
+    ])));
 }
 
 function schedule_file_path()
