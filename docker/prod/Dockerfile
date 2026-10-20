@@ -5,6 +5,7 @@ RUN apt-get -y -o APT::Update::Error-Mode=any update && \
     apt-get -y install \
         apache2 \
         git \
+        libavif-bin \
         php-cli \
         php-curl \
         php-fpm \
