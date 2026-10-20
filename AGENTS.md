@@ -483,6 +483,7 @@ Compare the finished result with the requested outcome, not merely with whether 
 * `[#if#]` is always self-closing.
 * `[#set#]` does not overwrite by default.
 * Use existing permissions and authorization mechanisms.
+* Background work: one scheduler per server, start PHP only when work is due, poll fast only while in use, spread periodic work per site (`NIMBLY.md` anti-patterns).
 * Use snake_case in PHP.
 * Run the smallest relevant tests.
 * Keep command output and context small.
