@@ -4088,7 +4088,7 @@ A template takes no parameters: a call with parameters, such as `[#interactive-m
 
 Rules for components:
 
-- **Self-contained** — all markup and logic live inside the component directory, styled with Tailwind classes in the template. The page template only calls the shortcode. Only CSS a class cannot express (keyframes, print rules, third-party widget overrides) goes in a stylesheet imported from `ext/theme.css`.
+- **Self-contained** — all markup and logic live inside the component directory, styled with Tailwind classes in the template. The page template only calls the shortcode. Stylesheets are possible too: `ext/theme.css` is the entry point, so import them there. They suit CSS a class cannot express (keyframes, print rules, third-party widget overrides).
 - **Configurable by the caller** — read anything that varies per use from variables the caller sets (`[#set map_zoom=12 overwrite#]`). Do not hardcode values that belong to the caller.
 - **No side effects** — a component should not assume what page it is on, what other components are present, or what CSS classes the parent defines.
 - **Portable** — a well-built component can be copied to another `ext/` repo and used immediately without modification.
