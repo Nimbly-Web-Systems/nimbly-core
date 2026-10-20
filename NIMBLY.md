@@ -4021,16 +4021,6 @@ Apply this reasoning before adding any field, section, or link to a template.
 - Do not create sloppy or inconsistent resource schemas. Keep them production-ready, but still minimal and requirement-driven.
 - **Do not put HTML in library PHP files** — libraries set variables and call `run_buffered()`, templates render HTML
 
-### Background work on a shared server
-
-A server runs many sites. Background work that is cheap for one site becomes the server's load at twenty.
-
-- **No scheduler or worker lane per site.** One scheduler per server decides for all its sites (see `scheduler:run`). A new kind of background work joins that scheduler; it does not get its own cron line or loop per site.
-- **No process just to find out there is nothing to do.** Write a cheap marker when work arises (a due time, a lock, a file's time, as `schedule-due` and `jobs-due` in `ext/data/.state/`) and start PHP only when the marker says so. An idle minute starts nothing.
-- **No fixed fast polling.** A long-running worker polls fast only while it is in use and checks one file's time otherwise. The event that creates work wakes it: a queued chat turn touches `ext/data/.state/chat-wake`, so a reply still starts within seconds.
-- **No periodic work on the clock for every site.** Interval tasks (`every_minutes`, `every: hour`, `every: day`) run at each site's own phase (`schedule_site_phase()`), so the sites on one server do not all start at :00. Use `daily_at` only when the exact time matters.
-- **No second runner as a safety net.** Each kind of work has one runner. A duplicate that exits on a lock still costs a process start every time.
-
 ---
 
 ## 19. Code Quality & Conventions
