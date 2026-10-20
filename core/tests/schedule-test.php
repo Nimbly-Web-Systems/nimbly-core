@@ -10,7 +10,7 @@ function schedule_test_assert(bool $condition, string $message): void
 }
 
 $source = file_get_contents(BASE_DIR . 'core/cli/schedule.php');
-$functions = substr($source, strpos($source, 'function schedule_task_due'));
+$functions = substr($source, strpos($source, 'function schedule_next_due'));
 eval($functions);
 
 $minute = 60;
@@ -27,6 +27,8 @@ schedule_test_assert(!schedule_task_due(['every_minutes' => 30], ['last_run_at' 
 schedule_test_assert(schedule_task_due(['every_minutes' => 30], ['last_run_at' => $hour - 60], $hour + 420, 7), 'it runs seven minutes in');
 schedule_test_assert(schedule_task_due(['every' => 'hour'], ['last_run_at' => $hour + 60], $hour + 3600 + 420, 7)
     && !schedule_task_due(['every' => 'hour'], ['last_run_at' => $hour + 420], $hour + 3600, 7), 'hourly tasks share the phase');
+schedule_test_assert(schedule_next_due([], [], $hour, 7) === $hour + 420 && schedule_next_due([], [], $hour, 8) === $hour + 480,
+    'idle sites recheck on their own phase');
 schedule_test_assert(schedule_command_parts('agent:enqueue infra-expert') === ['agent:enqueue', 'infra-expert', '--scheduled'],
     'scheduled agent commands receive an explicit scheduled trigger');
 schedule_test_assert(schedule_command_parts('agent:enqueue infra-expert --operator=incident') === ['agent:enqueue', 'infra-expert', '--operator=incident'],

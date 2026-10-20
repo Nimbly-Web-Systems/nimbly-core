@@ -119,7 +119,7 @@ foreach ($schedule as $index => $task) {
 }
 
 if (!$dry_run) {
-    file_put_contents($lock_dir . '/schedule-due', (string)schedule_next_due($tasks, $state, $now), LOCK_EX);
+    file_put_contents($lock_dir . '/schedule-due', (string)schedule_next_due($tasks, $state, $now, schedule_site_phase()), LOCK_EX);
 }
 
 printf("Scheduled commands: ran %d, skipped %d, failed %d\n", $ran, $skipped, $failed);
@@ -144,18 +144,23 @@ function schedule_all_tasks(bool $host = false): Generator
     }
 }
 
-/** First minute a task is due, looking 15 minutes ahead, so a changed schedule is read again soon after a deploy. */
-function schedule_next_due(array $tasks, array $state, int $now): int
+/**
+ * First minute a task is due. Without one, the site's next quarter-hour mark on its own phase,
+ * so a changed schedule is read again soon after a deploy and sites do not recheck together.
+ */
+function schedule_next_due(array $tasks, array $state, int $now, int $phase = 0): int
 {
     $minute = $now - $now % 60;
-    for ($at = $minute + 60; $at < $minute + 900; $at += 60) {
+    for ($at = $minute + 60; ; $at += 60) {
+        if ((intdiv($at, 60) - $phase) % 15 === 0) {
+            return $at;
+        }
         foreach ($tasks as $task) {
-            if (schedule_task_due($task, $state['tasks'][$task['id']] ?? [], $at, schedule_site_phase())) {
+            if (schedule_task_due($task, $state['tasks'][$task['id']] ?? [], $at, $phase)) {
                 return $at;
             }
         }
     }
-    return $minute + 900;
 }
 
 function schedule_load()
