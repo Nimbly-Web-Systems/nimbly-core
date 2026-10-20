@@ -15,11 +15,22 @@ try {
     if ($result !== ['processed' => 0, 'done' => 0, 'failed' => 0]) {
         throw new RuntimeException('A second runner claimed jobs while the first held the lock');
     }
+    job_mark_due(200);
+    job_mark_due(100);
+    job_mark_due(300);
+    if (file_get_contents(job_due_path()) !== '100') {
+        throw new RuntimeException('Due marker does not keep the earliest job');
+    }
+    job_run_queued(10);
+    if (!is_file(job_due_path())) {
+        throw new RuntimeException('A runner without the lock cleared the due marker');
+    }
     echo "job runner lock tests passed\n";
 } finally {
     flock($holder, LOCK_UN);
     fclose($holder);
     unlink($path);
+    @unlink(job_due_path());
     rmdir($base . 'ext/data/.state');
     rmdir($base . 'ext/data');
     rmdir($base . 'ext');

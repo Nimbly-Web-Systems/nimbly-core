@@ -273,13 +273,18 @@ function scheduler_orchestrator_run(array $argv): void
 
     $failed = 0;
     $launched = 0;
+    $now = time();
     foreach ($projects as $name => $project) {
         $path = rtrim((string)($project['path'] ?? ''), '/');
         $started_at = microtime(true);
         $exit_code = scheduler_orchestrator_check_project($path);
-        if (!$dry_run && $exit_code === 0) {
-            foreach (['jobs', 'schedule'] as $mode) {
-                if (scheduler_orchestrator_spawn_worker($name, $path, $mode)) {
+        $lanes = $exit_code === 0 ? scheduler_orchestrator_due_lanes($path, $now) : [];
+        if (!$dry_run) {
+            foreach ($lanes as $mode) {
+                $spawned = $mode === 'chat'
+                    ? scheduler_orchestrator_spawn_chat($path)
+                    : scheduler_orchestrator_spawn_worker($name, $path, $mode);
+                if ($spawned) {
                     $launched++;
                 } else {
                     $exit_code = 1;
@@ -291,7 +296,11 @@ function scheduler_orchestrator_run(array $argv): void
             $failed++;
         }
 
-        echo scheduler_orchestrator_log_line($name, $path, $duration, $exit_code, $dry_run ? 'dry-run' : '');
+        // Only projects that start work or fail are logged; an idle minute is one orchestrator line.
+        if ($dry_run || $lanes !== [] || $exit_code !== 0) {
+            $message = implode(',', $lanes) ?: 'idle';
+            echo scheduler_orchestrator_log_line($name, $path, $duration, $exit_code, $dry_run ? 'dry-run ' . $message : $message);
+        }
     }
     if (!$dry_run) {
         echo scheduler_orchestrator_log_line('orchestrator', '', 0.0, $failed > 0 ? 1 : 0, 'launched=' . $launched);
@@ -299,6 +308,53 @@ function scheduler_orchestrator_run(array $argv): void
     flock($lock, LOCK_UN);
     fclose($lock);
     exit($failed > 0 ? 1 : 0);
+}
+
+/**
+ * What a project needs started this minute. A current core keeps its due times in
+ * ext/data/.state, so a project with nothing due starts no PHP at all. An older core
+ * has no schedule-due file and keeps both lanes every minute.
+ */
+function scheduler_orchestrator_due_lanes(string $path, int $now): array
+{
+    $state = $path . '/ext/data/.state/';
+    $schedule_due = @file_get_contents($state . 'schedule-due');
+    if ($schedule_due === false) {
+        return ['jobs', 'schedule'];
+    }
+    $lanes = [];
+    $jobs_due = @file_get_contents($state . 'jobs-due');
+    // The jobs lane also runs with each schedule run, so an interrupted jobs:run is picked up again.
+    if ((int)$schedule_due <= $now || ($jobs_due !== false && (int)$jobs_due <= $now)) {
+        $lanes[] = 'jobs';
+    }
+    if ((int)$schedule_due <= $now) {
+        $lanes[] = 'schedule';
+    }
+    if (!scheduler_orchestrator_lock_held($state . 'chat-worker.lock')) {
+        $lanes[] = 'chat';
+    }
+    return $lanes;
+}
+
+function scheduler_orchestrator_lock_held(string $path): bool
+{
+    $handle = @fopen($path, 'r');
+    if (!$handle) {
+        return false;
+    }
+    $held = !flock($handle, LOCK_SH | LOCK_NB);
+    fclose($handle);
+    return $held;
+}
+
+/** The chat worker stays up to an hour, so it runs outside the slots. */
+function scheduler_orchestrator_spawn_chat(string $path): bool
+{
+    $command = array_map('escapeshellarg', [PHP_BINARY, $path . '/core/cli/nimbly.php', 'agent:chat', '--worker']);
+    $log = escapeshellarg(scheduler_orchestrator_log_path());
+    exec(implode(' ', $command) . ' >> ' . $log . ' 2>&1 < /dev/null &', $output, $code);
+    return $code === 0;
 }
 
 function scheduler_orchestrator_spawn_worker(string $name, string $path, string $mode): bool
@@ -373,6 +429,8 @@ function scheduler_orchestrator_worker(array $argv): void
         ]);
         if ($mode === 'jobs') {
             $command[] = '10';
+        } else {
+            putenv('NIMBLY_SCHEDULER_HOST=1');
         }
         $slot = scheduler_orchestrator_acquire_slot(scheduler_orchestrator_max_concurrency());
         passthru(implode(' ', $command), $exit_code);

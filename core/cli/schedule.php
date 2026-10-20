@@ -40,8 +40,10 @@ if (file_exists($env_file)) {
 load_library('data');
 
 $dry_run = in_array('--dry-run', $argv, true);
+// The host scheduler starts the chat worker and jobs:run itself, only when they have work.
+$host = getenv('NIMBLY_SCHEDULER_HOST') === '1';
 require_once BASE_DIR . 'core/lib/maintenance.php';
-$schedule = schedule_all_tasks();
+$schedule = schedule_all_tasks($host);
 
 // In the site's own data, so containers that share it share the lock.
 $lock_dir = BASE_DIR . 'ext/data/.state';
@@ -60,12 +62,14 @@ $now = time();
 $ran = 0;
 $skipped = 0;
 $failed = 0;
+$tasks = [];
 
 // The health route reports what this PHP lacks; it can differ from the web PHP.
 load_library('health');
 $php_missing = health_missing_extensions();
-if (!$dry_run && $php_missing !== ($state['php_missing'] ?? [])) {
+if (!$dry_run && ($php_missing !== ($state['php_missing'] ?? []) || $host !== !empty($state['host']))) {
     $state['php_missing'] = $php_missing;
+    $state['host'] = $host;
     schedule_state_write($state);
 }
 if ($php_missing !== []) {
@@ -79,6 +83,7 @@ foreach ($schedule as $index => $task) {
         $skipped++;
         continue;
     }
+    $tasks[] = $task;
 
     $task_state = $state['tasks'][$task['id']] ?? [];
     if (!schedule_task_due($task, $task_state, $now)) {
@@ -113,14 +118,20 @@ foreach ($schedule as $index => $task) {
     }
 }
 
+if (!$dry_run) {
+    file_put_contents($lock_dir . '/schedule-due', (string)schedule_next_due($tasks, $state, $now), LOCK_EX);
+}
+
 printf("Scheduled commands: ran %d, skipped %d, failed %d\n", $ran, $skipped, $failed);
 exit($failed > 0 ? 1 : 0);
 
-function schedule_all_tasks(): Generator
+function schedule_all_tasks(bool $host = false): Generator
 {
     $mandatory = maintenance_tasks();
     foreach ($mandatory as $task) {
-        yield $task;
+        if (!$host || !in_array($task['id'], ['agent-chat', 'jobs-run'], true)) {
+            yield $task;
+        }
     }
     $ids = array_column($mandatory, 'id');
     $commands = array_map(fn($task) => explode(' ', $task['command'])[0], $mandatory);
@@ -131,6 +142,20 @@ function schedule_all_tasks(): Generator
         }
         yield $task;
     }
+}
+
+/** First minute a task is due, looking 15 minutes ahead, so a changed schedule is read again soon after a deploy. */
+function schedule_next_due(array $tasks, array $state, int $now): int
+{
+    $minute = $now - $now % 60;
+    for ($at = $minute + 60; $at < $minute + 900; $at += 60) {
+        foreach ($tasks as $task) {
+            if (schedule_task_due($task, $state['tasks'][$task['id']] ?? [], $at)) {
+                return $at;
+            }
+        }
+    }
+    return $minute + 900;
 }
 
 function schedule_load()

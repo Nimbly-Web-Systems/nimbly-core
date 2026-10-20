@@ -1596,7 +1596,7 @@ function host_audit_project_maintenance(string $name, string $path, array &$find
 {
     $state_path = $path . '/ext/data/.state/schedule';
     $state = is_file($state_path) ? json_decode(file_get_contents($state_path), true) : [];
-    $issues = maintenance_health(is_array($state) ? $state : []);
+    $issues = maintenance_health(is_array($state) ? $state : [], null, $path . '/ext/data/.state/');
     foreach ($issues as $task => $reason) {
         $findings[] = host_audit_finding(
             'maintenance:' . host_audit_id($name) . ':' . $task,

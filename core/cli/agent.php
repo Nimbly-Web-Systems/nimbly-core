@@ -152,15 +152,22 @@ if ($command === 'agent:chat') {
     // Chat has its own worker lane so a long daily run never delays a reply. The scheduler runs
     // its commands one after another, so the worker is detached and outlives a daily run (max 1 h).
     $name = sys_get_temp_dir() . '/nimbly-agent-chat-' . md5(BASE_DIR);
+    // In the site's own data, like schedule.lock, so the host scheduler can see a running worker.
+    $lock_path = BASE_DIR . 'ext/data/.state/chat-worker.lock';
+    if (!is_dir(dirname($lock_path))) {
+        @mkdir(dirname($lock_path), 0775, true);
+    }
+    $worker = fopen($lock_path, 'ce'); // close-on-exec: the detached worker must not inherit it
+    if (!$worker || !flock($worker, LOCK_EX | LOCK_NB)) {
+        exit(0);
+    }
     if (($argv[2] ?? '') !== '--worker') {
+        flock($worker, LOCK_UN);
         exec(implode(' ', array_map('escapeshellarg', [PHP_BINARY, BASE_DIR . 'core/cli/nimbly.php', 'agent:chat', '--worker']))
             . ' >> ' . escapeshellarg($name . '.log') . ' 2>&1 < /dev/null &');
         exit(0);
     }
-    $worker = fopen($name . '.lock', 'c');
-    if (!$worker || !flock($worker, LOCK_EX | LOCK_NB)) {
-        exit(0);
-    }
+    touch($lock_path);
     load_libraries(['agent-chat', 'agent-remote']);
     $until = time() + 3600;
     $started = time();

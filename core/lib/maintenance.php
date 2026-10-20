@@ -15,11 +15,17 @@ function maintenance_tasks(): array
     ];
 }
 
-function maintenance_health(array $state, ?int $now = null): array
+function maintenance_health(array $state, ?int $now = null, string $state_dir = ''): array
 {
     $now ??= time();
     $issues = [];
     foreach (maintenance_tasks() as $task) {
+        if (!empty($state['host']) && in_array($task['id'], ['agent-chat', 'jobs-run'], true)) {
+            if (maintenance_host_overdue($task['id'], $now, $state_dir)) {
+                $issues[$task['id']] = 'overdue';
+            }
+            continue;
+        }
         $last = $state['tasks'][$task['id']] ?? [];
         $success = (int)($last['last_success_at']
             ?? (($last['last_exit_code'] ?? null) === 0 ? ($last['last_finished_at'] ?? 0) : 0));
@@ -30,4 +36,22 @@ function maintenance_health(array $state, ?int $now = null): array
         }
     }
     return $issues;
+}
+
+/** The host scheduler starts these only when work waits, so judge the waiting work, not the last run. */
+function maintenance_host_overdue(string $id, int $now, string $state_dir = ''): bool
+{
+    $state_dir = $state_dir ?: ($GLOBALS['SYSTEM']['file_base'] ?? (defined('BASE_DIR') ? BASE_DIR : '')) . 'ext/data/.state/';
+    if ($id === 'jobs-run') {
+        $due = @file_get_contents($state_dir . 'jobs-due');
+        return $due !== false && (int)$due < $now - 120;
+    }
+    $lock_path = $state_dir . 'chat-worker.lock';
+    $handle = @fopen($lock_path, 'r');
+    if (!$handle) {
+        return true;
+    }
+    $free = flock($handle, LOCK_SH | LOCK_NB);
+    fclose($handle);
+    return $free && (int)@filemtime($lock_path) < $now - 120;
 }

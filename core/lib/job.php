@@ -20,7 +20,39 @@ function job_enqueue($type, $payload = [], $options = [])
         'last_error' => '',
     ];
 
-    return data_create('.jobs', $uuid, $job) ? $uuid : false;
+    if (!data_create('.jobs', $uuid, $job)) {
+        return false;
+    }
+    job_mark_due((int)$job['available_at']);
+    return $uuid;
+}
+
+/** Earliest time a queued job is due; the host scheduler starts jobs:run only from then on. */
+function job_due_path(): string
+{
+    $base_dir = defined('BASE_DIR') ? BASE_DIR : (string)($GLOBALS['SYSTEM']['file_base'] ?? '');
+    return $base_dir . 'ext/data/.state/jobs-due';
+}
+
+function job_mark_due(int $at): void
+{
+    $path = job_due_path();
+    if (!is_dir(dirname($path))) {
+        @mkdir(dirname($path), 0775, true);
+    }
+    $handle = @fopen($path, 'c+');
+    if (!$handle) {
+        return;
+    }
+    flock($handle, LOCK_EX);
+    $current = trim((string)stream_get_contents($handle));
+    if ($current === '' || $at < (int)$current) {
+        ftruncate($handle, 0);
+        rewind($handle);
+        fwrite($handle, (string)$at);
+    }
+    flock($handle, LOCK_UN);
+    fclose($handle);
 }
 
 function job_payload_with_request_context($payload)
@@ -204,6 +236,8 @@ function job_run_queued_locked($limit = 1)
 {
     load_libraries(['data', 'env']);
 
+    // Cleared before reading, so a job queued during this run marks itself due again.
+    @unlink(job_due_path());
     $jobs = data_read('.jobs');
     if (empty($jobs) || !is_array($jobs)) {
         return ['processed' => 0, 'done' => 0, 'failed' => 0];
@@ -214,15 +248,15 @@ function job_run_queued_locked($limit = 1)
     $done = 0;
     $failed = 0;
     $delay_ms = max(0, (int)env('JOB_RUN_DELAY_MS', '250'));
+    $next_due = null;
 
     foreach ($jobs as $uuid => $job) {
-        if ($processed >= $limit) {
-            break;
-        }
         if (($job['status'] ?? '') !== 'queued') {
             continue;
         }
-        if ((int)($job['available_at'] ?? 0) > $now) {
+        $available_at = (int)($job['available_at'] ?? 0);
+        if ($processed >= $limit || $available_at > $now) {
+            $next_due = min($next_due ?? $available_at, $available_at);
             continue;
         }
 
@@ -265,11 +299,15 @@ function job_run_queued_locked($limit = 1)
         } catch (Throwable $e) {
             $max_attempts = (int)($job['max_attempts'] ?? 5);
             $retry = $attempts < $max_attempts;
+            $retry_at = time() + min(3600, 60 * $attempts);
             data_update('.jobs', $uuid, [
                 'status' => $retry ? 'queued' : 'failed',
-                'available_at' => $retry ? time() + min(3600, 60 * $attempts) : 0,
+                'available_at' => $retry ? $retry_at : 0,
                 'last_error' => $e->getMessage(),
             ]);
+            if ($retry) {
+                $next_due = min($next_due ?? $retry_at, $retry_at);
+            }
             if (!$retry) {
                 job_enqueue_failure_alert($uuid, $job, $attempts, $e->getMessage());
             }
@@ -279,6 +317,9 @@ function job_run_queued_locked($limit = 1)
         if ($delay_ms > 0 && $processed < $limit) {
             usleep($delay_ms * 1000);
         }
+    }
+    if ($next_due !== null) {
+        job_mark_due($next_due);
     }
 
     return ['processed' => $processed, 'done' => $done, 'failed' => $failed];

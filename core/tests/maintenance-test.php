@@ -27,6 +27,37 @@ maintenance_test_assert(maintenance_health($state, $now + 121) === ['agent-chat'
 $state['tasks']['sessions-prune']['last_exit_code'] = 1;
 maintenance_test_assert(maintenance_health($state, $now) === ['sessions-prune' => 'failed'], 'failed run not hidden by earlier success');
 
+$tmp = sys_get_temp_dir() . '/nimbly-maintenance-host-' . bin2hex(random_bytes(6));
+mkdir($tmp . '/ext/data/.state', 0700, true);
+$state_dir = $tmp . '/ext/data/.state/';
+try {
+    maintenance_test_assert(scheduler_orchestrator_due_lanes($tmp, $now) === ['jobs', 'schedule'], 'older core keeps both lanes');
+    file_put_contents($state_dir . 'schedule-due', (string)($now + 600));
+    $chat = fopen($state_dir . 'chat-worker.lock', 'c');
+    flock($chat, LOCK_EX);
+    maintenance_test_assert(scheduler_orchestrator_due_lanes($tmp, $now) === [], 'nothing due starts nothing');
+    file_put_contents($state_dir . 'jobs-due', (string)$now);
+    maintenance_test_assert(scheduler_orchestrator_due_lanes($tmp, $now) === ['jobs'], 'due job starts the jobs lane');
+    $host_state = ['host' => true, 'tasks' => $state['tasks']];
+    $host_state['tasks']['sessions-prune']['last_exit_code'] = 0;
+    maintenance_test_assert(maintenance_health($host_state, $now, $state_dir) === [], 'host: running worker and fresh job healthy');
+    file_put_contents($state_dir . 'jobs-due', (string)($now - 180));
+    maintenance_test_assert(array_keys(maintenance_health($host_state, $now, $state_dir)) === ['jobs-run'], 'host: waiting job overdue');
+    unlink($state_dir . 'jobs-due');
+    flock($chat, LOCK_UN);
+    fclose($chat);
+    touch($state_dir . 'chat-worker.lock', $now - 180);
+    file_put_contents($state_dir . 'schedule-due', (string)$now);
+    maintenance_test_assert(scheduler_orchestrator_due_lanes($tmp, $now) === ['jobs', 'schedule', 'chat'], 'due schedule and stopped worker start');
+    maintenance_test_assert(array_keys(maintenance_health($host_state, $now, $state_dir)) === ['agent-chat'], 'host: stopped chat worker overdue');
+} finally {
+    array_map('unlink', glob($state_dir . '*'));
+    rmdir($state_dir);
+    rmdir($tmp . '/ext/data');
+    rmdir($tmp . '/ext');
+    rmdir($tmp);
+}
+
 $tmp = sys_get_temp_dir() . '/nimbly-maintenance-test-' . bin2hex(random_bytes(6));
 foreach (['core/cli/helpers', 'ext/cli', 'ext/data/.state', 'ext/data/.config'] as $dir) { mkdir($tmp . '/' . $dir, 0700, true); }
 copy($root . 'core/cli/nimbly.php', $tmp . '/core/cli/nimbly.php');
@@ -41,9 +72,9 @@ foreach (['agent:chat', 'sessions:prune', 'jobs:run', 'jobs:prune', 'history:pru
 }
 file_put_contents($tmp . '/ext/cli/commands.php', '<?php return ' . var_export($commands, true) . ';');
 file_put_contents($tmp . '/ext/cli/task.php', '<?php file_put_contents(BASE_DIR . "calls", $argv[1] . "\n", FILE_APPEND); exit(is_file(BASE_DIR . "fail") ? 1 : 0);');
-function maintenance_test_run(string $tmp, string $args): array {
+function maintenance_test_run(string $tmp, string $args, string $env = ''): array {
     $output = [];
-    exec(escapeshellarg(PHP_BINARY) . ' ' . escapeshellarg($tmp . '/core/cli/nimbly.php') . ' ' . $args . ' 2>&1', $output, $code);
+    exec($env . escapeshellarg(PHP_BINARY) . ' ' . escapeshellarg($tmp . '/core/cli/nimbly.php') . ' ' . $args . ' 2>&1', $output, $code);
     return [$code, implode("\n", $output)];
 }
 try {
@@ -55,6 +86,11 @@ try {
     maintenance_test_assert($code === 0, 'overridden implementations succeed: ' . $output);
     maintenance_test_assert(file($tmp . '/calls', FILE_IGNORE_NEW_LINES) === ['agent:chat','sessions:prune','jobs:run','jobs:prune','history:prune','agent:prune','stats:rollup'], 'each ext implementation runs once');
     maintenance_test_assert(maintenance_test_run($tmp, 'schedule:status')[0] === 0, 'status observes successful completion');
+    maintenance_test_assert((int)file_get_contents($tmp . '/ext/data/.state/schedule-due') > time(), 'next due time written');
+    file_put_contents($tmp . '/calls', '');
+    unlink($tmp . '/ext/data/.state/schedule');
+    [$code, $output] = maintenance_test_run($tmp, 'schedule:run', 'NIMBLY_SCHEDULER_HOST=1 ');
+    maintenance_test_assert($code === 0 && !array_intersect(file($tmp . '/calls', FILE_IGNORE_NEW_LINES), ['agent:chat', 'jobs:run']), 'host leaves chat and jobs to the host scheduler');
     unlink($tmp . '/ext/data/.state/schedule');
     file_put_contents($tmp . '/ext/cli/schedule.stage.inc', '<?php return ' . var_export([
         ['id' => 'replacement', 'command' => 'jobs:run 500', 'every' => 'minute'],

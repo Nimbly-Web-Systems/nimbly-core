@@ -322,6 +322,7 @@ function agent_chat_schedule_check_back(string $uuid, string $agent_id, int $due
     if (data_exists('.jobs', $job_uuid)) {
         data_update('.jobs', $job_uuid, ['status' => 'queued', 'payload' => $payload, 'attempts' => 0,
             'available_at' => $due, 'last_error' => '']);
+        job_mark_due($due);
         return;
     }
     job_enqueue('agent-check-back', $payload, ['uuid' => $job_uuid, 'available_at' => $due,
