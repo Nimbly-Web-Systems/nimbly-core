@@ -73,6 +73,7 @@ function agent_remote_ask(string $uuid, array $conversation, string $agent_id, s
         'agent_id' => $agent_id, 'trigger' => 'remote', 'status' => 'waiting', 'scheduled_at' => time(),
         'event_context' => ['conversation' => $uuid], 'failure_reason' => '',
     ]);
+    agent_chat_wake();
     $messages = [];
     $asker = '';
     foreach ((array)($conversation['messages'] ?? []) as $message) {
@@ -125,8 +126,7 @@ function agent_remote_pull(bool $now = false): int
 {
     static $last = 0;
     $homes = array_unique(array_values(agent_remote_homes()));
-    $waiting = $homes !== [] && data_read_index('.agent_runs', 'status', data_index_uuids('waiting')[0]) !== [];
-    if ($homes === [] || (!$now && time() - $last < ($waiting ? 3 : 60))) {
+    if ($homes === [] || (!$now && time() - $last < (agent_remote_waiting() ? 3 : 60))) {
         return 0;
     }
     $last = time();
@@ -151,6 +151,12 @@ function agent_remote_pull(bool $now = false): int
         file_put_contents($cursor_file, json_encode(['since' => (int)($answer['now'] ?? time())]));
     }
     return $count;
+}
+
+/** Whether a turn sent to an agent living elsewhere still waits for its answer. */
+function agent_remote_waiting(): bool
+{
+    return agent_remote_homes() !== [] && data_read_index('.agent_runs', 'status', data_index_uuids('waiting')[0]) !== [];
 }
 
 /** One thing an agent at home said: a reply, a hand-over, a check-back, a failed turn, or a notice to someone. */

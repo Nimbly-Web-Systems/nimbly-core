@@ -473,6 +473,7 @@ function agent_queue(string $run_uuid, string $suffix = ''): void
 {
     // Chat runs have their own worker lane (agent:chat) so a long daily run never delays a reply.
     if ((data_read('.agent_runs', $run_uuid)['trigger'] ?? '') === 'chat') {
+        agent_chat_wake();
         return;
     }
     load_library('job');
@@ -480,6 +481,21 @@ function agent_queue(string $run_uuid, string $suffix = ''): void
         'uuid' => substr(hash('sha256', 'agent-job:' . $run_uuid . ':' . $suffix), 0, 16),
         'max_attempts' => 3,
     ]);
+}
+
+/** Tells the chat worker to look now. While idle it only watches this file's time. */
+function agent_chat_wake(): void
+{
+    $path = agent_chat_wake_path();
+    if (!is_dir(dirname($path))) {
+        @mkdir(dirname($path), 0775, true);
+    }
+    @touch($path);
+}
+
+function agent_chat_wake_path(): string
+{
+    return $GLOBALS['SYSTEM']['file_base'] . 'ext/data/.state/chat-wake';
 }
 
 function agent_run(string $run_uuid, array $options = []): array

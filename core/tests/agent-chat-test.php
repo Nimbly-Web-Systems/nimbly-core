@@ -232,8 +232,10 @@ foreach (['//evil.test/x', 'https://evil.test', 'javascript:alert(1)', 'nb-admin
 // A chat turn: no job queue, reply appended once, whole conversation passed to the model.
 $uuid = agent_chat_create($owner, ['helper' => 'Helper']);
 agent_chat_append($uuid, 'coder', 'I fixed the build.', 'earlier-run');
+@unlink(agent_chat_wake_path());
 $view = agent_chat_post($uuid, $owner, '@Helper how is disk space?');
 chat_test_assert($agent_test_jobs === [], 'chat runs stay out of the site-wide job queue');
+chat_test_assert(is_file(agent_chat_wake_path()), 'a queued chat turn wakes the chat worker');
 chat_test_assert(count($view['working']) === 1 && $view['working'][0]['status'] === 'working', 'the addressed agent is shown working');
 chat_test_expect_error(fn() => agent_chat_post($uuid, $owner, 'Hello?'), 'Still waiting', 'one unanswered message per agent');
 chat_test_assert(agent_chat_run_pending() === 1, 'the chat worker runs the waiting turn');

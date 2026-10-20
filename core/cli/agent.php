@@ -173,20 +173,33 @@ if ($command === 'agent:chat') {
     $started = time();
     $env_file = BASE_DIR . '.env';
     $env_changed = (int)@filemtime($env_file);
+    $wake_path = agent_chat_wake_path();
+    $seen_wake = -1;
+    $active_until = 0;
+    $next_pass = 0;
     do {
-        // After a deploy, stop rather than mix old code in memory with new files; the scheduler starts a fresh worker.
-        // Likewise when .env changes (a key added), since settings are read once at startup.
+        // Idle, a tick is one stat of the wake file. A full look runs when a chat run is queued,
+        // every tick for two minutes after work or while a remote answer is awaited, and once a minute.
         clearstatcache();
-        if ((int)@filemtime($env_file) !== $env_changed) {
-            exit(0);
-        }
-        foreach (get_included_files() as $file) {
-            if ((int)@filemtime($file) > $started) {
+        $wake = (int)@filemtime($wake_path);
+        $now = time();
+        if ($wake !== $seen_wake || $now < $active_until || $now >= $next_pass) {
+            $seen_wake = $wake;
+            $next_pass = $now + 60;
+            // After a deploy, stop rather than mix old code in memory with new files; the scheduler starts a fresh worker.
+            // Likewise when .env changes (a key added), since settings are read once at startup.
+            if ((int)@filemtime($env_file) !== $env_changed) {
                 exit(0);
             }
+            foreach (get_included_files() as $file) {
+                if ((int)@filemtime($file) > $started) {
+                    exit(0);
+                }
+            }
+            if (agent_chat_run_pending() + agent_remote_pull() > 0 || agent_remote_waiting()) {
+                $active_until = time() + 120;
+            }
         }
-        agent_chat_run_pending();
-        agent_remote_pull();
         usleep(2000000);
     } while (time() < $until);
     exit(0);
