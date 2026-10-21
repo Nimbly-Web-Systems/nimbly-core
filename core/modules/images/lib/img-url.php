@@ -24,7 +24,9 @@ function img_url_sc($params)
 
     if (preg_match('/^[0-9a-f]{20,32}$/i', $value)) {
         $width = get_param_value($params, 'width', '1200');
-        return url_absolute('img/' . $value . '/' . $width . 'w');
+        $format = get_param_value($params, 'format', '');
+        $query = in_array($format, ['jpg', 'png'], true) ? '?format=' . $format : '';
+        return url_absolute('img/' . $value . '/' . $width . 'w' . $query);
     }
 
     return url_absolute(ltrim($value, '/'));

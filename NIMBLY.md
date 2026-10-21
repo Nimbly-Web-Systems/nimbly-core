@@ -838,7 +838,7 @@ The following variables influence the HTML shell when set before `[#html#]`:
 
 The project default OG image is set once in `ext/tpl/meta/index.tpl` without `overwrite`, so per-page values always take priority. Two image utilities are available as shortcodes:
 
-- `[#img-url UUID-or-path-or-URL#]` — normalises any image reference to an absolute URL (useful outside meta, e.g. for JSON-LD)
+- `[#img-url UUID-or-path-or-URL#]` — normalises any image reference to an absolute URL (useful outside meta, e.g. for JSON-LD). For an uploaded image, `format=jpg` or `format=png` asks the image route for that format instead of WebP; the OG image uses `format=jpg`, because some link previews (WhatsApp) do not show WebP
 - `[#first-img-uuid var=record.main_text#]` — extracts the UUID of the first embedded image from an HTML field; returns `(empty)` when none is found
 
 ### Importing resource records from DOCX
