@@ -74,6 +74,7 @@ function email_prepare($email_data)
 		load_library('run');
 		$email_data['html'] = run_buffered($tpl);
 	}
+	load_library('util');
 	$email_data['text'] = isset($email_data['text']) ? (string)$email_data['text'] : plain_text($email_data['html']);
 	return $email_data;
 }
