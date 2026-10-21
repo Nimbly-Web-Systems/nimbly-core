@@ -6,7 +6,7 @@
   "instructions": "chat.md",
   "requires_env": ["OPENAI_API_KEY"],
   "model": "gpt-5.6-terra",
-  "reasoning_effort": "low",
+  "reasoning_effort": "medium",
   "lease_seconds": 900,
   "max_turns": 16,
   "max_tool_calls": 24,
