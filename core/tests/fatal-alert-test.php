@@ -25,6 +25,12 @@ function data_create($resource, $uuid, $record): bool
     $GLOBALS['fatal_test_records'][$resource][$uuid] = $record;
     return true;
 }
+function data_update($resource, $uuid, $fields): bool
+{
+    $GLOBALS['fatal_test_records'][$resource][$uuid] = array_merge($GLOBALS['fatal_test_records'][$resource][$uuid], $fields);
+    return true;
+}
+function job_mark_due(int $at): void {}
 function job_enqueue($type, $payload, $options): string
 {
     $uuid = 'test-job-' . count($GLOBALS['fatal_test_records']['.jobs'] ?? []);
@@ -71,11 +77,14 @@ fatal_test_assert(!str_contains(json_encode([$incident, $fatal_test_records['.jo
     'diagnostic state and jobs omit form values and host paths');
 $fatal_test_records['.jobs']['test-job-0']['status'] = 'failed';
 fatal_alert_enqueue($error, $start + 300);
-fatal_test_assert(count($fatal_test_records['.jobs']) === 3, 'failed delivery requeues on recurrence');
+fatal_test_assert(count($fatal_test_records['.jobs']) === 2
+    && $fatal_test_records['.jobs']['test-job-0']['status'] === 'queued'
+    && $fatal_test_records['.jobs']['test-job-0']['payload']['count'] === 6,
+    'failed delivery is retried in place on recurrence');
 $fatal_test_mail_calls = 0;
 require_once dirname(__DIR__) . '/modules/system/lib/fatal-error-alert.php';
-$retry_job = $fatal_test_records['.jobs']['test-job-2'];
-$retry_job['uuid'] = 'test-job-2';
+$retry_job = $fatal_test_records['.jobs']['test-job-0'];
+$retry_job['uuid'] = 'test-job-0';
 try {
     fatal_error_alert_job($retry_job);
     fatal_test_assert(false, 'provider rejection must fail the job');

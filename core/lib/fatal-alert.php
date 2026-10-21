@@ -73,17 +73,30 @@ function fatal_alert_enqueue($error, ?int $now = null)
                 $job = empty($previous['job_uuid']) ? null : data_read('.jobs', $previous['job_uuid']);
                 if (empty($previous['sent_at']) && (!is_array($job)
                     || in_array(($job['status'] ?? ''), ['failed', 'done'], true))) {
-                    $job_uuid = job_enqueue('fatal-error-alert', [
+                    $payload = [
                         'signature' => $signature, 'stage' => $stage,
                         'count' => $state['count'], 'first_at' => $state['first_at'],
                         'last_at' => $now, 'type' => $type, 'message' => 'PHP fatal error',
                         'file' => $state['file'], 'line' => $line,
                         'url' => fatal_alert_current_url(), 'host' => gethostname() ?: '',
-                    ], ['max_attempts' => 10, 'omit_request_context' => true]);
-                    if ($job_uuid === false) {
-                        throw new RuntimeException('Fatal alert job could not be queued');
+                    ];
+                    // A failed alert is retried in place, so failed deliveries never pile up as jobs
+                    if (is_array($job) && ($job['status'] ?? '') === 'failed') {
+                        if (!data_update('.jobs', $previous['job_uuid'], [
+                            'status' => 'queued', 'attempts' => 0, 'available_at' => 0,
+                            'last_error' => '', 'payload' => $payload,
+                        ])) {
+                            throw new RuntimeException('Fatal alert job could not be requeued');
+                        }
+                        job_mark_due($now);
+                    } else {
+                        $job_uuid = job_enqueue('fatal-error-alert', $payload,
+                            ['max_attempts' => 10, 'omit_request_context' => true]);
+                        if ($job_uuid === false) {
+                            throw new RuntimeException('Fatal alert job could not be queued');
+                        }
+                        $state['notifications'][$stage] = ['job_uuid' => $job_uuid, 'queued_at' => $now];
                     }
-                    $state['notifications'][$stage] = ['job_uuid' => $job_uuid, 'queued_at' => $now];
                 }
             }
             if ($stage !== '' && !data_create('.state', $uuid, $state)) {
