@@ -438,14 +438,16 @@ A `route.inc` sits alongside `index.tpl` and decides whether this route owns the
 ```php
 <?php
 $parts = router_match(__FILE__);
-if ($parts === false) return;
+if ($parts === false) {
+    return;
+}
 
-$slug = $parts[0];
-load_library('data');
-load_library('util');
+load_libraries(['data', 'util']);
 
-$records = data_read_index('articles', 'title_slug', md5_uuid($slug));
-if (empty($records)) return;
+$records = data_read_index('articles', 'title_slug', md5_uuid($parts[0]));
+if (empty($records)) {
+    return;
+}
 
 set_variable_dot('record', reset($records));
 router_accept();
@@ -1517,14 +1519,16 @@ The data library handles this transparently — same API regardless of whether `
 <?php
 
 $parts = router_match(__FILE__);
-if ($parts === false || count($parts) !== 1) return;
+if ($parts === false || count($parts) !== 1) {
+    return;
+}
 
-$slug = $parts[0];
-load_library('data');
-load_library('util');
+load_libraries(['data', 'util']);
 
-$records = data_read_index('articles', 'title_slug', md5_uuid($slug));
-if (empty($records)) return;
+$records = data_read_index('articles', 'title_slug', md5_uuid($parts[0]));
+if (empty($records)) {
+    return;
+}
 
 $record = reset($records);
 set_variable_dot('record', $record);
@@ -3378,10 +3382,14 @@ This section shows the full flow for an editable HTML field: resource definition
 <?php
 router_deny();
 $parts = router_match(__FILE__);
-if ($parts === false) return;
+if ($parts === false) {
+    return;
+}
 load_library('data');
 $record = data_read('articles', $parts[0]);
-if (!$record) return;
+if (!$record) {
+    return;
+}
 set_variable('article', $record);
 router_accept();
 ```
@@ -3976,14 +3984,16 @@ Use the index system to resolve a slug from the URL to a record. Add `title_slug
 <?php
 
 $parts = router_match(__FILE__);
-if ($parts === false || count($parts) !== 1) return;
+if ($parts === false || count($parts) !== 1) {
+    return;
+}
 
-$slug = $parts[0];
-load_library('data');
-load_library('util');
+load_libraries(['data', 'util']);
 
-$records = data_read_index('events', 'title_slug', md5_uuid($slug));
-if (empty($records)) return;
+$records = data_read_index('events', 'title_slug', md5_uuid($parts[0]));
+if (empty($records)) {
+    return;
+}
 
 $record = reset($records);
 set_variable_dot('record', $record);
