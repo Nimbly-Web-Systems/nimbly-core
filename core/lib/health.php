@@ -28,7 +28,7 @@ function health_sc($params = null): string
  */
 function health_missing_extensions(): array
 {
-    $required = ['mbstring', 'curl', 'openssl', 'dom', 'gd', 'zip'];
+    $required = ['mbstring', 'curl', 'openssl', 'dom', 'gd', 'zip', 'gmp'];
     $missing = array_values(array_filter($required, fn($extension) => !extension_loaded($extension)));
     load_library('thumbnail');
     if (thumbnail_avif_reader() === '') {
