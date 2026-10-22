@@ -544,7 +544,6 @@ cli_section('Site data', true);
 if ($need_site) {
     data_create('.config', 'site', [
         'name'        => $sitename,
-        'description' => $sitename . ': a Nimbly site',
         'languages'   => [$site_language],
     ]);
     nb_status("Created: .config/site");

@@ -4,7 +4,7 @@
 <meta name="generator" content="Nimbly">
 [#set page-robots="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"#]
 <meta name="robots" content="[#page-robots#]">
-[#set page-description="[#get data.config.site.description default=nimbly#]"#]
+[#set page-description="[#get data.config.site.description default="[#site-name#]"#]"#]
 [#set og-type=website#]
 <meta name="description" content="[#page-description#]">
 <meta property="og:type" content="[#og-type#]">
