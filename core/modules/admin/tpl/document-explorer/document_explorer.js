@@ -13,6 +13,8 @@ document.addEventListener("alpine:init", () => {
     drop_before: null,
     drop_target: null,
     adding_category: false,
+    renaming_category: null,
+    category_label_draft: "",
     dragging_category: null,
     new_category: "",
     init() {
@@ -198,7 +200,7 @@ document.addEventListener("alpine:init", () => {
     },
 
     can_order_categories() {
-      return this.config.can_order_categories && !!this.config.category_fields.position;
+      return this.config.can_order_categories && (this.config.category_resource === "" || !!this.config.category_fields.position);
     },
     category_drag_start(event, value) {
       if (!this.can_order_categories()) {
@@ -213,8 +215,13 @@ document.addEventListener("alpine:init", () => {
     move_category(dragged, target) {
       const order = this.config.category_order;
       const to = order.indexOf(target);
+      const before = [...order];
       order.splice(order.indexOf(dragged), 1);
       order.splice(to, 0, dragged);
+      if (this.config.category_resource === "") {
+        this.save_options().catch(() => { this.config.category_order = before; });
+        return;
+      }
       const field = this.config.category_fields.position;
       order.forEach((uuid, ix) => {
         nb.api.put(`${nb.base_url}/api/v1/${this.config.category_resource}/${uuid}`, { [field]: (ix + 1) * 10 }).then((res) => {
@@ -228,6 +235,14 @@ document.addEventListener("alpine:init", () => {
     // A category kept as a record of its own, added at the end of the list.
     add_category() {
       const name = this.new_category.trim();
+      if (name !== "" && this.config.category_resource === "") {
+        this.save_options([{ label: name }]).then(() => {
+          this.new_category = "";
+          this.adding_category = false;
+          this.set_category(this.config.category_order[this.config.category_order.length - 1]);
+        }).catch(() => {});
+        return;
+      }
       const fields = this.config.category_fields;
       if (name === "" || !fields.title) {
         return;
@@ -248,6 +263,48 @@ document.addEventListener("alpine:init", () => {
         this.adding_category = false;
         this.set_category(record.uuid);
       });
+    },
+
+    // Categories kept as options in the .meta are saved as one ordered list.
+    save_options(extra = []) {
+      const options = this.config.category_order
+        .map((value) => ({ value, label: this.config.categories[value] }))
+        .concat(extra);
+      return nb.api.put(`${this.api_url()}/options`, { field: this.config.fields.category, options }).then((res) => {
+        if (!res.success) {
+          nb.notify(res.message);
+          throw new Error(res.message);
+        }
+        this.config.categories = Object.fromEntries(res.options.map((option) => [option.value, option.label]));
+        this.config.category_order = res.options.map((option) => option.value);
+      });
+    },
+    start_rename(value) {
+      if (!this.config.can_edit_options) {
+        return;
+      }
+      this.renaming_category = value;
+      this.category_label_draft = this.config.categories[value];
+    },
+    rename_category() {
+      const value = this.renaming_category;
+      const label = this.category_label_draft.trim();
+      this.renaming_category = null;
+      if (value === null || label === "" || label === this.config.categories[value]) {
+        return;
+      }
+      const previous = this.config.categories[value];
+      this.config.categories[value] = label;
+      this.save_options().catch(() => { this.config.categories[value] = previous; });
+    },
+    delete_category(value) {
+      const order = this.config.category_order;
+      this.config.category_order = order.filter((item) => item !== value);
+      this.save_options().then(() => {
+        if (this.category === value) {
+          this.set_category("");
+        }
+      }).catch(() => { this.config.category_order = order; });
     },
 
     // Only the records whose place changed are saved.

@@ -84,15 +84,28 @@
                 </li>
                 <template x-for="value in config.category_order" :key="value">
                     <li>
-                        <a href="#" @click.prevent="set_category(value)"
+                        <a href="#" class="group flex items-center gap-2" @click.prevent="set_category(value)"
                             :class="{ 'menu-active': category === value, 'ring-2 ring-primary': drop_target === value, 'opacity-40': dragging_category === value }"
                             :draggable="can_order_categories()"
                             @dragstart="category_drag_start($event, value)" @dragend="drag_end()"
                             @dragover.prevent="drop_target = value" @dragleave="drop_target = null"
-                            @drop.prevent.stop="drop_on_category($event, value)">
+                            @drop.prevent.stop="drop_on_category($event, value)"
+                            @dblclick.prevent="start_rename(value); $nextTick(() => $refs.rename_input?.focus())"
+                            x-show="renaming_category !== value">
                             <span class="grow truncate" x-text="config.categories[value]"></span>
+                            <template x-if="config.can_edit_options && count_in(value) === 0">
+                                <button type="button" class="text-neutral-400 opacity-0 hover:text-error group-hover:opacity-100 focus:opacity-100" title="[#text Delete#]" aria-label="[#text Delete#]"
+                                    @click.prevent.stop="confirm('[#text Delete category?#]') && delete_category(value)">&times;</button>
+                            </template>
                             <span class="badge badge-sm badge-ghost" x-text="count_in(value)"></span>
                         </a>
+                        <template x-if="renaming_category === value">
+                            <form class="px-1 py-1" @submit.prevent="rename_category()">
+                                <input type="text" class="input input-sm w-full" x-model="category_label_draft" x-ref="rename_input"
+                                    aria-label="[#text Rename#]" @blur="rename_category()"
+                                    @keydown.escape="renaming_category = null" />
+                            </form>
+                        </template>
                     </li>
                 </template>
                 <template x-if="config.can_add_category">

@@ -34,6 +34,8 @@ function get_document_records_sc($params)
     $category_resource = $fields['category'] !== null ? (string)($meta['fields'][$fields['category']]['resource'] ?? '') : '';
 
     $categories = document_explorer_categories($meta, $fields['category']);
+    $editable_options = $fields['category'] !== null && $category_resource === ''
+        && !empty($meta['fields'][$fields['category']]['editable_options']) && access_by_feature('edit-' . $resource);
 
     $documents = [];
     foreach ($records as $uuid => $record) {
@@ -48,8 +50,10 @@ function get_document_records_sc($params)
         'category_order' => array_map('strval', array_keys($categories)),
         'category_resource' => $category_resource,
         'category_fields' => $category_resource !== '' ? document_explorer_fields($category_resource, data_meta($category_resource)) : [],
-        'can_add_category' => $category_resource !== '' && access_by_feature('create-' . $category_resource),
-        'can_order_categories' => $category_resource !== '' && access_by_feature('edit-' . $category_resource),
+        // options in the .meta are changed through the resource itself, when the field allows it
+        'can_edit_options' => $editable_options,
+        'can_add_category' => $category_resource !== '' ? access_by_feature('create-' . $category_resource) : $editable_options,
+        'can_order_categories' => $category_resource !== '' ? access_by_feature('edit-' . $category_resource) : $editable_options,
         'can_manage_categories' => $category_resource !== '' && access_by_feature('view-' . $category_resource),
         'documents' => $documents,
         // a new document is an upload to .files first, see api_method_switch()

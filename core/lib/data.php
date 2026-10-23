@@ -1496,6 +1496,18 @@ function data_create_resource($resource, $meta)
 }
 
 /**
+ * Writes a resource's whole `.meta`, for changes a merge cannot make, such as
+ * removing select options or putting them in another order.
+ */
+function data_meta_save($resource, array $meta)
+{
+    if (!data_exists($resource, '.meta')) {
+        return false;
+    }
+    return _data_store($resource, '.meta', $meta) === true;
+}
+
+/**
  * Excludes records from an array where a specific field matches a given value.
  *
  * @param array $records Array of associative arrays (records).
