@@ -80,6 +80,9 @@ if (!empty(trim($status['output']))) {
 // Fetch into the remote-tracking branch and rebase onto that. A plain pull
 // rebases onto FETCH_HEAD, which lists the branch twice when a second fetch
 // (a deploy) runs in the same checkout at the same moment.
+// --rebase-merges keeps a merge (live into master) as a merge: a plain rebase
+// copies the merged commits, so the branches stop sharing history and every
+// later merge conflicts on files both sides keep changing.
 $tracking = 'refs/remotes/origin/' . $branch;
 $fetch = git('fetch origin ' . escapeshellarg('+refs/heads/' . $branch . ':' . $tracking));
 if ($fetch['code'] !== 0) {
@@ -87,7 +90,7 @@ if ($fetch['code'] !== 0) {
     exit(1);
 }
 
-$rebase = git('rebase --autostash ' . escapeshellarg($tracking));
+$rebase = git('rebase --autostash --rebase-merges ' . escapeshellarg($tracking));
 if ($rebase['code'] !== 0) {
     // Abort so an unresolved rebase does not block every later sync.
     git('rebase --abort');
