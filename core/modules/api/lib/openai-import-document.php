@@ -325,7 +325,7 @@ function openai_import_document_pdf_text(string $path)
 {
     $output = [];
     $code = 0;
-    exec('timeout 30 pdftotext -enc UTF-8 -nopgbrk ' . escapeshellarg($path) . ' - 2>/dev/null', $output, $code);
+    exec('/usr/bin/timeout 30 /usr/bin/pdftotext -enc UTF-8 -nopgbrk ' . escapeshellarg($path) . ' - 2>/dev/null', $output, $code);
     return $code === 0 ? implode("\n", $output) : false;
 }
 
