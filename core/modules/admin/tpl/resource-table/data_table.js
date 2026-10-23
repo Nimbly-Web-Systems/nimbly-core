@@ -214,7 +214,7 @@ document.addEventListener("alpine:init", () => {
       }
       const s = txt != null ? String(txt) : '';
       if (s.trim() === '' || s === '(empty)') {
-        return '<span class="select-none text-neutral-300" title="[#text No value#]" aria-label="[#text No value#]">&mdash;</span>';
+        return '<span class="select-none text-neutral-300" title="' + _resource_table_text.no_value + '" aria-label="' + _resource_table_text.no_value + '">&mdash;</span>';
       }
       if (!this.search_regex) {
         return s;

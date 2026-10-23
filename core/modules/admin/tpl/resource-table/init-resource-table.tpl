@@ -6,6 +6,7 @@
     var _filters=[#fmt var=data.filters empty={} json#];
     var _default_sort_field='[#get data.sort.field default=#]';
     var _default_sort_order='[#get data.sort.order default=asc#]';
+    var _resource_table_text={no_value: "[#text No value#]"};
     var _page_size=[#get api_datatable.entries default=50#];
     [#include file=[#base-path#]core/modules/admin/tpl/resource-table/data_table.js#]
 </script>
