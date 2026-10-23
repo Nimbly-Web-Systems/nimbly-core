@@ -1,3 +1,4 @@
+<script>window.nb_private_files = [#private-file-ids#];</script>
 <div id="nb-media-grid"
     class="grid grid-cols-2 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 md:gap-6 lg:gap-8">
     <template x-for="(file, index) in page" :key="file.uuid">

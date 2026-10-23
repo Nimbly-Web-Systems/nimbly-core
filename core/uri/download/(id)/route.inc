@@ -16,6 +16,11 @@ if (!data_exists(".files", $uuid)) {
 	http_response_code(404);
     exit();
 }
+load_library('file-access');
+if (!file_access_allowed($uuid)) {
+	http_response_code(404);
+    exit();
+}
 
 $file_meta = data_read('.files_meta', $uuid);
 $file_path = $GLOBALS['SYSTEM']['file_base'] . 'ext/data/.files/' . $uuid;

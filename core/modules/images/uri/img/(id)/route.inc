@@ -22,6 +22,12 @@ if (!data_exists(".files", $uuid)) {
 	}
 }
 
+load_library('file-access');
+if (!file_access_allowed($uuid)) {
+	http_response_code(404);
+	exit();
+}
+
 $meta = data_read(".files_meta", $uuid);
 // A thumbnail is as new as the upload it is made from.
 $modified = (int)@filemtime(data_path(".files", $uuid));
@@ -132,7 +138,8 @@ if ($size > $max_h && ($mode === 'h' || ($ratio > 0 && $ratio < 1))) {
 }
 
 load_library("thumbnail");
-$file = thumbnail_create($uuid, $size, $ratio, $mode, $format);
+// the web server hands out cached public thumbnails itself, so a private file's stay out of them
+$file = thumbnail_create($uuid, $size, $ratio, $mode, $format, file_is_private($uuid));
 if (empty($file)) {
     return;
 }

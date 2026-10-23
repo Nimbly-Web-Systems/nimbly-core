@@ -16,6 +16,11 @@ if (!data_exists(".files", $uuid) || !data_exists(".files_meta", $uuid)) {
 	http_response_code(404);
     exit();
 }
+load_library('file-access');
+if (!file_access_allowed($uuid)) {
+	http_response_code(404);
+	exit();
+}
 
 
 // browser cache return

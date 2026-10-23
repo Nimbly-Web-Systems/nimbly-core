@@ -105,7 +105,7 @@ function thumbnail_cache_is_valid($path, $source_mtime, $format)
     return $end_marker === "\xff\xd9";
 }
 
-function thumbnail_create($uuid, $size, $ratio = 0, $mode = 'h', $format = '')
+function thumbnail_create($uuid, $size, $ratio = 0, $mode = 'h', $format = '', $private = false)
 {
     if ($format !== 'jpg' && $format !== 'png') {
         $format = '';
@@ -119,7 +119,8 @@ function thumbnail_create($uuid, $size, $ratio = 0, $mode = 'h', $format = '')
     $org_path = sprintf("%s/.files/%s", $GLOBALS['SYSTEM']['data_base'], $uuid);
 
     // A cached thumbnail is returned before the original is opened
-    $static_path = $GLOBALS['SYSTEM']['file_base'] . 'ext/static/_thumb_/' . $GLOBALS['SYSTEM']['request_uri'];
+    $static_path = ($private ? $GLOBALS['SYSTEM']['data_base'] . '/.tmp/cache/_thumb_/' : $GLOBALS['SYSTEM']['file_base'] . 'ext/static/_thumb_/')
+        . $GLOBALS['SYSTEM']['request_uri'];
 
     $query_ratio = get_variable('ratio', null, 'url');
     if (!empty($query_ratio)) {

@@ -63,7 +63,9 @@ var nb_media_library = {
                 }
                 return;
             }
-            this.unfiltered = Object.values(files_meta_data[".files_meta"]);
+            // files of private resources belong to their records, not to the library
+            const private_files = new Set(window.nb_private_files || []);
+            this.unfiltered = Object.values(files_meta_data[".files_meta"]).filter((f) => !private_files.has(f.uuid));
             this.apply_filters();
         });
 
