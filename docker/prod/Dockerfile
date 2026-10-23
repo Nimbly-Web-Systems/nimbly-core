@@ -12,6 +12,7 @@ RUN apt-get -y -o APT::Update::Error-Mode=any update && \
         php-gd \
         php-gmp \
         php-intl \
+        poppler-utils \
         php-mbstring \
         php-xml \
         php-zip && \
