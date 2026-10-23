@@ -28,11 +28,11 @@
     </select>
 
     <select class="select select-bordered select-sm w-auto max-w-[14rem] bg-white" x-model="usage_filter"
-        @change="set_usage_filter()" aria-label="[#text Location#]">
-        <option value="">[#text All locations#]</option>
+        @change="set_usage_filter()" aria-label="[#text Used in#]">
+        <option value="">[#text Used in: all#]</option>
         <option value="(unused)">[#text Not in use#]</option>
         <template x-for="group in usage_groups" :key="group.key">
-            <option :value="group.key" x-text="`${group.name} (${group.count})`"></option>
+            <option :value="group.key" x-text="`[#text Used in#] ${group.name} (${group.count})`"></option>
         </template>
     </select>
     <span class="loading loading-spinner loading-xs text-neutral-500" x-show="usage_loading" x-cloak></span>
