@@ -77,21 +77,40 @@
                 <li>
                     <a href="#" @click.prevent="set_category('')" :class="category === '' && 'menu-active'"
                         @dragover.prevent="drop_target = '*'" @dragleave="drop_target = null"
-                        @drop.prevent.stop="drop_on_category($event, '')"
-                        :data-drop-target="drop_target === '*'">
+                        @drop.prevent.stop="drop_on_category($event, '')">
                         <span class="grow">[#text All#]</span>
                         <span class="badge badge-sm badge-ghost" x-text="documents.length"></span>
                     </a>
                 </li>
-                <template x-for="[value, label] in Object.entries(config.categories)" :key="value">
+                <template x-for="value in config.category_order" :key="value">
                     <li>
-                        <a href="#" @click.prevent="set_category(value)" :class="category === value && 'menu-active'"
+                        <a href="#" @click.prevent="set_category(value)"
+                            :class="{ 'menu-active': category === value, 'ring-2 ring-primary': drop_target === value, 'opacity-40': dragging_category === value }"
+                            :draggable="can_order_categories()"
+                            @dragstart="category_drag_start($event, value)" @dragend="drag_end()"
                             @dragover.prevent="drop_target = value" @dragleave="drop_target = null"
-                            @drop.prevent.stop="drop_on_category($event, value)"
-                            :data-drop-target="drop_target === value">
-                            <span class="grow truncate" x-text="label"></span>
+                            @drop.prevent.stop="drop_on_category($event, value)">
+                            <span class="grow truncate" x-text="config.categories[value]"></span>
                             <span class="badge badge-sm badge-ghost" x-text="count_in(value)"></span>
                         </a>
+                    </li>
+                </template>
+                <template x-if="config.can_add_category">
+                    <li>
+                        <form x-show="adding_category" class="px-1 py-1" @submit.prevent="add_category()">
+                            <input type="text" class="input input-sm w-full" x-model="new_category" x-ref="new_category"
+                                placeholder="[#text Name#]" aria-label="[#text New category#]"
+                                @keydown.escape="adding_category = false; new_category = ''" />
+                        </form>
+                        <button type="button" x-show="!adding_category" class="text-neutral-500"
+                            @click="adding_category = true; $nextTick(() => $refs.new_category.focus())">
+                            + [#text New category#]
+                        </button>
+                    </li>
+                </template>
+                <template x-if="config.can_manage_categories">
+                    <li>
+                        <a class="text-xs text-neutral-500" :href="`${nb.base_url}/nb-admin/${config.category_resource}`">[#text Manage categories#]</a>
                     </li>
                 </template>
             </ul>

@@ -12,7 +12,14 @@ document.addEventListener("alpine:init", () => {
     dragging: null,
     drop_before: null,
     drop_target: null,
+    adding_category: false,
+    dragging_category: null,
+    new_category: "",
     init() {
+      // PHP sends an empty list as []
+      if (Array.isArray(this.config.categories)) {
+        this.config.categories = {};
+      }
       try {
         this.layout = localStorage.getItem("nb.document_explorer.layout") === "grid" ? "grid" : "list";
       } catch (error) {}
@@ -39,7 +46,7 @@ document.addEventListener("alpine:init", () => {
       return doc.type === "application/pdf";
     },
     has_categories() {
-      return !!this.config.fields.category && Object.keys(this.config.categories).length > 0;
+      return !!this.config.fields.category && (this.config.category_order.length > 0 || this.config.can_add_category);
     },
     category_label() {
       return this.config.categories[this.category] ?? "";
@@ -133,6 +140,7 @@ document.addEventListener("alpine:init", () => {
     },
     drag_end() {
       this.dragging = null;
+      this.dragging_category = null;
       this.drop_before = null;
       this.drop_target = null;
       this.drag_depth = 0;
@@ -166,6 +174,14 @@ document.addEventListener("alpine:init", () => {
       this.save_order(list);
     },
     drop_on_category(event, value) {
+      if (this.dragging_category) {
+        const dragged = this.dragging_category;
+        this.drag_end();
+        if (value !== "" && dragged !== value) {
+          this.move_category(dragged, value);
+        }
+        return;
+      }
       if (this.is_file_drag(event)) {
         const files = event.dataTransfer.files;
         this.drag_end();
@@ -179,6 +195,59 @@ document.addEventListener("alpine:init", () => {
       if (doc && value !== "" && doc.category !== value) {
         this.move_to_category(doc, value);
       }
+    },
+
+    can_order_categories() {
+      return this.config.can_order_categories && !!this.config.category_fields.position;
+    },
+    category_drag_start(event, value) {
+      if (!this.can_order_categories()) {
+        return;
+      }
+      event.stopPropagation();
+      event.dataTransfer.effectAllowed = "move";
+      event.dataTransfer.setData("text/plain", this.config.categories[value]);
+      this.dragging_category = value;
+    },
+    // The dragged category takes the place of the one it is dropped on; every place is saved.
+    move_category(dragged, target) {
+      const order = this.config.category_order;
+      const to = order.indexOf(target);
+      order.splice(order.indexOf(dragged), 1);
+      order.splice(to, 0, dragged);
+      const field = this.config.category_fields.position;
+      order.forEach((uuid, ix) => {
+        nb.api.put(`${nb.base_url}/api/v1/${this.config.category_resource}/${uuid}`, { [field]: (ix + 1) * 10 }).then((res) => {
+          if (!res.success) {
+            nb.notify(res.message);
+          }
+        });
+      });
+    },
+
+    // A category kept as a record of its own, added at the end of the list.
+    add_category() {
+      const name = this.new_category.trim();
+      const fields = this.config.category_fields;
+      if (name === "" || !fields.title) {
+        return;
+      }
+      const data = { [fields.title]: name };
+      if (fields.position) {
+        data[fields.position] = (this.config.category_order.length + 1) * 10;
+      }
+      nb.api.post(`${nb.base_url}/api/v1/${this.config.category_resource}`, data).then((res) => {
+        const record = res.success ? Object.values(res[this.config.category_resource] ?? {})[0] : null;
+        if (!record) {
+          nb.notify(res.message);
+          return;
+        }
+        this.config.categories[record.uuid] = name;
+        this.config.category_order.push(record.uuid);
+        this.new_category = "";
+        this.adding_category = false;
+        this.set_category(record.uuid);
+      });
     },
 
     // Only the records whose place changed are saved.

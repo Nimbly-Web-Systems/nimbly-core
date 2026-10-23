@@ -30,6 +30,11 @@ function get_document_records_sc($params)
         $records = data_sort_meta($records, $meta['sort']);
     }
 
+    // categories kept as records of their own can be added and changed from the explorer
+    $category_resource = $fields['category'] !== null ? (string)($meta['fields'][$fields['category']]['resource'] ?? '') : '';
+
+    $categories = document_explorer_categories($meta, $fields['category']);
+
     $documents = [];
     foreach ($records as $uuid => $record) {
         $documents[] = document_explorer_document($resource, (string)$uuid, $record, $fields);
@@ -38,7 +43,14 @@ function get_document_records_sc($params)
     set_variable('data.documents', [
         'resource' => $resource,
         'fields' => $fields,
-        'categories' => document_explorer_categories($meta, $fields['category']),
+        'categories' => $categories,
+        // object keys that look like numbers lose their order in JavaScript
+        'category_order' => array_map('strval', array_keys($categories)),
+        'category_resource' => $category_resource,
+        'category_fields' => $category_resource !== '' ? document_explorer_fields($category_resource, data_meta($category_resource)) : [],
+        'can_add_category' => $category_resource !== '' && access_by_feature('create-' . $category_resource),
+        'can_order_categories' => $category_resource !== '' && access_by_feature('edit-' . $category_resource),
+        'can_manage_categories' => $category_resource !== '' && access_by_feature('view-' . $category_resource),
         'documents' => $documents,
         // a new document is an upload to .files first, see api_method_switch()
         'can_create' => access_by_feature('create-' . $resource) && access_by_feature('create-files,manage-files'),
@@ -85,8 +97,14 @@ function document_explorer_categories(array $meta, ?string $field_id): array
     if (!data_exists($field['resource'])) {
         return [];
     }
+    $category_meta = data_meta($field['resource']);
+    $records = data_read($field['resource']) ?: [];
+    if (!empty($records) && isset($category_meta['sort'])) {
+        load_library('data-sort');
+        $records = data_sort_meta($records, $category_meta['sort']);
+    }
     $categories = [];
-    foreach (data_read($field['resource']) as $uuid => $record) {
+    foreach ($records as $uuid => $record) {
         $categories[$uuid] = resource_title($field['resource'], $record + ['uuid' => $uuid]);
     }
     return $categories;
