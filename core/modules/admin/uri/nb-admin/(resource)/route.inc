@@ -12,4 +12,5 @@ if (!data_exists($resource)) {
     return;
 }
 set_variable('resource-id', $resource);
+set_variable('resource-view', (data_meta($resource)['admin_view'] ?? '') === 'documents' ? 'documents' : 'table');
 router_accept();

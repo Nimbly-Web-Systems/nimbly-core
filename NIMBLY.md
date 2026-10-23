@@ -1377,6 +1377,7 @@ the resource retains simple scalar coordinates:
 | `ai_prompts` | Per-field AI translation instructions |
 | `name` | Object with optional `singular` and `plural` labels used by `[#resource-name#]`, admin headings, and Nimbly-bar resource entries. Labels fall back to names derived from the resource ID. Example: `{"singular": "Member", "plural": "Members"}`. |
 | `nimblybar` | Boolean controlling whether the resource appears in the Nimbly-bar Resources menu. Regular resources are visible by default; `users` and `roles` are hidden by default. Set `true` to include or `false` to hide explicitly. The current user still needs `view-<resource>`. |
+| `admin_view` | `"documents"` replaces the admin overview table with the document explorer: a category list, list and grid view with previews, drag-and-drop upload of several files at once, and drag-and-drop ordering. It uses the resource's own fields: the first `file` field holds the document, the first `select` field with `admin_filter` is the category, and a `number` field named in `sort.field` keeps the manual order. Add, edit, history and import stay the same. Dropping files needs `create-<resource>` and `create-files`. |
 | `actions` | Object with optional `view_url` and `url` keys. `view_url` overrides the generic admin View action (default `/nb-admin/{resource}/{uuid}?view=1`); `url` adds the separate “View on site” action. Both support `[#record.<field>#]` substitutions. Example: `{"view_url": "/review/?id=[#record.uuid#]", "url": "[#base-url#]/articles/[#record.title_slug#]"}`. |
 | `events` | Resource lifecycle event declarations. Supported keys: `create`, `update`, `delete`. Values are arrays of named events or `job:<type>` queue entries. See below. |
 | `splitdir` | Boolean. When `true`, records are stored in a two-level subdirectory tree by UUID prefix for filesystem performance at scale (> ~10,000 records). See API > Scalability. |
@@ -3738,6 +3739,8 @@ Uploaded images are served at `/img/{uuid}/{spec}`:
 ```
 
 Images are served as **WebP**. Upscaling is not allowed.
+
+A PDF gets the same thumbnails, made from its first page, when the server has `pdftoppm` (Ubuntu package `poppler-utils`). Use fit (`f`) to show the whole page. The page is rendered once and then served from the thumbnail cache.
 
 ### Scalability
 
