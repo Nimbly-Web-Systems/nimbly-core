@@ -5,7 +5,7 @@ load_libraries(['data', 'curl', 'env', 'util', 'docx']);
 load_library('openai-complete');
 
 /**
- * POST /api/v1/{resource}/import-document — upload a .docx, extract field
+ * POST /api/v1/{resource}/import-document — upload a .docx, .pdf, .md or .txt, extract field
  * values from it via AI, and report which of the resource's still-empty
  * fields could be filled, plus (only when the resource has configured
  * languages) the document's detected language. A generic add-form building
@@ -46,14 +46,10 @@ function openai_import_document($resource)
         return json_result(['message' => 'INVALID_DATA'], 400);
     }
 
-    $tmp_path = $file['tmp_name'];
-    $name = strtolower((string)($file['name'] ?? ''));
-    $signature = file_get_contents($tmp_path, false, null, 0, 2);
-    if (!str_ends_with($name, '.docx') || $signature !== 'PK') {
+    $text = openai_import_document_text($file['tmp_name'], strtolower((string)($file['name'] ?? '')));
+    if ($text === null) {
         return json_result(['message' => 'INVALID_DATA'], 400);
     }
-
-    $text = docx_extract_text($tmp_path);
     if ($text === false || trim($text) === '') {
         return json_result(['message' => 'EMPTY_DOCUMENT'], 422);
     }
@@ -293,6 +289,44 @@ function openai_import_document($resource)
     }
 
     return json_result(['values' => $result, 'labels' => $labels, 'detected_language' => $detected_language]);
+}
+
+/**
+ * The upload as plain text, links written as Markdown the way
+ * docx_extract_text() writes them. Takes .docx, .pdf, .md and .txt; null for
+ * any other file, false when the file could not be read.
+ */
+function openai_import_document_text(string $path, string $name)
+{
+    $extension = pathinfo($name, PATHINFO_EXTENSION);
+    $signature = (string)file_get_contents($path, false, null, 0, 5);
+    if ($extension === 'docx') {
+        return str_starts_with($signature, 'PK') ? docx_extract_text($path) : null;
+    }
+    if ($extension === 'pdf') {
+        return str_starts_with($signature, '%PDF-') ? openai_import_document_pdf_text($path) : null;
+    }
+    if (!in_array($extension, ['md', 'txt'], true)) {
+        return null;
+    }
+    $text = preg_replace('/^\xEF\xBB\xBF/', '', (string)file_get_contents($path));
+    if (str_contains($text, "\0")) {
+        return null;
+    }
+    // A plain-text file saved on Windows is often not UTF-8.
+    if (!mb_check_encoding($text, 'UTF-8')) {
+        $text = mb_convert_encoding($text, 'UTF-8', 'Windows-1252');
+    }
+    return str_replace(["\r\n", "\r"], "\n", $text);
+}
+
+// pdftotext (poppler-utils) is part of the server set-up, like avifdec.
+function openai_import_document_pdf_text(string $path)
+{
+    $output = [];
+    $code = 0;
+    exec('timeout 30 pdftotext -enc UTF-8 -nopgbrk ' . escapeshellarg($path) . ' - 2>/dev/null', $output, $code);
+    return $code === 0 ? implode("\n", $output) : false;
 }
 
 function openai_import_document_skips_text(array $result, array $meta, string $text): bool

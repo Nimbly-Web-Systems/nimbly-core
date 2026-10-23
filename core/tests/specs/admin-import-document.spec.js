@@ -59,7 +59,7 @@ test.describe('admin add form — import from document (test-records)', () => {
     // A field the editor already typed into must survive the import untouched.
     await page.fill('[name=title]', 'Already typed title');
 
-    await page.locator('input[type=file][accept=".docx"]').setInputFiles(fixture);
+    await page.locator('input[type=file][accept=".docx,.pdf,.md,.txt"]').setInputFiles(fixture);
     await expect(page.locator('text=Filled in:')).toBeVisible({ timeout: 15000 });
 
     await expect(page.locator('[name=title]')).toHaveValue('Already typed title');

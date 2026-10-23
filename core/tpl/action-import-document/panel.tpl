@@ -3,9 +3,9 @@
     @dragover.prevent="over = true" @dragleave="over = false"
     @drop.prevent="over = false; if (!busy) import_document($event.dataTransfer.files[0])">
     <h3 class="font-semibold text-neutral-800">[#text Import from document#]</h3>
-    <p class="text-sm text-neutral-600">[#text Upload a Word document and AI will fill in the empty fields for you.#]</p>
+    <p class="text-sm text-neutral-600">[#text Upload a Word, PDF, Markdown or text file and AI will fill in the empty fields for you.#]</p>
 
-    <input type="file" accept=".docx" x-ref="file" class="hidden"
+    <input type="file" accept=".docx,.pdf,.md,.txt" x-ref="file" class="hidden"
         @change="import_document($event.target.files[0]); $event.target.value = '';">
     <button type="button" class="btn btn-sm w-full flex flex-row items-center justify-center gap-2"
         x-bind:disabled="busy" @click="$refs.file.click()">
