@@ -80,9 +80,9 @@ if (!empty(trim($status['output']))) {
 // Fetch into the remote-tracking branch and rebase onto that. A plain pull
 // rebases onto FETCH_HEAD, which lists the branch twice when a second fetch
 // (a deploy) runs in the same checkout at the same moment.
-// --rebase-merges keeps a merge (live into master) as a merge: a plain rebase
-// copies the merged commits, so the branches stop sharing history and every
-// later merge conflicts on files both sides keep changing.
+// A local merge (live into master) is merged rather than rebased: any rebase,
+// --rebase-merges included, copies the merged commits, so the branches stop
+// sharing history and every later merge conflicts on files both sides change.
 $tracking = 'refs/remotes/origin/' . $branch;
 $fetch = git('fetch origin ' . escapeshellarg('+refs/heads/' . $branch . ':' . $tracking));
 if ($fetch['code'] !== 0) {
@@ -90,12 +90,22 @@ if ($fetch['code'] !== 0) {
     exit(1);
 }
 
-$rebase = git('rebase --autostash --rebase-merges ' . escapeshellarg($tracking));
-if ($rebase['code'] !== 0) {
-    // Abort so an unresolved rebase does not block every later sync.
-    git('rebase --abort');
-    echo "ext:sync error: git rebase failed\n{$rebase['output']}\n";
-    exit(1);
+// An unresolved merge or rebase is aborted so it does not block every later sync.
+$merges = git('rev-list --merges ' . escapeshellarg($tracking) . '..HEAD');
+if ($merges['code'] === 0 && trim($merges['output']) !== '') {
+    $merge = git('merge --no-edit ' . escapeshellarg($tracking));
+    if ($merge['code'] !== 0) {
+        git('merge --abort');
+        echo "ext:sync error: git merge failed\n{$merge['output']}\n";
+        exit(1);
+    }
+} else {
+    $rebase = git('rebase --autostash ' . escapeshellarg($tracking));
+    if ($rebase['code'] !== 0) {
+        git('rebase --abort');
+        echo "ext:sync error: git rebase failed\n{$rebase['output']}\n";
+        exit(1);
+    }
 }
 
 $push = git('push');

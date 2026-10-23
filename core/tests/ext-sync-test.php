@@ -76,7 +76,24 @@ try {
     ext_sync_test_assert(ext_sync_test_git($ext, 'rev-parse refs/remotes/origin/live') === $head, 'the tracking branch follows');
     ext_sync_test_assert(str_contains(ext_sync_test_git($ext, 'log -1 --format=%s'), 'auto-sync content'), 'content is committed as an auto-sync');
 
-    // 3. a conflict fails and leaves no rebase in progress
+    // 3. a local merge (live into master) stays a merge while the remote moved on
+    ext_sync_test_git($ext, 'checkout -b side');
+    file_put_contents($ext . '/side.txt', "side\n");
+    ext_sync_test_git($ext, 'add -A');
+    ext_sync_test_git($ext, 'commit -m side');
+    ext_sync_test_git($ext, 'checkout live');
+    ext_sync_test_git($ext, 'merge --no-ff --no-edit side');
+    ext_sync_test_git($other, 'pull origin live');
+    file_put_contents($other . '/moved.txt', "moved\n");
+    ext_sync_test_git($other, 'add -A');
+    ext_sync_test_git($other, 'commit -m moved');
+    ext_sync_test_git($other, 'push origin live');
+    $run = ext_sync_test_run($site);
+    ext_sync_test_assert($run['code'] === 0, 'a sync over a local merge succeeds: ' . $run['output']);
+    ext_sync_test_git($ext, 'merge-base --is-ancestor side HEAD');
+    ext_sync_test_assert(is_file($ext . '/moved.txt'), 'the remote commit is taken over');
+
+    // 4. a conflict fails and leaves no rebase in progress
     ext_sync_test_git($other, 'pull origin live');
     file_put_contents($other . '/page.txt', "remote\n");
     ext_sync_test_git($other, 'commit -am remote-edit');
