@@ -7,8 +7,8 @@
                         { id: 'type', name: '[#text Type#]', class: 'whitespace-nowrap' },
                         { id: 'title', name: '[#text Title#]', class: '' },
                         { id: 'size', name: '[#text Size#]', class: 'whitespace-nowrap' },
-                        { id: 'created', name: '[#text Created#]', class: 'whitespace-nowrap' },
-                        { id: 'modified', name: '[#text Modified#]', class: 'whitespace-nowrap' },
+                        { id: 'created', name: '[#text Created#]', class: 'whitespace-nowrap text-xs text-neutral-500' },
+                        { id: 'modified', name: '[#text Modified#]', class: 'whitespace-nowrap text-xs text-neutral-500' },
                     ]" :key="column.id">
                         <th scope="col" class="border-b border-neutral-200 py-3 pr-4 text-left font-bold" :class="column.class"
                             :aria-sort="is_sorted_asc(column.id) ? 'ascending' : (is_sorted_desc(column.id) ? 'descending' : 'none')">
@@ -46,8 +46,8 @@
                             </div>
                         </td>
                         <td class="whitespace-nowrap border-b border-neutral-200 py-2 pr-4 text-neutral-600" x-text="format_size(doc.size)"></td>
-                        <td class="whitespace-nowrap border-b border-neutral-200 py-2 pr-4 text-neutral-600" x-text="format_date(doc.created)"></td>
-                        <td class="whitespace-nowrap border-b border-neutral-200 py-2 pr-4 text-neutral-600" x-text="format_date(doc.modified)"></td>
+                        <td class="whitespace-nowrap border-b border-neutral-200 py-2 pr-4 text-xs text-neutral-500" x-text="format_date(doc.created)"></td>
+                        <td class="whitespace-nowrap border-b border-neutral-200 py-2 pr-4 text-xs text-neutral-500" x-text="format_date(doc.modified)"></td>
                         <td class="border-b border-neutral-200 py-2 pr-4 text-neutral-600">
                             [#document-actions#]
                         </td>
