@@ -24,4 +24,6 @@ function import_document_action_sc()
     // The busy texts only name the steps this resource's fields call for.
     set_variable('import_document_has_location', in_array('location-picker', $types, true) ? '1' : '');
     set_variable('import_document_has_options', in_array('select', $types, true) ? '1' : '');
+    // PDF only where the server can read it (pdftotext, see openai_import_document_text()).
+    set_variable('import_document_accept', is_executable('/usr/bin/pdftotext') ? '.docx,.pdf,.md,.txt' : '.docx,.md,.txt');
 }

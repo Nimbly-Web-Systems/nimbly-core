@@ -303,8 +303,10 @@ function openai_import_document_text(string $path, string $name)
     if ($extension === 'docx') {
         return str_starts_with($signature, 'PK') ? docx_extract_text($path) : null;
     }
+    // Without pdftotext a PDF is refused like any other unsupported file.
     if ($extension === 'pdf') {
-        return str_starts_with($signature, '%PDF-') ? openai_import_document_pdf_text($path) : null;
+        return str_starts_with($signature, '%PDF-') && is_executable('/usr/bin/pdftotext')
+            ? openai_import_document_pdf_text($path) : null;
     }
     if (!in_array($extension, ['md', 'txt'], true)) {
         return null;
@@ -320,7 +322,7 @@ function openai_import_document_text(string $path, string $name)
     return str_replace(["\r\n", "\r"], "\n", $text);
 }
 
-// pdftotext (poppler-utils) is part of the server set-up, like avifdec.
+// pdftotext comes with Ubuntu's poppler-utils; a server without it takes no PDFs.
 function openai_import_document_pdf_text(string $path)
 {
     $output = [];
