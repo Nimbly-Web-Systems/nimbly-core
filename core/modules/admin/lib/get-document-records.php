@@ -127,6 +127,7 @@ function document_explorer_document(string $resource, string $uuid, array $recor
         'size' => (int)($file['size'] ?? 0),
         'category' => $fields['category'] !== null ? (string)($record[$fields['category']] ?? '') : '',
         'position' => $fields['position'] !== null ? (float)($record[$fields['position']] ?? 0) : 0,
+        'created' => (int)($record['_created'] ?? 0),
         'modified' => (int)($record['_modified'] ?? $record['_created'] ?? 0),
     ];
 }

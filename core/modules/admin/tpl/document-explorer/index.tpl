@@ -36,38 +36,32 @@
                 </svg>
                 <input type="search" placeholder="[#text Search#]" x-model.debounce.150ms="search_term" />
             </label>
-            <label class="select w-full sm:w-auto sm:min-w-40">
-                <span class="label">[#text Sort#]</span>
-                <select x-model="sort">
-                    <option value="manual" x-show="config.fields.position">[#text Manual#]</option>
-                    <option value="title">[#text Name#]</option>
-                    <option value="modified">[#text Modified#]</option>
-                    <option value="size">[#text Size#]</option>
-                </select>
-            </label>
-            <div class="join sm:ml-auto" role="group" aria-label="[#text View#]">
-                <button type="button" class="btn btn-sm join-item" :class="layout === 'list' && 'btn-active'"
-                    @click="set_layout('list')" title="[#text List#]" aria-label="[#text List#]">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-4" aria-hidden="true">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 6.75h12M8.25 12h12m-12 5.25h12M3.75 6.75h.007v.008H3.75V6.75Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0ZM3.75 12h.007v.008H3.75V12Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm-.375 5.25h.007v.008H3.75v-.008Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" />
-                    </svg>
-                </button>
-                <button type="button" class="btn btn-sm join-item" :class="layout === 'grid' && 'btn-active'"
-                    @click="set_layout('grid')" title="[#text Grid#]" aria-label="[#text Grid#]">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-4" aria-hidden="true">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 0 1 6 3.75h2.25A2.25 2.25 0 0 1 10.5 6v2.25a2.25 2.25 0 0 1-2.25 2.25H6a2.25 2.25 0 0 1-2.25-2.25V6ZM3.75 15.75A2.25 2.25 0 0 1 6 13.5h2.25a2.25 2.25 0 0 1 2.25 2.25V18a2.25 2.25 0 0 1-2.25 2.25H6A2.25 2.25 0 0 1 3.75 18v-2.25ZM13.5 6a2.25 2.25 0 0 1 2.25-2.25H18A2.25 2.25 0 0 1 20.25 6v2.25A2.25 2.25 0 0 1 18 10.5h-2.25a2.25 2.25 0 0 1-2.25-2.25V6ZM13.5 15.75a2.25 2.25 0 0 1 2.25-2.25H18a2.25 2.25 0 0 1 2.25 2.25V18A2.25 2.25 0 0 1 18 20.25h-2.25A2.25 2.25 0 0 1 13.5 18v-2.25Z" />
-                    </svg>
-                </button>
+            <div class="flex items-center justify-end gap-2 sm:ml-auto">
+                [#document-sort#]
+                <div class="join" role="group" aria-label="[#text View#]">
+                    <button type="button" class="btn btn-sm join-item" :class="layout === 'list' && 'btn-active'"
+                        @click="set_layout('list')" title="[#text List#]" aria-label="[#text List#]">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-4" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 6.75h12M8.25 12h12m-12 5.25h12M3.75 6.75h.007v.008H3.75V6.75Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0ZM3.75 12h.007v.008H3.75V12Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm-.375 5.25h.007v.008H3.75v-.008Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" />
+                        </svg>
+                    </button>
+                    <button type="button" class="btn btn-sm join-item" :class="layout === 'grid' && 'btn-active'"
+                        @click="set_layout('grid')" title="[#text Grid#]" aria-label="[#text Grid#]">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-4" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 0 1 6 3.75h2.25A2.25 2.25 0 0 1 10.5 6v2.25a2.25 2.25 0 0 1-2.25 2.25H6a2.25 2.25 0 0 1-2.25-2.25V6ZM3.75 15.75A2.25 2.25 0 0 1 6 13.5h2.25a2.25 2.25 0 0 1 2.25 2.25V18a2.25 2.25 0 0 1-2.25 2.25H6A2.25 2.25 0 0 1 3.75 18v-2.25ZM13.5 6a2.25 2.25 0 0 1 2.25-2.25H18A2.25 2.25 0 0 1 20.25 6v2.25A2.25 2.25 0 0 1 18 10.5h-2.25a2.25 2.25 0 0 1-2.25-2.25V6ZM13.5 15.75a2.25 2.25 0 0 1 2.25-2.25H18a2.25 2.25 0 0 1 2.25 2.25V18A2.25 2.25 0 0 1 18 20.25h-2.25A2.25 2.25 0 0 1 13.5 18v-2.25Z" />
+                        </svg>
+                    </button>
+                </div>
+                <template x-if="config.can_create">
+                    <label class="btn btn-sm btn-primary">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-4" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" />
+                        </svg>
+                        [#text Upload#]
+                        <input type="file" multiple class="hidden" @change="upload_files($event.target.files, category); $event.target.value = ''" />
+                    </label>
+                </template>
             </div>
-            <template x-if="config.can_create">
-                <label class="btn btn-sm btn-primary">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-4" aria-hidden="true">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" />
-                    </svg>
-                    [#text Upload#]
-                    <input type="file" multiple class="hidden" @change="upload_files($event.target.files, category); $event.target.value = ''" />
-                </label>
-            </template>
         </div>
     </div>
 
@@ -156,40 +150,7 @@
             </template>
 
             <template x-if="visible().length > 0 && layout === 'list'">
-                <ul class="list rounded-box border border-base-300 bg-base-100">
-                    <template x-for="doc in visible()" :key="doc.uuid">
-                        <li class="list-row items-center"
-                            :draggable="can_drag()"
-                            @dragstart="drag_start($event, doc)" @dragend="drag_end()"
-                            @dragover.prevent.stop="drag_over_document($event, doc)"
-                            @drop.prevent.stop="drop_on_document($event, doc)"
-                            :class="{ 'opacity-40': dragging === doc.uuid, 'border-t-2 border-primary': drop_before === doc.uuid }">
-                            <div class="flex size-10 items-center justify-center rounded bg-base-200 text-xs font-semibold uppercase text-neutral-500"
-                                :class="can_drag() && 'cursor-grab'">
-                                <template x-if="has_preview(doc)">
-                                    <img class="size-10 rounded" :class="is_pdf(doc) ? 'object-contain' : 'object-cover'" :src="thumb_url(doc, 80, 80)" alt="" loading="lazy" />
-                                </template>
-                                <template x-if="!has_preview(doc)">
-                                    <span x-text="extension(doc)"></span>
-                                </template>
-                            </div>
-                            <div class="list-col-grow min-w-0">
-                                <a class="block truncate font-medium hover:underline" :href="view_url(doc)" x-text="doc.title || doc.name"></a>
-                                <div class="truncate text-xs text-neutral-500">
-                                    <span x-text="doc.name"></span>
-                                    <template x-if="category === '' && config.categories[doc.category]">
-                                        <span> · <span x-text="config.categories[doc.category]"></span></span>
-                                    </template>
-                                </div>
-                            </div>
-                            <div class="hidden text-right text-xs text-neutral-500 sm:block">
-                                <div x-text="format_size(doc.size)"></div>
-                                <div x-text="format_date(doc.modified)"></div>
-                            </div>
-                            [#document-actions#]
-                        </li>
-                    </template>
-                </ul>
+                [#document-table#]
             </template>
 
             <template x-if="visible().length > 0 && layout === 'grid'">

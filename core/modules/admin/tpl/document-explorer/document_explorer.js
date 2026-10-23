@@ -3,7 +3,8 @@ document.addEventListener("alpine:init", () => {
     config: _documents,
     documents: _documents.documents,
     search_term: "",
-    sort: _documents.fields.position ? "manual" : "title",
+    sort_field: _documents.fields.position ? "manual" : "title",
+    sort_asc: true,
     layout: "list",
     category: "",
     uploads: [],
@@ -80,11 +81,41 @@ document.addEventListener("alpine:init", () => {
       );
       const by = {
         manual: (a, b) => a.position - b.position,
+        type: (a, b) => this.extension(a).localeCompare(this.extension(b)),
         title: (a, b) => (a.title || a.name).localeCompare(b.title || b.name),
-        modified: (a, b) => b.modified - a.modified,
-        size: (a, b) => b.size - a.size,
-      }[this.sort];
-      return list.sort(by);
+        size: (a, b) => a.size - b.size,
+        created: (a, b) => a.created - b.created,
+        modified: (a, b) => a.modified - b.modified,
+      }[this.sort_field];
+      list.sort(by);
+      return this.sort_asc ? list : list.reverse();
+    },
+    // Like the resource table: a header sorts up, then down. With manual order a third click returns to it.
+    toggle_sort(field) {
+      if (this.sort_field !== field || field === "manual") {
+        this.sort_field = field;
+        this.sort_asc = true;
+      } else if (this.sort_asc) {
+        this.sort_asc = false;
+      } else {
+        this.sort_field = this.config.fields.position ? "manual" : field;
+        this.sort_asc = true;
+      }
+    },
+    // The grid's sort menu: the chosen field again turns its direction.
+    choose_sort(field) {
+      if (this.sort_field === field && field !== "manual") {
+        this.sort_asc = !this.sort_asc;
+      } else {
+        this.sort_field = field;
+        this.sort_asc = true;
+      }
+    },
+    is_sorted_asc(field) {
+      return this.sort_field === field && this.sort_asc;
+    },
+    is_sorted_desc(field) {
+      return this.sort_field === field && !this.sort_asc;
     },
     has_preview(doc) {
       return doc.file !== "" && (doc.type.startsWith("image/") || (this.is_pdf(doc) && this.config.pdf_preview));
@@ -102,13 +133,19 @@ document.addEventListener("alpine:init", () => {
       }
       return size < 1048576 ? (size / 1024).toFixed(1) + " KB" : (size / 1048576).toFixed(1) + " MB";
     },
+    // Y-m-d H:i, as the resource table shows _created and _modified.
     format_date(time) {
-      return time ? new Date(time * 1000).toLocaleDateString() : "";
+      if (!time) {
+        return "";
+      }
+      const date = new Date(time * 1000);
+      const pad = (value) => String(value).padStart(2, "0");
+      return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
     },
 
     // Manual order needs the position field and the full, unsearched list in that order.
     can_order() {
-      return !!this.config.fields.position && this.sort === "manual" && this.search_term.trim() === "";
+      return !!this.config.fields.position && this.sort_field === "manual" && this.search_term.trim() === "";
     },
     can_drag() {
       return this.config.can_edit && (this.can_order() || this.has_categories());
@@ -395,6 +432,7 @@ document.addEventListener("alpine:init", () => {
         size: res.files.size,
         category: data[fields.category] ?? "",
         position: data[fields.position] ?? 0,
+        created: Math.floor(Date.now() / 1000),
         modified: Math.floor(Date.now() / 1000),
       });
     },
