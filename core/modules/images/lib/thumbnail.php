@@ -63,6 +63,25 @@ function thumbnail_open_avif(string $path)
     return $img;
 }
 
+// The first page of a PDF, with pdftoppm from Ubuntu's poppler-utils; a server without it gives none.
+function thumbnail_open_pdf(string $path)
+{
+    if (!is_executable('/usr/bin/pdftoppm')) {
+        return false;
+    }
+    $png = tempnam(sys_get_temp_dir(), 'pdf');
+    if ($png === false) {
+        return false;
+    }
+    // pdftoppm adds the extension to the name it is given
+    $process = proc_open(['/usr/bin/timeout', '30', '/usr/bin/pdftoppm', '-png', '-singlefile', '-f', '1', '-l', '1', '-scale-to', '1920', $path, $png],
+        [0 => ['file', '/dev/null', 'r'], 1 => ['file', '/dev/null', 'a'], 2 => ['file', '/dev/null', 'a']], $pipes);
+    $img = is_resource($process) && proc_close($process) === 0 ? @imagecreatefrompng($png . '.png') : false;
+    @unlink($png);
+    @unlink($png . '.png');
+    return $img;
+}
+
 function thumbnail_cache_is_valid($path, $source_mtime, $format)
 {
     if (!is_file($path) || filesize($path) <= 0 || filemtime($path) < $source_mtime) {
@@ -140,6 +159,13 @@ function thumbnail_create($uuid, $size, $ratio = 0, $mode = 'h', $format = '')
             break;
         case 'image/svg+xml':
             return $org_path;
+            break;
+        case 'application/pdf':
+            $org_img = thumbnail_open_pdf($org_path);
+            if ($org_img !== false) {
+                // from here on the page is the PNG it was rendered to
+                [$org_w, $org_h, $org_type] = [imagesx($org_img), imagesy($org_img), IMAGETYPE_PNG];
+            }
             break;
         default:
             load_library('system-messages');

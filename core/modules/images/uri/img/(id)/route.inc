@@ -145,7 +145,7 @@ if ($format === 'jpg') {
 	$type = $meta['type'] ?? 'image/jpg';
 	if ($type === 'image/jpeg' || $type === 'image/bmp' || $type === 'image/jpg' || $type === 'image/avif') {
 		$type = 'image/webp'; //'image/avif';
-	} else if ($type === 'image/png') {
+	} else if ($type === 'image/png' || $type === 'application/pdf') {
 		$type = 'image/webp';
 	}
 }
