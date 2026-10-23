@@ -1,4 +1,4 @@
-<img class="[#img-class#]" 
+<img class="[#img-class#]" alt="[#img-alt#]"
      style="max-width: min([#img-width#]px, 100vw); max-height: [#img-height#]px;" 
      [#lazy-loading#]
     src="[#base-url#]/img/[#img-uuid#]/480[#img-mode#]" srcset="[#img-srcset#]"

@@ -69,5 +69,7 @@ function get_img_html_sc($params)
     set_variable('img-sizes', join(', ', $resp_size_list));
     $lazy = get_param_value($params, 'lazy', 1);
     set_variable('lazy-loading', empty($lazy)? '' : ' loading="lazy" ');
+    // Without alt a screen reader announces the file URL; empty marks the image decorative.
+    set_variable('img-alt', htmlspecialchars((string)get_param_value($params, 'alt', ''), ENT_QUOTES, 'UTF-8'));
     return run_buffered(dirname(__FILE__) . '/image.tpl');
 }
