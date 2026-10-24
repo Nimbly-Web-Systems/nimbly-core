@@ -26,11 +26,12 @@ $fields = document_explorer_fields('documents', [
         'category' => ['type' => 'select', 'admin_filter' => true],
         'file' => ['type' => 'file'],
         'scan' => ['type' => 'file'],
+        'cover' => ['type' => 'image'],
         'position' => ['type' => 'number'],
     ],
     'sort' => ['field' => 'position'],
 ]);
-admin_document_records_assert($fields === ['file' => 'file', 'category' => 'category', 'position' => 'position', 'title' => 'title'], 'fields are detected');
+admin_document_records_assert($fields === ['file' => 'file', 'cover' => 'cover', 'category' => 'category', 'position' => 'position', 'title' => 'title'], 'fields are detected');
 
 // a translated title, a text sort field and no select leave those parts out
 $GLOBALS['test_title_field'] = 'name';
@@ -42,6 +43,6 @@ $fields = document_explorer_fields('documents', [
     ],
     'sort' => ['field' => 'date'],
 ]);
-admin_document_records_assert($fields === ['file' => 'file', 'category' => null, 'position' => null, 'title' => null], 'optional fields stay empty');
+admin_document_records_assert($fields === ['file' => 'file', 'cover' => null, 'category' => null, 'position' => null, 'title' => null], 'optional fields stay empty');
 
 echo "admin-document-records: ok\n";

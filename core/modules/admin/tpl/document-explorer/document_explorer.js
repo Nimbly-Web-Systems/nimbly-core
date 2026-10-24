@@ -51,12 +51,12 @@ document.addEventListener("alpine:init", () => {
     download_url(doc) {
       return `${nb.base_url}/download/${doc.file}`;
     },
-    // A page is shown whole, a picture fills the tile.
+    // The cover in the record, else the file itself. A page is shown whole, a picture fills the tile.
     thumb_url(doc, width, height) {
-      return `${nb.base_url}/img/${doc.file}/${width}x${height}${this.is_page(doc) ? "f" : "c"}`;
+      return `${nb.base_url}/img/${doc.cover || doc.file}/${width}x${height}${this.is_page(doc) ? "f" : "c"}`;
     },
     is_page(doc) {
-      return doc.preview === "page";
+      return doc.cover ? doc.cover_page : doc.preview === "page";
     },
     has_categories() {
       return !!this.config.fields.category && (this.config.category_order.length > 0 || this.config.can_add_category);
@@ -129,7 +129,7 @@ document.addEventListener("alpine:init", () => {
     },
     // a thumbnail that fails to load leaves the tile to the title
     has_preview(doc) {
-      return doc.preview !== "" && !this.failed_previews.includes(doc.uuid);
+      return (doc.cover !== "" || doc.preview !== "") && !this.failed_previews.includes(doc.uuid);
     },
     preview_failed(doc) {
       this.failed_previews.push(doc.uuid);
@@ -461,6 +461,9 @@ document.addEventListener("alpine:init", () => {
         name: res.files.name,
         type: res.files.type,
         size: res.files.size,
+        // the cover is made after the upload, see document_cover_job()
+        cover: "",
+        cover_page: false,
         preview: this.preview_kind(res.files.type, res.files.name),
         category: data[fields.category] ?? "",
         position: data[fields.position] ?? 0,

@@ -9,8 +9,8 @@ load_library('thumbnail');
 /**
  * Data for the document explorer, the overview of a resource with
  * "admin_view": "documents" in its .meta: the first file field is the
- * document, the first filterable select field the category, and a numeric
- * sort field the manual order.
+ * document, the first image field its cover, the first filterable select
+ * field the category, and a numeric sort field the manual order.
  */
 function get_document_records_sc($params)
 {
@@ -68,12 +68,15 @@ function get_document_records_sc($params)
 
 function document_explorer_fields(string $resource, array $meta): array
 {
-    $result = ['file' => null, 'category' => null, 'position' => null, 'title' => null];
+    $result = ['file' => null, 'cover' => null, 'category' => null, 'position' => null, 'title' => null];
     $fields = is_array($meta['fields'] ?? null) ? $meta['fields'] : [];
     foreach ($fields as $field_id => $field) {
         $type = $field['type'] ?? '';
         if ($result['file'] === null && $type === 'file') {
             $result['file'] = $field_id;
+        }
+        if ($result['cover'] === null && $type === 'image') {
+            $result['cover'] = $field_id;
         }
         if ($result['category'] === null && $type === 'select' && !empty($field['admin_filter']) && empty($field['multiple'])) {
             $result['category'] = $field_id;
@@ -119,6 +122,8 @@ function document_explorer_document(string $resource, string $uuid, array $recor
 {
     $file_uuid = (string)($record[$fields['file']] ?? '');
     $file = $file_uuid !== '' && data_exists('.files_meta', $file_uuid) ? data_read('.files_meta', $file_uuid) : [];
+    $cover_uuid = $fields['cover'] !== null ? (string)($record[$fields['cover']] ?? '') : '';
+    $cover = $cover_uuid !== '' && data_exists('.files_meta', $cover_uuid) ? data_read('.files_meta', $cover_uuid) : [];
     return [
         'uuid' => $uuid,
         'title' => resource_title($resource, $record + ['uuid' => '']),
@@ -126,6 +131,9 @@ function document_explorer_document(string $resource, string $uuid, array $recor
         'name' => (string)($file['name'] ?? ''),
         'type' => (string)($file['type'] ?? ''),
         'size' => (int)($file['size'] ?? 0),
+        'cover' => $cover !== [] ? $cover_uuid : '',
+        // a cover made of the first page is shown whole, see document_cover_job()
+        'cover_page' => isset($cover['cover_of']),
         // 'image', 'page' or '', see thumbnail_preview_kind()
         'preview' => $file_uuid !== '' ? thumbnail_preview_kind((string)($file['type'] ?? ''), (string)($file['name'] ?? '')) : '',
         'category' => $fields['category'] !== null ? (string)($record[$fields['category']] ?? '') : '',

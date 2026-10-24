@@ -4,8 +4,8 @@ load_library('data');
 load_library('util');
 
 /**
- * Files held in a file field of a resource with "private_files": true in its
- * .meta are served only to users who may view that resource. Every other
+ * Files held in a file, image or gallery field of a resource with
+ * "private_files": true in its .meta are served only to users who may view that resource. Every other
  * file stays public, as before.
  */
 function file_access_allowed(string $uuid): bool
@@ -72,7 +72,8 @@ function file_private_fields(): array
         }
         $fields = [];
         foreach ($meta['fields'] ?? [] as $field_id => $field) {
-            if (($field['type'] ?? '') === 'file') {
+            // an image or gallery holds files too, such as the cover of a document
+            if (in_array($field['type'] ?? '', ['file', 'image', 'gallery'], true)) {
                 $fields[] = $field_id;
             }
         }

@@ -4,11 +4,12 @@ function load_library($_name) {}
 
 $GLOBALS['SYSTEM']['data_base'] = sys_get_temp_dir() . '/file-access-test-' . getmypid();
 $GLOBALS['test_meta'] = [
-    'documents' => ['private_files' => true, 'index' => ['file'], 'fields' => ['file' => ['type' => 'file'], 'title' => ['type' => 'text']]],
+    'documents' => ['private_files' => true, 'index' => ['file'], 'fields' => ['file' => ['type' => 'file'], 'cover' => ['type' => 'image'], 'title' => ['type' => 'text']]],
     'expenses' => ['private_files' => true, 'fields' => ['receipts' => ['type' => 'file', 'multi' => true]]],
     'downloads' => ['fields' => ['file' => ['type' => 'file']]],
 ];
 $GLOBALS['test_records'] = [
+    'documents' => ['x1' => ['cover' => 'cover-uuid']],
     'expenses' => ['e1' => ['receipts' => ['receipt-uuid']]],
     'downloads' => ['d1' => ['file' => 'public-uuid']],
 ];
@@ -39,6 +40,7 @@ file_access_assert(file_access_allowed('public-uuid'), 'a file of a public resou
 file_access_assert(file_access_allowed('unknown-uuid'), 'a file in no resource stays public');
 file_access_assert(!file_access_allowed('document-uuid'), 'an indexed private file is refused');
 file_access_assert(!file_access_allowed('receipt-uuid'), 'a private file in a multi field is refused');
+file_access_assert(!file_access_allowed('cover-uuid'), 'the image of a private record is refused');
 
 $GLOBALS['test_features'] = ['view-documents'];
 file_access_assert(file_access_allowed('document-uuid'), 'a viewer of the resource gets its file');
