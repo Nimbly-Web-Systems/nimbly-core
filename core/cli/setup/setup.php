@@ -599,6 +599,7 @@ $routes = [
     ['route' => 'api/v1/(resource)/(id)/(id)',         'order' => 200],
     ['route' => 'api/v1/.pages/(id)',                  'order' => 200],
     ['route' => 'api/v1/.files/(id)',                  'order' => 200],
+    ['route' => 'api/v1/.jobs/(id)/run',               'order' => 100],
     ['route' => 'nb-admin/(resource)',                 'order' => 400],
     ['route' => 'nb-admin/(resource)/(id)',            'order' => 500],
     ['route' => 'nb-admin/(resource)/add',            'order' => 300],

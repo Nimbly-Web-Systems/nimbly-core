@@ -207,6 +207,7 @@ function repair_core_routes_state(): array
         ['route' => 'nb-admin/(resource)/(id)/history', 'order' => 300],
         ['route' => 'api/v1/(resource)/import-document', 'order' => 100],
         ['route' => 'api/v1/(resource)/options', 'order' => 100],
+        ['route' => 'api/v1/.jobs/(id)/run', 'order' => 100],
     ] as $route) {
         if (!data_exists('.routes', md5($route['route']))) {
             $missing[] = $route;

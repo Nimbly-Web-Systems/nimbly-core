@@ -24,7 +24,29 @@ function job_enqueue($type, $payload = [], $options = [])
         return false;
     }
     job_mark_due((int)$job['available_at']);
+    // the answer to the request names them, so the page can run them right away
+    $GLOBALS['SYSTEM']['queued_jobs'][$uuid] = $job;
     return $uuid;
+}
+
+/**
+ * The jobs this request queued, for the page that made it: it runs them at
+ * once through api/v1/.jobs/(id)/run, the scheduler runs any it does not.
+ */
+function job_queued_summary(): array
+{
+    $result = [];
+    foreach ($GLOBALS['SYSTEM']['queued_jobs'] ?? [] as $uuid => $job) {
+        $payload = is_array($job['payload'] ?? null) ? $job['payload'] : [];
+        $result[] = [
+            'id' => (string)$uuid,
+            'type' => (string)$job['type'],
+            'resource' => (string)($payload['resource'] ?? ''),
+            'uuid' => (string)($payload['uuid'] ?? ''),
+            'fields' => job_fields($job),
+        ];
+    }
+    return $result;
 }
 
 /** Earliest time a queued job is due; the host scheduler starts jobs:run only from then on. */
@@ -70,6 +92,10 @@ function job_payload_with_request_context($payload)
 
     if (!isset($payload['_base_url'])) {
         $payload['_base_url'] = $base_url;
+    }
+    // who may run it right away, see job_may_run()
+    if (!isset($payload['_user']) && !empty($_SESSION['user_uuid'])) {
+        $payload['_user'] = (string)$_SESSION['user_uuid'];
     }
     if ($request_uri !== '' && !isset($payload['_request_url'])) {
         $payload['_request_url'] = $base_url . '/' . ltrim($request_uri, '/');
@@ -260,57 +286,15 @@ function job_run_queued_locked($limit = 1)
             continue;
         }
 
+        $current = job_claim((string)$uuid, $now);
+        if ($current === false) {
+            continue;
+        }
         $processed++;
-        $attempts = (int)($job['attempts'] ?? 0) + 1;
-        data_update('.jobs', $uuid, [
-            'status' => 'running',
-            'attempts' => $attempts,
-            'locked_at' => $now,
-            'locked_by' => gethostname() ?: 'cli',
-        ]);
-
-        try {
-            $current = data_read('.jobs', $uuid);
-            $start = microtime(true);
-            if (function_exists('email_clear_last_result')) {
-                email_clear_last_result();
-            }
-            $result = job_dispatch($current);
-            if ($result === false) {
-                $reason = 'Job handler returned false';
-                if (function_exists('email_last_result')) {
-                    $email_result = email_last_result();
-                    if (!empty($email_result) && empty($email_result['success'])) {
-                        $email_error = trim((string)($email_result['error'] ?? ''));
-                        if ($email_error !== '') {
-                            $reason .= ': email delivery: ' . substr($email_error, 0, 500);
-                        }
-                    }
-                }
-                throw new Exception($reason);
-            }
-            data_update('.jobs', $uuid, [
-                'status'         => 'done',
-                'completed_at'   => time(),
-                'execution_ms'   => (int) round((microtime(true) - $start) * 1000),
-                'last_error'     => '',
-            ]);
+        // a retry marks itself due, see job_execute()
+        if (job_execute((string)$uuid, $current) === 0) {
             $done++;
-        } catch (Throwable $e) {
-            $max_attempts = (int)($job['max_attempts'] ?? 5);
-            $retry = $attempts < $max_attempts;
-            $retry_at = time() + min(3600, 60 * $attempts);
-            data_update('.jobs', $uuid, [
-                'status' => $retry ? 'queued' : 'failed',
-                'available_at' => $retry ? $retry_at : 0,
-                'last_error' => $e->getMessage(),
-            ]);
-            if ($retry) {
-                $next_due = min($next_due ?? $retry_at, $retry_at);
-            }
-            if (!$retry) {
-                job_enqueue_failure_alert($uuid, $job, $attempts, $e->getMessage());
-            }
+        } else {
             $failed++;
         }
 
@@ -323,6 +307,108 @@ function job_run_queued_locked($limit = 1)
     }
 
     return ['processed' => $processed, 'done' => $done, 'failed' => $failed];
+}
+
+/**
+ * Takes a queued job that is due for this process alone: the scheduler and a
+ * page running it at once may try at the same moment. false when it is not
+ * queued, not due yet or taken by the other.
+ */
+function job_claim(string $uuid, int $now)
+{
+    _data_lock('.jobs');
+    try {
+        $job = data_exists('.jobs', $uuid) ? data_read('.jobs', $uuid) : false;
+        if (!is_array($job) || ($job['status'] ?? '') !== 'queued' || (int)($job['available_at'] ?? 0) > $now) {
+            return false;
+        }
+        return data_update('.jobs', $uuid, [
+            'status' => 'running',
+            'attempts' => (int)($job['attempts'] ?? 0) + 1,
+            'locked_at' => $now,
+            'locked_by' => gethostname() ?: 'cli',
+        ]);
+    } finally {
+        _data_unlock('.jobs');
+    }
+}
+
+/** Runs a claimed job: 0 when it is done, the time of its retry, or -1 when it failed for good. */
+function job_execute(string $uuid, array $job): int
+{
+    $attempts = (int)($job['attempts'] ?? 1);
+    try {
+        $start = microtime(true);
+        if (function_exists('email_clear_last_result')) {
+            email_clear_last_result();
+        }
+        $result = job_dispatch($job);
+        if ($result === false) {
+            $reason = 'Job handler returned false';
+            if (function_exists('email_last_result')) {
+                $email_result = email_last_result();
+                if (!empty($email_result) && empty($email_result['success'])) {
+                    $email_error = trim((string)($email_result['error'] ?? ''));
+                    if ($email_error !== '') {
+                        $reason .= ': email delivery: ' . substr($email_error, 0, 500);
+                    }
+                }
+            }
+            throw new Exception($reason);
+        }
+        data_update('.jobs', $uuid, [
+            'status'         => 'done',
+            'completed_at'   => time(),
+            'execution_ms'   => (int) round((microtime(true) - $start) * 1000),
+            'last_error'     => '',
+        ]);
+        return 0;
+    } catch (Throwable $e) {
+        $max_attempts = (int)($job['max_attempts'] ?? 5);
+        $retry = $attempts < $max_attempts;
+        $retry_at = time() + min(3600, 60 * $attempts);
+        data_update('.jobs', $uuid, [
+            'status' => $retry ? 'queued' : 'failed',
+            'available_at' => $retry ? $retry_at : 0,
+            'last_error' => $e->getMessage(),
+        ]);
+        if ($retry) {
+            job_mark_due($retry_at);
+            return $retry_at;
+        }
+        job_enqueue_failure_alert($uuid, $job, $attempts, $e->getMessage());
+        return -1;
+    }
+}
+
+/** Runs one job now, for the page whose request queued it; the job as it ended up. */
+function job_run_one(string $uuid)
+{
+    load_libraries(['data', 'env']);
+    $job = job_claim($uuid, time());
+    if ($job !== false) {
+        job_execute($uuid, $job);
+    }
+    return data_exists('.jobs', $uuid) ? data_read('.jobs', $uuid) : false;
+}
+
+/** The user whose request queued the job may run it at once, and whoever manages jobs. */
+function job_may_run(array $job): bool
+{
+    load_library('access');
+    load_library('session');
+    $user = session_resume() ? (string)($_SESSION['user_uuid'] ?? '') : '';
+    return ($user !== '' && ($job['payload']['_user'] ?? '') === $user) || access_by_feature('manage-.jobs');
+}
+
+/**
+ * The record fields a job fills, so a page can show them as being made: a
+ * handler names them with <type>_job_fields($payload).
+ */
+function job_fields(array $job): array
+{
+    $function_name = job_handler((string)($job['type'] ?? ''), '_job_fields');
+    return $function_name !== null ? array_values((array)$function_name($job['payload'] ?? [])) : [];
 }
 
 function job_enqueue_failure_alert($uuid, $job, $attempts, $error)
@@ -350,7 +436,19 @@ function job_dispatch($job)
     if ($type === '') {
         throw new Exception('Job type is missing');
     }
+    $function_name = job_handler($type, '_job');
+    if ($function_name === null) {
+        throw new Exception('No job handler found for ' . $type);
+    }
+    return $function_name($job);
+}
 
+/** The function of a job type with this suffix, from the module library named after the type. */
+function job_handler(string $type, string $suffix): ?string
+{
+    if ($type === '') {
+        return null;
+    }
     global $SYSTEM;
     foreach ($SYSTEM['env_paths'] as $env_path) {
         $base_path = $SYSTEM['file_base'] . $env_path . '/modules/';
@@ -369,12 +467,11 @@ function job_dispatch($job)
                 continue;
             }
             require_once($file);
-            $function_name = str_replace('-', '_', $type) . '_job';
+            $function_name = str_replace('-', '_', $type) . $suffix;
             if (function_exists($function_name)) {
-                return $function_name($job);
+                return $function_name;
             }
         }
     }
-
-    throw new Exception('No job handler found for ' . $type);
+    return null;
 }

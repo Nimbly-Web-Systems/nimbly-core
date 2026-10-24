@@ -28,6 +28,7 @@ document.addEventListener("alpine:init", () => {
     dragging_category: null,
     new_category: "",
     failed_previews: [],
+    making_covers: [],
     init() {
       // PHP sends an empty list as []
       if (Array.isArray(this.config.categories)) {
@@ -36,6 +37,8 @@ document.addEventListener("alpine:init", () => {
       try {
         this.layout = localStorage.getItem("nb.document_explorer.layout") === "grid" ? "grid" : "list";
       } catch (error) {}
+      window.addEventListener("nb:job-start", (event) => this.cover_job_started(event.detail));
+      window.addEventListener("nb:job-done", (event) => this.cover_job_done(event.detail));
       const category = new URLSearchParams(window.location.search).get("category") ?? "";
       this.category = Object.prototype.hasOwnProperty.call(this.config.categories, category) ? category : "";
     },
@@ -130,6 +133,38 @@ document.addEventListener("alpine:init", () => {
     // a thumbnail that fails to load leaves the tile to the title
     has_preview(doc) {
       return (doc.cover !== "" || doc.preview !== "") && !this.failed_previews.includes(doc.uuid);
+    },
+    // a cover made after an upload, see document_cover_job()
+    is_making_cover(doc) {
+      return this.making_covers.includes(doc.uuid);
+    },
+    cover_job_started(job) {
+      if (job.resource === _resource_id && job.fields.includes(this.config.fields.cover)) {
+        this.making_covers = [...this.making_covers, job.uuid];
+      }
+    },
+    cover_job_done(job) {
+      if (!job.fields.includes(this.config.fields.cover) || !this.making_covers.includes(job.uuid)) {
+        return;
+      }
+      const clear = () => {
+        this.making_covers = this.making_covers.filter((uuid) => uuid !== job.uuid);
+      };
+      if (job.status !== "done") {
+        return clear();
+      }
+      nb.api.get(this.api_url(job.uuid))
+        .then((data) => {
+          const cover = data[_resource_id]?.[job.uuid]?.[this.config.fields.cover];
+          const doc = this.documents.find((item) => item.uuid === job.uuid);
+          if (doc && cover) {
+            doc.cover = cover;
+            doc.cover_page = true;
+            this.failed_previews = this.failed_previews.filter((uuid) => uuid !== doc.uuid);
+          }
+        })
+        .catch(() => {})
+        .finally(clear);
     },
     preview_failed(doc) {
       this.failed_previews.push(doc.uuid);

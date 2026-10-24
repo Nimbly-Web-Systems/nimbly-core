@@ -8,6 +8,10 @@ function json_sc($params) {
 }
 
 function json_result($result, $code = 200, $modified = 0) {
+    // the jobs a save queued, see job_queued_summary()
+    if (!empty($GLOBALS['SYSTEM']['queued_jobs']) && !isset($result['jobs'])) {
+        $result['jobs'] = job_queued_summary();
+    }
     $result['code'] = $code;
     $result['success'] = $code < 400;
     $result['status'] = $code < 400? 'ok' : 'error';

@@ -16,6 +16,14 @@
         </figure>
     </template>
 
+    <!-- a job of the record is making the image, see job_fields() -->
+    <template x-if="$data.is_job_field?.('[#_f.key#]')">
+        <div class="absolute inset-4 flex flex-col items-center justify-center gap-2 rounded-md bg-neutral-50/80 text-sm text-neutral-600">
+            <span class="loading loading-spinner loading-md"></span>
+            <span>[#text Generating#]</span>
+        </div>
+    </template>
+
     <button class="[#btn-class-icon#] absolute right-12 top-1 p-1 text-neutral-600"
         @click.prevent="select_image('[#_f.key#]'); nb.modal.open('nb-modal-insert-media')">
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"

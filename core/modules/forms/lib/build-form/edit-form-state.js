@@ -18,6 +18,8 @@ function nb_build_form_edit_state(resource_id, record_id, config = {}) {
     ai_busy_field: null,
     ai_busy_all: false,
     translation_empty: {},
+    // fields a job of this record is filling, such as a generated cover
+    job_fields: [],
 
     init_edit_state() {
       // Alpine's $el is the element invoking a method (often an action
@@ -32,6 +34,41 @@ function nb_build_form_edit_state(resource_id, record_id, config = {}) {
       this.$nextTick(() => {
         this.set_editors(this.lang);
       });
+      window.addEventListener("nb:job-start", (event) => this.job_started(event.detail));
+      window.addEventListener("nb:job-done", (event) => this.job_done(event.detail));
+    },
+
+    is_job_field(field) {
+      return this.job_fields.includes(field);
+    },
+    job_started(job) {
+      if (job.resource === this.resource_id && job.uuid === this.record_id) {
+        this.job_fields = [...this.job_fields, ...job.fields];
+      }
+    },
+    // the fields the job filled are read back, the rest of the form stays as it is
+    job_done(job) {
+      if (job.resource !== this.resource_id || job.uuid !== this.record_id || job.fields.length === 0) {
+        return;
+      }
+      const clear = () => {
+        this.job_fields = this.job_fields.filter((field) => !job.fields.includes(field));
+      };
+      if (job.status !== "done") {
+        return clear();
+      }
+      return nb.api
+        .get(nb.base_url + "/api/v1/" + this.resource_id + "/" + this.record_id)
+        .then((data) => {
+          const record = data[this.resource_id]?.[this.record_id] ?? {};
+          job.fields.forEach((field) => {
+            if (record[field] !== undefined) {
+              this.form_data[field] = record[field];
+            }
+          });
+        })
+        .catch(() => {})
+        .finally(clear);
     },
 
     edit_submit(redirect_on_success = this.redirect_on_submit) {

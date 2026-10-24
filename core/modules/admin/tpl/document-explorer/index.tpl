@@ -163,12 +163,17 @@
                             @drop.prevent.stop="drop_on_document($event, doc)"
                             :class="{ 'opacity-40': dragging === doc.uuid, 'ring-2 ring-primary': drop_before === doc.uuid, 'cursor-grab': can_drag() }">
                             <a :href="view_url(doc)" class="relative flex aspect-[4/3] items-center justify-center overflow-hidden rounded-t-box bg-base-200">
-                                <template x-if="has_preview(doc)">
+                                <template x-if="has_preview(doc) && !is_making_cover(doc)">
                                     <img class="size-full" :class="is_page(doc) ? 'object-contain p-2 drop-shadow-sm' : 'object-cover'" :src="thumb_url(doc, 400, 300)" alt="" loading="lazy" draggable="false" @error="preview_failed(doc)" />
                                 </template>
-                                <template x-if="!has_preview(doc)">
-                                    <div class="absolute inset-3 overflow-hidden rounded-sm bg-base-100 p-2.5 shadow-sm">
-                                        <span class="line-clamp-4 break-words text-xs font-semibold leading-snug text-neutral-700" x-text="doc.title || doc.name"></span>
+                                <template x-if="!has_preview(doc) || is_making_cover(doc)">
+                                    <div class="absolute inset-3 flex flex-col justify-between overflow-hidden rounded-sm bg-base-100 p-2.5 shadow-sm">
+                                        <span class="break-words text-xs font-semibold leading-snug text-neutral-700" :class="is_making_cover(doc) ? 'line-clamp-2' : 'line-clamp-4'" x-text="doc.title || doc.name"></span>
+                                        <template x-if="is_making_cover(doc)">
+                                            <span class="flex items-center gap-1.5 text-xs leading-tight text-neutral-500">
+                                                <span class="loading loading-spinner loading-xs shrink-0"></span>[#text Generating cover#]
+                                            </span>
+                                        </template>
                                     </div>
                                 </template>
                                 <span class="absolute bottom-1.5 right-1.5">[#document-type-badge#]</span>
