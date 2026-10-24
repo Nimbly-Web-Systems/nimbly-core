@@ -135,10 +135,8 @@ function thumbnail_create($uuid, $size, $ratio = 0, $mode = 'h', $format = '', $
     if (thumbnail_cache_is_valid($static_path, $source_mtime, $format)) {
         return $static_path;
     }
-    list($org_w, $org_h, $org_type) = @getimagesize($org_path);
-    if (empty($org_type)) {
-        $org_type = @mime_content_type($org_path); 
-    }
+    // PDF and SVG have no image size, they are recognised by their MIME type
+    list($org_w, $org_h, $org_type) = @getimagesize($org_path) ?: [0, 0, @mime_content_type($org_path)];
     switch ($org_type) {
         case IMAGETYPE_GIF:
             $org_img = imagecreatefromgif($org_path);
