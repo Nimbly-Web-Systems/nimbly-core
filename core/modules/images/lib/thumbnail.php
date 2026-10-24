@@ -82,6 +82,78 @@ function thumbnail_open_pdf(string $path)
     return $img;
 }
 
+// Office and text documents LibreOffice can turn into a PDF, by extension.
+const THUMBNAIL_OFFICE_EXTENSIONS = ['doc', 'docx', 'odt', 'rtf', 'txt', 'md', 'xls', 'xlsx', 'ods', 'csv', 'ppt', 'pptx', 'odp'];
+
+// Extensions of the documents whose first page this server can show.
+function thumbnail_page_extensions(): array
+{
+    static $extensions = null;
+    if ($extensions === null) {
+        // an Illustrator file is a PDF inside
+        $extensions = is_executable('/usr/bin/pdftoppm') ? ['pdf', 'ai'] : [];
+        if ($extensions !== [] && is_executable('/usr/bin/soffice')) {
+            $extensions = array_merge($extensions, THUMBNAIL_OFFICE_EXTENSIONS);
+        }
+    }
+    return $extensions;
+}
+
+/**
+ * What the thumbnail of an upload shows: 'image' for a picture, 'page' for
+ * the first page of a document, '' when this server can make none.
+ */
+function thumbnail_preview_kind(string $type, string $name): string
+{
+    if (str_starts_with($type, 'image/')) {
+        return 'image';
+    }
+    $extension = $type === 'application/pdf' ? 'pdf' : strtolower(pathinfo($name, PATHINFO_EXTENSION));
+    return in_array($extension, thumbnail_page_extensions(), true) ? 'page' : '';
+}
+
+function thumbnail_office_extension(string $uuid): string
+{
+    load_library('data');
+    $meta = data_exists('.files_meta', $uuid) ? data_read('.files_meta', $uuid) : [];
+    $extension = strtolower(pathinfo((string)($meta['name'] ?? ''), PATHINFO_EXTENSION));
+    return in_array($extension, THUMBNAIL_OFFICE_EXTENSIONS, true) ? $extension : '';
+}
+
+/**
+ * The first page of an office or text document: LibreOffice makes a PDF of
+ * it, see thumbnail_open_pdf(). One conversion at a time in one profile, so
+ * a grid of new documents does not start a LibreOffice per thumbnail.
+ */
+function thumbnail_open_office(string $path, string $extension)
+{
+    if (!is_executable('/usr/bin/soffice')) {
+        return false;
+    }
+    $profile = $GLOBALS['SYSTEM']['data_base'] . '/.tmp/libreoffice';
+    $work = $GLOBALS['SYSTEM']['data_base'] . '/.tmp/libreoffice-' . bin2hex(random_bytes(8));
+    @mkdir($profile, 0750, true);
+    if (!is_dir($profile) || !@mkdir($work, 0750)) {
+        return false;
+    }
+    // LibreOffice picks its import filter from the extension
+    $input = $work . '/document.' . $extension;
+    $img = false;
+    if (@copy($path, $input)) {
+        $process = proc_open(['/usr/bin/flock', '-w', '45', $profile . '.lock',
+            '/usr/bin/timeout', '60', '/usr/bin/soffice', '-env:UserInstallation=file://' . $profile,
+            '--headless', '--norestore', '--convert-to', 'pdf', '--outdir', $work, $input],
+            [0 => ['file', '/dev/null', 'r'], 1 => ['file', '/dev/null', 'a'], 2 => ['file', '/dev/null', 'a']], $pipes,
+            $work, ['HOME' => $profile, 'PATH' => '/usr/bin:/bin']);
+        if (is_resource($process) && proc_close($process) === 0 && is_file($work . '/document.pdf')) {
+            $img = thumbnail_open_pdf($work . '/document.pdf');
+        }
+    }
+    array_map('unlink', glob($work . '/*') ?: []);
+    @rmdir($work);
+    return $img;
+}
+
 function thumbnail_cache_is_valid($path, $source_mtime, $format)
 {
     if (!is_file($path) || filesize($path) <= 0 || filemtime($path) < $source_mtime) {
@@ -167,9 +239,18 @@ function thumbnail_create($uuid, $size, $ratio = 0, $mode = 'h', $format = '', $
             }
             break;
         default:
-            load_library('system-messages');
-            system_message('unknown image type: ' . $org_type);
-            return $result;
+            // office files are recognised by their name, their contents read as zip or text
+            $extension = thumbnail_office_extension($uuid);
+            if ($extension === '') {
+                load_library('system-messages');
+                system_message('unknown image type: ' . $org_type);
+                return $result;
+            }
+            $org_img = thumbnail_open_office($org_path, $extension);
+            if ($org_img !== false) {
+                [$org_w, $org_h, $org_type] = [imagesx($org_img), imagesy($org_img), IMAGETYPE_PNG];
+            }
+            break;
     }
 
     if (empty($org_img)) {

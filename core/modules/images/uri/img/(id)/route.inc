@@ -149,12 +149,8 @@ if ($format === 'jpg') {
 } else if ($format === 'png') {
 	$type = 'image/png';
 } else {
-	$type = $meta['type'] ?? 'image/jpg';
-	if ($type === 'image/jpeg' || $type === 'image/bmp' || $type === 'image/jpg' || $type === 'image/avif') {
-		$type = 'image/webp'; //'image/avif';
-	} else if ($type === 'image/png' || $type === 'application/pdf') {
-		$type = 'image/webp';
-	}
+	// see thumbnail_create(): without a format every thumbnail is WebP, also of a PDF or office file
+	$type = 'image/webp';
 }
 
 // return thumb with cache headers

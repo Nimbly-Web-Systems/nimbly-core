@@ -5,7 +5,14 @@ RUN apt-get -y -o APT::Update::Error-Mode=any update && \
     apt-get -y install \
         apache2 \
         git \
+        fonts-crosextra-caladea \
+        fonts-crosextra-carlito \
+        fonts-liberation \
         libavif-bin \
+        libreoffice-calc \
+        libreoffice-core \
+        libreoffice-impress \
+        libreoffice-writer \
         php-cli \
         php-curl \
         php-fpm \

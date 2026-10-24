@@ -4,6 +4,7 @@ load_library('data');
 load_library('set');
 load_library('access');
 load_library('resource-title');
+load_library('thumbnail');
 
 /**
  * Data for the document explorer, the overview of a resource with
@@ -60,8 +61,8 @@ function get_document_records_sc($params)
         'can_create' => access_by_feature('create-' . $resource) && access_by_feature('create-files,manage-files'),
         'can_edit' => access_by_feature('edit-' . $resource),
         'can_delete' => access_by_feature('delete-' . $resource),
-        // PDF thumbnails come from pdftoppm, see thumbnail_open_pdf()
-        'pdf_preview' => is_executable('/usr/bin/pdftoppm'),
+        // for documents uploaded from the explorer, see thumbnail_preview_kind()
+        'page_extensions' => thumbnail_page_extensions(),
     ]);
 }
 
@@ -125,6 +126,8 @@ function document_explorer_document(string $resource, string $uuid, array $recor
         'name' => (string)($file['name'] ?? ''),
         'type' => (string)($file['type'] ?? ''),
         'size' => (int)($file['size'] ?? 0),
+        // 'image', 'page' or '', see thumbnail_preview_kind()
+        'preview' => $file_uuid !== '' ? thumbnail_preview_kind((string)($file['type'] ?? ''), (string)($file['name'] ?? '')) : '',
         'category' => $fields['category'] !== null ? (string)($record[$fields['category']] ?? '') : '',
         'position' => $fields['position'] !== null ? (float)($record[$fields['position']] ?? 0) : 0,
         'created' => (int)($record['_created'] ?? 0),

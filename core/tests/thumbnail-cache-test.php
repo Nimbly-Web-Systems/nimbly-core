@@ -36,6 +36,11 @@ function thumbnail_test_remove_directory($directory)
     rmdir($directory);
 }
 
+// pictures always have a thumbnail, files that are no document never
+thumbnail_test_assert(thumbnail_preview_kind('image/png', 'photo.png') === 'image', 'a picture is an image preview');
+thumbnail_test_assert(thumbnail_preview_kind('application/zip', 'archive.zip') === '', 'an archive has no preview');
+thumbnail_test_assert(thumbnail_preview_kind('application/postscript', 'logo.ai') === (is_executable('/usr/bin/pdftoppm') ? 'page' : ''), 'an Illustrator file is a page');
+
 if (!extension_loaded('gd')) {
     echo "Thumbnail cache tests skipped: GD is unavailable.\n";
     exit(0);

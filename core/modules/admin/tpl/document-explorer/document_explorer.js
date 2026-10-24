@@ -1,4 +1,13 @@
 document.addEventListener("alpine:init", () => {
+  // file type badge colours, by extension
+  const DOCUMENT_FAMILIES = {
+    pdf: ["pdf"],
+    text: ["doc", "docx", "odt", "rtf", "txt", "md"],
+    sheet: ["xls", "xlsx", "ods", "csv"],
+    slides: ["ppt", "pptx", "odp", "key"],
+    design: ["ai", "psd", "eps", "sketch", "fig", "indd", "svg"],
+  };
+
   Alpine.data("document_explorer", () => ({
     config: _documents,
     documents: _documents.documents,
@@ -18,6 +27,7 @@ document.addEventListener("alpine:init", () => {
     category_label_draft: "",
     dragging_category: null,
     new_category: "",
+    failed_previews: [],
     init() {
       // PHP sends an empty list as []
       if (Array.isArray(this.config.categories)) {
@@ -43,10 +53,10 @@ document.addEventListener("alpine:init", () => {
     },
     // A page is shown whole, a picture fills the tile.
     thumb_url(doc, width, height) {
-      return `${nb.base_url}/img/${doc.file}/${width}x${height}${this.is_pdf(doc) ? "f" : "c"}`;
+      return `${nb.base_url}/img/${doc.file}/${width}x${height}${this.is_page(doc) ? "f" : "c"}`;
     },
-    is_pdf(doc) {
-      return doc.type === "application/pdf";
+    is_page(doc) {
+      return doc.preview === "page";
     },
     has_categories() {
       return !!this.config.fields.category && (this.config.category_order.length > 0 || this.config.can_add_category);
@@ -117,8 +127,29 @@ document.addEventListener("alpine:init", () => {
     is_sorted_desc(field) {
       return this.sort_field === field && !this.sort_asc;
     },
+    // a thumbnail that fails to load leaves the tile to the title
     has_preview(doc) {
-      return doc.file !== "" && (doc.type.startsWith("image/") || (this.is_pdf(doc) && this.config.pdf_preview));
+      return doc.preview !== "" && !this.failed_previews.includes(doc.uuid);
+    },
+    preview_failed(doc) {
+      this.failed_previews.push(doc.uuid);
+    },
+    // as thumbnail_preview_kind() decides it for the documents PHP sends
+    preview_kind(type, name) {
+      if (type.startsWith("image/")) {
+        return "image";
+      }
+      const ext = type === "application/pdf" ? "pdf" : (name.includes(".") ? name.split(".").pop().toLowerCase() : "");
+      return this.config.page_extensions.includes(ext) ? "page" : "";
+    },
+    family(doc) {
+      const ext = this.extension(doc).toLowerCase();
+      for (const [family, extensions] of Object.entries(DOCUMENT_FAMILIES)) {
+        if (extensions.includes(ext)) {
+          return family;
+        }
+      }
+      return "";
     },
     extension(doc) {
       const ext = doc.name.includes(".") ? doc.name.split(".").pop() : "";
@@ -430,6 +461,7 @@ document.addEventListener("alpine:init", () => {
         name: res.files.name,
         type: res.files.type,
         size: res.files.size,
+        preview: this.preview_kind(res.files.type, res.files.name),
         category: data[fields.category] ?? "",
         position: data[fields.position] ?? 0,
         created: Math.floor(Date.now() / 1000),
