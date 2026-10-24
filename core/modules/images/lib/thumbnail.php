@@ -144,7 +144,8 @@ function thumbnail_open_office(string $path, string $extension)
             '/usr/bin/timeout', '60', '/usr/bin/soffice', '-env:UserInstallation=file://' . $profile,
             '--headless', '--norestore', '--convert-to', 'pdf', '--outdir', $work, $input],
             [0 => ['file', '/dev/null', 'r'], 1 => ['file', '/dev/null', 'a'], 2 => ['file', '/dev/null', 'a']], $pipes,
-            $work, ['HOME' => $profile, 'PATH' => '/usr/bin:/bin']);
+            // no printer to ask for the page size: a CUPS lookup on localhost waits 30 seconds on our servers
+            $work, ['HOME' => $profile, 'PATH' => '/usr/bin:/bin', 'CUPS_SERVER' => '/nonexistent/cups.sock']);
         if (is_resource($process) && proc_close($process) === 0 && is_file($work . '/document.pdf')) {
             $img = thumbnail_open_pdf($work . '/document.pdf');
         }
