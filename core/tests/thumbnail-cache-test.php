@@ -94,5 +94,12 @@ touch($source_directory . '/' . $uuid, $source_time);
 $third_path = thumbnail_create($uuid, 64, 0, 'w', 'jpg');
 thumbnail_test_assert($third_path === $cache_path, 'cache hit opened the original');
 
+// a ratio on a one pixel image still gives a thumbnail of at least a pixel
+$tiny_uuid = '9f0c3a1e5b7d4f2a8c6e0b1d3f5a7c9e';
+imagepng(imagecreatetruecolor(1, 1), $source_directory . '/' . $tiny_uuid);
+$GLOBALS['SYSTEM']['request_uri'] = 'img/' . $tiny_uuid . '/120w';
+$tiny_path = thumbnail_create($tiny_uuid, 120, 1.5, 'w', 'jpg');
+thumbnail_test_assert(is_file($tiny_path), 'a tiny image with a ratio wrote no thumbnail');
+
 thumbnail_test_remove_directory($fixture);
 echo "Thumbnail cache tests passed.\n";

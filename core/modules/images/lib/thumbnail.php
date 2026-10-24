@@ -323,6 +323,9 @@ function thumbnail_create($uuid, $size, $ratio = 0, $mode = 'h', $format = '', $
 
     //3. handling based on image type, e.g. transparency and store to static cache
 
+    // a ratio on a tiny image can leave less than a pixel
+    $w = max(1, (int)round($w));
+    $h = max(1, (int)round($h));
     $thumb_img = imagecreatetruecolor($w, $h);
 
     @mkdir(dirname($static_path), 0750, true);
