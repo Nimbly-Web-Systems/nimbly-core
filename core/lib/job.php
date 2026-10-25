@@ -337,6 +337,8 @@ function job_claim(string $uuid, int $now)
 function job_execute(string $uuid, array $job): int
 {
     $attempts = (int)($job['attempts'] ?? 1);
+    // its own writes do not queue it again, see event_resource_lifecycle()
+    $GLOBALS['SYSTEM']['running_job'] = $job;
     try {
         $start = microtime(true);
         if (function_exists('email_clear_last_result')) {
@@ -378,7 +380,17 @@ function job_execute(string $uuid, array $job): int
         }
         job_enqueue_failure_alert($uuid, $job, $attempts, $e->getMessage());
         return -1;
+    } finally {
+        unset($GLOBALS['SYSTEM']['running_job']);
     }
+}
+
+/** True while this job type runs for this record: its own save is no reason to queue it. */
+function job_is_running_for(string $type, string $resource, string $uuid): bool
+{
+    $job = $GLOBALS['SYSTEM']['running_job'] ?? null;
+    return is_array($job) && ($job['type'] ?? '') === $type
+        && ($job['payload']['resource'] ?? '') === $resource && (string)($job['payload']['uuid'] ?? '') === $uuid;
 }
 
 /** Runs one job now, for the page whose request queued it; the job as it ended up. */

@@ -61,7 +61,9 @@ function event_resource_lifecycle($action, $resource, $uuid, $data = null)
         $event = trim($event);
         if (strpos($event, 'job:') === 0) {
             load_library('job');
-            job_enqueue(substr($event, 4), $payload);
+            if (!job_is_running_for(substr($event, 4), (string)$resource, (string)$uuid)) {
+                job_enqueue(substr($event, 4), $payload);
+            }
             continue;
         }
 
