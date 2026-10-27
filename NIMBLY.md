@@ -86,12 +86,13 @@ Nimblifying is a rebuild, not a wrapper: do not embed the original as a static f
 git clone git@github.com:Nimbly-Web-Systems/nimbly-core.git my-project
 cd my-project
 
-# 2. Clone your application into ext/ (or let setup create an empty ext/)
-git clone git@github.com:your-org/your-app.git ext
-
-# 3. Install dependencies, create local config/data/admin user, and build assets
-./nimbly init
+# 2. Clone your application into ext/, set up the site and build assets
+./nimbly init git@github.com:your-org/your-app.git
 ```
+
+The repository argument is optional. Without it, `init` uses `EXT_REPO` or
+asks for a repository interactively. Leave the prompt empty to start a new
+application. An existing `ext/` is kept as it is.
 
 After this, the project is fully operational. Core and ext evolve independently.
 
@@ -2031,6 +2032,12 @@ Nimbly ships a CLI at `core/cli/nimbly.php`. The root `./nimbly` launcher is the
 ./nimbly user:create
 ./nimbly module:install <name>
 ```
+
+`./nimbly init [repository]` accepts an optional application repository to clone
+into `ext/`. The argument takes precedence over `EXT_REPO`; without either,
+`init` asks interactively. Existing `ext/` files are kept. Extra arguments and
+unknown options are rejected before setup. The repository argument also works
+with `./nimbly --docker init <repository>`.
 
 `init`, `deps`, `build`, and `watch` use npm internally. PHP-backed commands use host PHP when available and fall back to Docker automatically. Explicit variants are also available:
 

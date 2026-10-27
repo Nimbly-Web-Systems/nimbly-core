@@ -18,15 +18,14 @@ that parent directory.
 
 ```bash
 git clone %%CORE_REPO%% %%SITE_NAME%%
-git clone %%EXT_REPO%% %%SITE_NAME%%/ext
 cd %%SITE_NAME%%
-./nimbly init
+./nimbly init %%EXT_REPO%%
 ```
 
-`./nimbly init` installs dependencies, prepares the application, creates the
-first admin user and builds the assets. It uses host PHP when available and
-falls back to Docker automatically. Use `./nimbly --docker init` to force the
-Docker path.
+`./nimbly init <repository>` clones the application into `ext/`, installs
+dependencies, prepares the application, creates the first admin user and
+builds the assets. It uses host PHP when available and falls back to Docker
+automatically. Use `./nimbly --docker init <repository>` to force the Docker path.
 
 Start the local site and open [http://localhost](http://localhost):
 
@@ -75,6 +74,8 @@ in core only when every Nimbly application needs them.
 
 ## Documentation
 
-Read the complete
-[Nimbly implementation reference](https://github.com/Nimbly-Web-Systems/nimbly-core/blob/master/NIMBLY.md)
-for architecture, conventions and all commands.
+Full documentation: [atomic.nimblyweb.com](https://atomic.nimblyweb.com).
+
+For coding agents, start with `AGENTS.md`. Inspect existing code, then use
+`./nimbly docs:list`, `./nimbly docs:search "<term>"` or
+`./nimbly docs:section "<section>"` to retrieve relevant parts of `NIMBLY.md`.

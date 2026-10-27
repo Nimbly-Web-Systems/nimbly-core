@@ -231,6 +231,15 @@ function run_up() {
 }
 
 async function run_init() {
+  const init_args = cli_args.slice(1);
+  if (init_args.length > 1 || (init_args.length === 1 && (!init_args[0].trim() || init_args[0].trim().startsWith('-')))) {
+    console.error('Usage: ./nimbly init [repository]');
+    process.exit(1);
+  }
+  if (init_args.length === 1) {
+    process.env.EXT_REPO = init_args[0].trim();
+  }
+
   banner('Setup');
   step(1, 5, 'Prepare ext');
   await prepare_ext_repo();
@@ -339,7 +348,7 @@ const runner_help = {
   build: ['./nimbly build', 'Builds the stylesheet, the script, the texts and the asset version once.'],
   watch: ['./nimbly watch', 'Rebuilds the assets whenever a source file changes, until stopped.'],
   up: ['./nimbly up', 'Rebuilds the local Docker image and starts the site in it.'],
-  init: ['./nimbly init', 'Prepares a checkout for first use: dependencies, system:setup, then a build.'],
+  init: ['./nimbly init [repository]', 'Clones the optional application repository into ext/, installs dependencies, sets up the site and builds assets. Without a repository argument, uses EXT_REPO or asks interactively. Existing ext/ files are kept.'],
   'test:run': [
     './nimbly test [playwright options]',
     'Runs the PHP tests, then the browser tests against the local site. Options after the command go to Playwright.',
