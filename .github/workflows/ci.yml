@@ -40,6 +40,9 @@ jobs:
           echo "64a1e7737c6ac24b798a3331a769241308d40af6504630fd7c9dc9b7f1bec83f  /tmp/phpstan.phar" | sha256sum -c -
           php /tmp/phpstan.phar analyse -c .github/phpstan.neon --no-progress --memory-limit=1G
 
+      - name: Run CLI tests
+        run: node core/tests/init-repo-test.mjs
+
       - name: Run PHP tests
         shell: bash
         run: |

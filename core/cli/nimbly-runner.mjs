@@ -446,6 +446,9 @@ if (command === 'test:run') {
       .map((name) => `${directory}/${name}`);
   }
 
+  section('CLI tests');
+  run_step(process.execPath, ['core/tests/init-repo-test.mjs']);
+
   section('Setup');
   const setup = php_step('test:setup');
   if ((setup.status ?? 1) !== 0) {
