@@ -61,7 +61,20 @@ function agent_definition(string $agent_id): array
         }
         $definition = agent_resolve_definition_paths($definition, $directory);
     }
+    $definition = agent_extend_definition($definition);
     agent_validate_definition($definition, $agent_id);
+    return $definition;
+}
+
+/** An agent can extend another: it takes the tools it names from that agent, next to its own. */
+function agent_extend_definition(array $definition): array
+{
+    if (empty($definition['extends']['agent'])) {
+        return $definition;
+    }
+    $tools = agent_definition((string)$definition['extends']['agent'])['tools'] ?? [];
+    $definition['tools'] = (array)($definition['tools'] ?? [])
+        + array_intersect_key($tools, array_flip((array)($definition['extends']['tools'] ?? [])));
     return $definition;
 }
 

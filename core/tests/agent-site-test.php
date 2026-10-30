@@ -66,6 +66,7 @@ function data_delete($resource, $uuid)
 function data_error_get() { return $GLOBALS['site_test_error'] ?? ''; }
 function data_error_detail_get() { return 'status:value'; }
 function generate_uuid() { return 'fresh'; }
+function find_user_by_email($email) { return ['uuid' => 'u1']; }
 function md5_uuid($value) { return md5((string)$value); }
 function sanitize_html_fields(array $_meta, array $data): array
 {
@@ -246,5 +247,20 @@ try {
     agent_site_git('/tmp/nimbly-no-such-repository', ['rev-parse', 'HEAD']);
     site_test_assert(false, 'unavailable Git is reported');
 } catch (RuntimeException) {}
+
+// A scoped agent reaches its resources only, and there only the asker's own records.
+$GLOBALS['site_test_data']['health'] = ['.meta' => ['owner_field' => 'user_id', 'fields' => []],
+    'mine' => ['uuid' => 'mine', 'user_id' => 'u1', 'note' => 'a'], 'theirs' => ['uuid' => 'theirs', 'user_id' => 'u2', 'note' => 'b']];
+$scoped = ['username' => 'a@test', 'features' => ['manage-health' => true, 'view-health' => true, 'edit-health' => true,
+    'create-health' => true, 'delete-health' => true, 'view-articles' => true], 'scope' => ['health'], 'owner' => 'u1'];
+site_test_assert(agent_site_resource_in_scope('health', $scoped) && !agent_site_resource_in_scope('articles', $scoped),
+    'a scope limits the resources');
+site_test_assert(!agent_site_resource_in_scope('health'), 'without a scope personal records stay out of reach');
+site_test_assert(agent_site_records($scoped, 'health')['total'] === 1, 'a list holds the asker\'s records only');
+site_test_assert(isset(agent_site_records($scoped, 'health', 'theirs')['error']), 'another person\'s record cannot be read');
+site_test_assert(agent_site_write_refusal($scoped, 'update', 'health', 'theirs') !== null, 'another person\'s record cannot be changed');
+site_test_assert(agent_site_write_refusal($scoped, 'delete', 'health', 'mine') === null, 'the asker\'s own record can');
+agent_site_write($scoped, 'update', 'health', 'mine', ['user_id' => 'u2', 'note' => 'c']);
+site_test_assert($GLOBALS['site_test_data']['health']['mine']['user_id'] === 'u1', 'a record cannot be given to someone else');
 
 echo "Agent site tests passed.\n";

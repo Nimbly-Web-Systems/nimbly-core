@@ -9,15 +9,34 @@
 /** The person a chat turn answers, with the features their roles give them right now. */
 function agent_site_asker(array $context): array
 {
-    load_libraries(['data', 'access', 'permissions']);
+    load_libraries(['data', 'access', 'permissions', 'get-user']);
     $conversation = data_read('.agent_conversations', (string)($context['run']['event_context']['conversation'] ?? ''));
     foreach (array_reverse((array)($conversation['messages'] ?? [])) as $message) {
         if (in_array((string)$context['run_uuid'], (array)($message['runs'] ?? []), true)) {
             $username = (string)($message['asker'] ?? '');
-            return ['username' => $username, 'features' => $username === '' ? [] : user_feature_map($username)];
+            $asker = ['username' => $username, 'features' => $username === '' ? [] : user_feature_map($username)];
+            return agent_site_scoped($asker, $context);
         }
     }
-    return ['username' => '', 'features' => []];
+    return agent_site_scoped(['username' => '', 'features' => []], $context);
+}
+
+/** An agent with a `scope` works on those resources only, and there on the asker's own records. */
+function agent_site_scoped(array $asker, array $context): array
+{
+    $scope = $context['definition']['scope']['resources'] ?? null;
+    if (!is_array($scope)) {
+        return $asker;
+    }
+    $user = $asker['username'] === '' ? null : find_user_by_email($asker['username']);
+    return $asker + ['scope' => $scope, 'owner' => (string)($user['uuid'] ?? '')];
+}
+
+/** Whether a scoped agent may touch this record: shared, or the asker's own. */
+function agent_site_owned(array $asker, string $resource, array $record): bool
+{
+    $owner_field = (string)((data_meta($resource) ?: [])['owner_field'] ?? '');
+    return $owner_field === '' || (!empty($asker['owner']) && ($record[$owner_field] ?? '') === $asker['owner']);
 }
 
 /** Deployed Git history only; it cannot establish that a reported problem is resolved. */
@@ -219,8 +238,11 @@ function agent_site_stats(array $asker, string $from, string $to): array
 }
 
 /** Every resource under the site's data may be read and written, always through the asker's own rights. */
-function agent_site_resource_in_scope(string $resource): bool
+function agent_site_resource_in_scope(string $resource, array $asker = []): bool
 {
+    if (isset($asker['scope'])) {
+        return in_array($resource, $asker['scope'], true);
+    }
     // Records with an owner are personal: the site's agents do not read them for someone else.
     return preg_match('/^\.?[a-z0-9][a-z0-9_-]*$/', $resource) === 1
         && empty((data_meta($resource) ?: [])['owner_field']);
@@ -234,7 +256,7 @@ function agent_site_resources(array $asker): array
             $resources[] = $resource;
         }
     }
-    return array_values(array_filter(array_unique($resources), fn($resource) => agent_site_resource_in_scope($resource)
+    return array_values(array_filter(array_unique($resources), fn($resource) => agent_site_resource_in_scope($resource, $asker)
         && data_exists($resource, '.meta') && agent_site_can($asker, 'view-' . $resource)));
 }
 
@@ -267,7 +289,8 @@ function agent_site_map(array $asker): array
     foreach (agent_site_resources($asker) as $resource) {
         $meta = data_meta($resource) ?: [];
         $resources[$resource] = [
-            'records' => count(data_list($resource) ?: []),
+            'records' => empty($meta['owner_field']) ? count(data_list($resource) ?: [])
+                : count(array_filter(data_read($resource) ?: [], fn($record) => agent_site_owned($asker, $resource, (array)$record))),
             'admin_page' => '/nb-admin/' . $resource,
             'you_may' => array_values(array_filter(['view', 'create', 'edit', 'delete'],
                 fn($operation) => agent_site_can($asker, $operation . '-' . $resource))),
@@ -297,16 +320,17 @@ function agent_site_map(array $asker): array
 /** One record, or a short list of records (optionally matching a search, with chosen fields and sort). */
 function agent_site_records(array $asker, string $resource, string $uuid = '', string $search = '', array $fields = [], string $sort = ''): array
 {
-    if (!agent_site_resource_in_scope($resource) || !agent_site_can($asker, 'view-' . $resource) || !data_exists($resource, '.meta')) {
+    if (!agent_site_resource_in_scope($resource, $asker) || !agent_site_can($asker, 'view-' . $resource) || !data_exists($resource, '.meta')) {
         return ['error' => 'You cannot see this resource, or it does not exist.'];
     }
     if ($uuid !== '') {
         $record = data_read($resource, $uuid);
-        return is_array($record)
+        return is_array($record) && agent_site_owned($asker, $resource, $record)
             ? ['record' => agent_site_trim(agent_site_hide_secrets($resource, $record)), 'admin_page' => '/nb-admin/' . $resource . '/' . $uuid]
             : ['error' => 'No such record.'];
     }
-    $records = array_map(fn($record) => agent_site_hide_secrets($resource, (array)$record), data_read($resource) ?: []);
+    $records = array_filter(data_read($resource) ?: [], fn($record) => agent_site_owned($asker, $resource, (array)$record));
+    $records = array_map(fn($record) => agent_site_hide_secrets($resource, (array)$record), $records);
     if ($search !== '') {
         $records = array_filter($records, fn($record) => stripos(json_encode($record, JSON_UNESCAPED_UNICODE) ?: '', $search) !== false);
     }
@@ -356,7 +380,7 @@ function agent_site_trim(array $record): array
 function agent_site_write_refusal(array $asker, string $action, string $resource, string $uuid): ?string
 {
     $feature = ['create' => 'create-', 'update' => 'edit-', 'delete' => 'delete-'][$action] ?? null;
-    if ($feature === null || !agent_site_resource_in_scope($resource) || !data_exists($resource, '.meta')) {
+    if ($feature === null || !agent_site_resource_in_scope($resource, $asker) || !data_exists($resource, '.meta')) {
         return 'That is not something I can change here. Structure is developer work.';
     }
     $meta = data_meta($resource) ?: [];
@@ -366,7 +390,8 @@ function agent_site_write_refusal(array $asker, string $action, string $resource
     if (!agent_site_can($asker, $feature . $resource)) {
         return 'You do not have the right to ' . $action . ' ' . $resource . ' records.';
     }
-    if ($action !== 'create' && ($uuid === '' || !data_exists($resource, $uuid))) {
+    if ($action !== 'create' && ($uuid === '' || !data_exists($resource, $uuid)
+        || !agent_site_owned($asker, $resource, (array)data_read($resource, $uuid)))) {
         return 'No such record.';
     }
     if ($action === 'create' && $uuid !== '' && data_exists($resource, $uuid)) {
@@ -402,6 +427,10 @@ function agent_site_write_record(array $asker, string $action, string $resource,
     }
     $meta = data_meta($resource) ?: [];
     $fields = array_filter($fields, fn($field) => is_string($field) && $field !== 'uuid' && $field[0] !== '_', ARRAY_FILTER_USE_KEY);
+    if (!empty($meta['owner_field'])) {
+        unset($fields[$meta['owner_field']]);
+        $fields += $action === 'create' ? [$meta['owner_field'] => $asker['owner']] : [];
+    }
     $current = $action === 'update' ? (data_read($resource, $uuid) ?: []) : [];
     if ($resource === '.navigation' && !isset($fields['revision'])) {
         // The agent sends the whole menu it just read; the editor's revision check needs that version.

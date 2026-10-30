@@ -15,14 +15,18 @@ function agent_connector_chat_history(array $_source, array $_config, array $con
     if (!is_array($conversation)) {
         throw new RuntimeException('Conversation not found');
     }
-    $messages = [['role' => 'user', 'content' => [['type' => 'input_text', 'text' => json_encode([
-        'chat' => 'You are in a group chat with a colleague and the other agents of this team.'
+    // An agent with a scope stands alone: it knows of no team and no other conversations.
+    $scoped = !empty($context['definition']['scope']);
+    $setting = ['chat' => ($scoped ? 'You are in a chat with a colleague.' : 'You are in a group chat with a colleague and the other agents of this team.')
             . ' Where it comes naturally you may call the colleague by their first name; never force it.',
         'colleague_first_name' => agent_chat_first_name($conversation),
         'now' => agent_chat_now((string)($context['definition']['timezone'] ?? '')),
+    ] + ($scoped ? [] : [
         'team' => agent_chat_colleagues($conversation),
         'earlier_conversations' => agent_chat_recent_for($conversation, $uuid),
-    ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)]]]];
+    ]);
+    $messages = [['role' => 'user', 'content' => [['type' => 'input_text', 'text' => json_encode($setting,
+        JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)]]]];
     foreach ((array)($conversation['messages'] ?? []) as $message) {
         $from = (string)($message['from'] ?? 'user');
         $text = (string)($message['text'] ?? '');

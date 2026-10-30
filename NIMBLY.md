@@ -2773,6 +2773,13 @@ To customize an existing agent for one site, choose the lightest option:
    changes to that agent then no longer apply. Only do this when the
    definition itself must differ.
 
+An agent can extend another and stay inside one application. `extends` takes the named tools from that agent; `scope` limits them to those resources and, on resources with an `owner_field`, to the asker's own records. A scoped agent is told of no team and no other conversations.
+
+```json
+"extends": {"agent": "nimbly", "tools": ["site_map", "records", "save_record"]},
+"scope": {"resources": [".app_records"]}
+```
+
 ##### Team chat
 
 Logged-in users get a team chat button (`[#agent-chat-widget#]` in the Core
