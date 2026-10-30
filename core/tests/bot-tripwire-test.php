@@ -98,11 +98,11 @@ try {
     }
     $response = tripwire_fetch($address, ['t' => 'trap', 'u' => 'nb-']);
     tripwire_assert($response['status'] === 404, 'nothing answers 418 without a secret');
-    foreach (['wlwmanifest.xml', 'wp-includes/wlwmanifest.xml', '/wp/wp-includes/WLWManifest.xml'] as $uri) {
+    foreach (['wlwmanifest.xml', 'wp-includes/wlwmanifest.xml', '/wp/wp-includes/WLWManifest.xml', 'wp-json', 'wp-json/wp/v2/users/me', 'wp-json/batch/v1', 'wordpress/wp-json/'] as $uri) {
         $response = tripwire_fetch($address, ['t' => 'trap', 'u' => $uri]);
         tripwire_assert($response['status'] === 418, 'a forbidden path answers 418 on any site: ' . $uri);
     }
-    foreach (['mywlwmanifest.xml', 'wlwmanifest.xml.bak'] as $uri) {
+    foreach (['mywlwmanifest.xml', 'wlwmanifest.xml.bak', 'wp-json-guide'] as $uri) {
         $response = tripwire_fetch($address, ['t' => 'trap', 'u' => $uri]);
         tripwire_assert($response['status'] === 404, 'a lookalike is not forbidden: ' . $uri);
     }

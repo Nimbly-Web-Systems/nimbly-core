@@ -2904,6 +2904,8 @@ leaves the banning to the server:
   links to out of sight (`[#bot-tripwire-link#]` in the page shell). A request
   for it is answered with status `418`. The address is fixed per site and
   differs between sites; a page shell of your own needs the shortcode too.
+  Addresses only scanners ask for, such as `wlwmanifest.xml` and anything under
+  `wp-json`, get the same answer on every site.
 - **Server rules.** `core/cli/setup/fail2ban/` holds three fail2ban filters and
   one jail file for a server with Apache access logs: a ban on any `418`
   answer, on more than 60 page requests in a minute, and on 20 not-found

@@ -17,10 +17,11 @@ function bot_tripwire_path(): string
     return 'nb-' . substr(hash('sha256', 'bot-tripwire|' . $pepper), 0, 12);
 }
 
-/** A path no Nimbly site ever serves and only scanners ask for: Windows Live Writer's manifest, anywhere. */
+/** A path no Nimbly site ever serves and only scanners ask for: Windows Live Writer's manifest or WordPress's REST API, anywhere. */
 function bot_tripwire_forbidden(string $uri): bool
 {
-    return strtolower(basename(rtrim($uri, '/'))) === 'wlwmanifest.xml';
+    $segments = explode('/', strtolower(trim($uri, '/')));
+    return end($segments) === 'wlwmanifest.xml' || in_array('wp-json', $segments, true);
 }
 
 /** Answers a request for the tripwire path or a forbidden path; false for any other path. */
