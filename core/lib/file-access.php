@@ -16,8 +16,30 @@ function file_access_allowed(string $uuid): bool
     }
     load_library('access');
     foreach ($resources as $resource) {
-        if (access_by_feature('view-' . $resource)) {
+        if (access_by_feature('view-' . $resource) && file_owner_allowed($resource, $uuid)) {
             return true;
+        }
+    }
+    return false;
+}
+
+/** In a resource with an owner, a private file is for the owner of a record that holds it. */
+function file_owner_allowed(string $resource, string $uuid): bool
+{
+    $owner_field = (string)((data_meta($resource) ?: [])['owner_field'] ?? '');
+    if ($owner_field === '') {
+        return true;
+    }
+    load_library('session');
+    $owner = session_resume() ? (string)($_SESSION['user_uuid'] ?? '') : '';
+    foreach (data_read($resource) ?: [] as $record) {
+        if ($owner !== '' && ($record[$owner_field] ?? '') === $owner) {
+            foreach (file_private_fields()[$resource] ?? [] as $field) {
+                $value = $record[$field] ?? '';
+                if ($value === $uuid || (is_array($value) && in_array($uuid, $value, true))) {
+                    return true;
+                }
+            }
         }
     }
     return false;

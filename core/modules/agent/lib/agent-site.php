@@ -221,7 +221,9 @@ function agent_site_stats(array $asker, string $from, string $to): array
 /** Every resource under the site's data may be read and written, always through the asker's own rights. */
 function agent_site_resource_in_scope(string $resource): bool
 {
-    return preg_match('/^\.?[a-z0-9][a-z0-9_-]*$/', $resource) === 1;
+    // Records with an owner are personal: the site's agents do not read them for someone else.
+    return preg_match('/^\.?[a-z0-9][a-z0-9_-]*$/', $resource) === 1
+        && empty((data_meta($resource) ?: [])['owner_field']);
 }
 
 function agent_site_resources(array $asker): array

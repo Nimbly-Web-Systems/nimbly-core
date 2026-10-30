@@ -16,6 +16,9 @@ if ($method !== 'POST') {
 
 load_library('api');
 $access_feature = sprintf('import-%1$s,manage-%1$s,api_post_%1$s_import,api_post_%1$s,api_(any)_%1$s,api_post_(any),api_(any)', $resource);
+if (api_owner_field($resource) !== '') {
+    return json_result(array('message' => 'ACCESS_DENIED'), 403);
+}
 if (!api_access($access_feature, $resource)) {
     return json_result(array('message' => 'ACCESS_DENIED', 'needs' => $access_feature), 403);
 }

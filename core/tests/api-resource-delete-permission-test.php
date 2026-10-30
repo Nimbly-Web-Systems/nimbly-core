@@ -1,5 +1,9 @@
 <?php
 
+if (!function_exists('data_meta')) {
+    function data_meta($resource) { return []; }
+}
+
 $GLOBALS['SYSTEM'] = [
     'variables' => [],
 ];

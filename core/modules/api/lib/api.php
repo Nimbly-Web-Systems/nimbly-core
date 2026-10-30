@@ -12,6 +12,13 @@ function api_method_switch($func_prefix, $resource = null, $uuid = null) {
     if (!api_access($access_feature, $perm)) {
         return json_result(array('message' => 'ACCESS_DENIED', 'needs' => $access_feature), 403);
     }
+    if ($resource !== null && api_owner_field($resource) !== '') {
+        $record = !empty($uuid) && data_exists($resource, $uuid) ? data_read($resource, $uuid) : null;
+        $refusal = api_owner_refusal($method, (string)$uuid, api_owner_field($resource), api_owner_uuid(), $record, !empty($_FILES));
+        if ($refusal !== null) {
+            return json_result(array('message' => $refusal[0]), $refusal[1]);
+        }
+    }
     $func_name = "{$func_prefix}_{$method}";
     if (function_exists($func_name)) {
         if (empty($uuid)) {
@@ -41,6 +48,43 @@ function _api_access_str($method, $perm, $uuid) {
         $features[] = 'manage-' . $perm;
     }
     return implode(',', $features);
+}
+
+/** The field that says whose a record is ("owner_field" in the .meta), or '' for a shared resource. */
+function api_owner_field($resource): string {
+    return (string)((data_meta($resource) ?: [])['owner_field'] ?? '');
+}
+
+/** The uuid of the user making this request, by session or by API token. */
+function api_owner_uuid(): string {
+    if (!empty($GLOBALS['SYSTEM']['api_user_uuid'])) {
+        return (string)$GLOBALS['SYSTEM']['api_user_uuid'];
+    }
+    load_library('session');
+    return session_resume() ? (string)($_SESSION['user_uuid'] ?? '') : '';
+}
+
+/**
+ * Why this request may not touch an owned resource: [message, status], or null when it may.
+ * Rights on the resource do not widen this: an admin too sees only their own records here.
+ */
+function api_owner_refusal(string $method, string $uuid, string $field, string $owner, ?array $record, bool $import = false): ?array {
+    if ($owner === '') {
+        return ['ACCESS_DENIED', 403];
+    }
+    if ($uuid === '') {
+        $whole_resource = !in_array($method, ['get', 'post'], true) || $import;
+        return $whole_resource ? ['ACCESS_DENIED', 403] : null;
+    }
+    if ($record !== null && (string)($record[$field] ?? '') !== $owner) {
+        return ['RESOURCE_NOT_FOUND', 404];
+    }
+    return null;
+}
+
+/** The list filter of an owned resource: what was asked for, within the requester's own records. */
+function api_owner_filter(string $filter, string $field, string $owner): string {
+    return trim($field . ':' . $owner . ',' . $filter, ', ');
 }
 
 function api_method_operation($method): ?string {
@@ -119,6 +163,7 @@ function api_token_access($feature, $resource = false) {
     if (time() > $user['api']['expires']) {
         return false;
     }
+    $GLOBALS['SYSTEM']['api_user_uuid'] = $user['uuid'];
 
     run_library('session');
     if (!_persist_user_roles($user['email'])) {
@@ -143,6 +188,9 @@ function api_password_too_short($value) {
 function api_json_input($resource) {
     $meta = data_meta($resource);
     $data = api_escape_shortcodes($meta, json_input());
+    if (!empty($meta['owner_field'])) {
+        $data[$meta['owner_field']] = api_owner_uuid();
+    }
     if (isset($meta['encrypt'])) {
         load_library('util');
         load_library('encrypt');
@@ -351,7 +399,11 @@ function api_hide_fields_all($resource, $records) {
  */
 
 function resource_get($resource) { // get all
+    $owner_field = api_owner_field($resource);
     $export = filter_input(INPUT_GET, 'export', FILTER_SANITIZE_SPECIAL_CHARS);
+    if (!empty($export) && $owner_field !== '') {
+        return json_result(array('message' => 'ACCESS_DENIED'), 403);
+    }
     if (!empty($export)) {
         load_library('api_export_resource');
         return api_export_resource($resource, $export);
@@ -363,6 +415,14 @@ function resource_get($resource) { // get all
         'limit' => filter_input(INPUT_GET, 'limit', FILTER_VALIDATE_INT),
         'offset' => filter_input(INPUT_GET, 'offset', FILTER_VALIDATE_INT),
     ];
+    if ($owner_field !== '') {
+        // Two people can share a browser: an answer is never reused between them.
+        $options['filter'] = api_owner_filter((string)$options['filter'], $owner_field, api_owner_uuid());
+        $result = api_list($resource, $options);
+        return $result === false
+            ? json_result(array('message' => 'INVALID_DATA'), 400)
+            : json_result($result, 200);
+    }
     if (api_list_is_page($options)) {
         // A page does not walk the resource to see whether it changed
         load_library('data-list');

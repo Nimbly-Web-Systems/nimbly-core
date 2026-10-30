@@ -1716,8 +1716,11 @@ function _data_validate_unique($resource, $uuid, $data_ls, $fields)
             }
         }
 
+        // In a resource with an owner, unique means unique for that owner.
+        $owner_field = (string)(is_array($meta) ? ($meta['owner_field'] ?? '') : '');
         foreach ($matches as $match_uuid => $record) {
-            if ((string)$match_uuid !== (string)$uuid) {
+            $same_owner = $owner_field === '' || ($record[$owner_field] ?? '') === ($data_ls[$owner_field] ?? '');
+            if ((string)$match_uuid !== (string)$uuid && $same_owner) {
                 return false;
             }
         }
