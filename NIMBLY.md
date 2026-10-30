@@ -3680,16 +3680,7 @@ User roles should use canonical resource permissions: `view-<resource>` for GET,
 
 ### Custom UUID
 
-Supply a `uuid` field in the POST body to use a specific identifier instead of an auto-generated one:
-
-```bash
-curl -X POST "/api/v1/profiles" \
-  -H "Authorization: Bearer TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{"uuid": "my-id", "name": "Test User"}'
-```
-
-Useful when the caller already has a meaningful identifier (e.g. an external system ID) to use as the record key.
+Records use generated uuids; leave `uuid` out of the POST body. A meaningful value such as a date, slug or external system ID is not a record key: store it in a field and list that field in the `.meta` `index` and `unique` keys, so it can be looked up and cannot be duplicated.
 
 ### File upload
 
