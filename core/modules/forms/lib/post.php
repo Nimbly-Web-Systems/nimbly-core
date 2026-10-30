@@ -28,7 +28,10 @@ function post_sc($params) {
         $id_suffix = '_' . sanitize_id(post_get("form_id"));
     }
 
-    $validate_include_file = $GLOBALS['SYSTEM']['uri_path'] . '/validate' . $id_suffix . '.inc';
+    // [#post route=login#]: a page of its own that handles its form like that route
+    $route = get_param_value($params, 'route');
+    $uri_path = $route ? dirname(find_uri($route)) : $GLOBALS['SYSTEM']['uri_path'];
+    $validate_include_file = $uri_path . '/validate' . $id_suffix . '.inc';
     if (!file_exists($validate_include_file)) {
         //force handling validation by ensuring the validation file existst
         $GLOBALS['SYSTEM']['validation_errors']['_global'][] = "[#text validate_missing#]";
@@ -38,7 +41,7 @@ function post_sc($params) {
     include_once($validate_include_file);
     if (validate_error_count() == 0) {
         //only handle the form post if there are no validation errors
-        @include_once($GLOBALS['SYSTEM']['uri_path'] . '/post' . $id_suffix . '.inc');
+        @include_once($uri_path . '/post' . $id_suffix . '.inc');
     }
 }
 

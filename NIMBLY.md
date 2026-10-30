@@ -3359,6 +3359,15 @@ The files are named `post_{name}.inc` and `validate_{name}.inc`, where `{name}` 
 
 ---
 
+An application login page uses the core login handling and only sets where it leads:
+
+```text
+[#set login_url=app/#]
+[#post route=login#]
+```
+
+The form itself is `[#form-key login#]` with `email` and `password` fields.
+
 ## 12. Rich content fields — end-to-end
 
 This section shows the full flow for an editable HTML field: resource definition → template output → inline admin editing.
