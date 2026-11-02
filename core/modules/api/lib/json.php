@@ -20,7 +20,12 @@ function json_result($result, $code = 200, $modified = 0) {
     if (empty($code)) {
         return $result;
     }
-    http_header_sent('json', true, $modified);
+    // Data can change at any moment: the browser asks again each time, and a list that did not change answers 304.
+    http_header_sent('json');
+    header('Cache-Control: private, no-cache');
+    if ($modified > 0) {
+        header('Last-Modified: ' . gmdate('D, d M Y H:i:s', $modified) . ' GMT');
+    }
     http_response_code($code);
     exit(json_encode($result, JSON_UNESCAPED_UNICODE));
 }
