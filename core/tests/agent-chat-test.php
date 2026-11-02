@@ -321,6 +321,11 @@ chat_test_assert(end($fresh['messages'])['text'] === '@Helper new question' && $
 agent_chat_run_pending();
 $empty = agent_chat_create($owner, ['helper' => 'Helper']);
 chat_test_assert(!in_array($empty, array_column(agent_chat_list($owner), 'uuid'), true), 'an empty chat does not show in the history');
+$GLOBALS['AGENT_TEST_DEFINITIONS']['app'] = ['id' => 'app', 'scope' => ['resources' => ['notes']]] + $GLOBALS['AGENT_TEST_DEFINITIONS']['helper'];
+$in_app = agent_chat_create($owner, ['app' => 'App']);
+agent_chat_append($in_app, 'app', 'Your plan is ready.', 'notice-app');
+chat_test_assert(!in_array($in_app, array_column(agent_chat_list($owner), 'uuid'), true), 'an app agent\'s chat stays in its app');
+unset($GLOBALS['AGENT_TEST_DEFINITIONS']['app']);
 
 // Deleting a conversation: only your own.
 $trash = agent_chat_create($owner, ['helper' => 'Helper']);

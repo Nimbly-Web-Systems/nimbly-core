@@ -92,7 +92,8 @@ function agent_chat_list(string $owner): array
     $list = [];
     foreach (data_read_index('.agent_conversations', 'owner_uuid', data_index_uuids($owner)[0]) as $uuid => $conversation) {
         $messages = agent_chat_visible((array)($conversation['messages'] ?? []));
-        if ($messages === [] && array_filter(array_column((array)($conversation['messages'] ?? []), 'runs')) === []) {
+        if (($messages === [] && array_filter(array_column((array)($conversation['messages'] ?? []), 'runs')) === [])
+            || agent_chat_in_app($conversation)) {
             continue;
         }
         $list[] = [
@@ -105,6 +106,21 @@ function agent_chat_list(string $owner): array
     }
     usort($list, fn($a, $b) => $b['updated_at'] <=> $a['updated_at']);
     return $list;
+}
+
+/** An agent with a `scope` belongs to the app that hosts it; its conversations are opened there, not in the team chat. */
+function agent_chat_in_app(array $conversation): bool
+{
+    foreach ((array)($conversation['agents'] ?? []) as $agent_id) {
+        try {
+            if (!empty(agent_definition((string)$agent_id)['scope'])) {
+                return true;
+            }
+        } catch (RuntimeException | InvalidArgumentException) {
+            // An agent without a definition here, such as one at another site, is not an app's.
+        }
+    }
+    return false;
 }
 
 function agent_chat_unread_count(array $conversation): int
