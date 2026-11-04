@@ -342,6 +342,8 @@ Preserve unrelated local work.
 
 Run the smallest relevant verification first.
 
+Choose verification according to the code that changed. Reusing an existing, tested Nimbly feature does not justify retesting that feature. For example, adding inline-editing attributes to templates does not require local browser tests of the unchanged editor, its save flow, or its content API. Inspect the template bindings and verify their integration on the requested environment. Run editor regression tests when editor code changes or there is concrete evidence of an editor defect. Apply the same rule to other established framework features: avoid spending tokens and time on redundant tests.
+
 Common commands include:
 
 ```bash
