@@ -326,6 +326,14 @@ $GLOBALS['AGENT_TEST_DEFINITIONS']['app'] = ['id' => 'app', 'scope' => ['resourc
 $in_app = agent_chat_create($owner, ['app' => 'App']);
 agent_chat_append($in_app, 'app', 'Your plan is ready.', 'notice-app');
 chat_test_assert(!in_array($in_app, array_column(agent_chat_list($owner), 'uuid'), true), 'an app agent\'s chat stays in its app');
+// Posting in an older chat adds the current team, including scoped app agents.
+data_update('.agent_conversations', $fresh['uuid'], ['agents' => ['helper', 'coder', 'app']]);
+chat_test_assert(in_array($fresh['uuid'], array_column(agent_chat_list($owner), 'uuid'), true),
+    'adding an app agent to the team does not hide an existing general conversation');
+data_update('.agent_conversations', $in_app, ['agents' => ['app', 'helper']]);
+agent_chat_append($in_app, 'helper', 'I can help with the app too.', 'notice-app-helper');
+chat_test_assert(!in_array($in_app, array_column(agent_chat_list($owner), 'uuid'), true),
+    'an app conversation remains in its app after a general agent joins and replies');
 unset($GLOBALS['AGENT_TEST_DEFINITIONS']['app']);
 
 // Deleting a conversation: only your own.

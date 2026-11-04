@@ -111,7 +111,17 @@ function agent_chat_list(string $owner): array
 /** An agent with a `scope` belongs to the app that hosts it; its conversations are opened there, not in the team chat. */
 function agent_chat_in_app(array $conversation): bool
 {
-    foreach ((array)($conversation['agents'] ?? []) as $agent_id) {
+    $agents = (array)($conversation['agents'] ?? []);
+    // Posting adds the available team to an existing conversation. Its first answering
+    // agent identifies the conversation's purpose; incidental team members do not.
+    foreach ((array)($conversation['messages'] ?? []) as $message) {
+        $from = (string)($message['from'] ?? '');
+        if (!in_array($from, ['user', 'occasion'], true) && in_array($from, $agents, true)) {
+            $agents = [$from];
+            break;
+        }
+    }
+    foreach ($agents as $agent_id) {
         try {
             if (!empty(agent_definition((string)$agent_id)['scope'])) {
                 return true;
