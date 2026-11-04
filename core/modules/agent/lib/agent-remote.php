@@ -170,6 +170,17 @@ function agent_remote_take(array $update): bool
         agent_chat_notice((string)($update['recipient'] ?? ''), $agent_id, (string)($update['text'] ?? ''), 'notice-' . (string)($update['id'] ?? ''));
         return true;
     }
+    if (($update['type'] ?? '') === 'notice_check_back') {
+        $minutes = (int)($update['minutes'] ?? 0);
+        if ($minutes < AGENT_CHECK_BACK_MINUTES[0] || $minutes > AGENT_CHECK_BACK_MINUTES[1]
+            || (int)($update['at'] ?? 0) <= 0) {
+            throw new InvalidArgumentException('Invalid check-back time');
+        }
+        $uuid = agent_chat_notice_conversation((string)($update['recipient'] ?? ''), $agent_id);
+        agent_chat_schedule_check_back($uuid, $agent_id, (int)$update['at'] + $minutes * 60,
+            mb_substr(trim((string)($update['note'] ?? '')), 0, 1000));
+        return true;
+    }
     $run_uuid = (string)($update['run'] ?? '');
     $run = preg_match('/^[a-f0-9]{16}$/', $run_uuid) === 1 ? data_read('.agent_runs', $run_uuid) : null;
     if (!is_array($run) || ($run['trigger'] ?? '') !== 'remote' || ($run['agent_id'] ?? '') !== $agent_id) {
@@ -298,9 +309,13 @@ function agent_remote_updates(int $since): array
                 : ['type' => 'notice', 'agent' => $agent_id, 'recipient' => (string)$conversation['notice_for'],
                     'id' => (string)($message['id'] ?? ''), 'text' => (string)$message['text']];
         }
-        foreach ($mirror ? (array)($conversation['outbox'] ?? []) : [] as $event) {
+        foreach ((array)($conversation['outbox'] ?? []) as $event) {
             if ((int)($event['at'] ?? 0) >= $since && agent_remote_may_ask((string)($event['agent'] ?? ''))) {
-                $updates[] = (array)$event;
+                if ($mirror) {
+                    $updates[] = (array)$event;
+                } elseif (($event['type'] ?? '') === 'notice_check_back') {
+                    $updates[] = (array)$event + ['recipient' => (string)$conversation['notice_for']];
+                }
             }
         }
     }
@@ -313,7 +328,13 @@ function agent_remote_outbox(string $uuid, array $event): void
     $lock = agent_lock('chat-' . $uuid);
     try {
         $conversation = (array)data_read('.agent_conversations', $uuid);
-        $outbox = array_slice([...(array)($conversation['outbox'] ?? []), $event + ['at' => time()]], -50);
+        $outbox = (array)($conversation['outbox'] ?? []);
+        if (in_array($event['type'] ?? '', ['check_back', 'notice_check_back'], true)) {
+            // A new check-back replaces the previous one, including during overlapping pulls.
+            $outbox = array_filter($outbox, fn($previous) => ($previous['type'] ?? '') !== $event['type']
+                || ($previous['agent'] ?? '') !== $event['agent']);
+        }
+        $outbox = array_slice([...$outbox, $event + ['at' => time()]], -50);
         data_update('.agent_conversations', $uuid, ['outbox' => $outbox]);
     } finally {
         agent_unlock($lock);

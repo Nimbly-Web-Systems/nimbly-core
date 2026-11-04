@@ -1,6 +1,7 @@
 <?php
 
 define('BASE_DIR', dirname(__DIR__, 2) . '/');
+$GLOBALS['SYSTEM']['file_base'] = sys_get_temp_dir() . '/nimbly-agent-remote-test-' . getmypid() . '/';
 
 $agent_test_data = [];
 $agent_test_jobs = [];
@@ -580,6 +581,7 @@ $chat_test_env = [];
 // A scheduled run, outside any chat, checks back in the chat where its own messages land.
 require_once BASE_DIR . 'core/modules/agent/lib/agent-connector-chat-check-back.php';
 $chat_test_env = ['NOTE_TO' => 'hermen@example.test'];
+$chat_test_user_features = [$chat_test_user => ['chat-coder']];
 $agent_test_jobs = [];
 $scheduled_check = agent_connector_chat_check_back(agent_artifact('agent.tool-call', 1, ['arguments' => ['minutes' => 30, 'note' => 'Is the release upgrade still running?']]),
     ['recipient_env' => 'NOTE_TO'], ['run' => ['agent_id' => 'coder', 'event_context' => []], 'run_uuid' => 'scheduled-run']);
@@ -591,6 +593,57 @@ $woken = agent_check_back_job(end($agent_test_jobs));
 chat_test_assert(!empty($woken['queued']),
     'it wakes the agent there, also before the recipient wrote in that chat');
 $chat_test_user_features = [];
+$chat_test_env = [];
+
+// A scheduled agent's recipient can live only at the hub, with no account at home.
+chat_test_site('home');
+$chat_test_env['NOTE_TO'] = 'remote-owner@example.test';
+$chat_test_user_features = [];
+$agent_test_jobs = [];
+agent_connector_chat_check_back(agent_artifact('agent.tool-call', 1, ['arguments' => [
+    'minutes' => 30, 'note' => 'Superseded follow-up.']]), ['recipient_env' => 'NOTE_TO'],
+    ['run' => ['agent_id' => 'coder', 'event_context' => []], 'run_uuid' => 'scheduled-at-home']);
+$remote_check = agent_connector_chat_check_back(agent_artifact('agent.tool-call', 1, ['arguments' => [
+    'minutes' => 5, 'note' => 'Verify every site after the reboot.']]), ['recipient_env' => 'NOTE_TO'],
+    ['run' => ['agent_id' => 'coder', 'event_context' => []], 'run_uuid' => 'scheduled-at-home']);
+chat_test_assert(agent_artifact_data($remote_check)['scheduled'] && $agent_test_jobs === [],
+    'without local chat rights the scheduled continuation goes to the hub, not an unusable local job');
+$home_notice_chat = agent_chat_notice_conversation('remote-owner@example.test', 'coder');
+chat_test_assert(count(data_read('.agent_conversations', $home_notice_chat)['outbox']) === 1,
+    'a replacement check-back removes the superseded request before the hub pulls it');
+chat_test_site('hub');
+$chat_test_env = ['AGENT_REMOTES' => 'coder=https://home.test/'];
+$chat_test_names['remote-owner@example.test'] = ['email' => 'remote-owner'];
+$chat_test_user_features = ['remote-owner' => ['chat-coder', 'agent-act']];
+$agent_test_jobs = [];
+agent_remote_pull(true);
+$scheduled_remote_job = end($agent_test_jobs);
+$remote_notice_chat = agent_chat_notice_conversation('remote-owner@example.test', 'coder');
+chat_test_assert($scheduled_remote_job['payload']['conversation'] === $remote_notice_chat
+    && abs($scheduled_remote_job['options']['available_at'] - (time() + 300)) < 10,
+    'the hub queues the scheduled agent\'s check-back in the recipient\'s own chat');
+$remote_job_uuid = $scheduled_remote_job['options']['uuid'];
+data_create('.jobs', $remote_job_uuid, ['payload' => $scheduled_remote_job['payload'], 'status' => 'queued']);
+$agent_test_jobs = [];
+agent_remote_pull(true);
+chat_test_assert(array_filter($agent_test_jobs, fn($job) => $job['options']['uuid'] === $remote_job_uuid) === []
+    && data_read('.jobs', $remote_job_uuid)['status'] === 'queued',
+    'overlapping remote pulls do not enqueue the same continuation again');
+chat_test_assert(agent_check_back_job($scheduled_remote_job)['queued'] && $act_run() === false
+    && str_contains(json_encode($chat_test_seen['coder']), 'Verify every site after the reboot.'),
+    'the scheduled check-back starts a real home run with the note and existing action authority');
+data_update('.jobs', $remote_job_uuid, ['status' => 'done']);
+agent_remote_pull(true);
+chat_test_assert(data_read('.jobs', $remote_job_uuid)['status'] === 'done',
+    'a replay cannot rearm a completed check-back');
+$chat_test_user_features = [];
+try {
+    agent_check_back_job($scheduled_remote_job);
+    chat_test_assert(false, 'a rejected check-back must fail visibly');
+} catch (InvalidArgumentException $error) {
+    chat_test_assert($error->getMessage() === 'The conversation owner may not talk to this agent',
+        'a check-back preserves authorization and propagates the rejection to the job runner');
+}
 $chat_test_env = [];
 
 // After its email went out, the agent's own chat line (if it wrote one) lands in the recipient's chat.

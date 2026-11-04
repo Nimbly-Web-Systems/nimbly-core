@@ -325,7 +325,19 @@ function agent_chat_check_back(string $uuid, string $run_uuid, string $agent_id,
         agent_remote_outbox($uuid, ['type' => 'check_back', 'agent' => $agent_id, 'minutes' => $minutes, 'note' => $note,
             'run' => (string)(data_read('.agent_runs', $run_uuid)['event_context']['hub_run'] ?? '')]);
     } else {
-        agent_chat_schedule_check_back($uuid, $agent_id, time() + $minutes * 60, $note);
+        load_libraries(['permissions', 'access', 'get-user']);
+        $recipient = (string)($mirror['notice_for'] ?? '');
+        $user = $recipient !== '' ? find_user_by_email($recipient) : false;
+        $asker = is_array($user) && !empty($user['email']) ? (string)$user['email'] : $recipient;
+        // Scheduled agents can notify people whose account lives only at a hub. Let that
+        // hub start the continuation with its recipient's rights, just as it receives notices.
+        if ($recipient !== '' && !permission_features_have(user_feature_map($asker), 'chat-' . $agent_id)) {
+            load_library('agent-remote');
+            agent_remote_outbox($uuid, ['type' => 'notice_check_back', 'agent' => $agent_id,
+                'minutes' => $minutes, 'note' => $note]);
+        } else {
+            agent_chat_schedule_check_back($uuid, $agent_id, time() + $minutes * 60, $note);
+        }
     }
     return ['scheduled' => true, 'note' => 'You will be woken in this chat in about ' . $minutes . ' minutes.'];
 }
@@ -334,8 +346,13 @@ function agent_chat_schedule_check_back(string $uuid, string $agent_id, int $due
 {
     load_libraries(['data', 'job']);
     $job_uuid = md5('agent-check-back:' . $uuid . ':' . $agent_id);
-    $payload = ['conversation' => $uuid, 'agent' => $agent_id, 'note' => $note];
+    $payload = ['conversation' => $uuid, 'agent' => $agent_id, 'note' => $note, 'scheduled_at' => $due];
     if (data_exists('.jobs', $job_uuid)) {
+        // Remote updates overlap their cursor window. Replaying the same request must
+        // neither postpone a retry nor start a completed continuation a second time.
+        if ((data_read('.jobs', $job_uuid)['payload'] ?? []) === $payload) {
+            return;
+        }
         data_update('.jobs', $job_uuid, ['status' => 'queued', 'payload' => $payload, 'attempts' => 0,
             'available_at' => $due, 'last_error' => '']);
         job_mark_due($due);
