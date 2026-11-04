@@ -1581,6 +1581,11 @@ function _data_validate($resource, $uuid, &$data_ls)
         return true;
     }
     $meta = data_meta($resource);
+    require_once __DIR__ . '/embed.php';
+    $previous = data_exists($resource, $uuid) ? data_read($resource, $uuid) : [];
+    if (!embed_validate_fields(is_array($meta) ? $meta : [], $data_ls, is_array($previous) ? $previous : [])) {
+        return false;
+    }
     if (_data_validate_field_definitions($meta, $data_ls) !== true) {
         data_error_set('VALIDATION_FAILED', data_error_detail_get());
         return false;

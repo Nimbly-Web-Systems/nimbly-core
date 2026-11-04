@@ -76,6 +76,7 @@ function permission_any_features(): array
         'clear-cache',
         'pull-core-updates',
         'pull-ext-updates',
+        'manage-unsandboxed-embeds',
         'manage-system',
         'manage-openai_translate',
         'manage-openai_complete',

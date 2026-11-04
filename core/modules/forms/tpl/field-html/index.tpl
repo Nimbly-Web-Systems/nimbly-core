@@ -7,7 +7,7 @@
             "media": [#fmt var=_f.media type=boolean boolean=true|false#],
             "paste_html": [#fmt var=_f.paste_html type=boolean boolean=true|false#]}'
             class="prose w-full max-w-none bg-white">
-        [#get-html record.[#_f.key#] legacy-img-sizes=lg-70,xl-50#]
+        [#get-html record.[#_f.key#] legacy-img-sizes=lg-70,xl-50 embed-preview#]
     </div>
     [#field-actions#]
 

@@ -24,6 +24,12 @@ nb_edit.init_editor = function (ed, as_form_field = false) {
         return;
     }
     const options = JSON.parse(ed.dataset.nbEditOptions || '{}');
+    if (nb.embed) {
+        ed.querySelectorAll('iframe').forEach(frame => {
+            try { frame.replaceWith(nb.embed.frame(nb.embed.info(frame), true)); }
+            catch { frame.setAttribute('sandbox', ''); frame.removeAttribute('srcdoc'); }
+        });
+    }
     const buttons = typeof options.buttons === 'string' ?
         options.buttons.split(',').map((v) => { return v.trim(); })
         : nb_edit.default_buttons;
@@ -57,7 +63,6 @@ nb_edit.init_editor = function (ed, as_form_field = false) {
 
     ed._nb_editor_options = options;
     ed._nb_mode = as_form_field ? 'form' : 'page';
-
     window.nb.field_bar.attach(ed, {
         buttons: ed._nb_plain ? [] : buttons,
         media: !ed._nb_plain && options.media === true,
@@ -438,6 +443,13 @@ nb_edit.make_links_target_blank = function (ed) {
 
 nb_edit.open_insert_media = function () {
     if (nb.media_alpine) {
+        nb.media_alpine.generic_target = null;
+        nb.media_alpine.generic_editor = nb_edit.active_editor;
+        const selection = window.getSelection();
+        nb.media_alpine.generic_range = selection.rangeCount ? selection.getRangeAt(0).cloneRange() : null;
+        nb.media_alpine.generic_info = null;
+        nb.media_alpine.generic_code = '';
+        nb.media_alpine.generic_error = '';
         nb.media_alpine.filter();
         nb.media_alpine.mode = 'insert';
         nb.media_alpine.reset_tab();
@@ -557,9 +569,9 @@ nb_edit.on_beforeunload = function (e) {
 
 // Editor HTML without upload placeholders, which must never be stored.
 nb_edit.editor_html = function (ed) {
-    if (!ed.querySelector('[data-nb-upload-placeholder]')) return nb_edit.links_for_storage(ed.innerHTML.trim());
+    if (nb.embed) return nb_edit.links_for_storage(nb.embed.serialize(ed));
     const clone = ed.cloneNode(true);
-    clone.querySelectorAll('[data-nb-upload-placeholder]').forEach(el => el.remove());
+    clone.querySelectorAll('[data-nb-upload-placeholder]').forEach(node => node.remove());
     return nb_edit.links_for_storage(clone.innerHTML.trim());
 };
 

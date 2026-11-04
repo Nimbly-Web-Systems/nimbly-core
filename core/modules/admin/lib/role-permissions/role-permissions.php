@@ -84,6 +84,7 @@ function role_permissions_system_features(): array
         'clear-cache' => ['label' => 'Clear cache', 'description' => 'Clear cached data to force a refresh.'],
         'pull-core-updates' => ['label' => 'Pull core updates', 'description' => 'Update Nimbly itself to the latest version.'],
         'pull-ext-updates' => ['label' => 'Pull site updates', 'description' => 'Update this site\'s code to the latest version.'],
+        'manage-unsandboxed-embeds' => ['label' => 'Manage unsandboxed embeds', 'description' => 'Allow external embed scripts to access the page.'],
         'manage-system' => ['label' => 'Manage system', 'description' => 'Full control over system settings and maintenance.'],
         'manage-openai_translate' => ['label' => 'AI translate records', 'description' => 'Use the AI button to translate a record into another language.'],
         'manage-openai_complete' => ['label' => 'AI complete fields', 'description' => 'Use the AI button to generate or rewrite a single field.'],

@@ -408,6 +408,7 @@ nb_bubble_editor.on_paste = async function (e) {
         return;
     }
     const ed = e.currentTarget;
+    if (nb.embed?.paste(e, ed)) return;
     const html = ed._nb_bubble.paste_html ? data.getData('text/html') : '';
     const media = ed._nb_editor_options?.media === true;
     if (html) {

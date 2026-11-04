@@ -80,6 +80,54 @@ const alpine_nimblybar = function () {
 
 const alpine_media_insert = function () {
   Alpine.data("media_insert", () => ({
+    generic_code: '',
+    generic_info: null,
+    generic_error: '',
+    generic_target: null,
+    generic_editor: null,
+    generic_range: null,
+    parse_generic() {
+      try {
+        this.generic_info = nb.embed.parse(this.generic_code);
+        this.generic_error = '';
+        this.preview_generic();
+      } catch (error) {
+        this.generic_info = null;
+        this.generic_error = error.message;
+      }
+    },
+    preview_generic() {
+      this.$nextTick(() => {
+        const preview = document.getElementById('nb-generic-preview');
+        preview.replaceChildren();
+        if (!this.generic_info) return;
+        try {
+          preview.append(nb.embed.frame(this.generic_info, true));
+          this.generic_error = '';
+        } catch (error) { this.generic_error = error.message; }
+      });
+    },
+    existing_embeds() {
+      return Array.from((this.generic_editor || nb.edit.active_editor)?.querySelectorAll('iframe') || []);
+    },
+    reopen_generic(index) {
+      const frame = this.existing_embeds()[index];
+      if (frame) nb.embed.open(nb.embed.code(nb.embed.info(frame)), frame);
+    },
+    insert_generic() {
+      const editor = this.generic_editor || nb.edit.active_editor;
+      if (!editor || !this.generic_info || this.generic_error) return;
+      const html = nb.embed.frame(this.generic_info, true).outerHTML;
+      if (this.generic_target && editor.contains(this.generic_target)) {
+        this.generic_target.outerHTML = html;
+        editor.dispatchEvent(new Event('input', { bubbles: true }));
+        editor.dispatchEvent(new CustomEvent('nb:editor-change', { bubbles: true, detail: { value: nb.edit.editor_html(editor) } }));
+      } else {
+        nb.edit.insert_html('<figure>' + html + '</figure>', editor, this.generic_range);
+      }
+      nb.modal.close('nb-modal-insert-media');
+      this.generic_target = null;
+    },
     caret: null,
     caret_pos: 0,
     hide_save_button: true,
@@ -165,6 +213,10 @@ const alpine_media_insert = function () {
       if (!this.embed_info || !this.embed_info.active) {
         return;
       }
+      if (this.embed_info.active === 'generic') {
+        this.insert_generic();
+        return;
+      }
       if (this.mode === "select_embed") {
         let value = null;
         if (this.embed_info.active === "vimeo" && this.embed_info.vimeo.id) {
@@ -188,9 +240,14 @@ const alpine_media_insert = function () {
       );
       if (embed_data_el) {
         nb.edit.restore_caret_pos();
-        const html = embed_data_el.innerHTML
+        let html = embed_data_el.innerHTML
           .trim()
           .replaceAll(/:(\w+)="(.+?)"/g, "");
+        if (html.includes('<iframe')) {
+          const info = nb.embed.parse(html);
+          info.proportional = this.embed_info.active === 'vimeo' && this.embed_info.vimeo.mode === 'responsive';
+          html = '<figure>' + nb.embed.frame(info, true).outerHTML + '</figure>';
+        }
         nb.edit.insert_html(html);
       }
       nb.modal.close("nb-modal-insert-media");

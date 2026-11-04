@@ -94,5 +94,10 @@ function get_html_sc($params)
     } else {
         $result = strip_tags($html, "<h1><h2><h3><h4><h5><h6><b><strong><a><i><p><blockquote><ol><ul><li><br><img><iframe><figure><figcaption><video><source>");
     }
+    if (get_single_param_value($params, 'plain', true) !== true) {
+        require_once __DIR__ . '/embed.php';
+        $preview = get_single_param_value($params, 'embed-preview', true) === true;
+        $result = embed_normalize_html($result, !$preview, $preview);
+    }
     echo $result;
 }

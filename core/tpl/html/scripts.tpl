@@ -43,4 +43,5 @@ window.nb = {
 <script>
 [#include [#uri-path#]/index.js#]
 Alpine.start();
+document.dispatchEvent(new CustomEvent('nb:ready'));
 </script>

@@ -440,6 +440,8 @@ var nb_media_library = {
     can_embed() {
         if (this.embed_info.active) {
             switch (this.embed_info.active) {
+                case 'generic':
+                    return !!this.generic_info && !this.generic_error && this.mode !== 'select_embed';
                 case 'youtube':
                     return !!this.embed_info.youtube.id;
                 case 'vimeo':

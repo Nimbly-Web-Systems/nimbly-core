@@ -98,6 +98,7 @@
 
                             <div class="w-full p-4 md:p-6 lg:p-8">
                                 <div id="media_modal_embed_options">
+                                    [#embed_generic#]
                                     [#embed_vimeo#]
                                     [#embed_youtube#]
                                     [#embed_img#]
