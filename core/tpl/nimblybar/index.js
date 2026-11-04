@@ -83,7 +83,6 @@ const alpine_media_insert = function () {
     generic_code: '',
     generic_info: null,
     generic_error: '',
-    generic_target: null,
     generic_editor: null,
     generic_range: null,
     parse_generic() {
@@ -107,26 +106,12 @@ const alpine_media_insert = function () {
         } catch (error) { this.generic_error = error.message; }
       });
     },
-    existing_embeds() {
-      return Array.from((this.generic_editor || nb.edit.active_editor)?.querySelectorAll('iframe') || []);
-    },
-    reopen_generic(index) {
-      const frame = this.existing_embeds()[index];
-      if (frame) nb.embed.open(nb.embed.code(nb.embed.info(frame)), frame);
-    },
     insert_generic() {
       const editor = this.generic_editor || nb.edit.active_editor;
       if (!editor || !this.generic_info || this.generic_error) return;
       const html = nb.embed.frame(this.generic_info, true).outerHTML;
-      if (this.generic_target && editor.contains(this.generic_target)) {
-        this.generic_target.outerHTML = html;
-        editor.dispatchEvent(new Event('input', { bubbles: true }));
-        editor.dispatchEvent(new CustomEvent('nb:editor-change', { bubbles: true, detail: { value: nb.edit.editor_html(editor) } }));
-      } else {
-        nb.edit.insert_html('<figure>' + html + '</figure>', editor, this.generic_range);
-      }
+      nb.edit.insert_html('<figure>' + html + '</figure>', editor, this.generic_range);
       nb.modal.close('nb-modal-insert-media');
-      this.generic_target = null;
     },
     caret: null,
     caret_pos: 0,

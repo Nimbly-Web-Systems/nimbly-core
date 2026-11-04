@@ -1,6 +1,6 @@
 # Generic embeds
 
-Media-enabled HTML fields accept one iframe with optional external script tags through **Media → Embed external media → Paste embed code**, with no provider whitelist. Pasting an iframe into the editor imports it with sandboxing enabled, even when `paste_html` is off. Pasting iframe-plus-script code opens the dialog for review. Use the accessible title, pasted height and optional proportional video sizing; width always fits the content column. To reopen an embed, open the media dialog, select **Paste embed code**, then **Edit embed**.
+Media-enabled HTML fields accept one iframe with optional external script tags through **Media → Embed external media → Paste embed code**, with no provider whitelist. Pasting an iframe into the editor imports it with sandboxing enabled, even when `paste_html` is off. Pasting iframe-plus-script code opens the dialog for review. Use the accessible title, pasted height and optional proportional video sizing; width always fits the content column. The dialog inserts new embeds. To replace an embed, delete it from the content and paste the replacement.
 
 Embed URLs must be absolute HTTPS URLs. Parsing is inert: surrounding markup, styles and event handlers are discarded; inline scripts, executable URLs and author-supplied `srcdoc` are rejected. Normalized iframe metadata (including ordered, deduplicated script URLs, dimensions and sandbox choice) stays in the existing HTML field's `data-nb-embed` attribute. There is no extra resource or endpoint.
 

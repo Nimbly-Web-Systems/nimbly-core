@@ -1,9 +1,6 @@
 <section x-show="mode !== 'select_embed'" class="mb-4 rounded border border-neutral-300 bg-neutral-50 p-5">
     <button type="button" class="text-base font-semibold" @click="embed_info.active='generic'" :aria-expanded="embed_info.active === 'generic'" aria-controls="nb-generic-controls">[#text Paste embed code#]</button>
     <div id="nb-generic-controls" x-show="embed_info.active === 'generic'" class="mt-4 space-y-4">
-        <template x-for="(frame, index) in existing_embeds()" :key="index">
-            <button type="button" class="block underline" @click="reopen_generic(index)" x-text="'Edit embed: ' + (frame.title || frame.src)"></button>
-        </template>
         <label class="block">[#text Embed code#]
             <textarea class="textarea textarea-bordered w-full" x-model="generic_code" @input.debounce.300ms="parse_generic()" rows="4" placeholder="&lt;iframe src=&quot;https://…&quot;&gt;&lt;/iframe&gt;"></textarea>
         </label>

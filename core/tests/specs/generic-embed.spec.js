@@ -60,7 +60,7 @@ test('plain iframe paste keeps caret, title, pasted height, surrounding text and
   expect((await frame.boundingBox()).width).toBeLessThanOrEqual(375);
 });
 
-test('scripts require review, never execute in editor, and existing embed reopens', async ({ page }) => {
+test('scripts require review and multiple embeds insert independently without edit links', async ({ page }) => {
   await setup(page);
   await paste(page, with_scripts);
   await expect(page.locator('#nb-generic-controls')).toBeVisible();
@@ -70,15 +70,20 @@ test('scripts require review, never execute in editor, and existing embed reopen
   await page.locator('#insert').click();
   await expect(page.locator('#editor iframe')).toHaveCount(1);
   expect(await page.evaluate(() => nb.embed.info(document.querySelector('#editor iframe')).scripts.length)).toBe(2);
-  await page.evaluate(() => {
-    const frame = document.querySelector('#editor iframe');
-    nb.edit.active_editor = document.getElementById('editor');
-    nb.embed.open(nb.embed.code(nb.embed.info(frame)), frame);
-  });
-  await page.getByLabel('Accessible title').fill('Reopened player');
+  await page.evaluate(code => {
+    const editor = document.getElementById('editor');
+    editor.focus();
+    const range = document.createRange();
+    range.selectNodeContents(editor);
+    range.collapse(false);
+    getSelection().removeAllRanges(); getSelection().addRange(range);
+    nb.embed.open(code);
+  }, with_scripts.replace('title="SoundCloud"', 'title="Second player"'));
+  await expect(page.getByRole('button', { name: /^Edit embed:/ })).toHaveCount(0);
   await page.locator('#insert').click();
-  await expect(page.locator('#editor iframe')).toHaveCount(1);
-  await expect(page.locator('#editor iframe')).toHaveAttribute('title', 'Reopened player');
+  await expect(page.locator('#editor iframe')).toHaveCount(2);
+  await expect(page.locator('#editor iframe').nth(0)).toHaveAttribute('title', 'SoundCloud');
+  await expect(page.locator('#editor iframe').nth(1)).toHaveAttribute('title', 'Second player');
 });
 
 test('admin can disable sandbox, sees warning, preview remains sandboxed', async ({ page }) => {

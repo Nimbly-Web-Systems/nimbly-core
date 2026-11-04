@@ -69,19 +69,9 @@ const nb_embed = {
         if (preview || info.sandbox) frame.setAttribute('sandbox', 'allow-scripts allow-presentation' + (same_host ? '' : ' allow-same-origin'));
         return frame;
     },
-    code(info) {
-        const frame = document.createElement('iframe');
-        for (const key of ['src', 'title', 'width', 'height']) frame.setAttribute(key, info[key]);
-        return frame.outerHTML + info.scripts.map(url => {
-            const script = document.createElement('script');
-            script.src = url;
-            return script.outerHTML;
-        }).join('');
-    },
-    open(code, frame = null) {
+    open(code) {
         const modal = nb.media_alpine;
         if (!modal) return;
-        modal.generic_target = frame;
         modal.generic_editor = nb.edit.active_editor;
         const selection = window.getSelection();
         if (selection.rangeCount && modal.generic_editor?.contains(selection.getRangeAt(0).commonAncestorContainer)) nb.edit.store_caret_pos();
@@ -90,10 +80,6 @@ const nb_embed = {
         modal.embed_info.active = 'generic';
         modal.generic_code = code;
         modal.parse_generic();
-        if (frame && modal.generic_info) {
-            modal.generic_info = this.info(frame);
-            modal.preview_generic();
-        }
         nb.modal.open('nb-modal-insert-media');
     },
     paste(event, editor) {

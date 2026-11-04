@@ -443,7 +443,6 @@ nb_edit.make_links_target_blank = function (ed) {
 
 nb_edit.open_insert_media = function () {
     if (nb.media_alpine) {
-        nb.media_alpine.generic_target = null;
         nb.media_alpine.generic_editor = nb_edit.active_editor;
         const selection = window.getSelection();
         nb.media_alpine.generic_range = selection.rangeCount ? selection.getRangeAt(0).cloneRange() : null;
