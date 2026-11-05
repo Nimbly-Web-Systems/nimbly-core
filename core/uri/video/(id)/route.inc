@@ -46,7 +46,30 @@ $file = sprintf("%s/.files/%s", $GLOBALS['SYSTEM']['data_base'], $uuid);
 $cache_time = 315360000; //10 years
 header("Expires: " . gmdate("D, d M Y H:i:s", $t + $cache_time) . " GMT");
 header('Last-Modified: '. gmdate('D, d M Y H:i:s', $modified).' GMT');
-header('Content-Length: '. filesize($file));
 header('Content-Type: ' . $meta['type']);
-readfile($file);
+header('Accept-Ranges: bytes');
+$size = filesize($file);
+$range = download_range($size, $_SERVER['HTTP_RANGE'] ?? '');
+if ($range === false) {
+    header('Content-Range: bytes */' . $size, true, 416);
+    exit();
+}
+if ($range === null) {
+    header('Content-Length: ' . $size);
+    readfile($file);
+    exit();
+}
+[$start, $end] = $range;
+http_response_code(206);
+header(sprintf('Content-Range: bytes %d-%d/%d', $start, $end, $size));
+header('Content-Length: ' . ($end - $start + 1));
+$handle = fopen($file, 'rb');
+fseek($handle, $start);
+$left = $end - $start + 1;
+while ($left > 0 && !feof($handle)) {
+    $chunk = fread($handle, min(65536, $left));
+    $left -= strlen($chunk);
+    echo $chunk;
+}
+fclose($handle);
 exit();

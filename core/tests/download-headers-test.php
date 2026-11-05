@@ -99,4 +99,14 @@ foreach ([
     download_headers_assert(str_contains($template, $line), "setup template sends: {$line}");
 }
 
+
+// Video players (Safari, iOS) need byte ranges.
+download_headers_assert(download_range(1000, '') === null, 'no Range header sends the whole file');
+download_headers_assert(download_range(1000, 'bytes=0-1') === [0, 1], 'a probe range is served');
+download_headers_assert(download_range(1000, 'bytes=500-') === [500, 999], 'an open range runs to the end');
+download_headers_assert(download_range(1000, 'bytes=-100') === [900, 999], 'a suffix range serves the tail');
+download_headers_assert(download_range(1000, 'bytes=0-5000') === [0, 999], 'a long range is clipped');
+download_headers_assert(download_range(1000, 'bytes=2000-') === false, 'a range past the end is refused');
+download_headers_assert(download_range(1000, 'bytes=0-1,5-9') === null, 'multiple ranges fall back to the whole file');
+
 echo "Download header tests passed\n";
