@@ -106,6 +106,27 @@ the starter home page that `system:setup` wrote to `ext/uri/`.
 ./nimbly --docker init
 ```
 
+### Updating core or ext from the terminal
+
+From any project's root directory:
+
+```bash
+./nimbly core:update
+./nimbly ext:update
+```
+
+`core:update` updates the root Core repository on `master`. `ext:update` updates
+the separate application repository in `ext/` on its current branch. Both pull
+from that branch's configured upstream and allow fast-forward updates only.
+They stop on uncommitted changes (including untracked files), detached HEADs,
+unfinished Git operations, missing upstreams or divergent history. They never
+switch branches, stash, commit, rebase or push local work.
+
+Run `./nimbly build` after updating to rebuild assets. After a Core update,
+`./nimbly system:repair` reports any setup file changes needed; use its `--yes`
+option only when ready to apply them. These update commands do not run setup,
+builds or deployment steps automatically.
+
 ### Updating core or ext from the admin
 
 Both repos can be updated without touching the terminal. The admin dashboard (`/nb-admin/`) shows when core and ext were each last updated, and — for roles with `pull-core-updates`/`pull-ext-updates` — an inline **Update now** action per repo once a pending update is detected, running `git pull` on the respective repository. Treat this as a simple self-managed update option for small installations. Production deployments should normally come from CI/CD so the same checkout, setup, build, and lint path has already passed before files reach the server.

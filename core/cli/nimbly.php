@@ -21,6 +21,8 @@ $commands = [
     'help'              => ['file' => '',                           'desc' => 'Show command help', 'public' => true],
     'system:setup'     => ['file' => 'core/cli/setup/setup.php',    'desc' => 'Set up local system files, resources, roles, routes, and first user', 'public' => true],
     'system:repair'    => ['file' => 'core/cli/repair.php',        'desc' => 'Bring generated files level with the current core (--yes to apply)', 'public' => true],
+    'core:update'      => ['file' => 'core/cli/update.php',        'desc' => 'Fast-forward Core master from its configured upstream', 'public' => true],
+    'ext:update'       => ['file' => 'core/cli/update.php',        'desc' => 'Fast-forward the application branch from its configured upstream', 'public' => true],
     'user:create'      => ['file' => 'core/cli/create_user.php',    'desc' => 'Create a new user account', 'public' => true],
     'user:email-index:rebuild' => ['file' => 'core/cli/users_email_index.php', 'desc' => 'Add and rebuild users email lookup index', 'public' => true],
     'module:install'   => ['file' => 'core/cli/install_module.php', 'desc' => 'Install a module (runs its .install.inc)', 'public' => true],
