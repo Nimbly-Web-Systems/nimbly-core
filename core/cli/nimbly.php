@@ -25,6 +25,7 @@ $commands = [
     'user:email-index:rebuild' => ['file' => 'core/cli/users_email_index.php', 'desc' => 'Add and rebuild users email lookup index', 'public' => true],
     'module:install'   => ['file' => 'core/cli/install_module.php', 'desc' => 'Install a module (runs its .install.inc)', 'public' => true],
     'jobs:run'         => ['file' => 'core/cli/jobs.php',           'desc' => 'Run queued background jobs', 'public' => false],
+    'password-wall:set' => ['file' => 'core/cli/password_wall_set.php', 'desc' => 'Set the password and features of a password wall', 'public' => true],
     'sessions:prune' => ['file' => 'core/cli/sessions_prune.php', 'desc' => 'Remove expired session files (--dry-run)', 'public' => true],
     'schedule:status' => ['file' => 'core/cli/schedule_status.php', 'desc' => 'Check mandatory maintenance completion', 'public' => true],
     'stats:rollup'     => ['file' => 'core/cli/stats_rollup.php',   'desc' => 'Archive finished days of request stats and refresh summaries (--rebuild)', 'public' => true],

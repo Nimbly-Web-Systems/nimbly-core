@@ -1,0 +1,5 @@
+[#password-wall form#]
+[#set html-classes="login-view"#]
+[#post#]
+[#set page-title=Password#]
+[#html#]
