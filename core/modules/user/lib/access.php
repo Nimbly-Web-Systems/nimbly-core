@@ -28,6 +28,13 @@ function access_sc($params) {
 }
 
 function access_denied($redirect_url = 'errors/403') {
+    if ($redirect_url === 'login') {
+        load_library('login-return');
+        $return = strtok((string)($GLOBALS['SYSTEM']['request_uri'] ?? ''), '?');
+        if (login_return_is_safe($return)) {
+            $redirect_url .= '?return=' . rawurlencode($return);
+        }
+    }
     redirect($redirect_url);
 }
 

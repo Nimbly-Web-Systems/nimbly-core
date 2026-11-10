@@ -17,6 +17,7 @@
                 </svg>
                 <form name="login" action="[#url#]" method="post" accept-charset="utf-8" class="mt-8">
                     [#form-key login#]
+                    <input type="hidden" name="return" value="[#login-return#]" />
 
                     <div class="form-control mb-6">
                         <label for="email" class="label">
