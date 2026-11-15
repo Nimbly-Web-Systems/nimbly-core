@@ -30,6 +30,7 @@ function form_key_get() {
     } else {
         $key = md5(uniqid(rand(), true));
         setcookie('key', $key, persistent_cookie_options());
+        $_COOKIE['key'] = $key;
     }
     return $key;
 }
