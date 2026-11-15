@@ -34,7 +34,8 @@ test.describe('mobile admin', () => {
       justify_content: getComputedStyle(list).justifyContent,
       item_flex_grow: getComputedStyle(list.querySelector('li')).flexGrow,
     }));
-    expect(data_layout.justify_content).toBe('flex-start');
+    // Chrome 159 reports flex-start as flow-start
+    expect(['flex-start', 'flow-start']).toContain(data_layout.justify_content);
     expect(data_layout.item_flex_grow).toBe('0');
     await expectNoHorizontalOverflow(page);
 
