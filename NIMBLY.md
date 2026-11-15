@@ -1255,7 +1255,7 @@ Never define an `html` field without choosing one of these. `media_sizes` is req
 
 The same buttons show in two places: the bubble toolbar on selected text, and the field bar. In admin forms the field bar is part of the field box; on inline editing it floats above the focused field and also holds Media (when `media: true`) and Save (Ctrl/Cmd+S). Alt+F10 moves keyboard focus to the field bar. Pasting keeps only plain text unless the field sets `"paste_html": true`, which keeps basic formatting and strips Word/Google Docs markup.
 
-**Media in an html field: images, video, YouTube, Vimeo and embed code.** With `media: true` the field has a Media button that opens the media library. From there an editor inserts an image or uploads one, uploads a video file (served from `/video/<id>`), or embeds external media:
+**Media in an html field: images, video, YouTube, Vimeo and embed code.** With `media: true` the field has a Media button that opens the media library. From there an editor inserts an image or uploads one, uploads a video file (served from `/video/<id>`), or opens the **Embed** tab ("Embed external media") to embed:
 
 - **Embed Youtube**: the video ID only (the part after `watch?v=`, e.g. `OpT2pLjnGPw`), plus width and height.
 - **Embed Vimeo**: the Vimeo video ID, the same way.
