@@ -57,17 +57,12 @@ repair_checks_assert(repair_config_upsert_state()['action'] === 'ok', 'a repaire
 // core routes
 repair_checks_assert(repair_core_routes_state()['action'] === 'skip', 'no .routes resource: skipped');
 data_create_resource('.routes', ['fields' => false]);
-$state = repair_core_routes_state();
-repair_checks_assert($state['action'] === 'write', 'a missing core route is reported');
-repair_checks_assert(repair_core_routes_apply($state), 'the route is registered');
-repair_checks_assert(data_read('.routes', md5('nb-admin/roles/(id)'))['order'] === 200, 'with its order');
-repair_checks_assert(data_read('.routes', md5('nb-admin/(resource)/(id)/history'))['order'] === 300
-    && data_exists('.routes', md5('nb-admin/(resource)/history')), 'the history routes are registered too');
+repair_checks_assert(repair_core_routes_state()['action'] === 'ok', 'core routes need no record');
 data_create('.routes', md5('nb-admin/(resource)/deleted'), ['route' => 'nb-admin/(resource)/deleted', 'order' => 300]);
 $state = repair_core_routes_state();
 repair_checks_assert($state['action'] === 'write' && repair_core_routes_apply($state) && !data_exists('.routes', md5('nb-admin/(resource)/deleted')),
     'a retired route is taken out');
-repair_checks_assert(repair_core_routes_state()['action'] === 'ok', 'registered routes need nothing');
+repair_checks_assert(repair_core_routes_state()['action'] === 'ok', 'nothing retired is left');
 
 // users email index
 repair_checks_assert(repair_users_email_state()['action'] === 'skip', 'no users resource: skipped');

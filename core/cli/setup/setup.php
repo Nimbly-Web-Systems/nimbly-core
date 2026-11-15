@@ -575,7 +575,7 @@ if (!data_exists('.jobs', '.meta')) {
 }
 
 // -----------------------------------------------------------------------
-// Create core routes
+// Create the routes resource (core's own dynamic routes are built into the router)
 // -----------------------------------------------------------------------
 
 if (!data_exists('.routes', '.meta')) {
@@ -586,48 +586,6 @@ if (!data_exists('.routes', '.meta')) {
     nb_status("Updated: .routes resource");
 } else {
     nb_skip("Skipped: .routes resource (already exists)");
-}
-
-$routes = [
-    ['route' => 'api',                                 'order' => 900],
-    ['route' => 'api/v1/(resource)',                   'order' => 500],
-    ['route' => 'api/v1/(resource)/import',            'order' => 100],
-    ['route' => 'api/v1/(resource)/export',            'order' => 100],
-    ['route' => 'api/v1/(resource)/import-document',   'order' => 100],
-    ['route' => 'api/v1/(resource)/options',           'order' => 100],
-    ['route' => 'api/v1/(resource)/(id)',              'order' => 200],
-    ['route' => 'api/v1/(resource)/(id)/(id)',         'order' => 200],
-    ['route' => 'api/v1/.pages/(id)',                  'order' => 200],
-    ['route' => 'api/v1/.files/(id)',                  'order' => 200],
-    ['route' => 'api/v1/.jobs/(id)/run',               'order' => 100],
-    ['route' => 'nb-admin/(resource)',                 'order' => 400],
-    ['route' => 'nb-admin/(resource)/(id)',            'order' => 500],
-    ['route' => 'nb-admin/(resource)/add',            'order' => 300],
-    ['route' => 'nb-admin/(resource)/import',         'order' => 300],
-    ['route' => 'nb-admin/(resource)/history',        'order' => 300],
-    ['route' => 'nb-admin/(resource)/(id)/history',   'order' => 300],
-    ['route' => 'nb-admin/roles/(id)',                 'order' => 200],
-    ['route' => 'nb-admin/pages/(id)',                 'order' => 200],
-    ['route' => 'nb-admin/files/(id)',                 'order' => 200],
-    ['route' => 'img/(id)',                            'order' => 500],
-    ['route' => 'download/(id)',                       'order' => 500],
-    ['route' => 'video/(id)',                          'order' => 500],
-    ['route' => 'password-reset/(uuid)/(key)',         'order' => 200],
-    ['route' => 'change-email/(uuid)/(newuuid)/(key)', 'order' => 200],
-];
-
-$routes_created = 0;
-foreach ($routes as $route) {
-    $uuid = md5($route['route']);
-    if (!data_exists('.routes', $uuid)) {
-        data_create('.routes', $uuid, $route);
-        $routes_created++;
-    }
-}
-if ($routes_created > 0) {
-    nb_status("Created: $routes_created route(s)");
-} else {
-    nb_skip("Skipped: all routes (already exist)");
 }
 
 // -----------------------------------------------------------------------

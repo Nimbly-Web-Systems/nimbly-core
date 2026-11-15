@@ -193,38 +193,21 @@ function repair_config_upsert_apply(array $state): bool
 }
 
 /**
- * Core routes added after a site was set up.
+ * Core's dynamic routes are built into the router; a .routes record for a
+ * route core dropped points at a folder that is gone.
  */
 function repair_core_routes_state(): array
 {
     if (!data_exists('.routes', '.meta')) {
         return ['action' => 'skip', 'message' => 'The .routes resource is missing; system:setup creates it.'];
     }
-    $missing = [];
-    foreach ([
-        ['route' => 'nb-admin/roles/(id)', 'order' => 200],
-        ['route' => 'nb-admin/(resource)/history', 'order' => 300],
-        ['route' => 'nb-admin/(resource)/(id)/history', 'order' => 300],
-        ['route' => 'api/v1/(resource)/import-document', 'order' => 100],
-        ['route' => 'api/v1/(resource)/options', 'order' => 100],
-        ['route' => 'api/v1/.jobs/(id)/run', 'order' => 100],
-    ] as $route) {
-        if (!data_exists('.routes', md5($route['route']))) {
-            $missing[] = $route;
-        }
-    }
-
-    // Routes core had for a short while; their folders are gone
     $retired = array_values(array_filter(['nb-admin/(resource)/deleted'], fn($route) => data_exists('.routes', md5($route))));
-
-    if (empty($missing) && empty($retired)) {
-        return ['action' => 'ok', 'message' => 'Core routes are registered.'];
+    if (empty($retired)) {
+        return ['action' => 'ok', 'message' => 'No retired core routes registered.'];
     }
     return [
         'action' => 'write',
-        'message' => trim((empty($missing) ? '' : 'Core routes not registered: ' . implode(', ', array_column($missing, 'route')) . '. ')
-            . (empty($retired) ? '' : 'Retired core routes still registered: ' . implode(', ', $retired) . '.')),
-        'missing' => $missing,
+        'message' => 'Retired core routes still registered: ' . implode(', ', $retired) . '.',
         'retired' => $retired,
     ];
 }
@@ -232,10 +215,7 @@ function repair_core_routes_state(): array
 function repair_core_routes_apply(array $state): bool
 {
     $done = true;
-    foreach ($state['missing'] as $route) {
-        $done = data_create('.routes', md5($route['route']), $route) !== false && $done;
-    }
-    foreach ($state['retired'] ?? [] as $route) {
+    foreach ($state['retired'] as $route) {
         $done = data_delete('.routes', md5($route)) > 0 && $done;
     }
     return $done;
