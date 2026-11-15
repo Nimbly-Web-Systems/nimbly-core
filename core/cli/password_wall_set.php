@@ -1,7 +1,9 @@
 <?php
 
 /**
- * Nimbly CLI — password-wall:set <name> [--features=a,b]
+ * Nimbly CLI — password-wall:set command
+ *
+ * Usage: ./nimbly password-wall:set <name> [--features=a,b]
  *
  * Asks for the password and stores its hash, with the features it grants,
  * in ext/data/.password-wall/<name>. Running it again changes the password
