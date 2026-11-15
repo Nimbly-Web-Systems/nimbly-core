@@ -646,6 +646,13 @@ function resource_id_post($resource, $uuid) { // create new with uuid
     if (data_error_get() === 'RESOURCE_EXISTS') {
         return json_result(array('message' => 'RESOURCE_EXISTS'), 409);
     }
+    load_library("log");
+    if (data_error_get() === 'VALIDATION_FAILED') {
+        $detail = preg_replace('/[^a-zA-Z0-9_.:-]+/', '', (string)data_error_detail_get());
+        log_system(api_validation_failure_log($resource, $detail, $data));
+        return json_result(array('message' => 'INVALID_DATA'), 422);
+    }
+    log_system("resource create failed for " . $resource . "/" . $uuid . ": write failed");
     return json_result(array('message' => 'RESOURCE_CREATE_FAILED'), 500);
 }
 
