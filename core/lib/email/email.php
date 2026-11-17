@@ -266,7 +266,7 @@ function email_via_smtp($email_data)
 			: PHPMailer::ENCRYPTION_SMTPS;
 		$mail->Port       = (int)($email_data['port'] ?? env('SMTP_PORT', $mail->SMTPSecure === PHPMailer::ENCRYPTION_STARTTLS ? 587 : 465));
 
-		$mail->setFrom($email_data['from'] ?? env('MAIL_FROM', 'info@nimblycms.com'), $email_data['from_name'] ?? env('MAIL_FROM_NAME', 'Nimbly CMS'));
+		$mail->setFrom($email_data['from'] ?? env('MAIL_FROM', 'no-reply@nimblyweb.com'), $email_data['from_name'] ?? env('MAIL_FROM_NAME', 'Nimbly'));
 
 		$recipients = explode(',', $email_data['recipient'] ?? $email_data['to']);
 		$recipient_names = explode(',', $email_data['recipient_name'] ?? '');
