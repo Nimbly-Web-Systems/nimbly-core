@@ -53,7 +53,3 @@ The documentation is at
 [atomic.nimblyweb.com](https://atomic.nimblyweb.com). Coding agents use the
 complete reference in [NIMBLY.md](NIMBLY.md), which every project has at its
 root.
-
----
-
-Nimblify your next project. [nimblyweb.com](https://nimblyweb.com)
