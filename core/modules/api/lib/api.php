@@ -545,6 +545,33 @@ function api_uuid_valid($uuid) {
     return is_scalar($uuid) && (string)$uuid !== '' && ((string)$uuid)[0] !== '.' && data_path_valid('', $uuid);
 }
 
+const API_FORM_POSTS_MAX = 10;
+const API_FORM_POSTS_SECONDS = 600;
+
+/** Counted per form and address, like wrong passwords at the login. */
+function api_form_posts_path(string $resource): string {
+    $address = (string)($_SERVER['REMOTE_ADDR'] ?? '');
+    return $GLOBALS['SYSTEM']['file_base'] . 'ext/data/.tmp/form-posts/' . md5($resource . '|' . $address);
+}
+
+/** Times this address sent this public form in the last ten minutes. */
+function api_form_posts(string $resource): array {
+    $path = api_form_posts_path($resource);
+    $times = is_file($path) ? (file($path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) ?: []) : [];
+    $since = time() - API_FORM_POSTS_SECONDS;
+    return array_values(array_filter(array_map('intval', $times), fn($time) => $time > $since));
+}
+
+function api_form_posted(string $resource): void {
+    $path = api_form_posts_path($resource);
+    if (!is_dir(dirname($path))) {
+        @mkdir(dirname($path), 0775, true);
+    }
+    $times = api_form_posts($resource);
+    $times[] = time();
+    @file_put_contents($path, implode("\n", $times) . "\n", LOCK_EX);
+}
+
 function resource_post($resource) { // create new
     if (!empty($_FILES)) {
         load_library('api_import_resource');
@@ -555,6 +582,12 @@ function resource_post($resource) { // create new
     $csrf_check = api_check_csrf($data, $resource, $anonymous);
     if ($csrf_check === false) { //can also be null, if no key is set
         return json_result(array('message' => 'INVALID_DATA'), 400);
+    }
+    if ($anonymous && count(api_form_posts($resource)) >= API_FORM_POSTS_MAX) {
+        load_library("log");
+        log_system('Spam caught: too many posts on ' . api_honeypot_form_label($resource)
+            . ' | details=' . json_encode(['resource' => $resource, 'path' => api_log_url($_SERVER['REQUEST_URI'] ?? '')], JSON_UNESCAPED_SLASHES));
+        return json_result(array('message' => 'TOO_MANY_REQUESTS'), 429);
     }
     if ($anonymous) {
         // A visitor fills in fields; who created it and when is the system's to say.
@@ -569,6 +602,9 @@ function resource_post($resource) { // create new
         return json_result(array('message' => 'RESOURCE_EXISTS'), 409);
     }
     if (data_create($resource, $uuid, $data)) {
+        if ($anonymous) {
+            api_form_posted($resource);
+        }
         return json_result(array(
             $resource => array($uuid => api_hide_fields($resource, $data)),
             'count' => 1,
