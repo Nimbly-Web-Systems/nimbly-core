@@ -41,6 +41,13 @@ $clean_data = ['website' => '', 'message' => 'Hello'];
 api_honeypot_log_assert(!api_honeypot_check($clean_data, 'contact-messages'), 'empty honeypot passes');
 api_honeypot_log_assert(!isset($clean_data['website']), 'empty honeypot is removed');
 
+$without_field = ['message' => 'Hello'];
+api_honeypot_log_assert(!api_honeypot_check($without_field, 'contact-messages'), 'a missing honeypot passes outside anonymous forms');
+api_honeypot_log_assert(api_honeypot_check($without_field, 'contact-messages', true), 'a missing honeypot is spam on an anonymous form');
+api_honeypot_log_assert(str_contains(end($log_messages), 'honeypot field missing on contact form'), 'a missing honeypot is logged as such');
+$anonymous_clean = ['website' => '', 'message' => 'Hello'];
+api_honeypot_log_assert(!api_honeypot_check($anonymous_clean, 'contact-messages', true), 'an empty honeypot passes on an anonymous form');
+
 $_SERVER['REQUEST_URI'] = '/api/v1/contact-messages?key=private';
 $_SERVER['HTTP_REFERER'] = 'https://example.com/nl/contact/?tracking=private';
 $validation_message = api_validation_failure_log('contact-messages', 'name:required', [

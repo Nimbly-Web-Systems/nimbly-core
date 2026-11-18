@@ -99,7 +99,16 @@ function api_method_operation($method): ?string {
 }
 
 function api_access($feature='api', $resource=false) {
-    return api_public_access($feature) || api_user_access($feature, $resource) || api_token_access($feature, $resource);
+    $GLOBALS['SYSTEM']['api_anonymous_form'] = false;
+    if (api_user_access($feature, $resource) || api_token_access($feature, $resource)) {
+        return true;
+    }
+    return api_public_access($feature);
+}
+
+/** True when this request got in only through a public form key: an anonymous visitor's form. */
+function api_anonymous_form(): bool {
+    return !empty($GLOBALS['SYSTEM']['api_anonymous_form']);
 }
 
 function api_public_access($feature) {
@@ -110,7 +119,8 @@ function api_public_access($feature) {
     if (empty($key)) {
         return false;
     }
-    if ($key !== $_SERVER['PEPPER']) {
+    $form_key = $key !== $_SERVER['PEPPER'];
+    if ($form_key) {
         load_library('form-key');
         if ($key !== form_key_get()) {
             return false;
@@ -119,7 +129,11 @@ function api_public_access($feature) {
     $api_allowed = explode(',', get_variable('api.allow', ''));
     $features = explode(',', $feature);
     $grants = array_intersect($api_allowed, $features);
-    return count($grants) >= 1;
+    if (count($grants) < 1) {
+        return false;
+    }
+    $GLOBALS['SYSTEM']['api_anonymous_form'] = $form_key;
+    return true;
 }
 
 function api_user_access($feature, $resource = false) {
@@ -311,22 +325,26 @@ function api_honeypot_form_label(string $resource): string {
     return trim($label) . ' form';
 }
 
-function api_honeypot_check(array &$data, string $resource = ''): bool {
+/**
+ * True for spam. A filled-in honeypot is spam; so is a missing one on an
+ * anonymous form post, since every public form sends the field empty.
+ */
+function api_honeypot_check(array &$data, string $resource = '', bool $required = false): bool {
     load_library('honeypot-field');
     $field = honeypot_field_name();
-    if (!isset($data[$field])) {
+    if (!isset($data[$field]) && !$required) {
         return false;
     }
-    if (!empty($data[$field])) {
+    if (!isset($data[$field]) || !empty($data[$field])) {
         load_library("log");
         $context = [
             'resource' => $resource,
             'path' => api_log_url($_SERVER['REQUEST_URI'] ?? ''),
             'referrer' => api_log_url($_SERVER['HTTP_REFERER'] ?? ''),
-            'value' => api_log_excerpt($data[$field]),
+            'value' => isset($data[$field]) ? api_log_excerpt($data[$field]) : '',
         ];
         $context = array_filter($context, fn($value) => $value !== '');
-        log_system('Spam caught: honeypot field filled on ' . api_honeypot_form_label($resource)
+        log_system('Spam caught: honeypot field ' . (isset($data[$field]) ? 'filled' : 'missing') . ' on ' . api_honeypot_form_label($resource)
             . ' | details=' . json_encode($context, JSON_UNESCAPED_SLASHES));
         return true;
     }
@@ -337,8 +355,8 @@ function api_honeypot_check(array &$data, string $resource = ''): bool {
 /***
  * csrf check: if form_key is set, it should match the one in cookie or session.
  */
-function api_check_csrf(&$data, string $resource = '') {
-    if (api_honeypot_check($data, $resource)) {
+function api_check_csrf(&$data, string $resource = '', bool $honeypot_required = false) {
+    if (api_honeypot_check($data, $resource, $honeypot_required)) {
         return false;
     }
     if (!isset($data['form_key'])) {
@@ -533,9 +551,14 @@ function resource_post($resource) { // create new
         return api_import_resource($resource);
     }
     $data = api_json_input($resource);
-    $csrf_check = api_check_csrf($data, $resource);
+    $anonymous = api_anonymous_form();
+    $csrf_check = api_check_csrf($data, $resource, $anonymous);
     if ($csrf_check === false) { //can also be null, if no key is set
         return json_result(array('message' => 'INVALID_DATA'), 400);
+    }
+    if ($anonymous) {
+        // A visitor fills in fields; who created it and when is the system's to say.
+        $data = array_filter($data, fn($field) => !str_starts_with((string)$field, '_'), ARRAY_FILTER_USE_KEY);
     }
     $data = api_sanitize_html_fields($resource, $data);
     $uuid = $data['uuid'];
