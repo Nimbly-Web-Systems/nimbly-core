@@ -1408,7 +1408,7 @@ the resource retains simple scalar coordinates:
 | `ai_prompts` | Per-field AI translation instructions |
 | `name` | Object with optional `singular` and `plural` labels used by `[#resource-name#]`, admin headings, and Nimbly-bar resource entries. Labels fall back to names derived from the resource ID. Example: `{"singular": "Member", "plural": "Members"}`. |
 | `nimblybar` | Boolean controlling whether the resource appears in the Nimbly-bar Resources menu. Regular resources are visible by default; `users` and `roles` are hidden by default. Set `true` to include or `false` to hide explicitly. The current user still needs `view-<resource>`. |
-| `admin_view` | `"documents"` replaces the admin overview table with the document explorer: a category list, a list view with sortable columns (type, title, size, created, modified) and a grid view with previews and a sort menu, drag-and-drop upload of several files at once, and drag-and-drop ordering. It uses the resource's own fields: the first `file` field holds the document, the first `select` field with `admin_filter` is the category, and a `number` field named in `sort.field` keeps the manual order. Categories can be managed in the sidebar: kept as `options` with `editable_options: true` they can be added, renamed (double-click), dragged into order and removed when empty; kept as records of a category resource (`select` with `resource`) they can be added and dragged into order (the category resource needs a `number` sort field), and the sidebar links to their admin list. Add, edit, history and import stay the same. Dropping files needs `create-<resource>` and `create-files`. |
+| `admin_view` | `"documents"` replaces the admin overview table with the document explorer: a category list, a list view with sortable columns (type, title, size, created, modified) and a grid view with previews and a sort menu, drag-and-drop upload of several files at once, and drag-and-drop ordering. It uses the resource's own fields: the first `file` field holds the document, the first `select` field with `admin_filter` is the category, and a `number` field named in `sort.field` keeps the manual order. Categories can be managed in the sidebar: kept as `options` with `editable_options: true` they can be added, renamed (double-click), dragged into order and removed when empty; kept as records of a category resource (`select` with `resource`) they can be added and dragged into order (the category resource needs a `number` sort field), and the sidebar links to their admin list. Add, edit, history and import stay the same. Dropping files needs `create-<resource>` and `create-files`. Covers can be made from the documents themselves with `job:document-cover` in `events` (see Resource lifecycle events). |
 | `private_files` | Boolean. `true` keeps the files in this resource's `file` fields private: `/download`, `/img` and `/video` serve them only to users with `view-<resource>`, and answer 404 to everyone else. Their thumbnails are cached outside the public thumbnail folder, and the Media Library leaves them out. Index the file field when the resource is large. Files of other resources stay public. |
 | `actions` | Object with optional `view_url` and `url` keys. `view_url` overrides the generic admin View action (default `/nb-admin/{resource}/{uuid}?view=1`); `url` adds the separate “View on site” action. Both support `[#record.<field>#]` substitutions. Example: `{"view_url": "/review/?id=[#record.uuid#]", "url": "[#base-url#]/articles/[#record.title_slug#]"}`. |
 | `events` | Resource lifecycle event declarations. Supported keys: `create`, `update`, `delete`. Values are arrays of named events or `job:<type>` queue entries. See below. |
@@ -1484,6 +1484,15 @@ function application_email_created_job($job) {}
 ```
 
 The queue stores intent and payload, not shell commands. Handlers may send email, call APIs, or perform other side effects.
+
+Core ships one job for use in a `.meta`: `job:document-cover`. On create and update it gives the record a cover image made from the first page of its document: the first `file` field is the document and the first `image` field receives the cover (the same fields the document explorer uses, see `admin_view`). PDFs are read directly; office and text files (doc, docx, odt, rtf, txt, md, xls, xlsx, ods, csv, ppt, pptx, odp) go through LibreOffice, which must be installed on the server. Other files get no cover. An empty cover, or one made from an earlier file, is replaced; a cover someone picked by hand stays. When LibreOffice is busy the job fails and is tried again. Code: `core/modules/admin/lib/document-cover.php`.
+
+```json
+"events": {
+  "create": ["job:document-cover"],
+  "update": ["job:document-cover"]
+}
+```
 
 ### Record ids
 
