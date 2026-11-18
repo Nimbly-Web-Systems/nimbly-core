@@ -388,6 +388,16 @@ audit_assert(
     $apache_vhost_project['path'] === '/var/www/f-14association',
     'matches Apache virtual-host document roots'
 );
+$apache_vhost_override = host_audit_apache_project(
+    'oddone',
+    [],
+    ['oddone.stage.example' => '/var/www/nimbly-oddone'],
+    ['oddone' => 'nimbly-oddone']
+);
+audit_assert(
+    $apache_vhost_override['path'] === '/var/www/nimbly-oddone',
+    'an override can name a virtual-host folder'
+);
 
 $security_activity = host_audit_parse_security_activity(
     "NOTICE [sshd] Ban 192.0.2.1\nNOTICE [recidive] Ban 192.0.2.2\n",

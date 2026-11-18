@@ -1368,10 +1368,11 @@ function host_audit_apache_project(
     array $overrides
 ): array
 {
-    $alias = isset($overrides[$slug]) && is_string($overrides[$slug])
+    $override = isset($overrides[$slug]) && is_string($overrides[$slug])
         ? host_audit_id($overrides[$slug])
         : '';
-    if ($alias === '') {
+    $alias = $override !== '' && isset($aliases[$override]) ? $override : '';
+    if ($alias === '' && $override === '') {
         $compact = str_replace('-', '', $slug);
         $trimmed = preg_replace('/-(?:site|blog|app)$/', '', $slug) ?: $slug;
         foreach ($aliases as $candidate => $path) {
@@ -1398,6 +1399,7 @@ function host_audit_apache_project(
         }
         $candidate = host_audit_id(basename(rtrim((string)$path, '/')));
         if ($candidate === $slug
+            || ($override !== '' && $candidate === $override)
             || str_replace('-', '', $candidate) === $compact
             || $candidate === $trimmed) {
             return [
