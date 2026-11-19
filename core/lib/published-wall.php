@@ -6,22 +6,42 @@
  * page's settings record (.config/<url-key>, the record the page settings
  * dialog edits), so each language publishes on its own.
  *
- * Until then visitors get the 404 page and users with edit-.config see the
- * page with a notice, a Published switch in the page actions and in the page
- * settings dialog. A menu item that leads to such a page is left out for
- * visitors (see published_wall_hides()).
+ * [#published-wall resource=news var=record#] does the same for a page that
+ * shows one record: it uses that record's own `published` field and the
+ * edit-<resource> permission.
+ *
+ * Until published, visitors get the 404 page and editors see the page with a
+ * notice and a Published switch in the page actions (and, for a page, in the
+ * page settings dialog). A menu item that leads to an unpublished page is
+ * left out for visitors (see published_wall_hides()).
  */
 
 load_libraries(['data', 'get', 'set', 'url-key', 'access']);
 
 function published_wall_sc($params) {
-    $published = published_wall_is_published(data_read('.config', url_key_sc()));
+    $resource = (string)get_param_value($params, 'resource', '');
+    if ($resource !== '') {
+        $record = get_variable((string)get_param_value($params, 'var', 'record'));
+        $uuid = is_array($record) ? (string)($record['uuid'] ?? '') : '';
+        $published = published_wall_is_published($record);
+        $feature = 'edit-' . $resource;
+        $target = $resource . '/' . $uuid;
+        set_variable('published_wall_source', 'record');
+    } else {
+        $published = published_wall_is_published(data_read('.config', url_key_sc()));
+        $feature = 'edit-.config';
+        $target = '.config/' . url_key_sc();
+        set_variable('published_wall_source', 'settings');
+    }
     set_variable('published_wall', 'true');
+    set_variable('published_wall_target', $target);
     set_variable('page_published', $published ? 'true' : 'false');
+    $can_edit = access_by_feature($feature);
+    set_variable('published_wall_editable', $can_edit ? 'true' : 'false');
     if ($published) {
         return '';
     }
-    if (access_by_feature('edit-.config')) {
+    if ($can_edit) {
         load_libraries(['system-messages', 'text']);
         system_message(text_translate((string)get_variable('language', 'en'), "You're previewing an unpublished page. Only editors can see this."));
         return '';

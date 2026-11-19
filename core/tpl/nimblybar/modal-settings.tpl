@@ -43,7 +43,7 @@
             </label>
           </div>
 
-          [#if published_wall=true tpl=page-settings-published#]
+          [#if published_wall_source=settings tpl=page-settings-published#]
           [#set page-settings-fields=#]
           [#page-settings-fields#]
         </form>

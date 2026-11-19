@@ -9,7 +9,7 @@
         </svg>
     </button>
     [#feature-cond edit-inline-content tpl=page-actions-edit#]
-    [#feature-cond edit-.config tpl=page-actions-published#]
+    [#if published_wall_editable=true tpl=page-actions-published-toggle#]
     [#feature-cond edit-.config tpl=page-actions-settings#]
 </div>
 <script>

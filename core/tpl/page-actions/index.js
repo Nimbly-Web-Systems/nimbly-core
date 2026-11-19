@@ -23,12 +23,12 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 });
 
-/* published: the page settings' published value for a page behind [#published-wall#] */
+/* published: the published value of a page or record behind [#published-wall#] */
 
 function nb_page_actions_published(input) {
   input.addEventListener('change', () => {
     input.disabled = true;
-    nb.api.put(nb.base_url + '/api/v1/.config/' + input.dataset.nbPagePublished, { published: input.checked })
+    nb.api.put(nb.base_url + '/api/v1/' + input.dataset.nbPagePublished, { published: input.checked })
       .then((data) => {
         if (data.success) {
           window.location.reload();
