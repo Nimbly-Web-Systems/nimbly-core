@@ -218,6 +218,15 @@ $sections = managed_navigation_resolve_items([
     ['id' => 'agenda', 'label' => 'Agenda', 'target' => ['kind' => 'internal_url', 'value' => '/#agenda'], 'children' => []],
 ], 'nl', 'nl/campaign');
 managed_pages_test_assert(array_column($sections, 'url') === ['', '#agenda'], 'Home and section links did not resolve relative to the site root.');
+$base = $GLOBALS['SYSTEM']['uri_base'] ?? null;
+$GLOBALS['SYSTEM']['uri_base'] = '/site/';
+$links = managed_navigation_resolve_items([
+    ['id' => 'about', 'label' => 'About', 'target' => ['kind' => 'internal_url', 'value' => 'nl/over'], 'children' => []],
+    ['id' => 'out', 'label' => 'Out', 'target' => ['kind' => 'external_url', 'value' => 'https://example.test/'], 'children' => []],
+    ['id' => 'group', 'label' => 'Group', 'target' => ['kind' => 'group', 'value' => ''], 'children' => []],
+], 'nl', '');
+managed_pages_test_assert(array_column($links, 'href') === ['/site/nl/over', 'https://example.test/', ''], 'Navigation links did not get a ready href.');
+$GLOBALS['SYSTEM']['uri_base'] = $base;
 managed_pages_test_assert(managed_navigation_validate_items($nested, 2) !== null, 'Allowed navigation depth was rejected.');
 managed_pages_test_assert(managed_navigation_validate_items($nested, 1) === null, 'Excess navigation depth was accepted.');
 $public_tree = managed_navigation_load('main', 'nl');

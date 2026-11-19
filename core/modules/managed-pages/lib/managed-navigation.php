@@ -214,6 +214,7 @@ function managed_navigation_resolve_items(array $items, string $language, string
             'label_html' => htmlspecialchars((string)($item['label'] ?? ''), ENT_QUOTES, 'UTF-8'),
             'kind' => $kind,
             'url' => $url ?? '',
+            'href' => $url === null ? '' : ($kind === 'external_url' ? $url : rtrim((string)($GLOBALS['SYSTEM']['uri_base'] ?? ''), '/') . '/' . $url),
             'current' => $current ? 'true' : 'false',
             'ancestor' => !$current && $child_current ? 'true' : 'false',
             'children' => $children,

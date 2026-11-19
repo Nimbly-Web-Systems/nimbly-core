@@ -59,7 +59,7 @@ Unpublished addresses remain unavailable to anonymous visitors. Editors with
 Add `managed-page-preview-action` to the page resource's `record_actions` for a
 preview button that follows the active editor language.
 
-Use `[#managed-navigation slot=main var=main_navigation#]` to load a public, normalized tree. Page references follow current localized addresses. Unpublished or missing targets and their branches are omitted. Rendering remains application-owned.
+Use `[#managed-navigation slot=main var=main_navigation#]` to load a public, normalized tree. Page references follow current localized addresses. Unpublished or missing targets and their branches are omitted. Each item has `label`, `label_html`, `kind`, `url` (site path), `href` (ready to use in a link: base path included for site links, the address itself for external ones, empty for a group), `current`, `ancestor` and `children`. Rendering remains application-owned.
 
 Editors with `edit-.navigation` can use `/nb-admin/navigation`. The editor saves through the API (`PUT /api/v1/.navigation/<slot>-<language>`), so the standard `edit-.navigation` permission applies. Saves replace the complete tree and must send the `revision` they were loaded with; stale edits are rejected with `revision:stale`, and an invalid item is reported as `items.<item id>:<reason>` in the response `detail`.
 
