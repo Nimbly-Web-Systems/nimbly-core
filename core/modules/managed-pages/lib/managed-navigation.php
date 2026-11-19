@@ -195,7 +195,7 @@ function managed_navigation_resolve_items(array $items, string $language, string
             $url = managed_pages_url((string)$value, $language, true);
         } elseif ($kind === 'internal_url') {
             $path = managed_navigation_internal_path($value);
-            $url = $path === null ? null : ltrim($path, '/');
+            $url = $path === null || managed_navigation_unpublished($path) ? null : ltrim($path, '/');
         } elseif ($kind === 'external_url' && filter_var($value, FILTER_VALIDATE_URL)) {
             $url = $value;
         }
@@ -203,6 +203,9 @@ function managed_navigation_resolve_items(array $items, string $language, string
             continue;
         }
         $children = managed_navigation_resolve_items($item['children'] ?? [], $language, $current_path);
+        if ($kind === 'group' && $children === []) {
+            continue;
+        }
         $current = is_string($url) && trim($url, '/') === trim($current_path, '/');
         $child_current = (bool)array_filter(
             $children,
@@ -221,6 +224,13 @@ function managed_navigation_resolve_items(array $items, string $language, string
         ];
     }
     return $result;
+}
+
+/** A site link to a page behind an unpublished [#published-wall#]; editors still see it to reach the page. */
+function managed_navigation_unpublished(string $path): bool
+{
+    load_libraries(['published-wall', 'access']);
+    return published_wall_hides($path) && !access_by_feature('edit-.config');
 }
 
 function managed_navigation_load(string $slot, string $language): array

@@ -9,6 +9,7 @@
         </svg>
     </button>
     [#feature-cond edit-inline-content tpl=page-actions-edit#]
+    [#feature-cond edit-.config tpl=page-actions-published#]
     [#feature-cond edit-.config tpl=page-actions-settings#]
 </div>
 <script>

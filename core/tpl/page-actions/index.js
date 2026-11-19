@@ -17,7 +17,29 @@ document.addEventListener('DOMContentLoaded', () => {
   if (edit) {
     nb_page_actions_edit(edit);
   }
+  const published = root.querySelector('[data-nb-page-published]');
+  if (published) {
+    nb_page_actions_published(published);
+  }
 });
+
+/* published: the page settings' published value for a page behind [#published-wall#] */
+
+function nb_page_actions_published(input) {
+  input.addEventListener('change', () => {
+    input.disabled = true;
+    nb.api.put(nb.base_url + '/api/v1/.config/' + input.dataset.nbPagePublished, { published: input.checked })
+      .then((data) => {
+        if (data.success) {
+          window.location.reload();
+          return;
+        }
+        input.checked = !input.checked;
+        input.disabled = false;
+        nb.notify(data.message);
+      });
+  });
+}
 
 /* placement: free anywhere, or docked in a corner when dropped near one */
 

@@ -75,6 +75,7 @@ function data_create($resource, $uuid, $record) { $GLOBALS['test_records'][$reso
 function data_error_set($error, $detail = null) { $GLOBALS['SYSTEM']['data_error'] = $error; $GLOBALS['SYSTEM']['data_error_detail'] = $detail; }
 
 require_once __DIR__ . '/../modules/managed-pages/lib/managed-pages.php';
+require_once __DIR__ . '/../lib/published-wall.php';
 require_once __DIR__ . '/../modules/managed-pages/lib/managed-navigation.php';
 require_once __DIR__ . '/../modules/managed-pages/lib/managed-page-preview.php';
 
@@ -223,9 +224,12 @@ $GLOBALS['SYSTEM']['uri_base'] = '/site/';
 $links = managed_navigation_resolve_items([
     ['id' => 'about', 'label' => 'About', 'target' => ['kind' => 'internal_url', 'value' => 'nl/over'], 'children' => []],
     ['id' => 'out', 'label' => 'Out', 'target' => ['kind' => 'external_url', 'value' => 'https://example.test/'], 'children' => []],
-    ['id' => 'group', 'label' => 'Group', 'target' => ['kind' => 'group', 'value' => ''], 'children' => []],
+    ['id' => 'group', 'label' => 'Group', 'target' => ['kind' => 'group', 'value' => ''], 'children' => [
+        ['id' => 'child', 'label' => 'Child', 'target' => ['kind' => 'internal_url', 'value' => 'nl/kind'], 'children' => []],
+    ]],
+    ['id' => 'empty', 'label' => 'Empty', 'target' => ['kind' => 'group', 'value' => ''], 'children' => []],
 ], 'nl', '');
-managed_pages_test_assert(array_column($links, 'href') === ['/site/nl/over', 'https://example.test/', ''], 'Navigation links did not get a ready href.');
+managed_pages_test_assert(array_column($links, 'href') === ['/site/nl/over', 'https://example.test/', ''], 'Navigation links did not get a ready href, or an empty group was kept.');
 $GLOBALS['SYSTEM']['uri_base'] = $base;
 managed_pages_test_assert(managed_navigation_validate_items($nested, 2) !== null, 'Allowed navigation depth was rejected.');
 managed_pages_test_assert(managed_navigation_validate_items($nested, 1) === null, 'Excess navigation depth was accepted.');

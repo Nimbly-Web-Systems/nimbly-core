@@ -709,6 +709,18 @@ Redirects immediately.
 [#redirect [#base-url#]/dashboard#]
 ```
 
+#### `[#published-wall#]`
+Keeps a new page offline until an editor publishes it. Put it on the first line of the route's `index.tpl`. The page then answers 404 to visitors until `published` is `true` in its page settings record (`.config/<url-key>`, e.g. `.config/nl_opschalingstafel`), so each language publishes on its own. Users with `edit-.config` see the page with a notice and publish it with the Published switch in the page actions bar or in the Page settings dialog. A menu item from the menu editor that leads to the page is left out for visitors until then (editors keep it, to reach the page), and a menu group left without items disappears. Once published, the wall does nothing; pages without it are always public.
+
+```
+[#published-wall#]
+[#set page_title="Opschalingstafel"#]
+[#html#]
+```
+
+#### `[#password-wall name#]`
+Lets a page in with a shared password instead of a login. `ext/data/.password-wall/<name>` holds the password hash and the features it grants; set it with `./nimbly password-wall:set <name>`. On the first line of a page, `[#password-wall partners#]` admits a session that typed that wall's password, or a logged-in user who has all its features; anyone else goes to `/password-wall` and returns to the page afterwards. The right password adds the wall's features to the session, so `[#access feature=...#]` and `[#feature-cond#]` work as usual. Setting a new password closes the wall again for every earlier session.
+
 ---
 
 ### URL and path
