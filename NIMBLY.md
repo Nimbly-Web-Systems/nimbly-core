@@ -712,6 +712,8 @@ Redirects immediately.
 #### `[#published-wall#]`
 Keeps a new page offline until an editor publishes it. Put it on the first line of the route's `index.tpl`. The page then answers 404 to visitors until `published` is `true` in its page settings record (`.config/<url-key>`, e.g. `.config/nl_opschalingstafel`), so each language publishes on its own. Users with `edit-.config` see the page with a notice and publish it with the Published switch in the page actions bar or in the Page settings dialog. A menu item from the menu editor that leads to the page is left out for visitors until then (editors keep it, to reach the page), and a menu group left without items disappears. Once published, the wall does nothing; pages without it are always public.
 
+On a page that shows one record, `[#published-wall resource=news var=record#]` uses that record's own `published` field instead (the route sets the record with `set_variable_dot('record', ...)`): visitors get a 404 for an unpublished record, and users with `edit-<resource>` see the notice and the same Published switch, which saves the record.
+
 ```
 [#published-wall#]
 [#set page_title="Opschalingstafel"#]
