@@ -67,23 +67,25 @@ try {
     session_http_assert($login['authenticated'], 'login succeeds');
     session_http_assert(str_contains(strtolower($last_cookie), 'httponly') && str_contains($last_cookie, 'SameSite=Lax') && str_contains($last_cookie, 'path=/app/') && str_contains($last_cookie, 'Max-Age=604800'), 'persistent scoped admin cookie');
     $id = $login['id'];
+    $name = substr($last_cookie, strpos($last_cookie, ':') + 2, strpos($last_cookie, '=') - strpos($last_cookie, ':') - 2);
+    session_http_assert(str_starts_with($name, 'nb_session_'), 'session cookie is named after the site');
     $file = $tmp . '/sessions/sess_' . $id;
     $raw = file_get_contents($file);
     $old = time() - 86400 * 90;
     $raw = preg_replace('/created\|i:\d+;/', 'created|i:' . $old . ';', $raw);
     $raw = preg_replace('/rotated\|i:\d+;/', 'rotated|i:' . $old . ';', $raw);
     file_put_contents($file, $raw);
-    [$resumed, $cookies] = session_http_request($address, 'read', 'nb_session_id=' . $id);
+    [$resumed, $cookies] = session_http_request($address, 'read', $name . '=' . $id);
     session_http_assert($resumed['authenticated'] && $resumed['id'] !== $id && $resumed['session']['created'] === $old, 'old active login survives while ID rotates');
     session_http_assert(!file_exists($file), 'old session ID removed');
     $id = $resumed['id'];
     $file = $tmp . '/sessions/sess_' . $id;
     $raw = preg_replace('/modified\|i:\d+;/', 'modified|i:' . (time() - 604801) . ';', file_get_contents($file));
     file_put_contents($file, $raw);
-    [$expired] = session_http_request($address, 'read', 'nb_session_id=' . $id);
+    [$expired] = session_http_request($address, 'read', $name . '=' . $id);
     session_http_assert(!$expired['authenticated'], 'idle expiry enforced server-side');
     [$login] = session_http_request($address, 'login');
-    [$logout, $cookies] = session_http_request($address, 'logout', 'nb_session_id=' . $login['id']);
+    [$logout, $cookies] = session_http_request($address, 'logout', $name . '=' . $login['id']);
     session_http_assert(!$logout['authenticated'] && !file_exists($tmp . '/sessions/sess_' . $login['id']), 'logout revokes login');
     foreach (['form-key' => 'key=', 'persist' => 'theme=dark'] as $action => $cookie) {
         [, $cookies] = session_http_request($address, $action);

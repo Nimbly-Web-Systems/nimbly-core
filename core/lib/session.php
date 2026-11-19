@@ -27,7 +27,7 @@ function session_sc() {
     ini_set('session.use_strict_mode', '1');
     session_set_cookie_params(session_cookie_options());
     session_save_path($GLOBALS['SYSTEM']['session_path']);
-    session_name("nb_session_id");
+    session_name(session_cookie_name());
     @session_start();
 
     //2. if it's a new session, just create and initialize it and done.
@@ -68,10 +68,10 @@ function session_exists() {
     if (session_request_from_elsewhere()) {
         return false;
     }
-    return isset($_COOKIE['nb_session_id'])
-        && is_string($_COOKIE['nb_session_id'])
-        && preg_match('/^[a-zA-Z0-9,-]+$/D', $_COOKIE['nb_session_id'])
-        && file_exists($GLOBALS['SYSTEM']['session_path'] . '/sess_' . $_COOKIE['nb_session_id']);
+    $id = $_COOKIE[session_cookie_name()] ?? null;
+    return is_string($id)
+        && preg_match('/^[a-zA-Z0-9,-]+$/D', $id)
+        && file_exists($GLOBALS['SYSTEM']['session_path'] . '/sess_' . $id);
 }
 
 /**
@@ -140,6 +140,18 @@ function session_cookie_options(): array
         $options['domain'] = $domain;
     }
     return $options;
+}
+
+/**
+ * The session cookie is named after the site it belongs to (its cookie domain,
+ * or its host, plus its path), so a cookie that another site sets for a parent
+ * domain never reaches this site under the same name.
+ */
+function session_cookie_name(): string
+{
+    $options = session_cookie_options();
+    $host = explode(':', strtolower((string)($_SERVER['HTTP_HOST'] ?? '')), 2)[0];
+    return 'nb_session_' . substr(hash('sha256', ($options['domain'] ?? $host) . $options['path']), 0, 12);
 }
 
 /**

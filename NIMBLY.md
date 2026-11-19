@@ -2334,6 +2334,12 @@ a variable kept with `[#set session ...#]` when there is no session; the last
 two last 30 days (`persistent_cookie_options()`). Scripts in the page cannot
 read them.
 
+The session cookie is named after the site (`session_cookie_name()`:
+`nb_session_` plus a hash of its cookie domain or host and its path). Sites
+under one parent domain, such as `a.stage.example.com` next to an
+`example.com` that shares its login with its subdomains, never read each
+other's session.
+
 Projects can configure durations in seconds under `session` in `.config/site`:
 
 ```json

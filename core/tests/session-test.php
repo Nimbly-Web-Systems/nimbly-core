@@ -41,14 +41,18 @@ try {
     session_test_assert($from('POST', []) === false, 'a write from a script without browser headers lost the session');
     session_test_assert($from('GET', ['HTTP_SEC_FETCH_SITE' => 'cross-site']) === false, 'a link from another site lost the session');
     file_put_contents($tmp . '/sess_abc123', '');
-    $_COOKIE['nb_session_id'] = 'abc123';
+    $_COOKIE[session_cookie_name()] = 'abc123';
     $from('POST', ['HTTP_SEC_FETCH_SITE' => 'cross-site']);
     session_test_assert(session_exists() === false, 'a write from another site found the session');
     session_sc();
     session_test_assert(session_status() !== PHP_SESSION_ACTIVE, 'a write from another site opened the session');
     $from('POST', ['HTTP_SEC_FETCH_SITE' => 'same-origin']);
     session_test_assert(session_exists() === true, 'a write from the site itself did not find the session');
-    unset($_COOKIE['nb_session_id'], $_SERVER['HTTP_SEC_FETCH_SITE'], $_SERVER['HTTP_ORIGIN']);
+    $own_name = session_cookie_name();
+    $_SERVER['HTTP_HOST'] = 'other.example.test';
+    session_test_assert(session_cookie_name() !== $own_name, 'two sites share a session cookie name');
+    $_SERVER['HTTP_HOST'] = 'site.example.test';
+    unset($_COOKIE[$own_name], $_SERVER['HTTP_SEC_FETCH_SITE'], $_SERVER['HTTP_ORIGIN']);
     unlink($tmp . '/sess_abc123');
     $_SERVER['REQUEST_METHOD'] = 'GET';
 
