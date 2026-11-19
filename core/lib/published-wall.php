@@ -21,9 +21,10 @@ load_libraries(['data', 'get', 'set', 'url-key', 'access']);
 function published_wall_sc($params) {
     $resource = (string)get_param_value($params, 'resource', '');
     if ($resource !== '') {
-        $record = get_variable((string)get_param_value($params, 'var', 'record'));
-        $uuid = is_array($record) ? (string)($record['uuid'] ?? '') : '';
-        $published = published_wall_is_published($record);
+        // a route sets its record as dotted variables (record.uuid, record.published)
+        $var = (string)get_param_value($params, 'var', 'record');
+        $uuid = (string)get_variable($var . '.uuid', '');
+        $published = published_wall_is_published(['published' => get_variable($var . '.published', false)]);
         $feature = 'edit-' . $resource;
         $target = $resource . '/' . $uuid;
         set_variable('published_wall_source', 'record');
