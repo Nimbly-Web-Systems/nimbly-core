@@ -197,7 +197,7 @@ function nb_page_actions_edit(edit) {
   // Edit is a toggle: same label, shown as on while editing
   const show_state = (enabled) => {
     edit.setAttribute('aria-pressed', enabled ? 'true' : 'false');
-    ['btn-primary', 'ring-2', 'ring-primary', 'ring-offset-2', 'relative', 'z-10'].forEach((c) => edit.classList.toggle(c, enabled));
+    edit.classList.toggle('btn-primary', enabled);
   };
 
   edit.addEventListener('click', () => {
