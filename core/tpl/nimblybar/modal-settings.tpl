@@ -43,6 +43,15 @@
             </label>
           </div>
 
+          [#set _f.key=share_image overwrite#]
+          [#set _f.type=image overwrite#]
+          [#set _f.value="[#get page_settings.share_image#]" overwrite#]
+          [#set _f.title="[#text Share image#]" overwrite#]
+          [#set _f.model="settings.share_image" overwrite#]
+          [#set _f.wrapper_class="nb-field relative my-6" overwrite#]
+          [#set _f.source=page_settings overwrite#]
+          [#module forms#]
+          [#field-image#]
           [#if published_wall_source=settings tpl=page-settings-published#]
           [#set page-settings-fields=#]
           [#page-settings-fields#]
