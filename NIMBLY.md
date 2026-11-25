@@ -1644,6 +1644,16 @@ The admin dashboard has the same action, `Clear data cache`.
 
 ---
 
+### When not to create a resource
+
+Creating a resource for everything is an anti-pattern. Every resource adds an admin screen, API endpoints, permissions, history and an `ext/data/` folder that editors and developers have to understand. A resource is for records that grow or change over time, have their own page, are filtered or searched, or are referenced by other records. The rest is page content:
+
+- A fixed set of items on one page (team members, partner logos, values, steps, a timeline) is inline-editable page text in `.content.<page>`, with numbered fields such as `member_1_name` or `partner_1`.
+- A file that a page offers, such as a brochure PDF, is a field in its page settings: a `page-settings-fields.tpl` next to the route with `[#render-field def="{'type':'file','name':'Download'}" name=download store=settings source=page_settings#]`, read on the page as `page_settings.download`. A file that belongs to a record is a file field on that record.
+- A link between records that nothing displays is not a field, and never a resource of its own.
+
+Before adding `ext/data/<name>/.meta`, check that the data passes this test. A small, fixed list is never enough reason on its own.
+
 ### Resource conventions (required)
 
 These rules are mandatory for all resources unless explicitly stated otherwise.
@@ -1651,7 +1661,7 @@ These rules are mandatory for all resources unless explicitly stated otherwise.
 **Always include:**
 - `"required": true` on all name/title fields
 - `published` boolean field on content resources
-- `sort_order` field + `sort` config on list resources (partners, logos, cards, team members, etc.)
+- `sort_order` field + `sort` config on resources whose order is set by hand
 - `"admin_col": false` on images, html, urls, large text, and technical fields like sort_order
 
 **Always consider:**

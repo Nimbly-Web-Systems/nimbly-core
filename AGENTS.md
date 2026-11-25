@@ -219,6 +219,8 @@ with `.meta` defining fields, validation, indexes, permissions, and lifecycle be
 
 Before inventing custom storage, check whether the existing Nimbly resource/data system already solves the problem.
 
+Do not create a resource for everything. A fixed set of items on one page (team, partners, logos) is inline-editable page content, and a file a page offers is a page settings field. See `./nimbly docs:section "When not to create a resource"`.
+
 ## 6. Routes and templates
 
 Folders under `ext/uri/` map to application routes.
