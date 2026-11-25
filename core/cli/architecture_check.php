@@ -258,7 +258,54 @@ function architecture_check_templates(string $ext_path, array &$warnings): void
         if (str_contains($contents, '[#/if#]') || str_contains($contents, '[#/#if]')) {
             $warnings[] = "{$relative} uses block-style [#if#] syntax. [#if#] is always self-closing; conditional content belongs in a tpl= partial.";
         }
+
+        foreach (architecture_check_inline_edit_hosts($contents) as $problem) {
+            $warnings[] = "{$relative}:{$problem['line']} {$problem['message']}";
+        }
     }
+}
+
+// Formatted inline-editable text needs a <div> host: a <p> cannot hold
+// paragraphs, lists or media, and Enter in a <p> host nests <p>s. Only plain
+// text may live in a <p>. Headings and inline elements (span, strong, ...) may
+// take inline formatting (bold, italic, anchor), never block formatting or media.
+function architecture_check_inline_edit_hosts(string $contents): array
+{
+    $containers = ['div', 'section', 'article', 'aside', 'header', 'footer', 'main', 'li', 'td', 'th', 'blockquote', 'figcaption'];
+    $headings = ['h1', 'h2', 'h3', 'h4', 'h5', 'h6'];
+    $block_buttons = ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'orderedlist', 'unorderedlist', 'quote', 'pre'];
+    $problems = [];
+
+    preg_match_all('/<([a-z][a-z0-9]*)\b[^>]*\bdata-nb-edit=/i', $contents, $matches, PREG_OFFSET_CAPTURE);
+    foreach ($matches[0] as $i => $match) {
+        $tag = strtolower($matches[1][$i][0]);
+        $offset = $match[1];
+        $end = strpos($contents, '>', $offset + strlen($match[0]));
+        $opening = substr($contents, $offset, $end === false ? null : $end - $offset);
+        $options = [];
+        if (preg_match("/data-nb-edit-options='([^']*)'/", $opening, $option_match)) {
+            $options = json_decode($option_match[1], true) ?: [];
+        }
+        if (($options['plain'] ?? false) === true || in_array($tag, $containers, true)) {
+            continue;
+        }
+
+        $buttons = array_map('trim', explode(',', (string)($options['buttons'] ?? '')));
+        $has_block = !empty($options['media']) || array_intersect($buttons, $block_buttons);
+        if ($tag !== 'p' && !$has_block) {
+            continue;
+        }
+
+        $line = substr_count($contents, "\n", 0, $offset) + 1;
+        $problems[] = [
+            'line' => $line,
+            'message' => $tag === 'p'
+                ? "inline-editable <p> holds formatted text. Formatted text needs a <div> host; only plain text ({\"plain\":true}) may live in a <p>."
+                : "inline-editable <{$tag}> has block formatting or media. A <{$tag}> host takes inline formatting only (bold, italic, anchor); rich text needs a <div> host.",
+        ];
+    }
+
+    return $problems;
 }
 
 function architecture_check_files(array $roots, string $pattern): array

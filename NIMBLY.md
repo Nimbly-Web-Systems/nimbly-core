@@ -3540,6 +3540,20 @@ For inline image replacement, use `data-nb-edit-img` on the image wrapper:
 
 Both attributes only activate for logged-in admins. The value format is `resource.uuid.field`.
 
+**Editors get formatting.** Inline-editable page text gives editors formatting by default: body text gets the rich set (headings, lists, quote, links, and media where the section can hold images or video); labels and titles get `bold,italic,anchor`. `"plain": true` (no toolbar, `[#get-html field plain#]` on output) is only for text where markup cannot work: a button label or card that sits inside an `<a>`, a record name used as an identifier, a page title that also feeds `<title>`.
+
+**The host element follows the content.** Formatted text goes in a `<div>` host, never in a `<p>`: a `<p>` cannot hold paragraphs, lists, headings or media, and Enter inside a `<p>` host nests `<p>` elements. Only plain text may live in a `<p>`. A heading (`<h1>`–`<h6>`) or inline element (`<span>`, `<strong>`) may be a host with inline formatting only (`bold,italic,anchor`). Give a rich `<div>` host `prose prose-slate max-w-none` (plus `prose-invert` on a dark background) so headings, lists and paragraph spacing are styled:
+
+```html
+<h2 data-nb-edit="[#cfield intro_title#]" data-nb-edit-options='{"buttons":"bold,italic,anchor"}'>[#get-html intro_title#]</h2>
+<div class="prose prose-slate max-w-none" data-nb-edit="[#cfield intro_text#]"
+     data-nb-edit-options='{"buttons":"h2,h3,h4,bold,italic,orderedlist,unorderedlist,quote,anchor","media":true,"media_sizes":"sm-90,md-70,lg-60,xl-50,xxl-40"}'>
+  [#get-html intro_text#]
+</div>
+```
+
+`./nimbly test:architecture` warns about a `<p>` host that is not plain, and about block formatting or media on a heading or inline host.
+
 ---
 
 ## 13. Admin

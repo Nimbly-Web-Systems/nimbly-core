@@ -115,3 +115,21 @@ test('architecture check warns about malformed block-style if closing tags', () 
   expect(result.status).toBe(1);
   expect(result.output).toContain('block-style [#if#]');
 });
+
+test('architecture check warns about formatted inline-editable text in a <p>', () => {
+  const ext = makeExt();
+  write(`${ext}/tpl/intro/index.tpl`, `<h2 data-nb-edit="[#cfield title#]" data-nb-edit-options='{"buttons":"bold,italic,anchor"}'>[#get-html title#]</h2>
+<p data-nb-edit="[#cfield label#]" data-nb-edit-options='{"plain":true}'>[#get-html label plain#]</p>
+<div data-nb-edit="[#cfield body#]" data-nb-edit-options='{"buttons":"h2,bold,unorderedlist","media":true}'>[#get-html body#]</div>
+<p data-nb-edit="[#cfield lead#]"
+   data-nb-edit-options='{"buttons":"bold,italic"}'>[#get-html lead#]</p>
+<span data-nb-edit="[#cfield note#]" data-nb-edit-options='{"buttons":"bold,unorderedlist"}'>[#get-html note#]</span>
+`);
+
+  const result = runCheck('--strict', `--path=${ext}`);
+
+  expect(result.status).toBe(1);
+  expect(result.output).toContain('tpl/intro/index.tpl:4 inline-editable <p> holds formatted text');
+  expect(result.output).toContain('tpl/intro/index.tpl:6 inline-editable <span> has block formatting');
+  expect(result.output).toContain('found 2 warning(s)');
+});

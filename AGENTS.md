@@ -273,6 +273,10 @@ This allows route templates to set page variables early while shared or core tem
 
 Use `overwrite` only when replacing an existing value is explicitly intended.
 
+### Inline-editable text
+
+Editors get formatting: rich buttons (and media where it fits) on body text, `bold,italic,anchor` on labels and titles. `{"plain":true}` only where markup cannot work (inside an `<a>`, record names, page title). Formatted text goes in a `<div>` host, never a `<p>`. See `./nimbly docs:section "Rich content fields — end-to-end > Inline editing attributes"`.
+
 ## 8. Permissions and authorization
 
 Use the existing Nimbly authorization mechanisms.
@@ -486,6 +490,7 @@ Compare the finished result with the requested outcome, not merely with whether 
 * Static routes do not use `route.inc`.
 * `[#if#]` is always self-closing.
 * `[#set#]` does not overwrite by default.
+* Inline-editable text gives editors formatting; formatted text goes in a `<div>` host, never a `<p>`.
 * Use existing permissions and authorization mechanisms.
 * Use snake_case in PHP.
 * Run the smallest relevant tests.
