@@ -2859,6 +2859,10 @@ involved, otherwise to Nimbly; each addressed agent answers through one run of
 its `chat_pipeline`. Each message keeps the site path the user was on when
 writing it (without the base path), and the `chat-history` connector shows it
 to the model as "Colleague (on /nl/contact): …", so "this page" is known.
+An operator gives an agent context in an existing conversation with
+`./nimbly agent:follow-up <agent-id> --conversation=<uuid> --message=<text>`
+on the site's server: the agent then answers the colleague there in its own
+words, with the colleague's rights.
 Chat runs have their own
 worker, `agent:chat`, kept running by the Core maintenance schedule (or, on a
 server, by the host scheduler), so a long daily run never delays a reply.
