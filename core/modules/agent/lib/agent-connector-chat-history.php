@@ -38,7 +38,8 @@ function agent_connector_chat_history(array $_source, array $_config, array $con
         $messages[] = $from === $agent_id
             ? ['role' => 'assistant', 'content' => [['type' => 'output_text', 'text' => $text]]]
             : ['role' => 'user', 'content' => [['type' => 'input_text',
-                'text' => ($from === 'user' ? 'Colleague' : agent_chat_name($from)) . ': ' . $text]]];
+                'text' => ($from === 'user' ? 'Colleague' : agent_chat_name($from))
+                    . (($message['page'] ?? '') !== '' ? ' (on ' . $message['page'] . ')' : '') . ': ' . $text]]];
     }
     return agent_artifact('openai.input', 1, ['messages' => $messages]);
 }

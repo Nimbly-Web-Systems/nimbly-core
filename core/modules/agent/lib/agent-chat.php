@@ -372,9 +372,10 @@ function agent_chat_schedule_check_back(string $uuid, string $agent_id, int $due
         'max_attempts' => 10, 'omit_request_context' => true]);
 }
 
-function agent_chat_post(string $uuid, string $owner, string $text, string $channel = 'web'): array
+function agent_chat_post(string $uuid, string $owner, string $text, string $channel = 'web', string $page = ''): array
 {
     $text = trim($text);
+    $page = agent_chat_page($page);
     if ($text === '' || mb_strlen($text) > AGENT_CHAT_MAX_TEXT) {
         throw new InvalidArgumentException('Message is empty or too long');
     }
@@ -404,7 +405,8 @@ function agent_chat_post(string $uuid, string $owner, string $text, string $chan
         $message_id = substr(md5(generate_uuid()), 0, 12);
         // The asker is kept with the message (never shown to the model): tools act with their rights.
         $conversation['messages'][] = ['id' => $message_id, 'from' => 'user', 'text' => $text,
-            'at' => time(), 'channel' => $channel, 'runs' => [], 'asker' => (string)username_get()];
+            'at' => time(), 'channel' => $channel, 'runs' => [], 'asker' => (string)username_get()]
+            + ($page === '' ? [] : ['page' => $page]);
         $last = array_key_last($conversation['messages']);
         foreach ($addressees as $agent_id) {
             $conversation['messages'][$last]['runs'][$agent_id] = agent_chat_start_turn($uuid, $conversation, $agent_id,
@@ -635,6 +637,13 @@ function agent_chat_first_name(array $conversation): ?string
     return null;
 }
 
+/** The site path a colleague was on when writing: a same-site path only, else empty. */
+function agent_chat_page(string $path): string
+{
+    $path = trim($path);
+    return mb_strlen($path) <= 300 && preg_match('#^/(?!/)[^\s\\\\]*$#', $path) === 1 ? $path : '';
+}
+
 /** A page of this site an agent points to: a same-site path only, with a short label. */
 function agent_chat_link(array $link): ?array
 {
@@ -774,7 +783,8 @@ function agent_chat_sc($_params = null): void
         $result = match ($operation) {
             'list' => ['conversations' => agent_chat_list($owner), 'team' => $team],
             'get' => agent_chat_view((string)($input['uuid'] ?? ''), $owner),
-            'post' => agent_chat_post((string)($input['uuid'] ?? ''), $owner, (string)($input['text'] ?? '')),
+            'post' => agent_chat_post((string)($input['uuid'] ?? ''), $owner, (string)($input['text'] ?? ''), 'web',
+                (string)($input['page'] ?? '')),
             'read' => agent_chat_mark_read((string)($input['uuid'] ?? ''), $owner),
             'delete' => agent_chat_delete((string)($input['uuid'] ?? ''), $owner),
             'unread' => (function () use ($owner) {

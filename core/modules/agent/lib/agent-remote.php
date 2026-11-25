@@ -81,7 +81,7 @@ function agent_remote_ask(string $uuid, array $conversation, string $agent_id, s
         if (($message['from'] ?? '') === 'occasion' && ($message['id'] ?? '') !== $message_id) {
             continue;
         }
-        $messages[] = array_intersect_key($message, array_flip(['id', 'from', 'text', 'at']));
+        $messages[] = array_intersect_key($message, array_flip(['id', 'from', 'text', 'at', 'page']));
         $asker = (string)($message['asker'] ?? $asker);
     }
     try {
@@ -264,6 +264,7 @@ function agent_remote_receive_ask(array $input): array
             $message = (array)$message;
             $messages[] = ['id' => (string)($message['id'] ?? ''), 'from' => (string)($message['from'] ?? 'user'),
                 'text' => mb_substr((string)($message['text'] ?? ''), 0, 20000), 'at' => (int)($message['at'] ?? 0)]
+                + (agent_chat_page((string)($message['page'] ?? '')) !== '' ? ['page' => agent_chat_page((string)$message['page'])] : [])
                 + ((string)($message['id'] ?? '') === (string)($input['message'] ?? '') ? ['runs' => [$agent_id => $run_uuid]] : []);
         }
         $mirror = [

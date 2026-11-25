@@ -194,12 +194,18 @@ function agent_chat_widget(nimblybar_side) {
                 this.to_latest();
             }
         },
+        // The site path the colleague is on (without the site's base path), so "this page" means something.
+        page() {
+            const base = new URL(nb.base_url || "/", window.location.href).pathname.replace(/\/$/, "");
+            const path = window.location.pathname;
+            return (base && (path === base || path.startsWith(base + "/")) ? path.slice(base.length) : path) || "/";
+        },
         async send() {
             const text = this.draft.trim();
             if (!text || this.busy) return;
             this.busy = true;
             try {
-                const response = await nb.api.post(url, { operation: "post", uuid: this.conversation?.uuid || "", text });
+                const response = await nb.api.post(url, { operation: "post", uuid: this.conversation?.uuid || "", text, page: this.page() });
                 if (!response.success) throw new Error(response.message);
                 this.draft = "";
                 this.$refs.input.style.height = "auto";

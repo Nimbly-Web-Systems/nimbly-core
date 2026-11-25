@@ -2856,7 +2856,10 @@ HTML layout) when at least one agent is available to them. A conversation
 belongs to one user and includes their whole team. A message goes to the
 agents named with `@<id>` or `@<name>`, otherwise to the agent most recently
 involved, otherwise to Nimbly; each addressed agent answers through one run of
-its `chat_pipeline`. Chat runs have their own
+its `chat_pipeline`. Each message keeps the site path the user was on when
+writing it (without the base path), and the `chat-history` connector shows it
+to the model as "Colleague (on /nl/contact): …", so "this page" is known.
+Chat runs have their own
 worker, `agent:chat`, kept running by the Core maintenance schedule (or, on a
 server, by the host scheduler), so a long daily run never delays a reply.
 

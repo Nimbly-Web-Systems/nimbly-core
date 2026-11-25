@@ -261,6 +261,16 @@ agent_chat_post($uuid, $owner, 'And memory?');
 agent_chat_run_pending();
 chat_test_assert(end($chat_test_seen['helper'])['role'] === 'user' && $chat_test_seen['helper'][3]['role'] === 'assistant',
     'the agent\'s own earlier replies reach the model as its own');
+agent_chat_post($uuid, $owner, 'Why is there no toolbar on this page?', 'web', '/nl/opschalingstafel');
+agent_chat_run_pending();
+chat_test_assert(end(data_read('.agent_conversations', $uuid)['messages'])['from'] === 'helper'
+    && data_read('.agent_conversations', $uuid)['messages'][count(data_read('.agent_conversations', $uuid)['messages']) - 2]['page'] === '/nl/opschalingstafel',
+    'the page the colleague was on is kept with their message');
+chat_test_assert(end($chat_test_seen['helper'])['content'][0]['text'] === 'Colleague (on /nl/opschalingstafel): Why is there no toolbar on this page?',
+    'the model sees which page the colleague was on');
+foreach (['//evil.test/x', 'https://evil.test', 'javascript:alert(1)', 'nl', '/a b'] as $bad) {
+    chat_test_assert(agent_chat_page($bad) === '', 'only same-site paths are kept as the page: ' . $bad);
+}
 
 // Hand-over: an agent brings a colleague in on the same message; the colleague answers after it.
 $group = agent_chat_create($owner, ['helper' => 'Helper', 'coder' => 'Coder']);
