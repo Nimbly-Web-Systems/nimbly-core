@@ -1651,7 +1651,7 @@ Creating a resource for everything is an anti-pattern. Every resource adds an ad
 - A fixed set of items on one page (team members, partner logos, values, steps, a timeline) is inline-editable page text in `.content.<page>`, with numbered fields such as `member_1_name` or `partner_1`.
 - A file that a page offers, such as a brochure PDF, is a field in its page settings: a `page-settings-fields.tpl` next to the route with `[#render-field def="{'type':'file','name':'Download'}" name=download store=settings source=page_settings#]`, read on the page as `page_settings.download`. A file that belongs to a record is a file field on that record.
 - A link between records that nothing displays is not a field, and never a resource of its own.
-- Data that belongs to an existing record is a field on that resource, not a resource of its own. A partner's logo is a `logo` field on `partners`, never a `partner_logos` resource. Several logos are one `gallery` field, and several linked records are one `select` field with `"multi": true`. Neither needs a coupling resource.
+- Data that belongs to an existing record is a field on that resource, not a resource of its own. A partner's logo is a `logo` field on `partners`, never a `partner_logos` resource. Several logos are one `gallery` field, and several linked records are one `select` field with `"multi": true`. Neither needs a coupling resource. Records are flexible JSON, not database tables: don't design join tables, lookup tables or normalised schemas the way a relational database would need them.
 
 Before adding `ext/data/<name>/.meta`, check that the data passes this test. A small, fixed list is never enough reason on its own.
 
